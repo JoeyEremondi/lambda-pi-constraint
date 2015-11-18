@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 executable lambda-pi-constraint
   main-is:             Main.hs
-  other-modules: Original, ConstraintBased
+  other-modules: Original, ConstraintBased, Common
   -- other-extensions:
   build-depends:       base >=4.8 && <4.9
                        , mtl
