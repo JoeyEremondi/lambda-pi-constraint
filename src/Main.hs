@@ -1,4 +1,5 @@
 import qualified Original as O
+import qualified ConstraintBased as CB
 
 main :: IO ()
-main = O.repLP True
+main = CB.repLP True 3
