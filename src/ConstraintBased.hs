@@ -1,5 +1,5 @@
 
-module ConstraintBased where
+module ConstraintBased (checker) where
 
 import Prelude hiding (print)
 
@@ -23,6 +23,9 @@ import System.IO.Error
 import Common
 
 catch = catchIOError
+
+checker :: TypeChecker
+checker = error "TODO implement"
 
 
 

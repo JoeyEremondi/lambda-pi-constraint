@@ -1,5 +1,5 @@
 
-module Original where
+module Original (checker) where
 
 import Prelude hiding (print)
 
@@ -23,6 +23,9 @@ import System.IO.Error
 import Common
 
 catch = catchIOError
+
+checker :: TypeChecker
+checker = iType0_
 
 
 

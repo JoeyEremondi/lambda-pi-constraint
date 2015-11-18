@@ -384,7 +384,7 @@ type NameEnv v = [(Name, v)]
 type Ctx inf = [(Name, inf)]
 type State v inf = (Bool, String, NameEnv v, Ctx inf)
 
-type TypeChecker = Int -> (NameEnv Value_,Context_) -> ITerm_ -> Result Type_
+type TypeChecker = (NameEnv Value_,Context_) -> ITerm_ -> Result Type_
 
 commands :: [InteractiveCommand]
 commands
@@ -483,9 +483,9 @@ st = I { iname = "the simply typed lambda calculus",
          iassume = \ s (x, t) -> stassume s x t }
 
 lp :: TypeChecker -> Interpreter ITerm_ CTerm_ Value_ Value_ CTerm_ Value_
-lp check = I { iname = "lambda-Pi",
+lp checker = I { iname = "lambda-Pi",
          iprompt = "LP> ",
-         iitype = \ v c -> (error "iType_") 0 (v, c),
+         iitype = \ v c -> checker (v, c),
          iquote = quote0_,
          ieval = \ e x -> iEval_ x (e, []),
          ihastype = id,
@@ -493,7 +493,7 @@ lp check = I { iname = "lambda-Pi",
          itprint = cPrint_ 0 0 . quote0_,
          iiparse = parseITerm_ 0 [],
          isparse = parseStmt_ [],
-         iassume = \ s (x, t) -> lpassume check s x t }
+         iassume = \ s (x, t) -> lpassume checker s x t }
 
 lpte :: Ctx Value_
 lpte =      [(Global "Zero", VNat_),
