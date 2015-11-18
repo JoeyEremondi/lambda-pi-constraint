@@ -1,7 +1,11 @@
 module Constraint
-  ( CType
+  ( ConType
+  , ConstraintM
   , freshType
   , unify
+  , unknownIdent
+  , evaluatesTo
+  , contype
   ) where
 
 import qualified Common
@@ -14,16 +18,17 @@ newtype TypeVar = TypeVar {varIdent :: Int}
 
 --Type we can unify over: either a type literal
 --Or a type variable
-data CType =
+data ConType =
   VarType TypeVar --Type variable can represent a type
   | LitType Common.Type_ --We look at literal types in our constraints
-  | PiType CType CType --Sometimes we look at function types, where the types
+  | PiType ConType ConType --Sometimes we look at function types, where the types
                        --may be variables we resolve later with unification
 
 
 --Initially, the only constraint we express is that two types unify
 data Constraint =
-  ConstrUnify CType CType
+  ConstrUnify ConType ConType
+  | ConstrEvaluatesTo ConType Common.Value_
 
 
   --Define a "Constrain" monad, which lets us generate
@@ -41,7 +46,7 @@ type ConstraintM a = State ConstraintState a
 
 --Operations in our monad:
 --Make fresh types, and unify types together
-freshType :: ConstraintM CType
+freshType :: ConstraintM ConType
 freshType = do
   currentState <- get
   let nextInt = nextTypeVar currentState
@@ -49,10 +54,24 @@ freshType = do
   return $ VarType $ TypeVar nextInt
 
 
-unify :: CType -> CType -> ConstraintM ()
-unify t1 t2 = do
+unify :: ConType -> ConType -> ConstraintM ()
+unify t1 t2 = addConstr (ConstrUnify t1 t2)
+
+
+evaluatesTo :: ConType -> Common.Value_ -> ConstraintM ()
+evaluatesTo t v = addConstr $ ConstrEvaluatesTo t v
+
+unknownIdent :: String -> ConstraintM a
+unknownIdent = error --TODO: something smarter here
+
+
+contype = LitType
+
+--Helpful utility function
+addConstr :: Constraint -> ConstraintM ()
+addConstr c = do
   --Add the new constraint to our state
   oldState <- get
   let oldConstrs = constraintsSoFar oldState
-  put $ oldState {constraintsSoFar = (ConstrUnify t1 t2) : oldConstrs}
+  put $ oldState {constraintsSoFar = c : oldConstrs}
   return ()

@@ -22,34 +22,37 @@ import System.IO.Error
 
 import Common
 
+import Constraint
+
 catch = catchIOError
 
 checker :: TypeChecker
 checker = error "TODO implement"
 
+conStar = contype VStar_
 
-
-iType0_ :: (NameEnv Value_,Context_) -> ITerm_ -> Result Type_
+iType0_ :: (NameEnv Value_,Context_) -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
-iType_ :: Int -> (NameEnv Value_,Context_) -> ITerm_ -> Result Type_
+iType_ :: Int -> (NameEnv Value_,Context_) -> ITerm_ -> ConstraintM ConType
 iType_ ii g (Ann_ e tyt )
-  =     do  cType_  ii g tyt VStar_
-            let ty = cEval_ tyt (fst g, [])
+  =     do  cType_  ii g tyt conStar
+            ty <- freshType
+            ty `evaluatesTo` cEval_ tyt (fst g, [])
             cType_ ii g e ty
             return ty
 iType_ ii g Star_
-   =  return VStar_
+   =  return conStar
 iType_ ii g (Pi_ tyt tyt')
-   =  do  cType_ ii g tyt VStar_
+   =  do  cType_ ii g tyt conStar
           let ty = cEval_ tyt (fst g, [])
           cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, ty) : g))) g)
-                    (cSubst_ 0 (Free_ (Local ii)) tyt') VStar_
-          return VStar_
+                    (cSubst_ 0 (Free_ (Local ii)) tyt') conStar
+          return conStar
 iType_ ii g (Free_ x)
   =     case lookup x (snd g) of
           Just ty        ->  return ty
-          Nothing        ->  throwError ("unknown identifier: " ++ render (iPrint_ 0 0 (Free_ x)))
+          Nothing        ->  unknownIdent (render (iPrint_ 0 0 (Free_ x)))
 iType_ ii g (e1 :$: e2)
   =     do  si <- iType_ ii g e1
             case si of
@@ -117,7 +120,7 @@ iType_ i g (EqElim_ a m mr x y eq) =
 
 
 
-cType_ :: Int -> (NameEnv Value_,Context_) -> CTerm_ -> Type_ -> Result ()
+cType_ :: Int -> (NameEnv Value_,Context_) -> CTerm_ -> ConType -> ConstraintM ()
 cType_ ii g (Inf_ e) v
   =     do  v' <- iType_ ii g e
             unless ( quote0_ v == quote0_ v') (throwError ("type mismatch:\n" ++ "type inferred:  " ++ render (cPrint_ 0 0 (quote0_ v')) ++ "\n" ++ "type expected:  " ++ render (cPrint_ 0 0 (quote0_ v)) ++ "\n" ++ "for expression: " ++ render (iPrint_ 0 0 e)))
