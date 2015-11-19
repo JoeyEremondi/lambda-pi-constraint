@@ -1,0 +1,1 @@
+Convert [this dependent typechecker](http://www.andres-loeh.de/LambdaPi/) into a constraint-generating checker.
