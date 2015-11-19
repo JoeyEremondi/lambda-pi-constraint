@@ -57,8 +57,9 @@ iType_ ii g (Free_ x)
           Just ty        ->  return ty
           Nothing        ->  unknownIdent (render (iPrint_ 0 0 (Free_ x)))
 iType_ ii g (e1 :$: e2)
-  =     do  si <- iType_ ii g e1
-            case si of
+  =     do
+            fnType <- iType_ ii g e1
+            case fnType of
               VPi_  ty ty'  ->  do  cType_ ii g e2 ty
                                     return ( ty' (cEval_ e2 (fst g, [])))
               _                  ->  throwError "illegal application"

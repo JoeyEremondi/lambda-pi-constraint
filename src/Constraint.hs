@@ -22,14 +22,26 @@ newtype TypeVar = TypeVar {varIdent :: Int}
 data ConType =
   VarType TypeVar --Type variable can represent a type
   | LitType Common.Type_ --We look at literal types in our constraints
-  | PiType ConType ConType --Sometimes we look at function types, where the types
+  | PiType ConType ConTyFn --Sometimes we look at function types, where the types
+  | AppType ConType ConType --Used to encode
                        --may be variables we resolve later with unification
 
+
+--Wrapper for functions on types, whose values we may not know
+--But instead determine from inference
+data ConTyFn =
+  TyFnVar TypeVar
+  | TyFn (Common.Type -> Common.Type)
 
 --Initially, the only constraint we express is that two types unify
 data Constraint =
   ConstrUnify ConType ConType
+  | TyFnUnify ConTyFn ConTyFn
   | ConstrEvaluatesTo ConType Common.Value_
+
+
+class Unifyable a where
+  unify :: a -> a -> ConstraintM ()
 
 
   --Define a "Constrain" monad, which lets us generate
@@ -55,9 +67,11 @@ freshType = do
   return $ VarType $ TypeVar nextInt
 
 
-unify :: ConType -> ConType -> ConstraintM ()
-unify t1 t2 = addConstr (ConstrUnify t1 t2)
+instance Unifyable ConType where
+  unify t1 t2 = addConstr (ConstrUnify t1 t2)
 
+instance Unifyable ConTyFn where
+  unify t1 t2 = addConstr (TyFnUnify t1 t2)
 
 evaluatesTo :: ConType -> Common.Value_ -> ConstraintM ()
 evaluatesTo t v = addConstr $ ConstrEvaluatesTo t v
