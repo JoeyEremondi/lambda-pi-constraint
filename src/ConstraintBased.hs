@@ -31,10 +31,12 @@ checker = error "TODO implement"
 
 conStar = contype VStar_
 
-iType0_ :: (NameEnv Value_,Context_) -> ITerm_ -> ConstraintM ConType
+type ConstrContext = [(Name, ConType)]
+
+iType0_ :: (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
-iType_ :: Int -> (NameEnv Value_,Context_) -> ITerm_ -> ConstraintM ConType
+iType_ :: Int -> (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
 iType_ ii g (Ann_ e tyt )
   =     do  cType_  ii g tyt conStar
             ty <- freshType
@@ -45,7 +47,8 @@ iType_ ii g Star_
    =  return conStar
 iType_ ii g (Pi_ tyt tyt')
    =  do  cType_ ii g tyt conStar
-          let ty = cEval_ tyt (fst g, [])
+          ty <- freshType
+          ty `evaluatesTo` cEval_ tyt (fst g, [])
           cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, ty) : g))) g)
                     (cSubst_ 0 (Free_ (Local ii)) tyt') conStar
           return conStar
@@ -120,7 +123,7 @@ iType_ i g (EqElim_ a m mr x y eq) =
 
 
 
-cType_ :: Int -> (NameEnv Value_,Context_) -> CTerm_ -> ConType -> ConstraintM ()
+cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> ConType -> ConstraintM ()
 cType_ ii g (Inf_ e) v
   =     do  v' <- iType_ ii g e
             unless ( quote0_ v == quote0_ v') (throwError ("type mismatch:\n" ++ "type inferred:  " ++ render (cPrint_ 0 0 (quote0_ v')) ++ "\n" ++ "type expected:  " ++ render (cPrint_ 0 0 (quote0_ v)) ++ "\n" ++ "for expression: " ++ render (iPrint_ 0 0 e)))

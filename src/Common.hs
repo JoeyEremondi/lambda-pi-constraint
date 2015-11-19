@@ -384,7 +384,7 @@ type NameEnv v = [(Name, v)]
 type Ctx inf = [(Name, inf)]
 type State v inf = (Bool, String, NameEnv v, Ctx inf)
 
-type TypeChecker = (NameEnv Value_,Context_) -> ITerm_ -> Result Type_
+type TypeChecker = (NameEnv Value_, [(Name, Value_)]) -> ITerm_ -> Result Type_
 
 commands :: [InteractiveCommand]
 commands
@@ -556,7 +556,7 @@ lpve =      [(Global "Zero", VZero_),
              (Global "finElim", cEval_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (FinElim_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))))))) ([],[]))]
 
 repLP :: TypeChecker -> Bool -> IO ()
-repLP check b = readevalprint (lp check) (b, [], lpve, lpte)
+repLP checker b = readevalprint (lp checker) (b, [], lpve, lpte)
 
 repST :: Bool -> IO ()
 repST b = readevalprint st (b, [], [], [])
@@ -1033,7 +1033,7 @@ instance Show Value_ where
   show = show . quote0_
 
 type Type_     =  Value_
-type Context_    =  [(Name, Type_)]
+
 
 quote0_ :: Value_ -> CTerm_
 quote0_ = quote_ 0

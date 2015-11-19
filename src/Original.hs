@@ -24,6 +24,8 @@ import Common
 
 catch = catchIOError
 
+type Context_    =  [(Name, Type_)]
+
 checker :: TypeChecker
 checker = iType0_
 
