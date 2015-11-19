@@ -63,11 +63,11 @@ iType_ ii g (e1 :$: e2)
                                     return ( ty' (cEval_ e2 (fst g, [])))
               _                  ->  throwError "illegal application"
 
-iType_ ii g Nat_                  =  return VStar_
+iType_ ii g Nat_                  =  return conStar
 iType_ ii g (NatElim_ m mz ms n)  =
-  do  cType_ ii g m (VPi_ VNat_ (const VStar_))
+  do  cType_ ii g m (contype $ VPi_ VNat_ (const VStar_))
       let mVal  = cEval_ m (fst g, [])
-      cType_ ii g mz (mVal `vapp_` VZero_)
+      cType_ ii g mz (contype $ mVal `vapp_` VZero_)
       cType_ ii g ms (VPi_ VNat_ (\ k -> VPi_ (mVal `vapp_` k) (\ _ -> mVal `vapp_` VSucc_ k)))
       cType_ ii g n VNat_
       let nVal = cEval_ n (fst g, [])
@@ -97,13 +97,14 @@ iType_ ii g (VecElim_ a m mn mc n vs) =
       return (foldl vapp_ mVal [nVal, vsVal])
 
 iType_ i g (Eq_ a x y) =
-  do  cType_ i g a VStar_
-      let aVal = cEval_ a (fst g, [])
+  do  cType_ i g a conStar
+      aVal <- freshType
+      aVal `evaluatesTo` cEval_ a (fst g, [])
       cType_ i g x aVal
       cType_ i g y aVal
-      return VStar_
+      return conStar
 iType_ i g (EqElim_ a m mr x y eq) =
-  do  cType_ i g a VStar_
+  do  cType_ i g a conStar
       let aVal = cEval_ a (fst g, [])
       cType_ i g m
         (VPi_ aVal (\ x ->
@@ -125,22 +126,33 @@ iType_ i g (EqElim_ a m mr x y eq) =
 
 cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> ConType -> ConstraintM ()
 cType_ ii g (Inf_ e) v
-  =     do  v' <- iType_ ii g e
-            unless ( quote0_ v == quote0_ v') (throwError ("type mismatch:\n" ++ "type inferred:  " ++ render (cPrint_ 0 0 (quote0_ v')) ++ "\n" ++ "type expected:  " ++ render (cPrint_ 0 0 (quote0_ v)) ++ "\n" ++ "for expression: " ++ render (iPrint_ 0 0 e)))
-cType_ ii g (Lam_ e) ( VPi_ ty ty')
-  =     cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, ty ) : g))) g)
-                (cSubst_ 0 (Free_ (Local ii)) e) ( ty' (vfree_ (Local ii)))
+  =     do  tyInferred <- iType_ ii g e
+            --Ensure that the annotation type and our inferred type unify
+            --We have to evaluate our normal form
+            tyAnnot <- freshType
+            tyAnnot `evaluatesTo` cEval_ (Inf_ e) (fst g, []) --TODO is this right?
+cType_ ii g (Lam_ e) fnTy = do
+    argTy <- freshType
+    returnTy <- freshType
+    unify fnTy (mkPi argTy returnTy) --TODO fix this
+    cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g)
+                (cSubst_ 0 (Free_ (Local ii)) e) ( _returnTy (vfree_ (Local ii)))
 
-cType_ ii g Zero_      VNat_  =  return ()
-cType_ ii g (Succ_ k)  VNat_  =  cType_ ii g k VNat_
+cType_ ii g Zero_      ty  =  unify ty (contype VNat_)
+cType_ ii g (Succ_ k)  ty  = do
+  unify ty (contype VNat_)
+  cType_ ii g k (contype VNat_)
 
-cType_ ii g (Nil_ a) (VVec_ bVal VZero_) =
-  do  cType_ ii g a VStar_
+cType_ ii g (Nil_ a) ty =
+  do
+      bVal <- freshType
+      unify ty (VVec_ bVal VZero_)
+      cType_ ii g a conStar
       let aVal = cEval_ a (fst g, [])
       unless  (quote0_ aVal == quote0_ bVal)
               (throwError "type mismatch")
 cType_ ii g (Cons_ a n x xs) (VVec_ bVal (VSucc_ k)) =
-  do  cType_ ii g a VStar_
+  do  cType_ ii g a conStar
       let aVal = cEval_ a (fst g, [])
       unless  (quote0_ aVal == quote0_ bVal)
               (throwError "type mismatch")
@@ -160,6 +172,3 @@ cType_ ii g (Refl_ a z) (VEq_ bVal xVal yVal) =
       let zVal = cEval_ z (fst g, [])
       unless  (quote0_ zVal == quote0_ xVal && quote0_ zVal == quote0_ yVal)
               (throwError "type mismatch")
-
-cType_ ii g _ _
-  =     throwError "type mismatch"

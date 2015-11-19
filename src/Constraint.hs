@@ -6,6 +6,7 @@ module Constraint
   , unknownIdent
   , evaluatesTo
   , contype
+  , mkPi
   ) where
 
 import qualified Common
@@ -63,6 +64,9 @@ evaluatesTo t v = addConstr $ ConstrEvaluatesTo t v
 
 unknownIdent :: String -> ConstraintM a
 unknownIdent = error --TODO: something smarter here
+
+mkPi :: ConType -> ConType -> ConType
+mkPi = error "TODO"
 
 
 contype = LitType

@@ -1,0 +1,30 @@
+Configuring mtl-2.2.1...
+Building mtl-2.2.1...
+Preprocessing library mtl-2.2.1...
+[ 1 of 22] Compiling Control.Monad.Writer.Class ( Control/Monad/Writer/Class.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Writer/Class.o )
+[ 2 of 22] Compiling Control.Monad.State.Class ( Control/Monad/State/Class.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/State/Class.o )
+[ 3 of 22] Compiling Control.Monad.Reader.Class ( Control/Monad/Reader/Class.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Reader/Class.o )
+[ 4 of 22] Compiling Control.Monad.RWS.Class ( Control/Monad/RWS/Class.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/RWS/Class.o )
+[ 5 of 22] Compiling Control.Monad.Identity ( Control/Monad/Identity.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Identity.o )
+[ 6 of 22] Compiling Control.Monad.Error.Class ( Control/Monad/Error/Class.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Error/Class.o )
+[ 7 of 22] Compiling Control.Monad.Cont.Class ( Control/Monad/Cont/Class.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Cont/Class.o )
+[ 8 of 22] Compiling Control.Monad.Trans ( Control/Monad/Trans.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Trans.o )
+[ 9 of 22] Compiling Control.Monad.Error ( Control/Monad/Error.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Error.o )
+[10 of 22] Compiling Control.Monad.Except ( Control/Monad/Except.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Except.o )
+[11 of 22] Compiling Control.Monad.List ( Control/Monad/List.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/List.o )
+[12 of 22] Compiling Control.Monad.RWS.Lazy ( Control/Monad/RWS/Lazy.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/RWS/Lazy.o )
+[13 of 22] Compiling Control.Monad.RWS ( Control/Monad/RWS.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/RWS.o )
+[14 of 22] Compiling Control.Monad.Reader ( Control/Monad/Reader.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Reader.o )
+[15 of 22] Compiling Control.Monad.RWS.Strict ( Control/Monad/RWS/Strict.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/RWS/Strict.o )
+[16 of 22] Compiling Control.Monad.State.Lazy ( Control/Monad/State/Lazy.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/State/Lazy.o )
+[17 of 22] Compiling Control.Monad.State ( Control/Monad/State.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/State.o )
+[18 of 22] Compiling Control.Monad.State.Strict ( Control/Monad/State/Strict.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/State/Strict.o )
+[19 of 22] Compiling Control.Monad.Writer.Lazy ( Control/Monad/Writer/Lazy.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Writer/Lazy.o )
+[20 of 22] Compiling Control.Monad.Writer ( Control/Monad/Writer.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Writer.o )
+[21 of 22] Compiling Control.Monad.Writer.Strict ( Control/Monad/Writer/Strict.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Writer/Strict.o )
+[22 of 22] Compiling Control.Monad.Cont ( Control/Monad/Cont.hs, dist/dist-sandbox-29c23bd3/build/Control/Monad/Cont.o )
+In-place registering mtl-2.2.1...
+Creating package registration file: /tmp/pkgConf-mtl-2.220448977631967513926.1
+Installing library in
+/home/joey/thesis/lambda-pi-constraint/.cabal-sandbox/lib/x86_64-linux-ghc-7.10.2.20151105/mtl-2.2.1-Aue4leSeVkpKLsfHIV51E8
+Registering mtl-2.2.1...
