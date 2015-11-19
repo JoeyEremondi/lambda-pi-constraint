@@ -1,12 +1,12 @@
 module Constraint
   ( ConType
+  , ConTyFn
   , ConstraintM
-  , freshType
-  , unify
+  , Unifyable, unify, fresh
   , unknownIdent
   , evaluatesTo
   , contype
-  , mkPi
+  , mkPi, applyPi
   ) where
 
 import qualified Common
@@ -23,7 +23,7 @@ data ConType =
   VarType TypeVar --Type variable can represent a type
   | LitType Common.Type_ --We look at literal types in our constraints
   | PiType ConType ConTyFn --Sometimes we look at function types, where the types
-  | AppType ConType ConType --Used to encode
+  | AppType ConTyFn ConType --Used to encode
                        --may be variables we resolve later with unification
 
 
@@ -42,6 +42,7 @@ data Constraint =
 
 class Unifyable a where
   unify :: a -> a -> ConstraintM ()
+  fresh :: ConstraintM a
 
 
   --Define a "Constrain" monad, which lets us generate
@@ -59,19 +60,21 @@ type ConstraintM a = State ConstraintState a
 
 --Operations in our monad:
 --Make fresh types, and unify types together
-freshType :: ConstraintM ConType
-freshType = do
+freshVar :: ConstraintM TypeVar
+freshVar = do
   currentState <- get
   let nextInt = nextTypeVar currentState
   put $ currentState {nextTypeVar = nextInt + 1}
-  return $ VarType $ TypeVar nextInt
+  return $  TypeVar nextInt
 
 
 instance Unifyable ConType where
   unify t1 t2 = addConstr (ConstrUnify t1 t2)
+  fresh = VarType `fmap` freshVar
 
 instance Unifyable ConTyFn where
   unify t1 t2 = addConstr (TyFnUnify t1 t2)
+  fresh = TyFnVar `fmap` freshVar
 
 evaluatesTo :: ConType -> Common.Value_ -> ConstraintM ()
 evaluatesTo t v = addConstr $ ConstrEvaluatesTo t v
@@ -79,9 +82,11 @@ evaluatesTo t v = addConstr $ ConstrEvaluatesTo t v
 unknownIdent :: String -> ConstraintM a
 unknownIdent = error --TODO: something smarter here
 
-mkPi :: ConType -> ConType -> ConType
-mkPi = error "TODO"
+mkPi :: ConType -> ConTyFn -> ConType
+mkPi = PiType
 
+applyPi :: ConTyFn -> ConType -> ConType
+applyPi = AppType
 
 contype = LitType
 

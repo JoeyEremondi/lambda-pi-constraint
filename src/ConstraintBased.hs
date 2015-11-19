@@ -39,7 +39,7 @@ iType0_ = iType_ 0
 iType_ :: Int -> (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
 iType_ ii g (Ann_ e tyt )
   =     do  cType_  ii g tyt conStar
-            ty <- freshType
+            ty <- fresh
             ty `evaluatesTo` cEval_ tyt (fst g, [])
             cType_ ii g e ty
             return ty
@@ -47,7 +47,7 @@ iType_ ii g Star_
    =  return conStar
 iType_ ii g (Pi_ tyt tyt')
    =  do  cType_ ii g tyt conStar
-          ty <- freshType
+          ty <- fresh
           ty `evaluatesTo` cEval_ tyt (fst g, [])
           cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, ty) : g))) g)
                     (cSubst_ 0 (Free_ (Local ii)) tyt') conStar
@@ -59,10 +59,20 @@ iType_ ii g (Free_ x)
 iType_ ii g (e1 :$: e2)
   =     do
             fnType <- iType_ ii g e1
-            case fnType of
-              VPi_  ty ty'  ->  do  cType_ ii g e2 ty
-                                    return ( ty' (cEval_ e2 (fst g, [])))
-              _                  ->  throwError "illegal application"
+            piArg <- fresh
+            piBody <- fresh
+            unify (fnType) (mkPi piArg piBody)
+
+            --Ensure that the argument has the proper type
+            cType_ ii g e2 piArg
+
+            --Get a type for the evaluation of the argument
+            argVal <- fresh
+            argVal `evaluatesTo` (cEval_ e2 (fst g, []))
+
+            --Our resulting type is the application of our arg type into the
+            --body of the pi type
+            return $ applyPi piBody piArg
 
 iType_ ii g Nat_                  =  return conStar
 iType_ ii g (NatElim_ m mz ms n)  =
@@ -99,7 +109,7 @@ iType_ ii g (VecElim_ a m mn mc n vs) =
 
 iType_ i g (Eq_ a x y) =
   do  cType_ i g a conStar
-      aVal <- freshType
+      aVal <- fresh
       aVal `evaluatesTo` cEval_ a (fst g, [])
       cType_ i g x aVal
       cType_ i g y aVal
@@ -130,11 +140,11 @@ cType_ ii g (Inf_ e) v
   =     do  tyInferred <- iType_ ii g e
             --Ensure that the annotation type and our inferred type unify
             --We have to evaluate our normal form
-            tyAnnot <- freshType
+            tyAnnot <- fresh
             tyAnnot `evaluatesTo` cEval_ (Inf_ e) (fst g, []) --TODO is this right?
 cType_ ii g (Lam_ e) fnTy = do
-    argTy <- freshType
-    returnTy <- freshType
+    argTy <- fresh
+    returnTy <- fresh
     unify fnTy (mkPi argTy returnTy) --TODO fix this
     cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g)
                 (cSubst_ 0 (Free_ (Local ii)) e) ( _returnTy (vfree_ (Local ii)))
@@ -146,7 +156,7 @@ cType_ ii g (Succ_ k)  ty  = do
 
 cType_ ii g (Nil_ a) ty =
   do
-      bVal <- freshType
+      bVal <- fresh
       unify ty (VVec_ bVal VZero_)
       cType_ ii g a conStar
       let aVal = cEval_ a (fst g, [])
