@@ -142,12 +142,18 @@ cType_ ii g (Inf_ e) v
             --We have to evaluate our normal form
             tyAnnot <- fresh
             tyAnnot `evaluatesTo` cEval_ (Inf_ e) (fst g, []) --TODO is this right?
+
+            
 cType_ ii g (Lam_ e) fnTy = do
     argTy <- fresh
-    returnTy <- fresh
-    unify fnTy (mkPi argTy returnTy) --TODO fix this
-    cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g)
-                (cSubst_ 0 (Free_ (Local ii)) e) ( _returnTy (vfree_ (Local ii)))
+    returnTyFn <- fresh
+    unify fnTy (mkPi argTy returnTyFn) --TODO fix this
+    let returnTy = applyPi returnTyFn $ contype (vfree_ (Local ii))
+    let subbedBody = cSubst_ 0 (Free_ (Local ii)) e
+    cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g) subbedBody returnTy
+    --TODO better name?
+
+
 
 cType_ ii g Zero_      ty  =  unify ty (contype VNat_)
 cType_ ii g (Succ_ k)  ty  = do
@@ -157,13 +163,16 @@ cType_ ii g (Succ_ k)  ty  = do
 cType_ ii g (Nil_ a) ty =
   do
       bVal <- fresh
-      unify ty (VVec_ bVal VZero_)
+      unify ty (mkVec bVal $ contype VZero_)
       cType_ ii g a conStar
-      let aVal = cEval_ a (fst g, [])
-      unless  (quote0_ aVal == quote0_ bVal)
-              (throwError "type mismatch")
-cType_ ii g (Cons_ a n x xs) (VVec_ bVal (VSucc_ k)) =
-  do  cType_ ii g a conStar
+      aVal <- fresh
+      aVal `evaluatesTo` cEval_ a (fst g, [])
+      unify aVal bVal
+cType_ ii g (Cons_ a n x xs) ty  =
+  do  bVal <- fresh
+      k <- fresh
+      unify ty (mkVec bVal (_VSucc_ k))
+      cType_ ii g a conStar
       let aVal = cEval_ a (fst g, [])
       unless  (quote0_ aVal == quote0_ bVal)
               (throwError "type mismatch")
