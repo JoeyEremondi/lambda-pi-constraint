@@ -7,6 +7,7 @@ module Constraint
   , evaluatesTo
   , contype
   , mkPi, applyPi
+  , mkNat, mkVec, mkEq
   ) where
 
 import qualified Common
@@ -25,6 +26,9 @@ data ConType =
   | PiType ConType ConTyFn --Sometimes we look at function types, where the types
   | AppType ConTyFn ConType --Used to encode
                        --may be variables we resolve later with unification
+  | NatType ConType --Our built-in data constructors
+  | VecType ConType ConType
+  | EqType ConType ConType ConType
 
 
 --Wrapper for functions on types, whose values we may not know
@@ -87,6 +91,15 @@ mkPi = PiType
 
 applyPi :: ConTyFn -> ConType -> ConType
 applyPi = AppType
+
+mkNat :: ConType -> ConType
+mkNat = NatType
+
+mkVec :: ConType -> ConType -> ConType
+mkVec = VecType
+
+mkEq :: ConType -> ConType -> ConType -> ConType
+mkEq = EqType
 
 contype = LitType
 
