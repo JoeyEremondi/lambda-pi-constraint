@@ -85,9 +85,9 @@ iType_ ii g (NatElim_ m mz ms n)  =
       return (mVal `vapp_` nVal)
 
 iType_ ii g (Vec_ a n) =
-  do  cType_ ii g a  VStar_
-      cType_ ii g n  VNat_
-      return VStar_
+  do  cType_ ii g a  conStar
+      cType_ ii g n  (contype VNat_)
+      return conStar
 iType_ ii g (VecElim_ a m mn mc n vs) =
   do  cType_ ii g a VStar_
       let aVal = cEval_ a (fst g, [])
@@ -143,7 +143,7 @@ cType_ ii g (Inf_ e) v
             tyAnnot <- fresh
             tyAnnot `evaluatesTo` cEval_ (Inf_ e) (fst g, []) --TODO is this right?
 
-            
+
 cType_ ii g (Lam_ e) fnTy = do
     argTy <- fresh
     returnTyFn <- fresh
@@ -170,25 +170,50 @@ cType_ ii g (Nil_ a) ty =
       unify aVal bVal
 cType_ ii g (Cons_ a n x xs) ty  =
   do  bVal <- fresh
-      k <- fresh
-      unify ty (mkVec bVal (_VSucc_ k))
+      k <- (fresh :: ConstraintM ConType)
+      --Trickery to get a Type_ to a ConType
+      let kVal = applyPi (TyFn (\val -> VSucc_ val) ) k
+      unify ty (mkVec bVal kVal)
       cType_ ii g a conStar
-      let aVal = cEval_ a (fst g, [])
-      unless  (quote0_ aVal == quote0_ bVal)
-              (throwError "type mismatch")
-      cType_ ii g n VNat_
-      let nVal = cEval_ n (fst g, [])
-      unless  (quote0_ nVal == quote0_ k)
-              (throwError "number mismatch")
-      cType_ ii g x aVal
-      cType_ ii g xs (VVec_ bVal k)
 
-cType_ ii g (Refl_ a z) (VEq_ bVal xVal yVal) =
-  do  cType_ ii g a VStar_
-      let aVal = cEval_ a (fst g, [])
-      unless  (quote0_ aVal == quote0_ bVal)
-              (throwError "type mismatch")
+      aVal <- fresh
+      aVal `evaluatesTo` cEval_ a (fst g, [])
+      unify aVal bVal
+
+      cType_ ii g n (contype VNat_)
+
+      --Make sure our numbers match
+      nVal <- fresh
+      nVal `evaluatesTo` cEval_ n (fst g, [])
+      unify nVal kVal
+
+      --Make sure our new head has the right list type
+      cType_ ii g x aVal
+      --Make sure our tail has the right length
+      cType_ ii g xs (mkVec bVal k)
+
+cType_ ii g (Refl_ a z) ty =
+  do  bVal <- fresh
+      xVal <- fresh
+      yVal <- fresh
+      unify ty (mkEq bVal xVal yVal)
+      --Check that our type argument has kind *
+      cType_ ii g a conStar
+      --Get evaluation constraint for our type argument
+      aVal <- fresh
+      aVal `evaluatesTo` cEval_ a (fst g, [])
+
+      --Check that our given type is the same as our inferred type --TODO is this right?
+      unify aVal bVal
+
+      --Check that the value we're proving on has type A
       cType_ ii g z aVal
-      let zVal = cEval_ z (fst g, [])
-      unless  (quote0_ zVal == quote0_ xVal && quote0_ zVal == quote0_ yVal)
-              (throwError "type mismatch")
+
+      --Evaluate the value that we're proving equality on
+      zVal <- fresh
+      zVal `evaluatesTo` cEval_ z (fst g, [])
+
+      --Show constraint that the type parameters must match that type
+      unify zVal xVal
+      unify zVal yVal
+      --TODO something special for quoting
