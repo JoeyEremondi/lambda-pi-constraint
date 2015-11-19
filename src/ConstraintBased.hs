@@ -29,7 +29,7 @@ catch = catchIOError
 checker :: TypeChecker
 checker = error "TODO implement"
 
-conStar = contype VStar_
+conStar = conType VStar_
 
 type ConstrContext = [(Name, ConType)]
 
@@ -76,26 +76,26 @@ iType_ ii g (e1 :$: e2)
 
 iType_ ii g Nat_                  =  return conStar
 iType_ ii g (NatElim_ m mz ms n)  =
-  do  cType_ ii g m (contype $ VPi_ VNat_ (const VStar_))
+  do  cType_ ii g m (conType $ VPi_ VNat_ (const VStar_))
 
       --Evaluate our param m
       mVal <- fresh
       mVal `evaluatesTo` cEval_ m (fst g, [])
 
       mvalAppK <- fresh
-      (mVal, contype VZero_) `vappIs` mvalAppK
+      (mVal, conType VZero_) `vappIs` mvalAppK
       cType_ ii g mz mvalAppK
       cType_ ii g ms $
-         (mkPi (contype VNat_)
-            $ TyFn (\ k -> VPi_ mvalAppK (\ _ -> mVal `vapp_` VSucc_ k)))
+         (mkPi (conType VNat_)
+            $ conTyFn (\ k -> VPi_ mvalAppK (\ _ -> mVal `vapp_` VSucc_ k)))
       --Make sure the number param is a nat
-      cType_ ii g n (contype VNat_)
+      cType_ ii g n (conType VNat_)
       let nVal = cEval_ n (fst g, [])
       return (mVal `vapp_` nVal)
 
 iType_ ii g (Vec_ a n) =
   do  cType_ ii g a  conStar
-      cType_ ii g n  (contype VNat_)
+      cType_ ii g n  (conType VNat_)
       return conStar
 iType_ ii g (VecElim_ a m mn mc n vs) =
   do  cType_ ii g a VStar_
@@ -157,22 +157,22 @@ cType_ ii g (Lam_ e) fnTy = do
     argTy <- fresh
     returnTyFn <- fresh
     unify fnTy (mkPi argTy returnTyFn) --TODO fix this
-    let returnTy = applyPi returnTyFn $ contype (vfree_ (Local ii))
+    let returnTy = applyPi returnTyFn $ conType (vfree_ (Local ii))
     let subbedBody = cSubst_ 0 (Free_ (Local ii)) e
     cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g) subbedBody returnTy
     --TODO better name?
 
 
 
-cType_ ii g Zero_      ty  =  unify ty (contype VNat_)
+cType_ ii g Zero_      ty  =  unify ty (conType VNat_)
 cType_ ii g (Succ_ k)  ty  = do
-  unify ty (contype VNat_)
-  cType_ ii g k (contype VNat_)
+  unify ty (conType VNat_)
+  cType_ ii g k (conType VNat_)
 
 cType_ ii g (Nil_ a) ty =
   do
       bVal <- fresh
-      unify ty (mkVec bVal $ contype VZero_)
+      unify ty (mkVec bVal $ conType VZero_)
       cType_ ii g a conStar
       aVal <- fresh
       aVal `evaluatesTo` cEval_ a (fst g, [])
@@ -181,7 +181,7 @@ cType_ ii g (Cons_ a n x xs) ty  =
   do  bVal <- fresh
       k <- (fresh :: ConstraintM ConType)
       --Trickery to get a Type_ to a ConType
-      let kVal = applyPi (TyFn (\val -> VSucc_ val) ) k
+      let kVal = applyPi (liftConTyFn (\val -> VSucc_ val) ) k
       unify ty (mkVec bVal kVal)
       cType_ ii g a conStar
 
@@ -189,7 +189,7 @@ cType_ ii g (Cons_ a n x xs) ty  =
       aVal `evaluatesTo` cEval_ a (fst g, [])
       unify aVal bVal
 
-      cType_ ii g n (contype VNat_)
+      cType_ ii g n (conType VNat_)
 
       --Make sure our numbers match
       nVal <- fresh

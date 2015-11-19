@@ -1,11 +1,11 @@
 module Constraint
   ( ConType
-  , ConTyFn(TyFn)
+  , ConTyFn
   , ConstraintM
   , Unifyable, unify, fresh
   , unknownIdent
   , evaluatesTo, vappIs
-  , contype
+  , conType, conTyFn, liftConTyFn
   , mkPi, applyPi
   , mkNat, mkVec, mkEq
   ) where
@@ -35,7 +35,7 @@ data ConType =
 --But instead determine from inference
 data ConTyFn =
   TyFnVar TypeVar
-  | TyFn (Common.Type_ -> Common.Type_)
+  | TyFn (Common.Type_ -> ConType)
 
 --Initially, the only constraint we express is that two types unify
 data Constraint =
@@ -106,7 +106,16 @@ mkVec = VecType
 mkEq :: ConType -> ConType -> ConType -> ConType
 mkEq = EqType
 
-contype = LitType
+
+conType :: Common.Type_ -> ConType
+conType = LitType
+
+conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
+conTyFn = TyFn
+
+liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
+liftConTyFn f = TyFn ( conType . f )
+
 
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
