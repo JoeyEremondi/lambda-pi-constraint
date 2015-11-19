@@ -1,10 +1,10 @@
 module Constraint
   ( ConType
-  , ConTyFn
+  , ConTyFn(TyFn)
   , ConstraintM
   , Unifyable, unify, fresh
   , unknownIdent
-  , evaluatesTo
+  , evaluatesTo, vappIs
   , contype
   , mkPi, applyPi
   , mkNat, mkVec, mkEq
@@ -35,13 +35,14 @@ data ConType =
 --But instead determine from inference
 data ConTyFn =
   TyFnVar TypeVar
-  | TyFn (Common.Type -> Common.Type)
+  | TyFn (Common.Type_ -> Common.Type_)
 
 --Initially, the only constraint we express is that two types unify
 data Constraint =
   ConstrUnify ConType ConType
   | TyFnUnify ConTyFn ConTyFn
   | ConstrEvaluatesTo ConType Common.Value_
+  | ConstrVapp (ConType, ConType) ConType
 
 
 class Unifyable a where
@@ -82,6 +83,10 @@ instance Unifyable ConTyFn where
 
 evaluatesTo :: ConType -> Common.Value_ -> ConstraintM ()
 evaluatesTo t v = addConstr $ ConstrEvaluatesTo t v
+
+vappIs :: (ConType, ConType) -> ConType -> ConstraintM ()
+vappIs (t1, t2) tresult =
+  addConstr $ ConstrVapp (t1, t2) tresult
 
 unknownIdent :: String -> ConstraintM a
 unknownIdent = error --TODO: something smarter here

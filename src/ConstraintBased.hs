@@ -77,10 +77,19 @@ iType_ ii g (e1 :$: e2)
 iType_ ii g Nat_                  =  return conStar
 iType_ ii g (NatElim_ m mz ms n)  =
   do  cType_ ii g m (contype $ VPi_ VNat_ (const VStar_))
-      let mVal  = cEval_ m (fst g, [])
-      cType_ ii g mz (contype $ mVal `vapp_` VZero_)
-      cType_ ii g ms (VPi_ VNat_ (\ k -> VPi_ (mVal `vapp_` k) (\ _ -> mVal `vapp_` VSucc_ k)))
-      cType_ ii g n VNat_
+
+      --Evaluate our param m
+      mVal <- fresh
+      mVal `evaluatesTo` cEval_ m (fst g, [])
+
+      mvalAppK <- fresh
+      (mVal, contype VZero_) `vappIs` mvalAppK
+      cType_ ii g mz mvalAppK
+      cType_ ii g ms $
+         (mkPi (contype VNat_)
+            $ TyFn (\ k -> VPi_ mvalAppK (\ _ -> mVal `vapp_` VSucc_ k)))
+      --Make sure the number param is a nat
+      cType_ ii g n (contype VNat_)
       let nVal = cEval_ n (fst g, [])
       return (mVal `vapp_` nVal)
 
