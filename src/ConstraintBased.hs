@@ -10,7 +10,7 @@ import Data.Char
 import Text.PrettyPrint.HughesPJ hiding (parens)
 import qualified Text.PrettyPrint.HughesPJ as PP
 
-import Text.ParserCombinators.Parsec hiding (parse, State)
+import Text.ParserCombinators.Parsec hiding (parse, State) 
 import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec.Token
 import Text.ParserCombinators.Parsec.Language

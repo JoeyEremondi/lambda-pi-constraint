@@ -1,4 +1,5 @@
 module Constraint
+{-
   ( ConType
   , ConTyFn
   , ConstraintM
@@ -8,14 +9,22 @@ module Constraint
   , conType, conTyFn, liftConTyFn, valToFn
   , mkPi, applyPi, applyVal
   , mkNat, mkVec, mkEq
-  ) where
+  ) -} where
 
 import qualified Common
 import Control.Monad.State
+import qualified Control.Monad.Trans.UnionFind as UF
+import Control.Monad.Writer
+import Control.Monad.Trans
 
 
 --We index type variables as unique integers
-newtype TypeVar = TypeVar {varIdent :: Int}
+newtype TypeVar = TypeVar (UF.Point TypeRepr)
+
+
+data TypeRepr =
+   BlankSlate
+   | TypeRepr ConType
 
 
 --Type we can unify over: either a type literal
@@ -54,23 +63,21 @@ class Unifyable a where
   --new variables and store constraints in our state
 
 
-data ConstraintState =
+{-data ConstraintState =
   ConstraintState
-  { nextTypeVar :: Int
+  { pointSupply :: UF.PointSupply TypeRepr
   , constraintsSoFar :: [Constraint]
-  }
+  }-}
 
 
-type ConstraintM a = State ConstraintState a
+type ConstraintM a = UF.UnionFindT TypeRepr (Writer [Constraint]) a
 
 --Operations in our monad:
 --Make fresh types, and unify types together
 freshVar :: ConstraintM TypeVar
 freshVar = do
-  currentState <- get
-  let nextInt = nextTypeVar currentState
-  put $ currentState {nextTypeVar = nextInt + 1}
-  return $  TypeVar nextInt
+  newPoint <- UF.fresh BlankSlate
+  return $  TypeVar newPoint
 
 
 instance Unifyable ConType where
@@ -128,9 +135,4 @@ valToFn fcon = TyFn (\v -> AppType ( conTyFn $ \f -> conType $ f `Common.vapp_` 
 
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
-addConstr c = do
-  --Add the new constraint to our state
-  oldState <- get
-  let oldConstrs = constraintsSoFar oldState
-  put $ oldState {constraintsSoFar = c : oldConstrs}
-  return ()
+addConstr c = lift $ tell [c]
