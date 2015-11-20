@@ -19,7 +19,7 @@ import Control.Monad.Trans
 
 
 --We index type variables as unique integers
-newtype TypeVar = TypeVar (UF.Point TypeRepr)
+newtype TypeVar = TypeVar {getUF :: UF.Point TypeRepr}
 
 
 data TypeRepr =
