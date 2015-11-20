@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor #-}
 module Solver where
 
 import Constraint
@@ -7,7 +8,39 @@ import qualified Control.Monad.Trans.UnionFind as UF
 import qualified Common
 import Control.Applicative ((<$>), (<*>))
 
-type UnifyM a = UF.UnionFindT TypeRepr (Either String) a
+
+
+--Custom Error monad with a special option saying
+--"Compotation failed, defer this unification"
+data SolverResult a =
+  Ok a
+  | Defer
+  | Err String
+  deriving (Eq, Ord, Show, Functor)
+
+instance Applicative SolverResult where
+  pure = Ok
+  fa <*> x =
+    case fa of
+      Defer -> Defer
+      Err s -> Err s
+      Ok f -> f <$> x
+
+instance Monad SolverResult where
+  a >>= f =
+    case a of
+      Defer -> Defer
+      Err s -> Err s
+      Ok a -> f a
+
+
+type UnifyM a = UF.UnionFindT TypeRepr (StateT Int SolverResult ) a
+
+freshInt :: UnifyM Int
+freshInt = do
+  i <- lift get
+  lift $ put (i+1)
+  return 1
 
 unifyTypes :: ConType -> ConType -> UnifyM ConType
 --unify two variables
@@ -65,17 +98,17 @@ unifyTypes (LitType v1) (LitType v2) =
 unifyTypes (PiType t1 f1) (PiType t2 f2) =
   PiType <$> unifyTypes t1 t2 <*> unifyFns f1 f2
 
-unifyTypes (AppType f1 t1) (AppType f2 t2) = do
+--Application: try evaluating the application
+unifyTypes (AppType f1 t1) t2 = do
   v1 <- toRealType t1
-  v2 <- toRealType t1
-  rf1 <- toRealFn f1
-  rf2 <- toRealFn f2
-  let leftVal = rf1 v1
-      rightVal = rf2 v2
-  case betaEqual leftVal rightVal of
-    True -> return leftVal
-    False ->
-      lift $ Left "ERROR: Non-equal terms mismatch"
+  fv1 <- toRealTyFn f1
+  unifyTypes (LitType $ fv1 v1) t2
+
+--Same as above, but flip args
+unifyTypes t2 (AppType f1 t1) = do
+  v1 <- toRealType t1
+  fv1 <- toRealTyFn f1
+  unifyTypes (LitType $ fv1 v1) t2
 
 unifyTypes (NatType t1) (NatType t2) = do
   NatType <$> unifyTypes t1 t2
@@ -88,14 +121,68 @@ unifyTypes (EqType t1 x1 y1) (EqType t2 x2 y2) = do
 
 unifyTypes _ _ = error "Unification failed!"
 
+--Check if we can look at a ConType and replace all of its
+--Type variables with their actual types, that we've resolved through unification
+--If not, then we use a Defer error in our monad to delay this check until later
 toRealType :: ConType -> UnifyM Common.Type_
 toRealType (LitType t) = return t
-toRealType (VarType v) =
-  toRealType <$> UF.descriptor (getUF v)
 
-toRealFn :: ConTyFn -> Maybe (Common.Type_ -> Common.Type_)
-toRealFn = _
+toRealType (VarType v) = do
+  repr <- UF.descriptor (getUF v)
+  case repr of
+    BlankSlate -> lift $ lift $ Defer
+    TypeRepr x -> toRealType x
 
-unifyFns = _
+toRealType (PiType t f) = Common.VPi_ <$> toRealType t <*> toRealTyFn f
 
-betaEqual = _
+toRealTyFn :: ConTyFn -> UnifyM (Common.Type_ -> Common.Type_)
+toRealTyFn (TyFn f) = mkFunctionReal f
+toRealTyFn (TyFnVar v) = do
+  repr <- UF.descriptor $ getUF v
+  case repr of
+    BlankSlate -> lift $ lift $ Defer
+    TypeFnRepr f -> mkFunctionReal f
+
+--Replace every type variable with its descriptor
+replaceTypeVars :: ConType -> UnifyM ConType
+replaceTypeVars = traverseConTypeM replace
+  where
+    replace t@(VarType v) = do
+      repr <- UF.descriptor $ getUF v
+      case repr of
+        BlankSlate -> return t
+        TypeRepr tr -> return tr
+
+
+unifyFns = error "TODO"
+
+betaEqual = error "TODO"
+
+--A generic, bottom-up monadic traversal for our ConType class
+--Apply a transformation bottom-up
+--Does NOT traverse into ConTyFns --TODO is this right?
+traverseConTypeM
+  :: (ConType -> UnifyM ConType)
+  -> ConType
+  -> UnifyM ConType
+traverseConTypeM f t = do
+  appliedToSub <- (traverse' t)
+  f appliedToSub
+  where
+    self = traverseConTypeM f
+    traverse' (PiType t1 tf) = PiType <$> self t1 <*> return tf
+    traverse' (AppType tf t1) = AppType <$> return tf <*> self t1
+    traverse' (NatType t) = NatType <$> self t
+    traverse' (VecType t1 t2) = VecType <$> self t1 <*> self t2
+    traverse' (EqType t1 t2 t3) = EqType <$> self t1 <*> self t2 <*> self t3
+    traverse' x = return x
+
+--TODO do we want a Value or a Term as a result of this?
+mkFunctionReal :: (Common.Type_ -> ConType) -> UnifyM (Common.Type_ -> Common.Type_)
+mkFunctionReal f = do
+  freeVar <- (Common.vfree_ . Common.Quote) <$> freshInt
+  let funBody = f freeVar
+  --Turn our result from a ConType into a Type_, if we can
+  valBody <- toRealType funBody
+  --Abstract over the free variable
+  return $ \v -> _subst freeVar v valBody

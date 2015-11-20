@@ -27,6 +27,7 @@ newtype TypeVar = TypeVar {getUF :: UF.Point TypeRepr}
 data TypeRepr =
    BlankSlate
    | TypeRepr ConType
+   | TypeFnRepr (Common.Type_ -> ConType)
 
 
 --Type we can unify over: either a type literal
@@ -40,6 +41,8 @@ data ConType =
   | NatType ConType --Our built-in data constructors
   | VecType ConType ConType
   | EqType ConType ConType ConType
+  | Param (UF.Point TypeRepr) --Used as a placeholder to deal with functions
+                  --The point is just used as a unique identifier
 
 
 
@@ -56,19 +59,6 @@ data Constraint =
   | ConstrEvaluatesTo ConType Common.Value_
   | ConstrVapp (ConType, ConType) ConType
 
---A generic, top-down monadic traversal for our ConType class
---Apply a transformation bottom-up
---Does NOT traverse into ConTyFns --TODO is this right?
-traverseConTypeM :: (Monad m) => (ConType -> m ConType) -> ConType -> m ConType
-traverseConTypeM f t = f =<< (traverse' t)
-  where
-    self = traverseConTypeM f
-    traverse' (PiType t1 tf) = PiType <$> self t1 <*> return tf
-    traverse' (AppType tf t1) = AppType <$> return tf <*> self t1
-    traverse' (NatType t) = NatType <$> self t
-    traverse' (VecType t1 t2) = VecType <$> self t1 <*> self t2
-    traverse' (EqType t1 t2 t3) = EqType <$> self t1 <*> self t2 <*> self t3
-    traverse' x = return x
 
 
 class Unifyable a where
