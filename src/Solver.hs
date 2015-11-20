@@ -93,7 +93,9 @@ unifyTypes t2 (VarType tvar) = do
       unifyTypes t1 t2
 
 unifyTypes (LitType v1) (LitType v2) =
-  error "TODO beta equality"
+  case (Common.quote0_ v1) == (Common.quote0_ v2) of
+    True -> return  $ LitType v1
+    False -> lift $ lift $ Err "Value mismatch!"
 
 unifyTypes (PiType t1 f1) (PiType t2 f2) =
   PiType <$> unifyTypes t1 t2 <*> unifyFns f1 f2
@@ -119,7 +121,7 @@ unifyTypes (VecType t1 n1) (VecType t2 n2) = do
 unifyTypes (EqType t1 x1 y1) (EqType t2 x2 y2) = do
   EqType <$> unifyTypes t1 t2 <*> unifyTypes x1 x2 <*> unifyTypes y1 y2
 
-unifyTypes _ _ = error "Unification failed!"
+unifyTypes _ _ = lift $ lift $ Err "Unification failed!"
 
 --Check if we can look at a ConType and replace all of its
 --Type variables with their actual types, that we've resolved through unification
@@ -144,10 +146,28 @@ toRealTyFn (TyFnVar v) = do
     TypeFnRepr f -> mkFunctionReal f
 
 
-unifyFns = error "TODO"
+--Unify functions:
+--In theory, we're just keeping track of variables, and shouldn't
+--Need to actually unify two functions
+--TODO is this right?
+unifyFns :: ConTyFn -> ConTyFn -> UnifyM ConTyFn
+unifyFns (TyFnVar v1) (TyFnVar v2) = do
+  repr1 <- UF.descriptor $ getUF v1
+  repr2 <- UF.descriptor $ getUF v2
 
-betaEqual = error "TODO"
-
+  case (repr1, repr2) of
+    (BlankSlate, BlankSlate) -> do
+      --Descriptor doesn't matter in this case
+      UF.union (getUF v1) (getUF v2)
+      return (TyFnVar v1)
+    (TypeFnRepr f1, BlankSlate) -> do
+      --Take descriptor from first one
+      UF.union (getUF v2) (getUF v1)
+      return $ TyFn f1
+    (BlankSlate, TypeFnRepr f2) -> do
+      --Take descriptor from first one
+      UF.union (getUF v1) (getUF v2)
+      return $ TyFn f2
 
 --TODO do we want a Value or a Term as a result of this?
 mkFunctionReal :: (Common.Type_ -> ConType) -> UnifyM (Common.Type_ -> Common.Type_)
