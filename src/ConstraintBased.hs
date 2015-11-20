@@ -76,7 +76,6 @@ iType_ ii g (NatElim_ m mz ms n)  =
   do  cType_ ii g m (conType $ VPi_ VNat_ (const VStar_))
 
       --evaluate $ our param m
-      mVal <- fresh
       mVal <- evaluate $ cEval_ m (fst g, [])
       let mFun = valToFn mVal
       let outerPiFun k = mkPi (mFun `applyPi` conType k  ) (conTyFn $ innerPiFun k)
@@ -89,7 +88,6 @@ iType_ ii g (NatElim_ m mz ms n)  =
       cType_ ii g n (conType VNat_)
 
       --We infer that our final expression has type (m n)
-      nVal <- fresh
       nVal <- evaluate $ cEval_ n (fst g, [])
       return $ mFun `applyPi` nVal
 
@@ -120,7 +118,6 @@ iType_ ii g (VecElim_ a m mn mc n vs) = error "TODO"
 
 iType_ i g (Eq_ a x y) =
   do  cType_ i g a conStar
-      aVal <- fresh
       aVal <- evaluate $ cEval_ a (fst g, [])
       cType_ i g x aVal
       cType_ i g y aVal
@@ -130,29 +127,27 @@ iType_ i g (EqElim_ a m mr x y eq) =
       --Our a value should be a type
       cType_ i g a conStar
       --evaluate $ our a value
-      aVal <- fresh
       aVal <- evaluate $ cEval_ a (fst g, [])
       cType_ i g m
         (mkPi aVal (conTyFn $ \ x ->
          mkPi aVal (conTyFn $ \ y ->
          mkPi ((conTyFn $ \av -> conType $ VEq_ av x y) `applyPi` aVal) (conTyFn $ \ _ -> conStar))))
       --evaluate $ our given m value
-      mVal <- fresh
       mVal <- evaluate $ cEval_ m (fst g, [])
       cType_ i g mr
         (mkPi aVal (conTyFn $ \ x ->
          ( foldl applyVal mVal $ map conType [x, x] )))
       cType_ i g x aVal
-      let xVal = cEval_ x (fst g, [])
+      xVal <- evaluate $ cEval_ x (fst g, [])
       cType_ i g y aVal
-      let yVal = cEval_ y (fst g, [])
+      yVal <- evaluate $  cEval_ y (fst g, [])
       --TODO make this nicer with a fold?
       let
         eqC =
-          (conTyFn $ \a -> (conTyFn $ \b -> (conTyFn $ \c -> conType (VEq_ a b c)) `applyPi` yVal) `applyPi` xVal )
-      cType_ i g eq (foldl applyVal aVal xVal yVal)
-      let eqVal = cEval_ eq (fst g, [])
-      return (foldl vapp_ mVal [xVal, yVal])
+          (conTyFn $ \a -> (conTyFn $ \b -> (conTyFn $ \c -> conType (VEq_ a b c)) `applyPi` yVal) `applyPi` xVal ) `applyPi` aVal
+      cType_ i g eq eqC
+      eqVal <- evaluate $ cEval_ eq (fst g, [])
+      return (foldl applyVal mVal [xVal, yVal])
 
 
 
@@ -186,7 +181,6 @@ cType_ ii g (Nil_ a) ty =
       bVal <- fresh
       unify ty (mkVec bVal $ conType VZero_)
       cType_ ii g a conStar
-      aVal <- fresh
       aVal <- evaluate $ cEval_ a (fst g, [])
       unify aVal bVal
 cType_ ii g (Cons_ a n x xs) ty  =
@@ -197,14 +191,12 @@ cType_ ii g (Cons_ a n x xs) ty  =
       unify ty (mkVec bVal kVal)
       cType_ ii g a conStar
 
-      aVal <- fresh
       aVal <- evaluate $ cEval_ a (fst g, [])
       unify aVal bVal
 
       cType_ ii g n (conType VNat_)
 
       --Make sure our numbers match
-      nVal <- fresh
       nVal <- evaluate $ cEval_ n (fst g, [])
       unify nVal kVal
 
@@ -221,7 +213,6 @@ cType_ ii g (Refl_ a z) ty =
       --Check that our type argument has kind *
       cType_ ii g a conStar
       --Get evaluation constraint for our type argument
-      aVal <- fresh
       aVal <- evaluate $ cEval_ a (fst g, [])
 
       --Check that our given type is the same as our inferred type --TODO is this right?
@@ -231,7 +222,6 @@ cType_ ii g (Refl_ a z) ty =
       cType_ ii g z aVal
 
       --evaluate $ the value that we're proving equality on
-      zVal <- fresh
       zVal <- evaluate $ cEval_ z (fst g, [])
 
       --Show constraint that the type parameters must match that type
