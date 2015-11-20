@@ -16,6 +16,8 @@ import Control.Monad.State
 import qualified Control.Monad.Trans.UnionFind as UF
 import Control.Monad.Writer
 import Control.Monad.Trans
+import Data.Data
+import Data.Typeable
 
 
 --We index type variables as unique integers
@@ -40,6 +42,7 @@ data ConType =
   | EqType ConType ConType ConType
 
 
+
 --Wrapper for functions on types, whose values we may not know
 --But instead determine from inference
 data ConTyFn =
@@ -52,6 +55,20 @@ data Constraint =
   | TyFnUnify ConTyFn ConTyFn
   | ConstrEvaluatesTo ConType Common.Value_
   | ConstrVapp (ConType, ConType) ConType
+
+--A generic, top-down monadic traversal for our ConType class
+--Apply a transformation bottom-up
+--Does NOT traverse into ConTyFns --TODO is this right?
+traverseConTypeM :: (Monad m) => (ConType -> m ConType) -> ConType -> m ConType
+traverseConTypeM f t = f =<< (traverse' t)
+  where
+    self = traverseConTypeM f
+    traverse' (PiType t1 tf) = PiType <$> self t1 <*> return tf
+    traverse' (AppType tf t1) = AppType <$> return tf <*> self t1
+    traverse' (NatType t) = NatType <$> self t
+    traverse' (VecType t1 t2) = VecType <$> self t1 <*> self t2
+    traverse' (EqType t1 t2 t3) = EqType <$> self t1 <*> self t2 <*> self t3
+    traverse' x = return x
 
 
 class Unifyable a where
