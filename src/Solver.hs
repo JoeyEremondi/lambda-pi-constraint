@@ -5,9 +5,11 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import qualified Control.Monad.Trans.UnionFind as UF
 import qualified Common
+import Control.Applicative ((<$>), (<*>))
 
+type UnifyM a = UF.UnionFindT TypeRepr (Either String) a
 
-unifyTypes :: ConType -> ConType -> ConstraintM ConType
+unifyTypes :: ConType -> ConType -> UnifyM ConType
 --unify two variables
 unifyTypes (VarType t1) (VarType t2) = do
   r1 <- UF.descriptor $ getUF t1
@@ -60,23 +62,36 @@ unifyTypes t2 (VarType tvar) = do
 unifyTypes (LitType v1) (LitType v2) =
   error "TODO beta equality"
 
-unifyTypes (PiType t1 f1) (PiType t2 f2) = do
-  piArg <- unifyTypes t1 t2
-  piBody <- unifyFns f1 f2
-  return $ PiType piArg piBody
+unifyTypes (PiType t1 f1) (PiType t2 f2) =
+  PiType <$> unifyTypes t1 t2 <*> unifyFns f1 f2
 
+unifyTypes (AppType f1 t1) (AppType f2 t2) = do
+  v1 <- toRealType t1
+  v2 <- toRealType t1
+  rf1 <- toRealFn f1
+  rf2 <- toRealFn f2
+  let leftVal = rf1 v1
+      rightVal = rf2 v2
+  case betaEqual leftVal rightVal of
+    True -> return leftVal
+    False ->
+      lift $ Left "ERROR: Non-equal terms mismatch"
 
-unifyTypes (AppType f1 t1) (AppType f2 t2) =
-  case (toRealType t1, toRealType t2, toRealFn f1, toRealFn f2) of
-    (Just v1, Just v2, Just rf1, Just rf2) ->
-      betaEqual (rf1 v1) (rf2 v2)
-    _ ->
-      error "Can't apply function still containing variables"
+unifyTypes (NatType t1) (NatType t2) = do
+  NatType <$> unifyTypes t1 t2
+
+unifyTypes (VecType t1 n1) (VecType t2 n2) = do
+  VecType <$> unifyTypes t1 t2 <*> unifyTypes n1 n2
+
+unifyTypes (EqType t1 x1 y1) (EqType t2 x2 y2) = do
+  EqType <$> unifyTypes t1 t2 <*> unifyTypes x1 x2 <*> unifyTypes y1 y2
 
 unifyTypes _ _ = error "Unification failed!"
 
-toRealType :: ConType -> Maybe Common.Type_
-toRealType = _
+toRealType :: ConType -> UnifyM Common.Type_
+toRealType (LitType t) = return t
+toRealType (VarType v) =
+  toRealType <$> UF.descriptor (getUF v)
 
 toRealFn :: ConTyFn -> Maybe (Common.Type_ -> Common.Type_)
 toRealFn = _
