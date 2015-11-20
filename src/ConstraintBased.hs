@@ -95,26 +95,26 @@ iType_ ii g (Vec_ a n) =
   do  cType_ ii g a  conStar
       cType_ ii g n  (conType VNat_)
       return conStar
-iType_ ii g (VecElim_ a m mn mc n vs) = error "TODO"
-{-
-  do  cType_ ii g a VStar_
-      let aVal = cEval_ a (fst g, [])
+iType_ ii g (VecElim_ a m mn mc n vs) =
+
+  do  cType_ ii g a conStar
+      aVal <- evaluate $  cEval_ a (fst g, [])
       cType_ ii g m
-        (  VPi_ VNat_ (\n -> VPi_ (VVec_ aVal n) (\ _ -> VStar_)))
-      let mVal = cEval_ m (fst g, [])
-      cType_ ii g mn (foldl vapp_ mVal [VZero_, VNil_ aVal])
+        (  mkPi (conType VNat_) (conTyFn $ \n -> mkPi (applyPi (conTyFn $ \av -> conType $ VVec_ av n) aVal) (conTyFn $ \ _ -> conStar)))
+      mVal <- evaluate $ cEval_ m (fst g, [])
+      cType_ ii g mn (foldl applyVal mVal [conType VZero_, (liftConTyFn $ \av -> VNil_ av ) `applyPi` aVal])
       cType_ ii g mc
-        (  VPi_ VNat_ (\ n ->
-           VPi_ aVal (\ y ->
-           VPi_ (VVec_ aVal n) (\ ys ->
-           VPi_ (foldl vapp_ mVal [n, ys]) (\ _ ->
-           (foldl vapp_ mVal [VSucc_ n, VCons_ aVal n y ys]))))))
-      cType_ ii g n VNat_
-      let nVal = cEval_ n (fst g, [])
-      cType_ ii g vs (VVec_ aVal nVal)
-      let vsVal = cEval_ vs (fst g, [])
-      return (foldl vapp_ mVal [nVal, vsVal])
-      -}
+        (  mkPi (conType VNat_) (conTyFn $ \ n ->
+           mkPi aVal (conTyFn $ \ y ->
+           mkPi ( (liftConTyFn $ \av -> VVec_ av n) `applyPi` aVal) (conTyFn $ \ ys ->
+           mkPi (foldl applyVal mVal $ map conType [n, ys]) (conTyFn $ \ _ ->
+           (foldl applyVal mVal [conType (VSucc_ n), (liftConTyFn $ \av -> VCons_ av n y ys) `applyPi` aVal]))))))
+      cType_ ii g n $ conType VNat_
+      nVal <- evaluate $  cEval_ n (fst g, [])
+      cType_ ii g vs ((conTyFn $ \av -> (liftConTyFn $ \nv -> VVec_ av nv ) `applyPi` aVal) `applyPi` nVal)
+      vsVal <- evaluate $ cEval_ vs (fst g, [])
+      return (foldl applyVal mVal [nVal, vsVal])
+
 
 iType_ i g (Eq_ a x y) =
   do  cType_ i g a conStar
