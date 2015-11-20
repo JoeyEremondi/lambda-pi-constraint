@@ -169,6 +169,21 @@ unifyFns (TyFnVar v1) (TyFnVar v2) = do
       UF.union (getUF v1) (getUF v2)
       return $ TyFn f2
 
+unifyFns (TyFnVar v1) (TyFn f2) = do
+  dummyPoint <- UF.fresh $ TypeFnRepr f2
+  --Set repr of variable to the function we're unifying with
+  --TODO what if it is not blank?
+  UF.union (getUF v1) dummyPoint
+  return $ TyFn f2
+
+--Same as above but with arguments flipped
+unifyFns (TyFn f2) (TyFnVar v1) = do
+  dummyPoint <- UF.fresh $ TypeFnRepr f2
+  --Set repr of variable to the function we're unifying with
+  --TODO what if it is not blank?
+  UF.union (getUF v1) dummyPoint
+  return $ TyFn f2
+
 --TODO do we want a Value or a Term as a result of this?
 mkFunctionReal :: (Common.Type_ -> ConType) -> UnifyM (Common.Type_ -> Common.Type_)
 mkFunctionReal f = do
