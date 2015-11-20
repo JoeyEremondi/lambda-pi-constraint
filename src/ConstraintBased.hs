@@ -81,23 +81,27 @@ iType_ ii g (NatElim_ m mz ms n)  =
       --Evaluate our param m
       mVal <- fresh
       mVal `evaluatesTo` cEval_ m (fst g, [])
-
-      mvalAppK <- fresh
-      (mVal, conType VZero_) `vappIs` mvalAppK
-      cType_ ii g mz mvalAppK
-      cType_ ii g ms $
-         (mkPi (conType VNat_)
-            $ conTyFn (\ k -> VPi_ mvalAppK (\ _ -> mVal `vapp_` VSucc_ k)))
+      let mFun = valToFn mVal
+      let outerPiFun k = mkPi (mFun `applyPi` conType k  ) (conTyFn $ innerPiFun k)
+          innerPiFun k _ = mFun `applyPi` (conType $ VSucc_ k)
+      --Check that mz has type (m 0)
+      cType_ ii g mz (applyPi mFun (conType VZero_))
+      --Check that ms has type ( (k: N) -> m k -> m (S k) )
+      cType_ ii g ms $ mkPi (conType VNat_) (conTyFn outerPiFun)
       --Make sure the number param is a nat
       cType_ ii g n (conType VNat_)
-      let nVal = cEval_ n (fst g, [])
-      return (mVal `vapp_` nVal)
+
+      --We infer that our final expression has type (m n)
+      nVal <- fresh
+      nVal `evaluatesTo` cEval_ n (fst g, [])
+      return $ mFun `applyPi` nVal
 
 iType_ ii g (Vec_ a n) =
   do  cType_ ii g a  conStar
       cType_ ii g n  (conType VNat_)
       return conStar
-iType_ ii g (VecElim_ a m mn mc n vs) =
+iType_ ii g (VecElim_ a m mn mc n vs) = error "TODO"
+{-
   do  cType_ ii g a VStar_
       let aVal = cEval_ a (fst g, [])
       cType_ ii g m
@@ -115,6 +119,7 @@ iType_ ii g (VecElim_ a m mn mc n vs) =
       cType_ ii g vs (VVec_ aVal nVal)
       let vsVal = cEval_ vs (fst g, [])
       return (foldl vapp_ mVal [nVal, vsVal])
+      -}
 
 iType_ i g (Eq_ a x y) =
   do  cType_ i g a conStar
@@ -123,7 +128,7 @@ iType_ i g (Eq_ a x y) =
       cType_ i g x aVal
       cType_ i g y aVal
       return conStar
-iType_ i g (EqElim_ a m mr x y eq) =
+iType_ i g (EqElim_ a m mr x y eq) = error "TODO" {-
   do  cType_ i g a conStar
       let aVal = cEval_ a (fst g, [])
       cType_ i g m
@@ -140,7 +145,7 @@ iType_ i g (EqElim_ a m mr x y eq) =
       let yVal = cEval_ y (fst g, [])
       cType_ i g eq (VEq_ aVal xVal yVal)
       let eqVal = cEval_ eq (fst g, [])
-      return (foldl vapp_ mVal [xVal, yVal])
+      return (foldl vapp_ mVal [xVal, yVal]) -}
 
 
 

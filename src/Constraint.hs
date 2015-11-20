@@ -117,7 +117,7 @@ liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
 liftConTyFn f = TyFn ( conType . f )
 
 valToFn :: ConType -> ConTyFn
-valToFn fcon = TyFn (\v -> AppType ( conTyFn $ \f -> conType $ f `Common.vapp_` v) (conType v) )
+valToFn fcon = TyFn (\v -> AppType ( conTyFn $ \f -> conType $ f `Common.vapp_` v) fcon )
 
 
 --Helpful utility function
