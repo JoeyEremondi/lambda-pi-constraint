@@ -4,8 +4,8 @@ module Constraint
   , ConstraintM
   , Unifyable, unify, fresh
   , unknownIdent
-  , evaluatesTo, vappIs
-  , conType, conTyFn, liftConTyFn
+  , evaluatesTo
+  , conType, conTyFn, liftConTyFn, valToFn
   , mkPi, applyPi
   , mkNat, mkVec, mkEq
   ) where
@@ -115,6 +115,9 @@ conTyFn = TyFn
 
 liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
 liftConTyFn f = TyFn ( conType . f )
+
+valToFn :: ConType -> ConTyFn
+valToFn fcon = TyFn (\v -> AppType ( conTyFn $ \f -> conType $ f `Common.vapp_` v) (conType v) )
 
 
 --Helpful utility function
