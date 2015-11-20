@@ -4,9 +4,9 @@ module Constraint
   , ConstraintM
   , Unifyable, unify, fresh
   , unknownIdent
-  , evaluatesTo
+  , evaluate
   , conType, conTyFn, liftConTyFn, valToFn
-  , mkPi, applyPi
+  , mkPi, applyPi, applyVal
   , mkNat, mkVec, mkEq
   ) where
 
@@ -81,8 +81,11 @@ instance Unifyable ConTyFn where
   unify t1 t2 = addConstr (TyFnUnify t1 t2)
   fresh = TyFnVar `fmap` freshVar
 
-evaluatesTo :: ConType -> Common.Value_ -> ConstraintM ()
-evaluatesTo t v = addConstr $ ConstrEvaluatesTo t v
+evaluate :: Common.Value_ -> ConstraintM ConType
+evaluate v = do
+  t <- fresh
+  addConstr $ ConstrEvaluatesTo t v
+  return t
 
 vappIs :: (ConType, ConType) -> ConType -> ConstraintM ()
 vappIs (t1, t2) tresult =
@@ -96,6 +99,9 @@ mkPi = PiType
 
 applyPi :: ConTyFn -> ConType -> ConType
 applyPi = AppType
+
+applyVal :: ConType -> ConType -> ConType
+applyVal f x = (valToFn f) `applyPi` x
 
 mkNat :: ConType -> ConType
 mkNat = NatType

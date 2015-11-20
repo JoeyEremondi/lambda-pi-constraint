@@ -39,16 +39,14 @@ iType0_ = iType_ 0
 iType_ :: Int -> (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
 iType_ ii g (Ann_ e tyt )
   =     do  cType_  ii g tyt conStar
-            ty <- fresh
-            ty `evaluatesTo` cEval_ tyt (fst g, [])
+            ty <- evaluate $ cEval_ tyt (fst g, [])
             cType_ ii g e ty
             return ty
 iType_ ii g Star_
    =  return conStar
 iType_ ii g (Pi_ tyt tyt')
    =  do  cType_ ii g tyt conStar
-          ty <- fresh
-          ty `evaluatesTo` cEval_ tyt (fst g, [])
+          ty <- evaluate $ cEval_ tyt (fst g, [])
           cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, ty) : g))) g)
                     (cSubst_ 0 (Free_ (Local ii)) tyt') conStar
           return conStar
@@ -67,8 +65,7 @@ iType_ ii g (e1 :$: e2)
             cType_ ii g e2 piArg
 
             --Get a type for the evaluation of the argument
-            argVal <- fresh
-            argVal `evaluatesTo` (cEval_ e2 (fst g, []))
+            argVal <- evaluate $ (cEval_ e2 (fst g, []))
 
             --Our resulting type is the application of our arg type into the
             --body of the pi type
@@ -78,9 +75,9 @@ iType_ ii g Nat_                  =  return conStar
 iType_ ii g (NatElim_ m mz ms n)  =
   do  cType_ ii g m (conType $ VPi_ VNat_ (const VStar_))
 
-      --Evaluate our param m
+      --evaluate $ our param m
       mVal <- fresh
-      mVal `evaluatesTo` cEval_ m (fst g, [])
+      mVal <- evaluate $ cEval_ m (fst g, [])
       let mFun = valToFn mVal
       let outerPiFun k = mkPi (mFun `applyPi` conType k  ) (conTyFn $ innerPiFun k)
           innerPiFun k _ = mFun `applyPi` (conType $ VSucc_ k)
@@ -93,7 +90,7 @@ iType_ ii g (NatElim_ m mz ms n)  =
 
       --We infer that our final expression has type (m n)
       nVal <- fresh
-      nVal `evaluatesTo` cEval_ n (fst g, [])
+      nVal <- evaluate $ cEval_ n (fst g, [])
       return $ mFun `applyPi` nVal
 
 iType_ ii g (Vec_ a n) =
@@ -124,28 +121,38 @@ iType_ ii g (VecElim_ a m mn mc n vs) = error "TODO"
 iType_ i g (Eq_ a x y) =
   do  cType_ i g a conStar
       aVal <- fresh
-      aVal `evaluatesTo` cEval_ a (fst g, [])
+      aVal <- evaluate $ cEval_ a (fst g, [])
       cType_ i g x aVal
       cType_ i g y aVal
       return conStar
-iType_ i g (EqElim_ a m mr x y eq) = error "TODO" {-
-  do  cType_ i g a conStar
-      let aVal = cEval_ a (fst g, [])
+iType_ i g (EqElim_ a m mr x y eq) =
+  do
+      --Our a value should be a type
+      cType_ i g a conStar
+      --evaluate $ our a value
+      aVal <- fresh
+      aVal <- evaluate $ cEval_ a (fst g, [])
       cType_ i g m
-        (VPi_ aVal (\ x ->
-         VPi_ aVal (\ y ->
-         VPi_ (VEq_ aVal x y) (\ _ -> VStar_))))
-      let mVal = cEval_ m (fst g, [])
+        (mkPi aVal (conTyFn $ \ x ->
+         mkPi aVal (conTyFn $ \ y ->
+         mkPi ((conTyFn $ \av -> conType $ VEq_ av x y) `applyPi` aVal) (conTyFn $ \ _ -> conStar))))
+      --evaluate $ our given m value
+      mVal <- fresh
+      mVal <- evaluate $ cEval_ m (fst g, [])
       cType_ i g mr
-        (VPi_ aVal (\ x ->
-         foldl vapp_ mVal [x, x]))
+        (mkPi aVal (conTyFn $ \ x ->
+         ( foldl applyVal mVal $ map conType [x, x] )))
       cType_ i g x aVal
       let xVal = cEval_ x (fst g, [])
       cType_ i g y aVal
       let yVal = cEval_ y (fst g, [])
-      cType_ i g eq (VEq_ aVal xVal yVal)
+      --TODO make this nicer with a fold?
+      let
+        eqC =
+          (conTyFn $ \a -> (conTyFn $ \b -> (conTyFn $ \c -> conType (VEq_ a b c)) `applyPi` yVal) `applyPi` xVal )
+      cType_ i g eq (foldl applyVal aVal xVal yVal)
       let eqVal = cEval_ eq (fst g, [])
-      return (foldl vapp_ mVal [xVal, yVal]) -}
+      return (foldl vapp_ mVal [xVal, yVal])
 
 
 
@@ -153,9 +160,9 @@ cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> ConType -> Constrai
 cType_ ii g (Inf_ e) v
   =     do  tyInferred <- iType_ ii g e
             --Ensure that the annotation type and our inferred type unify
-            --We have to evaluate our normal form
-            tyAnnot <- fresh
-            tyAnnot `evaluatesTo` cEval_ (Inf_ e) (fst g, []) --TODO is this right?
+            --We have to evaluate $ our normal form
+            tyAnnot <- evaluate $ cEval_ (Inf_ e) (fst g, []) --TODO is this right?
+            unify tyAnnot tyInferred
 
 
 cType_ ii g (Lam_ e) fnTy = do
@@ -180,7 +187,7 @@ cType_ ii g (Nil_ a) ty =
       unify ty (mkVec bVal $ conType VZero_)
       cType_ ii g a conStar
       aVal <- fresh
-      aVal `evaluatesTo` cEval_ a (fst g, [])
+      aVal <- evaluate $ cEval_ a (fst g, [])
       unify aVal bVal
 cType_ ii g (Cons_ a n x xs) ty  =
   do  bVal <- fresh
@@ -191,14 +198,14 @@ cType_ ii g (Cons_ a n x xs) ty  =
       cType_ ii g a conStar
 
       aVal <- fresh
-      aVal `evaluatesTo` cEval_ a (fst g, [])
+      aVal <- evaluate $ cEval_ a (fst g, [])
       unify aVal bVal
 
       cType_ ii g n (conType VNat_)
 
       --Make sure our numbers match
       nVal <- fresh
-      nVal `evaluatesTo` cEval_ n (fst g, [])
+      nVal <- evaluate $ cEval_ n (fst g, [])
       unify nVal kVal
 
       --Make sure our new head has the right list type
@@ -215,7 +222,7 @@ cType_ ii g (Refl_ a z) ty =
       cType_ ii g a conStar
       --Get evaluation constraint for our type argument
       aVal <- fresh
-      aVal `evaluatesTo` cEval_ a (fst g, [])
+      aVal <- evaluate $ cEval_ a (fst g, [])
 
       --Check that our given type is the same as our inferred type --TODO is this right?
       unify aVal bVal
@@ -223,9 +230,9 @@ cType_ ii g (Refl_ a z) ty =
       --Check that the value we're proving on has type A
       cType_ ii g z aVal
 
-      --Evaluate the value that we're proving equality on
+      --evaluate $ the value that we're proving equality on
       zVal <- fresh
-      zVal `evaluatesTo` cEval_ z (fst g, [])
+      zVal <- evaluate $ cEval_ z (fst g, [])
 
       --Show constraint that the type parameters must match that type
       unify zVal xVal
