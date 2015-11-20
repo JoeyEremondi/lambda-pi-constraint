@@ -143,46 +143,21 @@ toRealTyFn (TyFnVar v) = do
     BlankSlate -> lift $ lift $ Defer
     TypeFnRepr f -> mkFunctionReal f
 
---Replace every type variable with its descriptor
-replaceTypeVars :: ConType -> UnifyM ConType
-replaceTypeVars = traverseConTypeM replace
-  where
-    replace t@(VarType v) = do
-      repr <- UF.descriptor $ getUF v
-      case repr of
-        BlankSlate -> return t
-        TypeRepr tr -> return tr
-
 
 unifyFns = error "TODO"
 
 betaEqual = error "TODO"
 
---A generic, bottom-up monadic traversal for our ConType class
---Apply a transformation bottom-up
---Does NOT traverse into ConTyFns --TODO is this right?
-traverseConTypeM
-  :: (ConType -> UnifyM ConType)
-  -> ConType
-  -> UnifyM ConType
-traverseConTypeM f t = do
-  appliedToSub <- (traverse' t)
-  f appliedToSub
-  where
-    self = traverseConTypeM f
-    traverse' (PiType t1 tf) = PiType <$> self t1 <*> return tf
-    traverse' (AppType tf t1) = AppType <$> return tf <*> self t1
-    traverse' (NatType t) = NatType <$> self t
-    traverse' (VecType t1 t2) = VecType <$> self t1 <*> self t2
-    traverse' (EqType t1 t2 t3) = EqType <$> self t1 <*> self t2 <*> self t3
-    traverse' x = return x
 
 --TODO do we want a Value or a Term as a result of this?
 mkFunctionReal :: (Common.Type_ -> ConType) -> UnifyM (Common.Type_ -> Common.Type_)
 mkFunctionReal f = do
-  freeVar <- (Common.vfree_ . Common.Quote) <$> freshInt
+  freeName <- Common.Quote <$> freshInt
+  let freeVar = Common.vfree_ freeName
   let funBody = f freeVar
   --Turn our result from a ConType into a Type_, if we can
   valBody <- toRealType funBody
+  --Quote that body back into a term
+  let termBody = Common.quote0_ valBody
   --Abstract over the free variable
-  return $ \v -> _subst freeVar v valBody
+  return $ \v -> Common.cEval_ termBody ([(freeName, v)], [])
