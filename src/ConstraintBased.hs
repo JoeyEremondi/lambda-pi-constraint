@@ -35,7 +35,7 @@ checker (nameEnv, context) term = do
     Solver.Err s -> error s
     Solver.Defer -> error "Should never have defer at end!"
     Solver.Ok t -> return t
- 
+
 conStar = conType VStar_
 
 type ConstrContext = [(Name, ConType)]
@@ -164,13 +164,12 @@ iType_ i g (EqElim_ a m mr x y eq) =
 
 
 cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> ConType -> ConstraintM ()
-cType_ ii g (Inf_ e) v
+cType_ ii g (Inf_ e) tyAnnot
   =
     do
       tyInferred <- iType_ ii g e
       --Ensure that the annotation type and our inferred type unify
       --We have to evaluate $ our normal form
-      tyAnnot <- evaluate $ cEval_ (Inf_ e) (fst g, []) --TODO is this right?
       unify tyAnnot tyInferred
 
 
