@@ -16,6 +16,7 @@ import Control.Monad.State
 import qualified Control.Monad.Trans.UnionFind as UF
 import Control.Monad.Writer
 import Control.Monad.Trans
+import Control.Monad.Identity (Identity)
 import Data.Data
 import Data.Typeable
 
@@ -57,7 +58,6 @@ data Constraint =
   ConstrUnify ConType ConType
   | TyFnUnify ConTyFn ConTyFn
   | ConstrEvaluatesTo ConType Common.Value_
-  | ConstrVapp (ConType, ConType) ConType
 
 
 
@@ -77,13 +77,15 @@ class Unifyable a where
   }-}
 
 
-type ConstraintM a = UF.UnionFindT TypeRepr (Writer [Constraint]) a
+type UFM = UF.UnionFindT TypeRepr Identity
+
+type ConstraintM a = WriterT [Constraint] UFM a
 
 --Operations in our monad:
 --Make fresh types, and unify types together
 freshVar :: ConstraintM TypeVar
 freshVar = do
-  newPoint <- UF.fresh BlankSlate
+  newPoint <- lift $ UF.fresh BlankSlate
   return $  TypeVar newPoint
 
 
@@ -101,9 +103,6 @@ evaluate v = do
   addConstr $ ConstrEvaluatesTo t v
   return t
 
-vappIs :: (ConType, ConType) -> ConType -> ConstraintM ()
-vappIs (t1, t2) tresult =
-  addConstr $ ConstrVapp (t1, t2) tresult
 
 unknownIdent :: String -> ConstraintM a
 unknownIdent = error --TODO: something smarter here
@@ -142,4 +141,4 @@ valToFn fcon = TyFn (\v -> AppType ( conTyFn $ \f -> conType $ f `Common.vapp_` 
 
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
-addConstr c = lift $ tell [c]
+addConstr c = tell [c]

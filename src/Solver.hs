@@ -33,6 +33,10 @@ instance Monad SolverResult where
       Err s -> Err s
       Ok a -> f a
 
+newtype SolverResultT m a = SolverResultT {runSolverResultT :: m (SolverResult a)}
+
+instance MonadTrans SolverResultT where
+  lift x = SolverResultT (liftM Ok x)
 
 type UnifyM a = UF.UnionFindT TypeRepr (StateT Int SolverResult ) a
 
