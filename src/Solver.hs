@@ -80,6 +80,9 @@ setRepr v rep = lift $ lift $ do
 err :: String -> UnifyM a
 err msg = SolverResultT $ return $ Err msg
 
+defer :: UnifyM a
+defer = SolverResultT $ return Defer
+
 
 unifyTypes :: ConType -> ConType -> UnifyM ConType
 --unify two variables
@@ -131,7 +134,7 @@ unifyTypes t2 (VarType tvar) = do
 unifyTypes (LitType v1) (LitType v2) =
   case (Common.quote0_ v1) == (Common.quote0_ v2) of
     True -> return  $ LitType v1
-    False -> Err "Value mismatch!"
+    False -> err "Value mismatch!"
 
 unifyTypes (PiType t1 f1) (PiType t2 f2) =
   PiType <$> unifyTypes t1 t2 <*> unifyFns f1 f2
@@ -157,7 +160,7 @@ unifyTypes (VecType t1 n1) (VecType t2 n2) = do
 unifyTypes (EqType t1 x1 y1) (EqType t2 x2 y2) = do
   EqType <$> unifyTypes t1 t2 <*> unifyTypes x1 x2 <*> unifyTypes y1 y2
 
-unifyTypes _ _ = lift $ lift $ Err "Unification failed!"
+unifyTypes _ _ = err "Unification failed!"
 
 --Check if we can look at a ConType and replace all of its
 --Type variables with their actual types, that we've resolved through unification
@@ -166,9 +169,9 @@ toRealType :: ConType -> UnifyM Common.Type_
 toRealType (LitType t) = return t
 
 toRealType (VarType v) = do
-  repr <- UF.descriptor (getUF v)
+  repr <- getRepr v
   case repr of
-    BlankSlate -> lift $ lift $ Defer
+    BlankSlate -> defer
     TypeRepr x -> toRealType x
 
 toRealType (PiType t f) = Common.VPi_ <$> toRealType t <*> toRealTyFn f
@@ -176,9 +179,9 @@ toRealType (PiType t f) = Common.VPi_ <$> toRealType t <*> toRealTyFn f
 toRealTyFn :: ConTyFn -> UnifyM (Common.Type_ -> Common.Type_)
 toRealTyFn (TyFn f) = mkFunctionReal f
 toRealTyFn (TyFnVar v) = do
-  repr <- UF.descriptor $ getUF v
+  repr <- getRepr v
   case repr of
-    BlankSlate -> lift $ lift $ Defer
+    BlankSlate -> defer
     TypeFnRepr f -> mkFunctionReal f
 
 
@@ -188,36 +191,29 @@ toRealTyFn (TyFnVar v) = do
 --TODO is this right?
 unifyFns :: ConTyFn -> ConTyFn -> UnifyM ConTyFn
 unifyFns (TyFnVar v1) (TyFnVar v2) = do
-  repr1 <- UF.descriptor $ getUF v1
-  repr2 <- UF.descriptor $ getUF v2
-
+  repr1 <- getRepr v1
+  repr2 <- getRepr v2
+  unifyVars v1 v2
   case (repr1, repr2) of
     (BlankSlate, BlankSlate) -> do
       --Descriptor doesn't matter in this case
-      UF.union (getUF v1) (getUF v2)
       return (TyFnVar v1)
     (TypeFnRepr f1, BlankSlate) -> do
       --Take descriptor from first one
-      UF.union (getUF v2) (getUF v1)
+      setRepr v2 (TypeFnRepr f1)
       return $ TyFn f1
     (BlankSlate, TypeFnRepr f2) -> do
-      --Take descriptor from first one
-      UF.union (getUF v1) (getUF v2)
+      --Take descriptor from second one
+      setRepr v1 (TypeFnRepr f2)
       return $ TyFn f2
 
 unifyFns (TyFnVar v1) (TyFn f2) = do
-  dummyPoint <- UF.fresh $ TypeFnRepr f2
-  --Set repr of variable to the function we're unifying with
-  --TODO what if it is not blank?
-  UF.union (getUF v1) dummyPoint
+  setRepr v1 $ TypeFnRepr f2
   return $ TyFn f2
 
 --Same as above but with arguments flipped
 unifyFns (TyFn f2) (TyFnVar v1) = do
-  dummyPoint <- UF.fresh $ TypeFnRepr f2
-  --Set repr of variable to the function we're unifying with
-  --TODO what if it is not blank?
-  UF.union (getUF v1) dummyPoint
+  setRepr v1 $ TypeFnRepr f2
   return $ TyFn f2
 
 --TODO do we want a Value or a Term as a result of this?
