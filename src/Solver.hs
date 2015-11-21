@@ -6,7 +6,9 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import qualified Control.Monad.Trans.UnionFind as UF
 import qualified Common
+import Control.Monad.Writer
 import Control.Applicative ((<$>), (<*>))
+import Control.Monad (forM)
 
 
 
@@ -228,3 +230,24 @@ mkFunctionReal f = do
   let termBody = Common.quote0_ valBody
   --Abstract over the free variable
   return $ \v -> Common.cEval_ termBody ([(freeName, v)], [])
+
+solveConstraint :: Constraint -> UnifyM ()
+solveConstraint (ConstrUnify t1 t2) =  unifyTypes t1 t2 >>=  \_ -> return ()
+solveConstraint (TyFnUnify f1 f2) = unifyFns f1 f2 >>=  \_ -> return ()
+solveConstraint (ConstrEvaluatesTo ct v) = unifyTypes ct (LitType v) >>=  \_ -> return () --TODO control eval?
+
+--Loop through our constraints
+solveConstraintList [] = return ()
+solveConstraintList (c:rest) = do
+  result <-lift $ runSolverResultT $ solveConstraint c
+  case result of
+    --If defer: do this constraint later
+    --TODO better solution for this?
+    Defer -> solveConstraintList (rest ++ [c])
+    Err s -> err s
+    Ok _ -> solveConstraintList rest
+
+solveConstraints :: (ConstraintM ()) -> UnifyM ()
+solveConstraints cm = do
+  constraintList <- lift $ lift $ execWriterT cm
+  solveConstraintList constraintList
