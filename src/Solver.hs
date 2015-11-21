@@ -143,6 +143,16 @@ unifyTypes (LitType v1) (LitType v2) =
 
 unifyTypes (PiType t1 f1) (PiType t2 f2) =
   PiType <$> unifyTypes t1 t2 <*> unifyFns f1 f2
+--We can unify variable pi with literal pi
+unifyTypes (PiType t1 f1) (LitType (Common.VPi_ treal freal)) = do
+  rep1 <- unifyTypes t1 (LitType treal)
+  rep2 <- unifyFns f1 (liftConTyFn freal)
+  return $ PiType rep1 rep2
+--Same as above but reversed
+unifyTypes (LitType (Common.VPi_ treal freal)) (PiType t1 f1)  = do
+  rep1 <- unifyTypes t1 (LitType treal)
+  rep2 <- unifyFns f1 (liftConTyFn freal)
+  return $ PiType rep1 rep2
 
 --Application: try evaluating the application
 unifyTypes (AppType f1 t1) t2 = do
