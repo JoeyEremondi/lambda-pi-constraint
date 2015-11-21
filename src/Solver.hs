@@ -7,6 +7,7 @@ import qualified Data.Map as Map
 import qualified Control.Monad.Trans.UnionFind as UF
 import qualified Common
 import Control.Monad.Writer
+import Control.Monad.Reader
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forM)
 import Control.Monad.Identity (runIdentity)
@@ -89,14 +90,14 @@ defer = SolverResultT $ return Defer
 
 unifyTypes :: ConType -> ConType -> UnifyM ConType
 --unify two variables
-unifyTypes (VarType t1) (VarType t2) = do
+unifyTypes (VarType t1 i1) (VarType t2 i2) = do
   r1 <- getRepr t1
   r2 <- getRepr t2
   --Union the identifiers
   unifyVars t1 t2
   case (r1, r2) of
     (BlankSlate, BlankSlate) ->
-      return (VarType t2)
+      return (VarType t2 i2)
     pair -> do
       newRepr <-
         case pair of
@@ -114,7 +115,7 @@ unifyTypes (VarType t1) (VarType t2) = do
 --Unify a variable with something: look at its descriptor
 --If it's blank, then set its descriptor to whatever we union with
 --Otherwise, unify our descriptor with the whatever type we see
-unifyTypes (VarType tvar) t2 = do
+unifyTypes (VarType tvar _) t2 = do
   r1 <- getRepr tvar
   case r1 of
     BlankSlate -> do
@@ -125,7 +126,7 @@ unifyTypes (VarType tvar) t2 = do
       unifyTypes t1 t2
 
 --Same as above, but reversed --TODO just recurse?
-unifyTypes t2 (VarType tvar) = do
+unifyTypes t2 (VarType tvar _) = do
   r1 <- getRepr tvar
   case r1 of
     BlankSlate -> do
@@ -137,7 +138,7 @@ unifyTypes t2 (VarType tvar) = do
 unifyTypes (LitType v1) (LitType v2) =
   case (Common.quote0_ v1) == (Common.quote0_ v2) of
     True -> return  $ LitType v1
-    False -> err "Value mismatch!"
+    False -> err $ "The values " ++ show v1 ++ " and " ++ show v2 ++ " do not evaluate to the same normal form"
 
 unifyTypes (PiType t1 f1) (PiType t2 f2) =
   PiType <$> unifyTypes t1 t2 <*> unifyFns f1 f2
@@ -163,7 +164,7 @@ unifyTypes (VecType t1 n1) (VecType t2 n2) = do
 unifyTypes (EqType t1 x1 y1) (EqType t2 x2 y2) = do
   EqType <$> unifyTypes t1 t2 <*> unifyTypes x1 x2 <*> unifyTypes y1 y2
 
-unifyTypes _ _ = err "Unification failed!"
+unifyTypes t1 t2 = err $ "Cannot unify " ++ show t1 ++ " with " ++ show t2
 
 --Check if we can look at a ConType and replace all of its
 --Type variables with their actual types, that we've resolved through unification
@@ -171,7 +172,7 @@ unifyTypes _ _ = err "Unification failed!"
 toRealType :: ConType -> UnifyM Common.Type_
 toRealType (LitType t) = return t
 
-toRealType (VarType v) = do
+toRealType (VarType v _) = do
   repr <- getRepr v
   case repr of
     BlankSlate -> defer
@@ -250,8 +251,8 @@ solveConstraintList (c:rest) = do
 
 solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
-  ( (mainType, mainTypeVar), constraintList) <- lift $ lift $ runWriterT cm
-  solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType : constraintList)
+  ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> runReaderT x [1..]) $ runWriterT cm
+  solveConstraintList (ConstrUnify (VarType mainTypeVar 0) mainType : constraintList)
   (TypeRepr finalRepr) <- getRepr mainTypeVar
   toRealType finalRepr
 

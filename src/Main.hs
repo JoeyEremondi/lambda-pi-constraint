@@ -3,4 +3,4 @@ import qualified ConstraintBased as CB
 import Common
 
 main :: IO ()
-main = repLP O.checker True
+main = repLP CB.checker True

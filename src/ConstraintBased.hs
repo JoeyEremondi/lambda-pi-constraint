@@ -165,11 +165,13 @@ iType_ i g (EqElim_ a m mr x y eq) =
 
 cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> ConType -> ConstraintM ()
 cType_ ii g (Inf_ e) v
-  =     do  tyInferred <- iType_ ii g e
-            --Ensure that the annotation type and our inferred type unify
-            --We have to evaluate $ our normal form
-            tyAnnot <- evaluate $ cEval_ (Inf_ e) (fst g, []) --TODO is this right?
-            unify tyAnnot tyInferred
+  =
+    do
+      tyInferred <- iType_ ii g e
+      --Ensure that the annotation type and our inferred type unify
+      --We have to evaluate $ our normal form
+      tyAnnot <- evaluate $ cEval_ (Inf_ e) (fst g, []) --TODO is this right?
+      unify tyAnnot tyInferred
 
 
 cType_ ii g (Lam_ e) fnTy = do

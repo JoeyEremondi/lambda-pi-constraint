@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Constraint
 {-
   ( ConType
@@ -15,6 +16,7 @@ import qualified Common
 import Control.Monad.State
 import qualified Control.Monad.Trans.UnionFind as UF
 import Control.Monad.Writer
+import Control.Monad.Reader
 import Control.Monad.Trans
 import Control.Monad.Identity (Identity)
 import Data.Data
@@ -24,19 +26,20 @@ import Data.Typeable
 
 
 --We index type variables as unique integers
-newtype TypeVar = TypeVar {getUF :: UF.Point TypeRepr}
+newtype TypeVar = TypeVar {getUF :: UF.Point TypeRepr} deriving (Show)
 
 
 data TypeRepr =
    BlankSlate
    | TypeRepr ConType
    | TypeFnRepr (Common.Type_ -> ConType)
+   deriving (Show)
 
 
 --Type we can unify over: either a type literal
 --Or a type variable
 data ConType =
-  VarType TypeVar --Type variable can represent a type
+  VarType TypeVar Int --Type variable can represent a type
   | LitType Common.Type_ --We look at literal types in our constraints
   | PiType ConType ConTyFn --Sometimes we look at function types, where the types
   | AppType ConTyFn ConType --Used to encode
@@ -46,20 +49,27 @@ data ConType =
   | EqType ConType ConType ConType
   | Param (UF.Point TypeRepr) --Used as a placeholder to deal with functions
                   --The point is just used as a unique identifier
+  deriving (Show)
 
-
+instance Show (UF.Point a) where
+  show _ = "var"
 
 --Wrapper for functions on types, whose values we may not know
 --But instead determine from inference
 data ConTyFn =
   TyFnVar TypeVar
   | TyFn (Common.Type_ -> ConType)
+  deriving (Show)
+
+instance Show (Common.Type_ -> ConType) where
+  show _ = "<<function>>"
 
 --Initially, the only constraint we express is that two types unify
 data Constraint =
   ConstrUnify ConType ConType
   | TyFnUnify ConTyFn ConTyFn
   | ConstrEvaluatesTo ConType Common.Value_
+  deriving (Show)
 
 
 
@@ -81,19 +91,19 @@ class Unifyable a where
 
 type UFM = UF.UnionFindT TypeRepr Identity
 
-type ConstraintM a = WriterT [Constraint] UFM a
+type ConstraintM a = WriterT [Constraint] (ReaderT [Int] UFM) a
 
 --Operations in our monad:
 --Make fresh types, and unify types together
 freshVar :: ConstraintM TypeVar
 freshVar = do
-  newPoint <- lift $ UF.fresh BlankSlate
+  newPoint <- lift $ lift $ UF.fresh BlankSlate
   return $  TypeVar newPoint
 
 
 instance Unifyable ConType where
   unify t1 t2 = addConstr (ConstrUnify t1 t2)
-  fresh = VarType `fmap` freshVar
+  fresh = VarType <$> freshVar <*> (head <$> ask)
 
 instance Unifyable ConTyFn where
   unify t1 t2 = addConstr (TyFnUnify t1 t2)
