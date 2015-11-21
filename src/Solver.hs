@@ -38,13 +38,25 @@ newtype SolverResultT m a = SolverResultT {runSolverResultT :: m (SolverResult a
 instance MonadTrans SolverResultT where
   lift x = SolverResultT (liftM Ok x)
 
-type UnifyM a = UF.UnionFindT TypeRepr (StateT Int SolverResult ) a
+type UnifyM a = SolverResultT (StateT Int UFM ) a
 
 freshInt :: UnifyM Int
 freshInt = do
   i <- lift get
   lift $ put (i+1)
   return 1
+
+getRepr :: TypeVar -> UnifyM TypeRepr
+getRepr v = lift $ lift $ UF.descriptor (getUF v)
+
+unifyVars :: TypeVar -> TypeVar -> UnifyM ()
+unifyVars v1 v2 = lift $ lift $ UF.union (getUF v1) (getUF v2)
+
+setRepr :: TypeVar -> TypeRepr -> UnifyM ()
+setRepr v rep = lift $ lift $ do
+  dummyPoint <- UF.fresh rep
+  UF.union (getUF v) dummyPoint
+
 
 unifyTypes :: ConType -> ConType -> UnifyM ConType
 --unify two variables
