@@ -18,6 +18,7 @@ data SolverResult a =
   | Err String
   deriving (Eq, Ord, Show, Functor)
 
+
 instance Applicative SolverResult where
   pure = Ok
   fa <*> x =
@@ -33,7 +34,26 @@ instance Monad SolverResult where
       Err s -> Err s
       Ok a -> f a
 
+
 newtype SolverResultT m a = SolverResultT {runSolverResultT :: m (SolverResult a)}
+  deriving (Functor)
+
+instance (Monad m) => Applicative (SolverResultT m) where
+  pure = lift . return
+  (SolverResultT mf) <*> (SolverResultT mx) = SolverResultT $ do
+    f <- mf
+    x <- mx
+    return $ (f <*> x)
+
+instance (Monad m) => Monad (SolverResultT m) where
+  (SolverResultT mx) >>= f = SolverResultT $ do
+    x <- mx
+    case x of
+      Ok a -> runSolverResultT $ f a
+      Err s -> return $ Err s
+      Defer -> return Defer
+
+
 
 instance MonadTrans SolverResultT where
   lift x = SolverResultT (liftM Ok x)
@@ -57,14 +77,17 @@ setRepr v rep = lift $ lift $ do
   dummyPoint <- UF.fresh rep
   UF.union (getUF v) dummyPoint
 
+err :: String -> UnifyM a
+err msg = SolverResultT $ return $ Err msg
+
 
 unifyTypes :: ConType -> ConType -> UnifyM ConType
 --unify two variables
 unifyTypes (VarType t1) (VarType t2) = do
-  r1 <- UF.descriptor $ getUF t1
-  r2 <- UF.descriptor $ getUF t2
+  r1 <- getRepr t1
+  r2 <- getRepr t2
   --Union the identifiers
-  UF.union (getUF t1) (getUF t2)
+  unifyVars t1 t2
   case (r1, r2) of
     (BlankSlate, BlankSlate) ->
       return (VarType t2)
@@ -78,8 +101,7 @@ unifyTypes (VarType t1) (VarType t2) = do
           (TypeRepr t1, TypeRepr t2) ->
             unifyTypes t1 t2
       --Set the descriptor of our variable to be our newly computed unifier
-      dummyPoint <- UF.fresh (TypeRepr newRepr)
-      UF.union dummyPoint (getUF t1)
+      setRepr t1 (TypeRepr newRepr)
       return newRepr
 
 
@@ -87,11 +109,10 @@ unifyTypes (VarType t1) (VarType t2) = do
 --If it's blank, then set its descriptor to whatever we union with
 --Otherwise, unify our descriptor with the whatever type we see
 unifyTypes (VarType tvar) t2 = do
-  r1 <- UF.descriptor $ getUF tvar
+  r1 <- getRepr tvar
   case r1 of
     BlankSlate -> do
-      dummyPoint <- UF.fresh (TypeRepr t2)
-      UF.union (getUF tvar) dummyPoint
+      setRepr tvar (TypeRepr t2)
       return t2
 
     TypeRepr t1 ->
@@ -99,11 +120,10 @@ unifyTypes (VarType tvar) t2 = do
 
 --Same as above, but reversed --TODO just recurse?
 unifyTypes t2 (VarType tvar) = do
-  r1 <- UF.descriptor $ getUF tvar
+  r1 <- getRepr tvar
   case r1 of
     BlankSlate -> do
-      dummyPoint <- UF.fresh (TypeRepr t2)
-      UF.union (getUF tvar) dummyPoint
+      setRepr tvar (TypeRepr t2)
       return t2
     TypeRepr t1 ->
       unifyTypes t1 t2
@@ -111,7 +131,7 @@ unifyTypes t2 (VarType tvar) = do
 unifyTypes (LitType v1) (LitType v2) =
   case (Common.quote0_ v1) == (Common.quote0_ v2) of
     True -> return  $ LitType v1
-    False -> lift $ lift $ Err "Value mismatch!"
+    False -> Err "Value mismatch!"
 
 unifyTypes (PiType t1 f1) (PiType t2 f2) =
   PiType <$> unifyTypes t1 t2 <*> unifyFns f1 f2
