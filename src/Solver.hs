@@ -7,10 +7,11 @@ import qualified Data.Map as Map
 import qualified Control.Monad.Trans.UnionFind as UF
 import qualified Common
 import Control.Monad.Writer
-import Control.Monad.Reader
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forM)
 import Control.Monad.Identity (runIdentity)
+
+import Debug.Trace (trace)
 
 
 
@@ -62,13 +63,13 @@ instance (Monad m) => Monad (SolverResultT m) where
 instance MonadTrans SolverResultT where
   lift x = SolverResultT (liftM Ok x)
 
-type UnifyM a = SolverResultT (StateT Int UFM ) a
+type UnifyM a = SolverResultT (StateT [Int] UFM ) a
 
-freshInt :: UnifyM Int
-freshInt = do
-  i <- lift get
-  lift $ put (i+1)
-  return 1
+freshFreeIndex :: UnifyM Int
+freshFreeIndex = do
+  (h:t) <- lift $ get
+  lift $ put t
+  return h
 
 getRepr :: TypeVar -> UnifyM TypeRepr
 getRepr v = lift $ lift $ UF.descriptor (getUF v)
@@ -223,7 +224,7 @@ unifyFns (TyFn f2) (TyFnVar v1) = do
 --TODO do we want a Value or a Term as a result of this?
 mkFunctionReal :: (Common.Type_ -> ConType) -> UnifyM (Common.Type_ -> Common.Type_)
 mkFunctionReal f = do
-  freeName <- Common.Quote <$> freshInt
+  freeName <- Common.Quote <$> freshFreeIndex
   let freeVar = Common.vfree_ freeName
   let funBody = f freeVar
   --Turn our result from a ConType into a Type_, if we can
@@ -251,8 +252,9 @@ solveConstraintList (c:rest) = do
 
 solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
-  ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> runReaderT x [1..]) $ runWriterT cm
-  solveConstraintList (ConstrUnify (VarType mainTypeVar 0) mainType : constraintList)
+  ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> evalStateT x [1..]) $ runWriterT cm
+  trace ("Constraint list: " ++ show constraintList) $
+    solveConstraintList (ConstrUnify (VarType mainTypeVar 0) mainType : constraintList)
   (TypeRepr finalRepr) <- getRepr mainTypeVar
   toRealType finalRepr
 
@@ -261,6 +263,6 @@ finalResults :: UnifyM Common.Type_ -> SolverResult Common.Type_
 finalResults mcomp =
   let
     stateResult = runSolverResultT mcomp
-    ufResult = evalStateT stateResult 0
+    ufResult = evalStateT stateResult [1..]
     finalResult = runIdentity $ UF.runUnionFind ufResult
   in finalResult

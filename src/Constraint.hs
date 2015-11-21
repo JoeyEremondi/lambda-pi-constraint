@@ -16,7 +16,7 @@ import qualified Common
 import Control.Monad.State
 import qualified Control.Monad.Trans.UnionFind as UF
 import Control.Monad.Writer
-import Control.Monad.Reader
+import Control.Monad.State
 import Control.Monad.Trans
 import Control.Monad.Identity (Identity)
 import Data.Data
@@ -91,7 +91,7 @@ class Unifyable a where
 
 type UFM = UF.UnionFindT TypeRepr Identity
 
-type ConstraintM a = WriterT [Constraint] (ReaderT [Int] UFM) a
+type ConstraintM a = WriterT [Constraint] (StateT [Int] UFM) a
 
 --Operations in our monad:
 --Make fresh types, and unify types together
@@ -101,9 +101,15 @@ freshVar = do
   return $  TypeVar newPoint
 
 
+freshInt :: ConstraintM Int
+freshInt = do
+  (h:t) <- lift $ get
+  put t
+  return h
+
 instance Unifyable ConType where
   unify t1 t2 = addConstr (ConstrUnify t1 t2)
-  fresh = VarType <$> freshVar <*> (head <$> ask)
+  fresh = VarType <$> freshVar <*> freshInt
 
 instance Unifyable ConTyFn where
   unify t1 t2 = addConstr (TyFnUnify t1 t2)

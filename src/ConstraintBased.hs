@@ -35,7 +35,7 @@ checker (nameEnv, context) term = do
     Solver.Err s -> error s
     Solver.Defer -> error "Should never have defer at end!"
     Solver.Ok t -> return t
-
+ 
 conStar = conType VStar_
 
 type ConstrContext = [(Name, ConType)]
