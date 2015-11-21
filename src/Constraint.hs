@@ -21,6 +21,8 @@ import Data.Data
 import Data.Typeable
 
 
+
+
 --We index type variables as unique integers
 newtype TypeVar = TypeVar {getUF :: UF.Point TypeRepr}
 

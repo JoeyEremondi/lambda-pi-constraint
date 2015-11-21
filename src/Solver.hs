@@ -9,6 +9,7 @@ import qualified Common
 import Control.Monad.Writer
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forM)
+import Control.Monad.Identity (runIdentity)
 
 
 
@@ -247,7 +248,18 @@ solveConstraintList (c:rest) = do
     Err s -> err s
     Ok _ -> solveConstraintList rest
 
-solveConstraints :: (ConstraintM ()) -> UnifyM ()
+solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
-  constraintList <- lift $ lift $ execWriterT cm
-  solveConstraintList constraintList
+  ( (mainType, mainTypeVar), constraintList) <- lift $ lift $ runWriterT cm
+  solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType : constraintList)
+  (TypeRepr finalRepr) <- getRepr mainTypeVar
+  toRealType finalRepr
+
+
+finalResults :: UnifyM Common.Type_ -> SolverResult Common.Type_
+finalResults mcomp =
+  let
+    stateResult = runSolverResultT mcomp
+    ufResult = evalStateT stateResult 0
+    finalResult = runIdentity $ UF.runUnionFind ufResult
+  in finalResult

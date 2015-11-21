@@ -24,14 +24,26 @@ import Common
 
 import Constraint
 
-catch = catchIOError
+import qualified Solver
+
 
 checker :: TypeChecker
-checker env term = error ""
+checker (nameEnv, context) term = do
+  let newContext = map (\(a,b) -> (a, conType b) ) context
+  let checkResults = Solver.solveConstraints $ getConstraints (nameEnv, newContext) term
+  case (Solver.finalResults checkResults) of
+    Solver.Err s -> error s
+    Solver.Defer -> error "Should never have defer at end!"
+    Solver.Ok t -> return t
 
 conStar = conType VStar_
 
 type ConstrContext = [(Name, ConType)]
+
+getConstraints env term = do
+  finalType <- iType0_ env term
+  finalVar <- freshVar
+  return (finalType, finalVar)
 
 iType0_ :: (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
