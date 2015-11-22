@@ -58,7 +58,7 @@ instance Show (UF.Point a) where
 --But instead determine from inference
 data ConTyFn =
   TyFnVar TypeVar
-  | TyFn (Common.Type_ -> ConType)
+  | TyFn (Common.Type_ -> ConType) Common.Env_
   deriving (Show)
 
 instance Show (Common.Type_ -> ConType) where
@@ -131,8 +131,8 @@ mkPi = PiType
 applyPi :: ConTyFn -> ConType -> ConType
 applyPi = AppType
 
-applyVal :: ConType -> ConType -> ConType
-applyVal f x = (valToFn f) `applyPi` x
+applyVal :: ConType -> ConType -> Common.Env_ -> ConType
+applyVal f x env = (valToFn f env) `applyPi` x
 
 mkNat :: ConType -> ConType
 mkNat = NatType
@@ -147,14 +147,14 @@ mkEq = EqType
 conType :: Common.Type_ -> ConType
 conType = LitType
 
-conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
+conTyFn :: (Common.Type_ -> ConType) -> Common.Env_ -> ConTyFn
 conTyFn = TyFn
 
-liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
+liftConTyFn :: (Common.Type_ -> Common.Type_) -> Common.Env_  -> ConTyFn
 liftConTyFn f = TyFn ( conType . f )
 
-valToFn :: ConType -> ConTyFn
-valToFn fcon = TyFn (\v -> AppType ( conTyFn $ \f -> conType $ f `Common.vapp_` v) fcon )
+valToFn :: ConType -> Common.Env_ -> ConTyFn --TODO need an env here?
+valToFn fcon env = TyFn (\v -> AppType ( conTyFn (\f -> conType $ f `Common.vapp_` v) env) fcon ) env
 
 
 --Helpful utility function
