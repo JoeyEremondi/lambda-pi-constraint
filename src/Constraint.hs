@@ -23,7 +23,8 @@ import Data.Data
 import Data.Typeable
 
 
-
+type ConstrContext = [(Common.Name, ConType)]
+type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)
 
 --We index type variables as unique integers
 newtype TypeVar = TypeVar {getUF :: UF.Point TypeRepr} deriving (Show)
@@ -58,7 +59,7 @@ instance Show (UF.Point a) where
 --But instead determine from inference
 data ConTyFn =
   TyFnVar TypeVar
-  | TyFn (Common.Type_ -> ConType) Common.Env_
+  | TyFn (Common.Type_ -> ConType)
   deriving (Show)
 
 instance Show (Common.Type_ -> ConType) where
@@ -68,7 +69,7 @@ instance Show (Common.Type_ -> ConType) where
 data Constraint =
   ConstrUnify ConType ConType
   | TyFnUnify ConTyFn ConTyFn
-  | ConstrEvaluatesTo ConType Common.Value_
+  | ConstrEvaluatesTo ConType Common.CTerm_ WholeEnv
   deriving (Show)
 
 
@@ -115,10 +116,10 @@ instance Unifyable ConTyFn where
   unify t1 t2 = addConstr (TyFnUnify t1 t2)
   fresh = TyFnVar `fmap` freshVar
 
-evaluate :: Common.Value_ -> ConstraintM ConType
-evaluate v = do
+evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
+evaluate term env = do
   t <- fresh
-  addConstr $ ConstrEvaluatesTo t v
+  addConstr $ ConstrEvaluatesTo t term env
   return t
 
 
@@ -131,8 +132,8 @@ mkPi = PiType
 applyPi :: ConTyFn -> ConType -> ConType
 applyPi = AppType
 
-applyVal :: ConType -> ConType -> Common.Env_ -> ConType
-applyVal f x env = (valToFn f env) `applyPi` x
+applyVal :: ConType -> ConType -> ConType
+applyVal f x = (valToFn f) `applyPi` x
 
 mkNat :: ConType -> ConType
 mkNat = NatType
@@ -147,14 +148,14 @@ mkEq = EqType
 conType :: Common.Type_ -> ConType
 conType = LitType
 
-conTyFn :: (Common.Type_ -> ConType) -> Common.Env_ -> ConTyFn
+conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
 conTyFn = TyFn
 
-liftConTyFn :: (Common.Type_ -> Common.Type_) -> Common.Env_  -> ConTyFn
+liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
 liftConTyFn f = TyFn ( conType . f )
 
-valToFn :: ConType -> Common.Env_ -> ConTyFn --TODO need an env here?
-valToFn fcon env = TyFn (\v -> AppType ( conTyFn (\f -> conType $ f `Common.vapp_` v) env) fcon ) env
+valToFn :: ConType -> ConTyFn
+valToFn fcon = TyFn (\v -> AppType ( conTyFn $ \f -> conType $ f `Common.vapp_` v) fcon )
 
 
 --Helpful utility function

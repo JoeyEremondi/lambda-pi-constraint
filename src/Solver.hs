@@ -247,7 +247,8 @@ mkFunctionReal f = do
 solveConstraint :: Constraint -> UnifyM ()
 solveConstraint (ConstrUnify t1 t2) =  unifyTypes t1 t2 >>=  \_ -> return ()
 solveConstraint (TyFnUnify f1 f2) = unifyFns f1 f2 >>=  \_ -> return ()
-solveConstraint (ConstrEvaluatesTo ct v) = unifyTypes ct (LitType v) >>=  \_ -> return () --TODO control eval?
+solveConstraint (ConstrEvaluatesTo ct term env) = --TODO need anything in env?
+  unifyTypes ct (LitType $ Common.cEval_ term (fst env, [])) >>=  \_ -> return () --TODO control eval?
 
 --Loop through our constraints
 solveConstraintList [] = return ()
