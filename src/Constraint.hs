@@ -27,8 +27,12 @@ type ConstrContext = [(Common.Name, ConType)]
 type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)
 
 --We index type variables as unique integers
-newtype TypeVar = TypeVar {getUF :: UF.Point TypeRepr} deriving (Show)
+newtype TypeVar = TypeVar (UF.Point TypeRepr, Int)
 
+getUF (TypeVar x) = fst x
+
+instance Show TypeVar where
+  show _ = ""
 
 data TypeRepr =
    BlankSlate
@@ -58,19 +62,23 @@ instance Show (UF.Point a) where
 --Wrapper for functions on types, whose values we may not know
 --But instead determine from inference
 data ConTyFn =
-  TyFnVar TypeVar
+  TyFnVar TypeVar Int
   | TyFn (Common.Type_ -> ConType)
   deriving (Show)
 
 instance Show (Common.Type_ -> ConType) where
-  show _ = "<<function>>"
+  show f = "(\\(-1) -> " ++ (show $ f $ Common.vfree_ (Common.Quote (0-1)) )++ ")"
 
 --Initially, the only constraint we express is that two types unify
 data Constraint =
   ConstrUnify ConType ConType WholeEnv
   | TyFnUnify ConTyFn ConTyFn WholeEnv
   | ConstrEvaluatesTo ConType Common.CTerm_ WholeEnv
-  deriving (Show)
+
+instance Show Constraint where
+  show (ConstrUnify t1 t2 _) = "\n" ++ (show t1) ++ " === " ++ (show t2)
+  show (TyFnUnify t1 t2 _) = "\n" ++(show t1) ++ " === " ++ (show t2)
+  show (ConstrEvaluatesTo t term _) = "\n" ++(show t) ++ " ~~> " ++ (show term)
 
 
 
@@ -96,10 +104,10 @@ type ConstraintM a = WriterT [Constraint] (StateT [Int] UFM) a
 
 --Operations in our monad:
 --Make fresh types, and unify types together
-freshVar :: ConstraintM TypeVar
-freshVar = do
+freshVar :: Int -> ConstraintM TypeVar
+freshVar i = do
   newPoint <- lift $ lift $ UF.fresh BlankSlate
-  return $  TypeVar newPoint
+  return $  TypeVar (newPoint, i)
 
 
 freshInt :: ConstraintM Int
@@ -110,11 +118,11 @@ freshInt = do
 
 instance Unifyable ConType where
   unify t1 t2 env = addConstr (ConstrUnify t1 t2 env)
-  fresh = VarType <$> freshVar <*> freshInt
+  fresh = VarType <$> (freshVar =<< freshInt) <*> freshInt
 
 instance Unifyable ConTyFn where
   unify t1 t2 env = addConstr (TyFnUnify t1 t2 env)
-  fresh = TyFnVar `fmap` freshVar
+  fresh = TyFnVar <$> freshVar <*> freshInt
 
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
 evaluate term env = do

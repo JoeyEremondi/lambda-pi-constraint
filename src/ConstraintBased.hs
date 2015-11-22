@@ -9,7 +9,7 @@ import Data.Char
 
 import Text.PrettyPrint.HughesPJ hiding (parens)
 import qualified Text.PrettyPrint.HughesPJ as PP
- 
+
 import Text.ParserCombinators.Parsec hiding (parse, State)
 import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec.Token
@@ -25,10 +25,11 @@ import Common
 import Constraint
 
 import qualified Solver
+import Debug.Trace (trace)
 
 
 checker :: TypeChecker
-checker (nameEnv, context) term = do
+checker (nameEnv, context) term = trace ("Checking term\n" ++ show term ++ "\n\n") $ do
   let newContext = map (\(a,b) -> (a, conType b) ) context
   let checkResults = Solver.solveConstraints $ getConstraints (nameEnv, newContext) term
   case (Solver.finalResults checkResults) of
@@ -84,22 +85,21 @@ iType_ ii g (e1 :$: e2)
 iType_ ii g Nat_                  =  return conStar
 iType_ ii g (NatElim_ m mz ms n)  =
   do  cType_ ii g m (conType $ VPi_ VNat_ (const VStar_))
-
       --evaluate $ our param m
       mVal <- evaluate m g
-      let mFun = valToFn mVal
-      let outerPiFun k = mkPi (mFun `applyPi` conType k  ) (conTyFn $ innerPiFun k)
-          innerPiFun k _ = mFun `applyPi` (conType $ VSucc_ k)
       --Check that mz has type (m 0)
-      cType_ ii g mz (applyPi mFun (conType VZero_))
+      cType_ ii g mz (mVal `applyVal` (conType VZero_))
       --Check that ms has type ( (k: N) -> m k -> m (S k) )
-      cType_ ii g ms $ mkPi (conType VNat_) (conTyFn outerPiFun)
+      let recPiType =
+            mkPi (conType VNat_) $ conTyFn $ \k -> mkPi (mVal `applyVal` conType k)
+              (conTyFn $ \_ -> mVal `applyVal` (conType $ VSucc_ k) )
+      cType_ ii g ms recPiType
       --Make sure the number param is a nat
       cType_ ii g n (conType VNat_)
 
       --We infer that our final expression has type (m n)
       nVal <- evaluate n g
-      return $ mFun `applyPi` nVal
+      return $ mVal `applyVal` nVal
 
 iType_ ii g (Vec_ a n) =
   do  cType_ ii g a  conStar

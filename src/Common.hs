@@ -836,6 +836,9 @@ type Env_ = [Value_]
 vapp_ :: Value_ -> Value_ -> Value_
 vapp_ (VLam_ f)      v  =  f v
 vapp_ (VNeutral_ n)  v  =  VNeutral_ (NApp_ n v)
+vapp_ x y = badVappError x y
+
+badVappError x y = error $ "Cannot apply value " ++ show x ++ " to value " ++ show y
 
 vfree_ :: Name -> Value_
 vfree_ n = VNeutral_ (NFree_ n)

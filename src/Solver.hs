@@ -72,7 +72,9 @@ freshFreeIndex = do
   return h
 
 getRepr :: TypeVar -> UnifyM TypeRepr
-getRepr v = lift $ lift $ UF.descriptor (getUF v)
+getRepr v = do
+  repr <- lift $ lift $ UF.descriptor (getUF v)
+  return $ trace ("\nRepr for " ++ show v ++ " is " ++ show repr) $ repr
 
 unifyVars :: TypeVar -> TypeVar -> UnifyM ()
 unifyVars v1 v2 = lift $ lift $ UF.union (getUF v1) (getUF v2)
@@ -193,7 +195,7 @@ toRealType (PiType t f) env = Common.VPi_ <$> toRealType t env <*> toRealTyFn f 
 
 toRealTyFn :: ConTyFn -> WholeEnv -> UnifyM (Common.Type_ -> Common.Type_)
 toRealTyFn (TyFn f) env = mkFunctionReal f env
-toRealTyFn (TyFnVar v) env = do
+toRealTyFn (TyFnVar v _) env = do
   repr <- getRepr v
   case repr of
     BlankSlate -> defer
@@ -205,14 +207,14 @@ toRealTyFn (TyFnVar v) env = do
 --Need to actually unify two functions
 --TODO is this right?
 unifyFns :: ConTyFn -> ConTyFn -> WholeEnv -> UnifyM ConTyFn
-unifyFns (TyFnVar v1) (TyFnVar v2) env = do
+unifyFns (TyFnVar v1 i) (TyFnVar v2 _) env = do
   repr1 <- getRepr v1
   repr2 <- getRepr v2
   unifyVars v1 v2
   case (repr1, repr2) of
     (BlankSlate, BlankSlate) -> do
       --Descriptor doesn't matter in this case
-      return (TyFnVar v1)
+      return (TyFnVar v1 i)
     (TypeFnRepr f1, BlankSlate) -> do
       --Take descriptor from first one
       setRepr v2 (TypeFnRepr f1)
@@ -222,12 +224,12 @@ unifyFns (TyFnVar v1) (TyFnVar v2) env = do
       setRepr v1 (TypeFnRepr f2)
       return $ TyFn f2
 
-unifyFns (TyFnVar v1) (TyFn f2) env = do
+unifyFns (TyFnVar v1 i) (TyFn f2) env = do
   setRepr v1 $ TypeFnRepr f2
   return $ TyFn f2
 
 --Same as above but with arguments flipped
-unifyFns (TyFn f2) (TyFnVar v1) env = do
+unifyFns (TyFn f2) (TyFnVar v1 i) env = do
   setRepr v1 $ TypeFnRepr f2
   return $ TyFn f2
 
@@ -256,21 +258,20 @@ solveConstraint (ConstrEvaluatesTo ct term env@(nameEnv, context)) = do
 
 --Loop through our constraints
 solveConstraintList [] = return ()
-solveConstraintList (c:rest) = do
-  result <-lift $ runSolverResultT $ solveConstraint c
+solveConstraintList (c:rest) =  do
+  result <- trace (show c) $ lift $ runSolverResultT $ solveConstraint c
   case result of
     --If defer: do this constraint later
     --TODO better solution for this?
-    Defer -> solveConstraintList (rest ++ [c])
+    Defer -> trace "Deferring" $ solveConstraintList (rest ++ [c])
     Err s -> err s
     Ok _ -> solveConstraintList rest
 
 solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
   ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> evalStateT x [1..]) $ runWriterT cm
-  trace ("Constraint list: " ++ show constraintList) $
     --TODO what env for top constraint?
-    solveConstraintList (ConstrUnify (VarType mainTypeVar 0) mainType ([],[]) : constraintList)
+  solveConstraintList (ConstrUnify (VarType mainTypeVar 0) mainType ([],[]) : constraintList)
   (TypeRepr finalRepr) <- getRepr mainTypeVar
   toRealType finalRepr ([],[])
 
