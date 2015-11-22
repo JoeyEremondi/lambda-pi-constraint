@@ -245,8 +245,8 @@ mkFunctionReal f = do
   return $ \v -> Common.cEval_ termBody ([(freeName, v)], [])
 
 solveConstraint :: Constraint -> UnifyM ()
-solveConstraint (ConstrUnify t1 t2) =  unifyTypes t1 t2 >>=  \_ -> return ()
-solveConstraint (TyFnUnify f1 f2) = unifyFns f1 f2 >>=  \_ -> return ()
+solveConstraint (ConstrUnify t1 t2 env) =  unifyTypes t1 t2 >>=  \_ -> return ()
+solveConstraint (TyFnUnify f1 f2 env) = unifyFns f1 f2 >>=  \_ -> return ()
 solveConstraint (ConstrEvaluatesTo ct term env) = --TODO need anything in env?
   unifyTypes ct (LitType $ Common.cEval_ term (fst env, [])) >>=  \_ -> return () --TODO control eval?
 
@@ -265,7 +265,8 @@ solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
   ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> evalStateT x [1..]) $ runWriterT cm
   trace ("Constraint list: " ++ show constraintList) $
-    solveConstraintList (ConstrUnify (VarType mainTypeVar 0) mainType : constraintList)
+    --TODO what env for top constraint?
+    solveConstraintList (ConstrUnify (VarType mainTypeVar 0) mainType ([],[]) : constraintList)
   (TypeRepr finalRepr) <- getRepr mainTypeVar
   toRealType finalRepr
 

@@ -69,7 +69,7 @@ iType_ ii g (e1 :$: e2)
             fnType <- iType_ ii g e1
             piArg <- fresh
             piBody <- fresh
-            unify (fnType) (mkPi piArg piBody)
+            unify (fnType) (mkPi piArg piBody) g
 
             --Ensure that the argument has the proper type
             cType_ ii g e2 piArg
@@ -168,13 +168,13 @@ cType_ ii g (Inf_ e) tyAnnot
       tyInferred <- iType_ ii g e
       --Ensure that the annotation type and our inferred type unify
       --We have to evaluate $ our normal form
-      unify tyAnnot tyInferred
+      unify tyAnnot tyInferred g
 
 
 cType_ ii g (Lam_ e) fnTy = do
     argTy <- fresh
     returnTyFn <- fresh
-    unify fnTy (mkPi argTy returnTyFn) --TODO fix this
+    unify fnTy (mkPi argTy returnTyFn) g --TODO fix this
     let returnTy = applyPi returnTyFn $ conType (vfree_ (Local ii))
     let subbedBody = cSubst_ 0 (Free_ (Local ii)) e
     cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g) subbedBody returnTy
@@ -182,34 +182,34 @@ cType_ ii g (Lam_ e) fnTy = do
 
 
 
-cType_ ii g Zero_      ty  =  unify ty (conType VNat_)
+cType_ ii g Zero_      ty  =  unify ty (conType VNat_) g
 cType_ ii g (Succ_ k)  ty  = do
-  unify ty (conType VNat_)
+  unify ty (conType VNat_) g
   cType_ ii g k (conType VNat_)
 
 cType_ ii g (Nil_ a) ty =
   do
       bVal <- fresh
-      unify ty (mkVec bVal $ conType VZero_)
+      unify ty (mkVec bVal $ conType VZero_) g
       cType_ ii g a conStar
       aVal <- evaluate a g
-      unify aVal bVal
+      unify aVal bVal g
 cType_ ii g (Cons_ a n x xs) ty  =
   do  bVal <- fresh
       k <- (fresh :: ConstraintM ConType)
       --Trickery to get a Type_ to a ConType
       let kVal = applyPi (liftConTyFn (\val -> VSucc_ val) ) k
-      unify ty (mkVec bVal kVal)
+      unify ty (mkVec bVal kVal) g
       cType_ ii g a conStar
 
       aVal <- evaluate a g
-      unify aVal bVal
+      unify aVal bVal g
 
       cType_ ii g n (conType VNat_)
 
       --Make sure our numbers match
       nVal <- evaluate n g
-      unify nVal kVal
+      unify nVal kVal g
 
       --Make sure our new head has the right list type
       cType_ ii g x aVal
@@ -220,14 +220,14 @@ cType_ ii g (Refl_ a z) ty =
   do  bVal <- fresh
       xVal <- fresh
       yVal <- fresh
-      unify ty (mkEq bVal xVal yVal)
+      unify ty (mkEq bVal xVal yVal) g
       --Check that our type argument has kind *
       cType_ ii g a conStar
       --Get evaluation constraint for our type argument
       aVal <- evaluate a g
 
       --Check that our given type is the same as our inferred type --TODO is this right?
-      unify aVal bVal
+      unify aVal bVal g
 
       --Check that the value we're proving on has type A
       cType_ ii g z aVal
@@ -236,6 +236,6 @@ cType_ ii g (Refl_ a z) ty =
       zVal <- evaluate z g
 
       --Show constraint that the type parameters must match that type
-      unify zVal xVal
-      unify zVal yVal
+      unify zVal xVal g
+      unify zVal yVal g
       --TODO something special for quoting

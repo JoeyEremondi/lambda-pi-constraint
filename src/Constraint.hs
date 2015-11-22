@@ -67,15 +67,15 @@ instance Show (Common.Type_ -> ConType) where
 
 --Initially, the only constraint we express is that two types unify
 data Constraint =
-  ConstrUnify ConType ConType
-  | TyFnUnify ConTyFn ConTyFn
+  ConstrUnify ConType ConType WholeEnv
+  | TyFnUnify ConTyFn ConTyFn WholeEnv
   | ConstrEvaluatesTo ConType Common.CTerm_ WholeEnv
   deriving (Show)
 
 
 
 class Unifyable a where
-  unify :: a -> a -> ConstraintM ()
+  unify :: a -> a -> WholeEnv -> ConstraintM ()
   fresh :: ConstraintM a
 
 
@@ -109,11 +109,11 @@ freshInt = do
   return h
 
 instance Unifyable ConType where
-  unify t1 t2 = addConstr (ConstrUnify t1 t2)
+  unify t1 t2 env = addConstr (ConstrUnify t1 t2 env)
   fresh = VarType <$> freshVar <*> freshInt
 
 instance Unifyable ConTyFn where
-  unify t1 t2 = addConstr (TyFnUnify t1 t2)
+  unify t1 t2 env = addConstr (TyFnUnify t1 t2 env)
   fresh = TyFnVar `fmap` freshVar
 
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
