@@ -93,14 +93,14 @@ defer = SolverResultT $ return Defer
 
 unifyTypes :: ConType -> ConType -> WholeEnv -> UnifyM ConType
 --unify two variables
-unifyTypes (VarType t1 i1) (VarType t2 i2) env = do
+unifyTypes (VarType t1) (VarType t2) env = do
   r1 <- getRepr t1
   r2 <- getRepr t2
   --Union the identifiers
   unifyVars t1 t2
   case (r1, r2) of
     (BlankSlate, BlankSlate) ->
-      return (VarType t2 i2)
+      return (VarType t2)
     pair -> do
       newRepr <-
         case pair of
@@ -118,7 +118,7 @@ unifyTypes (VarType t1 i1) (VarType t2 i2) env = do
 --Unify a variable with something: look at its descriptor
 --If it's blank, then set its descriptor to whatever we union with
 --Otherwise, unify our descriptor with the whatever type we see
-unifyTypes (VarType tvar _) t2 env = do
+unifyTypes (VarType tvar) t2 env = do
   r1 <- getRepr tvar
   case r1 of
     BlankSlate -> do
@@ -129,7 +129,7 @@ unifyTypes (VarType tvar _) t2 env = do
       unifyTypes t1 t2 env
 
 --Same as above, but reversed --TODO just recurse?
-unifyTypes t2 (VarType tvar _) env = do
+unifyTypes t2 (VarType tvar) env = do
   r1 <- getRepr tvar
   case r1 of
     BlankSlate -> do
@@ -185,7 +185,7 @@ unifyTypes t1 t2 _ = err $ "Cannot unify " ++ show t1 ++ " with " ++ show t2
 toRealType :: ConType -> WholeEnv -> UnifyM Common.Type_
 toRealType (LitType t) _ = return t
 
-toRealType (VarType v _) env = do
+toRealType (VarType v) env = do
   repr <- getRepr v
   case repr of
     BlankSlate -> defer
@@ -195,7 +195,7 @@ toRealType (PiType t f) env = Common.VPi_ <$> toRealType t env <*> toRealTyFn f 
 
 toRealTyFn :: ConTyFn -> WholeEnv -> UnifyM (Common.Type_ -> Common.Type_)
 toRealTyFn (TyFn f) env = mkFunctionReal f env
-toRealTyFn (TyFnVar v _) env = do
+toRealTyFn (TyFnVar v) env = do
   repr <- getRepr v
   case repr of
     BlankSlate -> defer
@@ -207,14 +207,14 @@ toRealTyFn (TyFnVar v _) env = do
 --Need to actually unify two functions
 --TODO is this right?
 unifyFns :: ConTyFn -> ConTyFn -> WholeEnv -> UnifyM ConTyFn
-unifyFns (TyFnVar v1 i) (TyFnVar v2 _) env = do
+unifyFns (TyFnVar v1) (TyFnVar v2) env = do
   repr1 <- getRepr v1
   repr2 <- getRepr v2
   unifyVars v1 v2
   case (repr1, repr2) of
     (BlankSlate, BlankSlate) -> do
       --Descriptor doesn't matter in this case
-      return (TyFnVar v1 i)
+      return (TyFnVar v1)
     (TypeFnRepr f1, BlankSlate) -> do
       --Take descriptor from first one
       setRepr v2 (TypeFnRepr f1)
@@ -224,12 +224,12 @@ unifyFns (TyFnVar v1 i) (TyFnVar v2 _) env = do
       setRepr v1 (TypeFnRepr f2)
       return $ TyFn f2
 
-unifyFns (TyFnVar v1 i) (TyFn f2) env = do
+unifyFns (TyFnVar v1) (TyFn f2) env = do
   setRepr v1 $ TypeFnRepr f2
   return $ TyFn f2
 
 --Same as above but with arguments flipped
-unifyFns (TyFn f2) (TyFnVar v1 i) env = do
+unifyFns (TyFn f2) (TyFnVar v1) env = do
   setRepr v1 $ TypeFnRepr f2
   return $ TyFn f2
 
@@ -271,7 +271,7 @@ solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
   ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> evalStateT x [1..]) $ runWriterT cm
     --TODO what env for top constraint?
-  solveConstraintList (ConstrUnify (VarType mainTypeVar 0) mainType ([],[]) : constraintList)
+  solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType ([],[]) : constraintList)
   (TypeRepr finalRepr) <- getRepr mainTypeVar
   toRealType finalRepr ([],[])
 

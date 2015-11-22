@@ -32,7 +32,7 @@ newtype TypeVar = TypeVar (UF.Point TypeRepr, Int)
 getUF (TypeVar x) = fst x
 
 instance Show TypeVar where
-  show _ = ""
+  show (TypeVar (_, i)) = "<" ++ show i ++ ">"
 
 data TypeRepr =
    BlankSlate
@@ -44,7 +44,7 @@ data TypeRepr =
 --Type we can unify over: either a type literal
 --Or a type variable
 data ConType =
-  VarType TypeVar Int --Type variable can represent a type
+  VarType TypeVar --Type variable can represent a type
   | LitType Common.Type_ --We look at literal types in our constraints
   | PiType ConType ConTyFn --Sometimes we look at function types, where the types
   | AppType ConTyFn ConType --Used to encode
@@ -62,7 +62,7 @@ instance Show (UF.Point a) where
 --Wrapper for functions on types, whose values we may not know
 --But instead determine from inference
 data ConTyFn =
-  TyFnVar TypeVar Int
+  TyFnVar TypeVar
   | TyFn (Common.Type_ -> ConType)
   deriving (Show)
 
@@ -104,10 +104,11 @@ type ConstraintM a = WriterT [Constraint] (StateT [Int] UFM) a
 
 --Operations in our monad:
 --Make fresh types, and unify types together
-freshVar :: Int -> ConstraintM TypeVar
-freshVar i = do
+freshVar :: ConstraintM TypeVar
+freshVar = do
+  newInt <- freshInt
   newPoint <- lift $ lift $ UF.fresh BlankSlate
-  return $  TypeVar (newPoint, i)
+  return $  TypeVar (newPoint, newInt)
 
 
 freshInt :: ConstraintM Int
@@ -118,11 +119,11 @@ freshInt = do
 
 instance Unifyable ConType where
   unify t1 t2 env = addConstr (ConstrUnify t1 t2 env)
-  fresh = VarType <$> (freshVar =<< freshInt) <*> freshInt
+  fresh = VarType <$> freshVar
 
 instance Unifyable ConTyFn where
   unify t1 t2 env = addConstr (TyFnUnify t1 t2 env)
-  fresh = TyFnVar <$> freshVar <*> freshInt
+  fresh = TyFnVar <$> freshVar
 
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
 evaluate term env = do

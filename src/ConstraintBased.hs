@@ -17,7 +17,7 @@ import Text.ParserCombinators.Parsec.Language
 
 import System.Console.Readline
 import System.IO hiding (print)
-
+ 
 import System.IO.Error
 
 import Common
