@@ -17,7 +17,7 @@ import Text.ParserCombinators.Parsec.Language
 
 import System.Console.Readline
 import System.IO hiding (print)
- 
+
 import System.IO.Error
 
 import Common
@@ -83,7 +83,7 @@ iType_ ii g (e1 :$: e2)
             return $ applyPi piBody piArg
 
 iType_ ii g Nat_                  =  return conStar
-iType_ ii g (NatElim_ m mz ms n)  =
+iType_ ii g (NatElim_ m mz ms n)  = trace "NatElim case" $
   do  cType_ ii g m (conType $ VPi_ VNat_ (const VStar_))
       --evaluate $ our param m
       mVal <- evaluate m g

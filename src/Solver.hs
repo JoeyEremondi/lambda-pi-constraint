@@ -82,7 +82,7 @@ unifyVars v1 v2 = lift $ lift $ UF.union (getUF v1) (getUF v2)
 setRepr :: TypeVar -> TypeRepr -> UnifyM ()
 setRepr v rep = lift $ lift $ do
   dummyPoint <- UF.fresh rep
-  UF.union (getUF v) dummyPoint
+  trace ("\nNew Repr for " ++ show v ++ " is " ++ show rep) $ UF.union (getUF v) dummyPoint
 
 err :: String -> UnifyM a
 err msg = SolverResultT $ return $ Err msg
@@ -235,7 +235,7 @@ unifyFns (TyFn f2) (TyFnVar v1) env = do
 
 --TODO do we want a Value or a Term as a result of this?
 mkFunctionReal :: (Common.Type_ -> ConType) -> WholeEnv -> UnifyM (Common.Type_ -> Common.Type_)
-mkFunctionReal f env@(nameEnv, context) = do
+mkFunctionReal f env@(nameEnv, context) = trace ("Trying to make real " ++ show f ++ "\nin env " ++ show env) $ do
   freeName <- Common.Quote <$> freshFreeIndex
   let freeVar = Common.vfree_ freeName
   let funBody = f freeVar
@@ -246,7 +246,8 @@ mkFunctionReal f env@(nameEnv, context) = do
   --Quote that body back into a term
   let termBody = Common.quote0_ valBody
   --Abstract over the free variable
-  return $ \v -> Common.cEval_ termBody ((freeName, v) : nameEnv, realContext)
+  let retVal = \v -> Common.cEval_ termBody ((freeName, v) : nameEnv, realContext)
+  trace ("Made function " ++ show f ++ " into " ++ show (Common.VLam_ retVal) ) $ return $ retVal
 
 solveConstraint :: Constraint -> UnifyM ()
 solveConstraint (ConstrUnify t1 t2 env) =  unifyTypes t1 t2 env >>=  \_ -> return ()
@@ -271,7 +272,8 @@ solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
   ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> evalStateT x [1..]) $ runWriterT cm
     --TODO what env for top constraint?
-  solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType ([],[]) : constraintList)
+  trace ("Whole list " ++ show constraintList ++ "\n=========================") $
+    solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType ([],[]) : constraintList)
   (TypeRepr finalRepr) <- getRepr mainTypeVar
   toRealType finalRepr ([],[])
 

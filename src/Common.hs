@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Common where
 
 import Prelude hiding (print)
@@ -818,6 +819,7 @@ data Value_
   |  VFZero_ Value_
   |  VFSucc_ Value_ Value_
   |  VFin_ Value_
+  deriving (Show)
 
 data Neutral_
    =  NFree_  Name
@@ -830,6 +832,7 @@ data Neutral_
   |  NEqElim_ Value_ Value_ Value_ Value_ Value_ Neutral_
 
   |  NFinElim_ Value_ Value_ Value_ Value_ Neutral_
+  deriving (Show)
 
 type Env_ = [Value_]
 
@@ -1032,8 +1035,11 @@ boundfree_ :: Int -> Name -> ITerm_
 boundfree_ ii (Quote k)     =  Bound_ ((ii - k - 1) `max` 0)
 boundfree_ ii x             =  Free_ x
 
-instance Show Value_ where
-  show = show . quote0_
+instance Show (Value_ -> Value_) where
+  show f = "<<" ++ (show $ quote0_ $ VLam_ f) ++ ">>"
+
+--instance Show Value_ where
+--  show = show . quote0_
 
 type Type_     =  Value_
 
