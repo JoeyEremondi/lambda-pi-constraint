@@ -75,10 +75,14 @@ data Constraint =
   | TyFnUnify ConTyFn ConTyFn WholeEnv
   | ConstrEvaluatesTo ConType Common.CTerm_ WholeEnv
 
+maybeHead :: [a] -> Maybe a
+maybeHead [] = Nothing
+maybeHead (h:_) = Just h
+
 instance Show Constraint where
-  show (ConstrUnify t1 t2 _) = "\n" ++ (show t1) ++ " === " ++ (show t2)
-  show (TyFnUnify t1 t2 _) = "\n" ++(show t1) ++ " === " ++ (show t2)
-  show (ConstrEvaluatesTo t term _) = "\n" ++(show t) ++ " ~~> " ++ (show term)
+  show (ConstrUnify t1 t2 env) = "\n" ++ (show t1) ++ " === " ++ (show t2) ++ " |ENV: " ++ show (maybeHead $ snd env)
+  show (TyFnUnify t1 t2 env) = "\n" ++(show t1) ++ " === " ++ (show t2) ++ " |ENV: " ++ show ( maybeHead $ snd env)
+  show (ConstrEvaluatesTo t term env) = "\n" ++(show t) ++ " ~~> " ++ (show term) ++ " |ENV: " ++ show ( maybeHead $ snd env)
 
 
 
@@ -164,7 +168,7 @@ liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
 liftConTyFn f = TyFn ( conType . f )
 
 valToFn :: ConType -> ConTyFn
-valToFn fcon = TyFn (\v -> AppType ( conTyFn $ \f -> conType $ f `Common.vapp_` v) fcon )
+valToFn fcon = error "ValToFn" $ TyFn (\v -> AppType ( conTyFn $ \f -> conType $ f `Common.vapp_` v) fcon )
 
 
 --Helpful utility function

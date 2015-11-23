@@ -160,13 +160,13 @@ unifyTypes (LitType (Common.VPi_ treal freal)) (PiType t1 f1) env  = do
 unifyTypes (AppType f1 t1) t2 env = do
   v1 <- toRealType t1 env
   fv1 <- toRealTyFn f1 env
-  unifyTypes (LitType $ fv1 v1) t2 env
+  trace ("Unify: applying " ++ show fv1 ++ " to " ++ show v1) $ unifyTypes (LitType $ fv1 v1) t2 env
 
 --Same as above, but flip args
 unifyTypes t2 (AppType f1 t1)  env = do
   v1 <- toRealType t1 env
   fv1 <- toRealTyFn f1 env
-  unifyTypes (LitType $ fv1 v1) t2 env
+  trace ("Unify: applying " ++ show fv1 ++ " to " ++ show v1) $ unifyTypes (LitType $ fv1 v1) t2 env
 
 unifyTypes (NatType t1) (NatType t2) env = do
   NatType <$> unifyTypes t1 t2 env
@@ -233,6 +233,7 @@ unifyFns (TyFn f2) (TyFnVar v1) env = do
   setRepr v1 $ TypeFnRepr f2
   return $ TyFn f2
 
+
 --TODO do we want a Value or a Term as a result of this?
 mkFunctionReal :: (Common.Type_ -> ConType) -> WholeEnv -> UnifyM (Common.Type_ -> Common.Type_)
 mkFunctionReal f env@(nameEnv, context) = trace ("Trying to make real " ++ show f ++ "\nin env " ++ show env) $ do
@@ -245,8 +246,10 @@ mkFunctionReal f env@(nameEnv, context) = trace ("Trying to make real " ++ show 
   realContext <- forM context (\(_, cval) -> toRealType cval env)
   --Quote that body back into a term
   let termBody = Common.quote0_ valBody
+  --Substitute our free value for a parameter
+  let quoteSub = Common.cSubst_ 0 (Common.Free_ freeName) termBody
   --Abstract over the free variable
-  let retVal = \v -> Common.cEval_ termBody ((freeName, v) : nameEnv, realContext)
+  let retVal v = Common.cEval_ quoteSub ( (freeName, v) : nameEnv , v :  realContext)
   trace ("Made function " ++ show f ++ " into " ++ show (Common.VLam_ retVal) ) $ return $ retVal
 
 solveConstraint :: Constraint -> UnifyM ()
@@ -270,7 +273,7 @@ solveConstraintList (c:rest) =  do
 
 solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
-  ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> evalStateT x [1..]) $ runWriterT cm
+  ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> evalStateT x [0..]) $ runWriterT cm
     --TODO what env for top constraint?
   trace ("Whole list " ++ show constraintList ++ "\n=========================") $
     solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType ([],[]) : constraintList)
@@ -282,6 +285,6 @@ finalResults :: UnifyM Common.Type_ -> SolverResult Common.Type_
 finalResults mcomp =
   let
     stateResult = runSolverResultT mcomp
-    ufResult = evalStateT stateResult [1..]
+    ufResult = evalStateT stateResult [99900..]
     finalResult = runIdentity $ UF.runUnionFind ufResult
   in finalResult

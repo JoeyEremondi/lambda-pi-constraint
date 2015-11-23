@@ -159,6 +159,7 @@ iType_ i g (EqElim_ a m mr x y eq) =
       eqVal <- evaluate eq g
       return (foldl applyVal mVal [xVal, yVal])
 
+iType_ i g (Bound_ vi) = error "TODO why never bound?"
 
 
 cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> ConType -> ConstraintM ()
