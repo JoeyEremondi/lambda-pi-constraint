@@ -60,24 +60,18 @@ instance (Monad m) => Monad (SolverResultT m) where
 instance MonadTrans SolverResultT where
   lift x = SolverResultT (liftM Ok x)
 
-type UnifyM a = SolverResultT (StateT [Int] UFM ) a
-
-freshFreeIndex :: UnifyM Int
-freshFreeIndex = do
-  (h:t) <- lift $ get
-  lift $ put t
-  return h
+type UnifyM a = SolverResultT UFM a
 
 getRepr :: TypeVar -> UnifyM TypeRepr
 getRepr v = do
-  repr <- lift $ lift $ UF.descriptor (getUF v)
+  repr <- lift $ UF.descriptor (getUF v)
   return repr
 
 unifyVars :: TypeVar -> TypeVar -> UnifyM ()
-unifyVars v1 v2 = lift $ lift $ UF.union (getUF v1) (getUF v2)
+unifyVars v1 v2 = lift $ UF.union (getUF v1) (getUF v2)
 
 setRepr :: TypeVar -> TypeRepr -> UnifyM ()
-setRepr v rep = lift $ lift $ do
+setRepr v rep = lift $ do
   dummyPoint <- UF.fresh rep
   UF.union (getUF v) dummyPoint
 
@@ -278,7 +272,7 @@ solveConstraintList (c:rest) =  do
 
 solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
-  ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> evalStateT x [0..]) $ runWriterT cm
+  ( (mainType, mainTypeVar), constraintList) <- lift $  (\x -> evalStateT x [0..]) $ runWriterT cm
     --TODO what env for top constraint?
   solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType ([],[]) : constraintList)
   (TypeRepr finalRepr) <- getRepr mainTypeVar
@@ -288,7 +282,6 @@ solveConstraints cm = do
 finalResults :: UnifyM Common.Type_ -> SolverResult Common.Type_
 finalResults mcomp =
   let
-    stateResult = runSolverResultT mcomp
-    ufResult = evalStateT stateResult [99900..]
+    ufResult = runSolverResultT mcomp
     finalResult = runIdentity $ UF.runUnionFind ufResult
   in finalResult
