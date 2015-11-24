@@ -22,6 +22,8 @@ import Control.Monad.Identity (Identity)
 import Data.Data
 import Data.Typeable
 
+trace _ x = x
+
 
 type ConstrContext = [(Common.Name, ConType)]
 type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)

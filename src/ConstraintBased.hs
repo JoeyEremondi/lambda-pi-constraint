@@ -25,7 +25,7 @@ import Common
 import Constraint
 
 import qualified Solver
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 
 checker :: TypeChecker
@@ -65,7 +65,7 @@ iType_ ii g (Free_ x)
   =     case lookup x (snd g) of
           Just ty        ->  return ty
           Nothing        ->  unknownIdent (render (iPrint_ 0 0 (Free_ x)))
-iType_ ii g (e1 :$: e2) 
+iType_ ii g (e1 :$: e2)
   =     do
             fnType <- iType_ ii g e1
             piArg <- fresh
