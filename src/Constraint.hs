@@ -138,7 +138,7 @@ evaluate term env = do
 
 
 unknownIdent :: String -> ConstraintM a
-unknownIdent = error --TODO: something smarter here
+unknownIdent s = error $ "Unknown Identifier: " ++ show s
 
 mkPi :: ConType -> ConTyFn -> ConType
 mkPi = PiType
