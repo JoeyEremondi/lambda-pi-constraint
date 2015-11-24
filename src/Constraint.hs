@@ -49,10 +49,10 @@ data ConType =
   | PiType ConType ConTyFn --Sometimes we look at function types, where the types
   | AppType ConTyFn ConType --Used to encode
                        --may be variables we resolve later with unification
-  | NatType ConType --Our built-in data constructors
+  | NatType --Our built-in data constructors
   | VecType ConType ConType
   | EqType ConType ConType ConType
-  | Param (UF.Point TypeRepr) --Used as a placeholder to deal with functions
+--  | Param (UF.Point TypeRepr) --Used as a placeholder to deal with functions
                   --The point is just used as a unique identifier
   deriving (Show)
 
@@ -148,7 +148,7 @@ applyPi = AppType
 applyVal :: ConType -> ConType -> ConType
 applyVal f x = (valToFn f) `applyPi` x
 
-mkNat :: ConType -> ConType
+mkNat :: ConType
 mkNat = NatType
 
 mkVec :: ConType -> ConType -> ConType

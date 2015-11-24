@@ -65,7 +65,7 @@ iType_ ii g (Free_ x)
   =     case lookup x (snd g) of
           Just ty        ->  return ty
           Nothing        ->  unknownIdent (render (iPrint_ 0 0 (Free_ x)))
-iType_ ii g (e1 :$: e2)
+iType_ ii g (e1 :$: e2) 
   =     do
             fnType <- iType_ ii g e1
             piArg <- fresh
@@ -80,7 +80,7 @@ iType_ ii g (e1 :$: e2)
 
             --Our resulting type is the application of our arg type into the
             --body of the pi type
-            return $ applyPi piBody piArg
+            return $ applyPi piBody argVal
 
 iType_ ii g Nat_                  =  return conStar
 iType_ ii g (NatElim_ m mz ms n)  = trace "NatElim case" $

@@ -158,18 +158,18 @@ unifyTypes (LitType (Common.VPi_ treal freal)) (PiType t1 f1) env  = do
 
 --Application: try evaluating the application
 unifyTypes (AppType f1 t1) t2 env = do
-  v1 <- toRealType t1 env
-  fv1 <- toRealTyFn f1 env
+  v1 <- toRealType 0 t1 env
+  fv1 <- toRealTyFn 0 f1 env
   trace ("Unify: applying " ++ show fv1 ++ " to " ++ show v1) $ unifyTypes (LitType $ fv1 v1) t2 env
 
 --Same as above, but flip args
 unifyTypes t2 (AppType f1 t1)  env = do
-  v1 <- toRealType t1 env
-  fv1 <- toRealTyFn f1 env
+  v1 <- toRealType 0 t1 env
+  fv1 <- toRealTyFn 0 f1 env
   trace ("Unify: applying " ++ show fv1 ++ " to " ++ show v1) $ unifyTypes (LitType $ fv1 v1) t2 env
 
-unifyTypes (NatType t1) (NatType t2) env = do
-  NatType <$> unifyTypes t1 t2 env
+unifyTypes (NatType) (NatType) env =
+  return NatType
 
 unifyTypes (VecType t1 n1) (VecType t2 n2) env = do
   VecType <$> unifyTypes t1 t2 env <*> unifyTypes n1 n2 env
@@ -182,24 +182,35 @@ unifyTypes t1 t2 _ = err $ "Cannot unify " ++ show t1 ++ " with " ++ show t2
 --Check if we can look at a ConType and replace all of its
 --Type variables with their actual types, that we've resolved through unification
 --If not, then we use a Defer error in our monad to delay this check until later
-toRealType :: ConType -> WholeEnv -> UnifyM Common.Type_
-toRealType (LitType t) _ = return t
+toRealType :: Int -> ConType -> WholeEnv -> UnifyM Common.Type_
+toRealType ii (LitType t) _ = return t
 
-toRealType (VarType v) env = do
+toRealType ii (VarType v) env = do
   repr <- getRepr v
   case repr of
     BlankSlate -> defer
-    TypeRepr x -> toRealType x env
+    TypeRepr x -> toRealType ii x env
 
-toRealType (PiType t f) env = Common.VPi_ <$> toRealType t env <*> toRealTyFn f env
+toRealType ii (PiType t f) env = Common.VPi_ <$> toRealType ii t env <*> toRealTyFn ii f env
 
-toRealTyFn :: ConTyFn -> WholeEnv -> UnifyM (Common.Type_ -> Common.Type_)
-toRealTyFn (TyFn f) env = mkFunctionReal f env
-toRealTyFn (TyFnVar v) env = do
+toRealType ii (AppType cf ct) env = do
+  t <- toRealType ii ct env
+  f <- toRealTyFn ii cf env
+  return $ f t
+
+toRealType ii NatType env = return Common.VNat_
+
+toRealType ii (VecType a n) env =  Common.VVec_ <$> toRealType ii a env <*> toRealType ii n env
+
+toRealType ii (EqType a x y) env =  Common.VEq_ <$> toRealType ii a env <*> toRealType ii x env <*> toRealType ii y env
+
+toRealTyFn :: Int -> ConTyFn -> WholeEnv -> UnifyM (Common.Type_ -> Common.Type_)
+toRealTyFn ii (TyFn f) env = mkFunctionReal ii f env
+toRealTyFn ii (TyFnVar v) env = do
   repr <- getRepr v
   case repr of
     BlankSlate -> defer
-    TypeFnRepr f -> mkFunctionReal f env
+    TypeFnRepr f -> mkFunctionReal ii f env
 
 
 --Unify functions:
@@ -235,28 +246,25 @@ unifyFns (TyFn f2) (TyFnVar v1) env = do
 
 
 --TODO do we want a Value or a Term as a result of this?
-mkFunctionReal :: (Common.Type_ -> ConType) -> WholeEnv -> UnifyM (Common.Type_ -> Common.Type_)
-mkFunctionReal f env@(nameEnv, context) = trace ("Trying to make real " ++ show f ++ "\nin env " ++ show env) $ do
-  freeName <- Common.Quote <$> freshFreeIndex
-  let freeVar = Common.vfree_ freeName
+mkFunctionReal :: Int -> (Common.Type_ -> ConType) -> WholeEnv -> UnifyM (Common.Type_ -> Common.Type_)
+mkFunctionReal ii f env@(nameEnv, context) = trace ("Trying to make real " ++ show f ++ "\nin env " ++ show env) $ do
+  let freeVar =  Common.vfree_ $ Common.Quote ii
   let funBody = f freeVar
   --Turn our result from a ConType into a Type_, if we can
-  valBody <- toRealType funBody env
+  valBody <- toRealType ii funBody env
   --Realize all the values in our environment
-  realContext <- forM context (\(_, cval) -> toRealType cval env)
+  realContext <- forM context (\(_, cval) -> toRealType ii cval env)
   --Quote that body back into a term
-  let termBody = Common.quote0_ valBody
-  --Substitute our free value for a parameter
-  let quoteSub = Common.cSubst_ 0 (Common.Free_ freeName) termBody
+  let termBody = Common.quote_ (ii+1) valBody
   --Abstract over the free variable
-  let retVal v = Common.cEval_ quoteSub ( (freeName, v) : nameEnv , v :  realContext)
+  let retVal v = Common.cEval_ termBody ( nameEnv , v :  realContext)
   trace ("Made function " ++ show f ++ " into " ++ show (Common.VLam_ retVal) ) $ return $ retVal
 
 solveConstraint :: Constraint -> UnifyM ()
 solveConstraint (ConstrUnify t1 t2 env) =  unifyTypes t1 t2 env >>=  \_ -> return ()
 solveConstraint (TyFnUnify f1 f2 env) = unifyFns f1 f2 env >>=  \_ -> return ()
 solveConstraint (ConstrEvaluatesTo ct term env@(nameEnv, context)) = do
-  realContext <- forM context $ \(_, cval) -> toRealType cval (nameEnv, [])
+  realContext <- forM context $ \(_, cval) -> toRealType 0 cval (nameEnv, [])
   let evaluated = Common.cEval_ term (nameEnv, realContext) --TODO need anything in env?
   unifyTypes ct (LitType evaluated) env >>=  \_ -> return () --TODO control eval?
 
@@ -278,7 +286,7 @@ solveConstraints cm = do
   trace ("Whole list " ++ show constraintList ++ "\n=========================") $
     solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType ([],[]) : constraintList)
   (TypeRepr finalRepr) <- getRepr mainTypeVar
-  toRealType finalRepr ([],[])
+  toRealType 0 finalRepr ([],[])
 
 
 finalResults :: UnifyM Common.Type_ -> SolverResult Common.Type_
