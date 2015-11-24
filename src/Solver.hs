@@ -11,9 +11,6 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forM)
 import Control.Monad.Identity (runIdentity)
 
---import Debug.Trace (trace)
-
-
 
 --Custom Error monad with a special option saying
 --"Compotation failed, defer this unification"
@@ -74,7 +71,7 @@ freshFreeIndex = do
 getRepr :: TypeVar -> UnifyM TypeRepr
 getRepr v = do
   repr <- lift $ lift $ UF.descriptor (getUF v)
-  return $ trace ("\nRepr for " ++ show v ++ " is " ++ show repr) $ repr
+  return repr
 
 unifyVars :: TypeVar -> TypeVar -> UnifyM ()
 unifyVars v1 v2 = lift $ lift $ UF.union (getUF v1) (getUF v2)
@@ -82,7 +79,7 @@ unifyVars v1 v2 = lift $ lift $ UF.union (getUF v1) (getUF v2)
 setRepr :: TypeVar -> TypeRepr -> UnifyM ()
 setRepr v rep = lift $ lift $ do
   dummyPoint <- UF.fresh rep
-  trace ("\nNew Repr for " ++ show v ++ " is " ++ show rep) $ UF.union (getUF v) dummyPoint
+  UF.union (getUF v) dummyPoint
 
 err :: String -> UnifyM a
 err msg = SolverResultT $ return $ Err msg
@@ -160,13 +157,13 @@ unifyTypes (LitType (Common.VPi_ treal freal)) (PiType t1 f1) env  = do
 unifyTypes (AppType f1 t1) t2 env = do
   v1 <- toRealType 0 t1 env
   fv1 <- toRealTyFn 0 f1 env
-  trace ("Unify: applying " ++ show fv1 ++ " to " ++ show v1) $ unifyTypes (LitType $ fv1 v1) t2 env
+  unifyTypes (LitType $ fv1 v1) t2 env
 
 --Same as above, but flip args
 unifyTypes t2 (AppType f1 t1)  env = do
   v1 <- toRealType 0 t1 env
   fv1 <- toRealTyFn 0 f1 env
-  trace ("Unify: applying " ++ show fv1 ++ " to " ++ show v1) $ unifyTypes (LitType $ fv1 v1) t2 env
+  unifyTypes (LitType $ fv1 v1) t2 env
 
 unifyTypes (NatType) (NatType) env =
   return NatType
@@ -247,7 +244,7 @@ unifyFns (TyFn f2) (TyFnVar v1) env = do
 
 --TODO do we want a Value or a Term as a result of this?
 mkFunctionReal :: Int -> (Common.Type_ -> ConType) -> WholeEnv -> UnifyM (Common.Type_ -> Common.Type_)
-mkFunctionReal ii f env@(nameEnv, context) = trace ("Trying to make real " ++ show f ++ "\nin env " ++ show env) $ do
+mkFunctionReal ii f env@(nameEnv, context) = do
   let freeVar =  Common.vfree_ $ Common.Quote ii
   let funBody = f freeVar
   --Turn our result from a ConType into a Type_, if we can
@@ -258,7 +255,7 @@ mkFunctionReal ii f env@(nameEnv, context) = trace ("Trying to make real " ++ sh
   let termBody = Common.quote_ (ii+1) valBody
   --Abstract over the free variable
   let retVal v = Common.cEval_ termBody ( nameEnv , v :  realContext)
-  trace ("Made function " ++ show f ++ " into " ++ show (Common.VLam_ retVal) ) $ return $ retVal
+  return retVal
 
 solveConstraint :: Constraint -> UnifyM ()
 solveConstraint (ConstrUnify t1 t2 env) =  unifyTypes t1 t2 env >>=  \_ -> return ()
@@ -271,11 +268,11 @@ solveConstraint (ConstrEvaluatesTo ct term env@(nameEnv, context)) = do
 --Loop through our constraints
 solveConstraintList [] = return ()
 solveConstraintList (c:rest) =  do
-  result <- trace (show c) $ lift $ runSolverResultT $ solveConstraint c
+  result <- lift $ runSolverResultT $ solveConstraint c
   case result of
     --If defer: do this constraint later
     --TODO better solution for this?
-    Defer -> trace "Deferring" $ solveConstraintList (rest ++ [c])
+    Defer -> solveConstraintList (rest ++ [c])
     Err s -> err s
     Ok _ -> solveConstraintList rest
 
@@ -283,8 +280,7 @@ solveConstraints :: (ConstraintM (ConType, TypeVar)) -> UnifyM Common.Type_
 solveConstraints cm = do
   ( (mainType, mainTypeVar), constraintList) <- lift $ lift $  (\x -> evalStateT x [0..]) $ runWriterT cm
     --TODO what env for top constraint?
-  trace ("Whole list " ++ show constraintList ++ "\n=========================") $
-    solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType ([],[]) : constraintList)
+  solveConstraintList (ConstrUnify (VarType mainTypeVar) mainType ([],[]) : constraintList)
   (TypeRepr finalRepr) <- getRepr mainTypeVar
   toRealType 0 finalRepr ([],[])
 

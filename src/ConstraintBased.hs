@@ -3,7 +3,6 @@ module ConstraintBased (checker) where
 
 import Prelude hiding (print)
 
-import Control.Monad.Error
 import Data.List
 import Data.Char
 
@@ -25,11 +24,10 @@ import Common
 import Constraint
 
 import qualified Solver
---import Debug.Trace (trace)
 
 
 checker :: TypeChecker
-checker (nameEnv, context) term = trace ("Checking term\n" ++ show term ++ "\n\n") $ do
+checker (nameEnv, context) term = do
   let newContext = map (\(a,b) -> (a, conType b) ) context
   let checkResults = Solver.solveConstraints $ getConstraints (nameEnv, newContext) term
   case (Solver.finalResults checkResults) of
@@ -83,7 +81,7 @@ iType_ ii g (e1 :$: e2)
             return $ applyPi piBody argVal
 
 iType_ ii g Nat_                  =  return conStar
-iType_ ii g (NatElim_ m mz ms n)  = trace "NatElim case" $
+iType_ ii g (NatElim_ m mz ms n)  =
   do  cType_ ii g m (conType $ VPi_ VNat_ (const VStar_))
       --evaluate $ our param m
       mVal <- evaluate m g
