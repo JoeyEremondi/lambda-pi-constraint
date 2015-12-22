@@ -23,8 +23,9 @@ import System.IO.Error
 import Control.Monad.Identity (Identity, runIdentity)
 import qualified Control.Monad.State as State
 
+type Region = SourcePos
 
-data Located a = L {region :: SourcePos, contents :: a}
+data Located a = L {region :: Region, contents :: a}
   deriving (Eq, Ord, Show)
 
 type LPParser = P.ParsecT String SourcePos Identity
@@ -32,6 +33,8 @@ type LPParser = P.ParsecT String SourcePos Identity
 startRegion = error "TODO startRegion"
 
 catch = catchIOError
+
+builtin x = L startRegion x
 
 
 putstrln x = putStrLn x
@@ -320,10 +323,10 @@ toNat_' r 0  = L r Zero_
 toNat_' r n  =  L r $ Succ_ (toNat_' r (n - 1))
 
 locFree :: Name -> ITerm_
-locFree x = L startRegion $ Free_ x
+locFree x = builtin $ Free_ x
 
 --globalApp :: ITerm_ -> ITerm_ -> ITerm_
-globalApp x y = L startRegion $ x :$: y
+globalApp x y = builtin $ x :$: y
 
 iPrint_ :: Int -> Int -> ITerm_ -> Doc
 iPrint_ p ii (L _ it) = iPrint_' p ii it
@@ -650,7 +653,7 @@ check int state@(inter, out, ve, te) i t kp k =
 
 stassume state@(inter, out, ve, te) x t = return (inter, out, ve, (Global x, t) : te)
 lpassume checker state@(inter, out, ve, te) x t =
-  check (lp checker) state x (Ann_ t (L startRegion $ Inf_ Star_))
+  check (lp checker) state x (builtin $ Ann_ t (builtin $ Inf_ $ builtin $ Star_))
         (\ (y, v) -> return ()) --  putStrLn (render (text x <> text " :: " <> cPrint_ 0 0 (quote0_ v))))
         (\ (y, v) -> (inter, out, ve, (Global x, v) : te))
 
@@ -909,104 +912,108 @@ cEval_ (L _ ct) d = cEval_' ct d
     cEval_' (FSucc_ n f)  d  =  VFSucc_ (cEval_ n d) (cEval_ f d)
 
 iEval_ :: ITerm_ -> (NameEnv Value_,Env_) -> Value_
-iEval_ (Ann_  c _)       d  =  cEval_ c d
+iEval_ (L _ it) d = iEval_' it d
+  where
+    iEval_' (Ann_  c _)       d  =  cEval_ c d
 
-iEval_ Star_           d  =  VStar_
-iEval_ (Pi_ ty ty')    d  =  VPi_ (cEval_ ty d) (\ x -> cEval_ ty' (((\(e, d) -> (e,  (x : d))) d)))
+    iEval_' Star_           d  =  VStar_
+    iEval_' (Pi_ ty ty')    d  =  VPi_ (cEval_ ty d) (\ x -> cEval_ ty' (((\(e, d) -> (e,  (x : d))) d)))
 
-iEval_ (Free_  x)      d  =  case lookup x (fst d) of Nothing ->  (vfree_ x); Just v -> v
-iEval_ (Bound_  ii)    d  =  (snd d) !! ii
-iEval_ (i :$: c)       d  =  vapp_ (iEval_ i d) (cEval_ c d)
+    iEval_' (Free_  x)      d  =  case lookup x (fst d) of Nothing ->  (vfree_ x); Just v -> v
+    iEval_' (Bound_  ii)    d  =  (snd d) !! ii
+    iEval_' (i :$: c)       d  =  vapp_ (iEval_ i d) (cEval_ c d)
 
-iEval_ Nat_                  d  =  VNat_
-iEval_ (NatElim_ m mz ms n)  d
-  =  let  mzVal = cEval_ mz d
-          msVal = cEval_ ms d
-          rec nVal =
-            case nVal of
-              VZero_       ->  mzVal
-              VSucc_ k     ->  msVal `vapp_` k `vapp_` rec k
-              VNeutral_ n  ->  VNeutral_
-                               (NNatElim_ (cEval_ m d) mzVal msVal n)
-              _            ->  error "internal: eval natElim"
-     in   rec (cEval_ n d)
+    iEval_' Nat_                  d  =  VNat_
+    iEval_' (NatElim_ m mz ms n)  d
+      =  let  mzVal = cEval_ mz d
+              msVal = cEval_ ms d
+              rec nVal =
+                case nVal of
+                  VZero_       ->  mzVal
+                  VSucc_ k     ->  msVal `vapp_` k `vapp_` rec k
+                  VNeutral_ n  ->  VNeutral_
+                                   (NNatElim_ (cEval_ m d) mzVal msVal n)
+                  _            ->  error "internal: eval natElim"
+         in   rec (cEval_ n d)
 
-iEval_ (Vec_ a n)                 d  =  VVec_ (cEval_ a d) (cEval_ n d)
+    iEval_' (Vec_ a n)                 d  =  VVec_ (cEval_ a d) (cEval_ n d)
 
-iEval_ (VecElim_ a m mn mc n xs)  d  =
-  let  mnVal  =  cEval_ mn d
-       mcVal  =  cEval_ mc d
-       rec nVal xsVal =
-         case xsVal of
-           VNil_ _          ->  mnVal
-           VCons_ _ k x xs  ->  foldl vapp_ mcVal [k, x, xs, rec k xs]
-           VNeutral_ n      ->  VNeutral_
-                                (NVecElim_  (cEval_ a d) (cEval_ m d)
-                                            mnVal mcVal nVal n)
-           _                ->  error "internal: eval vecElim"
-  in   rec (cEval_ n d) (cEval_ xs d)
+    iEval_' (VecElim_ a m mn mc n xs)  d  =
+      let  mnVal  =  cEval_ mn d
+           mcVal  =  cEval_ mc d
+           rec nVal xsVal =
+             case xsVal of
+               VNil_ _          ->  mnVal
+               VCons_ _ k x xs  ->  foldl vapp_ mcVal [k, x, xs, rec k xs]
+               VNeutral_ n      ->  VNeutral_
+                                    (NVecElim_  (cEval_ a d) (cEval_ m d)
+                                                mnVal mcVal nVal n)
+               _                ->  error "internal: eval vecElim"
+      in   rec (cEval_ n d) (cEval_ xs d)
 
-iEval_ (Eq_ a x y)                d  =  VEq_ (cEval_ a d) (cEval_ x d) (cEval_ y d)
-iEval_ (EqElim_ a m mr x y eq)    d  =
-  let  mrVal  =  cEval_ mr d
-       rec eqVal =
-         case eqVal of
-           VRefl_ _ z -> mrVal `vapp_` z
-           VNeutral_ n ->
-             VNeutral_ (NEqElim_  (cEval_ a d) (cEval_ m d) mrVal
-                                  (cEval_ x d) (cEval_ y d) n)
-           _ -> error "internal: eval eqElim"
-  in   rec (cEval_ eq d)
+    iEval_' (Eq_ a x y)                d  =  VEq_ (cEval_ a d) (cEval_ x d) (cEval_ y d)
+    iEval_' (EqElim_ a m mr x y eq)    d  =
+      let  mrVal  =  cEval_ mr d
+           rec eqVal =
+             case eqVal of
+               VRefl_ _ z -> mrVal `vapp_` z
+               VNeutral_ n ->
+                 VNeutral_ (NEqElim_  (cEval_ a d) (cEval_ m d) mrVal
+                                      (cEval_ x d) (cEval_ y d) n)
+               _ -> error "internal: eval eqElim"
+      in   rec (cEval_ eq d)
 
-iEval_ (Fin_ n)                d  =  VFin_ (cEval_ n d)
-iEval_ (FinElim_ m mz ms n f)  d  =
-  let  mzVal  =  cEval_ mz d
-       msVal  =  cEval_ ms d
-       rec fVal =
-         case fVal of
-           VFZero_ k        ->  mzVal `vapp_` k
-           VFSucc_ k g      ->  foldl vapp_ msVal [k, g, rec g]
-           VNeutral_ n'     ->  VNeutral_
-                                (NFinElim_  (cEval_ m d) (cEval_ mz d)
-                                            (cEval_ ms d) (cEval_ n d) n')
-           _                ->  error "internal: eval finElim"
-  in   rec (cEval_ f d)
+    iEval_' (Fin_ n)                d  =  VFin_ (cEval_ n d)
+    iEval_' (FinElim_ m mz ms n f)  d  =
+      let  mzVal  =  cEval_ mz d
+           msVal  =  cEval_ ms d
+           rec fVal =
+             case fVal of
+               VFZero_ k        ->  mzVal `vapp_` k
+               VFSucc_ k g      ->  foldl vapp_ msVal [k, g, rec g]
+               VNeutral_ n'     ->  VNeutral_
+                                    (NFinElim_  (cEval_ m d) (cEval_ mz d)
+                                                (cEval_ ms d) (cEval_ n d) n')
+               _                ->  error "internal: eval finElim"
+      in   rec (cEval_ f d)
 
 iSubst_ :: Int -> ITerm_ -> ITerm_ -> ITerm_
-iSubst_ ii i'   (Ann_ c c')     =  Ann_ (cSubst_ ii i' c) (cSubst_ ii i' c')
+iSubst_ ii i' (L reg it) = L reg $ iSubst_' ii i' it
+  where
+    iSubst_' ii i'   (Ann_ c c')     =  Ann_ (cSubst_ ii i' c) (cSubst_ ii i' c')
 
 
-iSubst_ ii r  Star_           =  Star_
-iSubst_ ii r  (Pi_ ty ty')    =  Pi_  (cSubst_ ii r ty) (cSubst_ (ii + 1) r ty')
+    iSubst_' ii r  Star_           =  Star_
+    iSubst_' ii r  (Pi_ ty ty')    =  Pi_  (cSubst_ ii r ty) (cSubst_ (ii + 1) r ty')
 
-iSubst_ ii i' (Bound_ j)      =  if ii == j then i' else Bound_ j
-iSubst_ ii i' (Free_ y)       =  Free_ y
-iSubst_ ii i' (i :$: c)       =  iSubst_ ii i' i :$: cSubst_ ii i' c
+    iSubst_' ii (L _ isub) (Bound_ j)      =  if ii == j then isub else Bound_ j
+    iSubst_' ii i' (Free_ y)       =  Free_ y
+    iSubst_' ii i' (i :$: c)       =  iSubst_ ii i' i :$: cSubst_ ii i' c
 
-iSubst_ ii r  Nat_            =  Nat_
-iSubst_ ii r  (NatElim_ m mz ms n)
-                              =  NatElim_ (cSubst_ ii r m)
-                                          (cSubst_ ii r mz) (cSubst_ ii r ms)
-                                          (cSubst_ ii r ms)
+    iSubst_' ii r  Nat_            =  Nat_
+    iSubst_' ii r  (NatElim_ m mz ms n)
+                                  =  NatElim_ (cSubst_ ii r m)
+                                              (cSubst_ ii r mz) (cSubst_ ii r ms)
+                                              (cSubst_ ii r ms)
 
-iSubst_ ii r  (Vec_ a n)      =  Vec_ (cSubst_ ii r a) (cSubst_ ii r n)
-iSubst_ ii r  (VecElim_ a m mn mc n xs)
-                              =  VecElim_ (cSubst_ ii r a) (cSubst_ ii r m)
-                                          (cSubst_ ii r mn) (cSubst_ ii r mc)
-                                          (cSubst_ ii r n) (cSubst_ ii r xs)
+    iSubst_' ii r  (Vec_ a n)      =  Vec_ (cSubst_ ii r a) (cSubst_ ii r n)
+    iSubst_' ii r  (VecElim_ a m mn mc n xs)
+                                  =  VecElim_ (cSubst_ ii r a) (cSubst_ ii r m)
+                                              (cSubst_ ii r mn) (cSubst_ ii r mc)
+                                              (cSubst_ ii r n) (cSubst_ ii r xs)
 
-iSubst_ ii r  (Eq_ a x y)     =  Eq_ (cSubst_ ii r a)
-                                     (cSubst_ ii r x) (cSubst_ ii r y)
-iSubst_ ii r  (EqElim_ a m mr x y eq)
-                              =  VecElim_ (cSubst_ ii r a) (cSubst_ ii r m)
-                                          (cSubst_ ii r mr) (cSubst_ ii r x)
-                                          (cSubst_ ii r y) (cSubst_ ii r eq)
+    iSubst_' ii r  (Eq_ a x y)     =  Eq_ (cSubst_ ii r a)
+                                         (cSubst_ ii r x) (cSubst_ ii r y)
+    iSubst_' ii r  (EqElim_ a m mr x y eq)
+                                  =  VecElim_ (cSubst_ ii r a) (cSubst_ ii r m)
+                                              (cSubst_ ii r mr) (cSubst_ ii r x)
+                                              (cSubst_ ii r y) (cSubst_ ii r eq)
 
-iSubst_ ii r  (Fin_ n)        =  Fin_ (cSubst_ ii r n)
-iSubst_ ii r  (FinElim_ m mz ms n f)
-                              =  FinElim_ (cSubst_ ii r m)
-                                          (cSubst_ ii r mz) (cSubst_ ii r ms)
-                                          (cSubst_ ii r n) (cSubst_ ii r f)
+    iSubst_' ii r  (Fin_ n)        =  Fin_ (cSubst_ ii r n)
+    iSubst_' ii r  (FinElim_ m mz ms n f)
+                                  =  FinElim_ (cSubst_ ii r m)
+                                              (cSubst_ ii r mz) (cSubst_ ii r ms)
+                                              (cSubst_ ii r n) (cSubst_ ii r f)
 
 cSubst_ :: Int -> ITerm_ -> CTerm_ -> CTerm_
 cSubst_ ii i' (L reg ct) = L reg $ cSubst_' ii i' ct
@@ -1028,32 +1035,33 @@ cSubst_ ii i' (L reg ct) = L reg $ cSubst_' ii i' ct
     cSubst_' ii r  (FSucc_ n k)  =  FSucc_ (cSubst_ ii r n) (cSubst_ ii r k)
 
 quote_ :: Int -> Value_ -> CTerm_
-quote_ ii v = L startRegion $ quote_' ii v
+quote_ ii v = builtin $ quote_' ii v
   where
+    pos = startRegion
     quote_' ii (VLam_ t)
       =     Lam_ (quote_ (ii + 1) (t (vfree_ (Quote ii))))
 
 
-    quote_' ii VStar_ = Inf_ Star_
+    quote_' ii VStar_ = Inf_ $ L pos Star_
     quote_' ii (VPi_ v f)
-        =  Inf_ (Pi_ (quote_ ii v) (quote_ (ii + 1) (f (vfree_ (Quote ii)))))
+        =  Inf_ (L pos $ Pi_ (quote_ ii v) (quote_ (ii + 1) (f (vfree_ (Quote ii)))))
 
     quote_' ii (VNeutral_ n)
       =     Inf_ (neutralQuote_ ii n)
 
-    quote_' ii VNat_       =  Inf_ Nat_
+    quote_' ii VNat_       =  Inf_ $ L pos Nat_
     quote_' ii VZero_      =  Zero_
     quote_' ii (VSucc_ n)  =  Succ_ (quote_ ii n)
 
-    quote_' ii (VVec_ a n)         =  Inf_ (Vec_ (quote_ ii a) (quote_ ii n))
+    quote_' ii (VVec_ a n)         =  Inf_ (L pos $ Vec_ (quote_ ii a) (quote_ ii n))
     quote_' ii (VNil_ a)           =  Nil_ (quote_ ii a)
     quote_' ii (VCons_ a n x xs)   =  Cons_  (quote_ ii a) (quote_ ii n)
                                             (quote_ ii x) (quote_ ii xs)
 
-    quote_' ii (VEq_ a x y)  =  Inf_ (Eq_ (quote_ ii a) (quote_ ii x) (quote_ ii y))
+    quote_' ii (VEq_ a x y)  =  Inf_ (L pos $ Eq_ (quote_ ii a) (quote_ ii x) (quote_ ii y))
     quote_' ii (VRefl_ a x)  =  Refl_ (quote_ ii a) (quote_ ii x)
 
-    quote_' ii (VFin_ n)           =  Inf_ (Fin_ (quote_ ii n))
+    quote_' ii (VFin_ n)           =  Inf_ (L pos $ Fin_ (quote_ ii n))
     quote_' ii (VFZero_ n)         =  FZero_ (quote_ ii n)
     quote_' ii (VFSucc_ n f)       =  FSucc_  (quote_ ii n) (quote_ ii f)
 
@@ -1061,29 +1069,29 @@ neutralQuote_ :: Int -> Neutral_ -> ITerm_
 neutralQuote_ ii (NFree_ v)
    =  boundfree_ ii v
 neutralQuote_ ii (NApp_ n v)
-   =  neutralQuote_ ii n :$: quote_ ii v
+   =  neutralQuote_ ii n `globalApp` quote_ ii v
 
 neutralQuote_ ii (NNatElim_ m z s n)
-   =  NatElim_ (quote_ ii m) (quote_ ii z) (quote_ ii s) (L startRegion $ Inf_ (neutralQuote_ ii n))
+   =  builtin $ NatElim_ (quote_ ii m) (quote_ ii z) (quote_ ii s) (builtin $ Inf_ (neutralQuote_ ii n))
 
 neutralQuote_ ii (NVecElim_ a m mn mc n xs)
-   =  VecElim_ (quote_ ii a) (quote_ ii m)
+   =  builtin $ VecElim_ (quote_ ii a) (quote_ ii m)
                (quote_ ii mn) (quote_ ii mc)
-               (quote_ ii n) (L startRegion $ Inf_ (neutralQuote_ ii xs))
+               (quote_ ii n) (builtin $ Inf_ (neutralQuote_ ii xs))
 
 neutralQuote_ ii (NEqElim_ a m mr x y eq)
-   =  EqElim_  (quote_ ii a) (quote_ ii m) (quote_ ii mr)
+   =  builtin $ EqElim_  (quote_ ii a) (quote_ ii m) (quote_ ii mr)
                (quote_ ii x) (quote_ ii y)
-               (L startRegion $ Inf_ (neutralQuote_ ii eq))
+               (builtin $ Inf_ (neutralQuote_ ii eq))
 
 neutralQuote_ ii (NFinElim_ m mz ms n f)
-   =  FinElim_ (quote_ ii m)
+   =  builtin $ FinElim_ (quote_ ii m)
                (quote_ ii mz) (quote_ ii ms)
-               (quote_ ii n) (L startRegion $ Inf_ (neutralQuote_ ii f))
+               (quote_ ii n) (builtin $ Inf_ (neutralQuote_ ii f))
 
 boundfree_ :: Int -> Name -> ITerm_
-boundfree_ ii (Quote k)     =  Bound_ ((ii - k - 1) `max` 0)
-boundfree_ ii x             =  Free_ x
+boundfree_ ii (Quote k)     =  builtin $ Bound_ ((ii - k - 1) `max` 0)
+boundfree_ ii x             =  builtin $ Free_ x
 
 instance Show (Value_ -> Value_) where
   show f = "<<" ++ (show $ quote0_ $ VLam_ f) ++ ">>"
