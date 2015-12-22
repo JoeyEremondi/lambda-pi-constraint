@@ -24,7 +24,7 @@ import Control.Monad.Identity (Identity, runIdentity)
 import qualified Control.Monad.State as State
 
 
-data L a = L {region :: SourcePos, contents :: a}
+data Located a = L {region :: SourcePos, contents :: a}
   deriving (Eq, Ord, Show)
 
 type LPParser = P.ParsecT String SourcePos Identity
@@ -240,7 +240,7 @@ parseITerm_ 0 e = getPosition >>= \pos ->
         (fe,t:ts) <- parseBindings_ True e
         reserved lambdaPi "."
         t' <- parseCTerm_ 0 fe
-        return (foldl (\ p t -> Pi_ t (L pos $ Inf_ p)) ( Pi_ t t') ts)
+        return (foldl (\ p t -> L pos $ Pi_ t (L pos $ Inf_ p)) (L pos $  Pi_ t t') ts)
   <|>
   try
      (do
@@ -252,9 +252,10 @@ parseITerm_ 0 e = getPosition >>= \pos ->
   where
     rest t =
       do
+        pos <- getPosition
         reserved lambdaPi "->"
         t' <- parseCTerm_ 0 ([]:e)
-        return (Pi_ t t')
+        return (L pos $ Pi_ t t')
 parseITerm_ 1 e = getPosition >>= \pos ->
   try
      (do
@@ -266,26 +267,29 @@ parseITerm_ 1 e = getPosition >>= \pos ->
   where
     rest t =
       do
+        pos <- getPosition
         reserved lambdaPi "::"
         t' <- parseCTerm_ 0 e
-        return (Ann_ t t')
+        return (L pos $ Ann_ t t')
 parseITerm_ 2 e =
       do
+        pos <- getPosition
         t <- parseITerm_ 3 e
         ts <- many (parseCTerm_ 3 e)
-        return (foldl (:$:) t ts)
+        let app x y = L pos (x :$: y)
+        return (foldl app t ts)
 parseITerm_ 3 e = getPosition >>= \pos ->
       do
         reserved lambdaPi "*"
-        return Star_
+        return $ L pos Star_
   <|> do
         n <- natural lambdaPi
         return (toNat_ pos n)
   <|> do
         x <- identifier lambdaPi
         case findIndex (== x) e of
-          Just n  -> return (Bound_ n)
-          Nothing -> return (Free_ (Global x))
+          Just n  -> return (L pos $ Bound_ n)
+          Nothing -> return (L pos $ Free_ (Global x))
   <|> parens lambdaPi (parseITerm_ 0 e)
 
 parseCTerm_ :: Int -> [String] -> LPParser CTerm_
@@ -309,33 +313,41 @@ parseLam_ e =
          return (iterate mkLam t !! length xs)
 
 toNat_ :: SourcePos -> Integer -> ITerm_
-toNat_ r n = Ann_ (toNat_' r n) (L r $ Inf_ Nat_)
+toNat_ r n = L r $ Ann_ (toNat_' r n) (L r $ Inf_ $ L r Nat_)
 
 toNat_' :: SourcePos -> Integer -> CTerm_
 toNat_' r 0  = L r Zero_
 toNat_' r n  =  L r $ Succ_ (toNat_' r (n - 1))
 
+locFree :: Name -> ITerm_
+locFree x = L startRegion $ Free_ x
+
+--globalApp :: ITerm_ -> ITerm_ -> ITerm_
+globalApp x y = L startRegion $ x :$: y
+
 iPrint_ :: Int -> Int -> ITerm_ -> Doc
-iPrint_ p ii (Ann_ c ty)       =  parensIf (p > 1) (cPrint_ 2 ii c <> text " :: " <> cPrint_ 0 ii ty)
-iPrint_ p ii Star_             =  text "*"
-iPrint_ p ii (Pi_ d (L _ (Inf_ (Pi_ d' r))))
-                               =  parensIf (p > 0) (nestedForall_ (ii + 2) [(ii + 1, d'), (ii, d)] r)
-iPrint_ p ii (Pi_ d r)         =  parensIf (p > 0) (sep [text "forall " <> text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d <> text " .", cPrint_ 0 (ii + 1) r])
-iPrint_ p ii (Bound_ k)        =  text (vars !! (ii - k - 1))
-iPrint_ p ii (Free_ (Global s))=  text s
-iPrint_ p ii (i :$: c)         =  parensIf (p > 2) (sep [iPrint_ 2 ii i, nest 2 (cPrint_ 3 ii c)])
-iPrint_ p ii Nat_              =  text "Nat"
-iPrint_ p ii (NatElim_ m z s n)=  iPrint_ p ii (Free_ (Global "natElim") :$: m :$: z :$: s :$: n)
-iPrint_ p ii (Vec_ a n)        =  iPrint_ p ii (Free_ (Global "Vec") :$: a :$: n)
-iPrint_ p ii (VecElim_ a m mn mc n xs)
-                               =  iPrint_ p ii (Free_ (Global "vecElim") :$: a :$: m :$: mn :$: mc :$: n :$: xs)
-iPrint_ p ii (Eq_ a x y)       =  iPrint_ p ii (Free_ (Global "Eq") :$: a :$: x :$: y)
-iPrint_ p ii (EqElim_ a m mr x y eq)
-                               =  iPrint_ p ii (Free_ (Global "eqElim") :$: a :$: m :$: mr :$: x :$: y :$: eq)
-iPrint_ p ii (Fin_ n)          =  iPrint_ p ii (Free_ (Global "Fin") :$: n)
-iPrint_ p ii (FinElim_ m mz ms n f)
-                               =  iPrint_ p ii (Free_ (Global "finElim") :$: m :$: mz :$: ms :$: n :$: f)
-iPrint_ p ii x                 =  text ("[" ++ show x ++ "]")
+iPrint_ p ii (L _ it) = iPrint_' p ii it
+  where
+    iPrint_' p ii (Ann_ c ty)       =  parensIf (p > 1) (cPrint_ 2 ii c <> text " :: " <> cPrint_ 0 ii ty)
+    iPrint_' p ii Star_             =  text "*"
+    iPrint_' p ii (Pi_ d (L _ (Inf_ (L _ (Pi_ d' r)))))
+                                   =  parensIf (p > 0) (nestedForall_ (ii + 2) [(ii + 1, d'), (ii, d)] r)
+    iPrint_' p ii (Pi_ d r)         =  parensIf (p > 0) (sep [text "forall " <> text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d <> text " .", cPrint_ 0 (ii + 1) r])
+    iPrint_' p ii (Bound_ k)        =  text (vars !! (ii - k - 1))
+    iPrint_' p ii (Free_ (Global s))=  text s
+    iPrint_' p ii (i :$: c)         =  parensIf (p > 2) (sep [iPrint_ 2 ii i, nest 2 (cPrint_ 3 ii c)])
+    iPrint_' p ii Nat_              =  text "Nat"
+    iPrint_' p ii (NatElim_ m z s n)=  iPrint_ p ii (locFree (Global "natElim") `globalApp` m `globalApp` z `globalApp` s `globalApp` n)
+    iPrint_' p ii (Vec_ a n)        =  iPrint_ p ii (locFree (Global "Vec") `globalApp` a `globalApp` n)
+    iPrint_' p ii (VecElim_ a m mn mc n xs)
+                                   =  iPrint_ p ii (locFree (Global "vecElim") `globalApp` a `globalApp` m `globalApp` mn `globalApp` mc `globalApp` n `globalApp` xs)
+    iPrint_' p ii (Eq_ a x y)       =  iPrint_ p ii (locFree (Global "Eq") `globalApp` a `globalApp` x `globalApp` y)
+    iPrint_' p ii (EqElim_ a m mr x y eq)
+                                   =  iPrint_ p ii (locFree (Global "eqElim") `globalApp` a `globalApp` m `globalApp` mr `globalApp` x `globalApp` y `globalApp` eq)
+    iPrint_' p ii (Fin_ n)          =  iPrint_ p ii (locFree (Global "Fin") `globalApp` n)
+    iPrint_' p ii (FinElim_ m mz ms n f)
+                                   =  iPrint_ p ii (locFree (Global "finElim") `globalApp` m `globalApp` mz `globalApp` ms `globalApp` n `globalApp` f)
+    iPrint_' p ii x                 =  text ("[" ++ show x ++ "]")
 
 cPrint_ :: Int -> Int -> CTerm_ -> Doc
 cPrint_ p ii (L reg ct) = cPrint_' p ii ct
@@ -344,12 +356,12 @@ cPrint_ p ii (L reg ct) = cPrint_' p ii ct
     cPrint_' p ii (Lam_ c)    = parensIf (p > 0) (text "\\ " <> text (vars !! ii) <> text " -> " <> cPrint_ 0 (ii + 1) c)
     cPrint_' p ii Zero_       = fromNat_ 0 ii (L reg Zero_)     --  text "Zero"
     cPrint_' p ii (Succ_ n)   = fromNat_ 0 ii (L reg $ Succ_ n) --  iPrint_ p ii (Free_ (Global "Succ") :$: n)
-    cPrint_' p ii (Nil_ a)    = iPrint_ p ii (Free_ (Global "Nil") :$: a)
+    cPrint_' p ii (Nil_ a)    = iPrint_ p ii (locFree (Global "Nil") `globalApp` a)
     cPrint_' p ii (Cons_ a n x xs) =
-                               iPrint_ p ii (Free_ (Global "Cons") :$: a :$: n :$: x :$: xs)
-    cPrint_' p ii (Refl_ a x) = iPrint_ p ii (Free_ (Global "Refl") :$: a :$: x)
-    cPrint_' p ii (FZero_ n)  = iPrint_ p ii (Free_ (Global "FZero") :$: n)
-    cPrint_' p ii (FSucc_ n f)= iPrint_ p ii (Free_ (Global "FSucc") :$: n :$: f)
+                               iPrint_ p ii (locFree (Global "Cons") `globalApp` a `globalApp` n `globalApp` x `globalApp` xs)
+    cPrint_' p ii (Refl_ a x) = iPrint_ p ii (locFree (Global "Refl") `globalApp` a `globalApp` x)
+    cPrint_' p ii (FZero_ n)  = iPrint_ p ii (locFree (Global "FZero") `globalApp` n)
+    cPrint_' p ii (FSucc_ n f)= iPrint_ p ii (locFree (Global "FSucc") `globalApp` n `globalApp` f)
 
 fromNat_ :: Int -> Int -> CTerm_ -> Doc
 fromNat_ n ii (L _ Zero_) = int n
@@ -357,7 +369,7 @@ fromNat_ n ii (L _ (Succ_ k)) = fromNat_ (n + 1) ii k
 fromNat_ n ii t = parensIf True (int n <> text " + " <> cPrint_ 0 ii t)
 
 nestedForall_ :: Int -> [(Int, CTerm_)] -> CTerm_ -> Doc
-nestedForall_ ii ds (L _ (Inf_ (Pi_ d r))) = nestedForall_ (ii + 1) ((ii, d) : ds) r
+nestedForall_ ii ds (L _ (Inf_ (L _ (Pi_ d r)))) = nestedForall_ (ii + 1) ((ii, d) : ds) r
 nestedForall_ ii ds x                = sep [text "forall " <> sep [parensIf True (text (vars !! n) <> text " :: " <> cPrint_ 0 n d) | (n,d) <- reverse ds] <> text " .", cPrint_ 0 ii x]
 
 data Stmt i tinf = Let String i           --  let x = t
@@ -788,7 +800,7 @@ env1     =  [  (Global "y", HasType (tfree "a")),
 env2     =  [(Global "b", HasKind Star)] ++ env1
 
 
-type CTerm_ = L CTerm_'
+type CTerm_ = Located CTerm_'
 
 data CTerm_'
    =  Inf_  ITerm_
@@ -807,7 +819,9 @@ data CTerm_'
 
   deriving (Show, Eq)
 
-data ITerm_
+type ITerm_ = Located ITerm_'
+
+data ITerm_'
    =  Ann_ CTerm_ CTerm_
    |  Star_
    |  Pi_ CTerm_ CTerm_
