@@ -11,14 +11,23 @@ import Text.PrettyPrint.HughesPJ hiding (parens)
 import qualified Text.PrettyPrint.HughesPJ as PP
 
 import Text.ParserCombinators.Parsec hiding (parse, State)
-import qualified Text.ParserCombinators.Parsec as P
-import Text.ParserCombinators.Parsec.Token
+import qualified Text.Parsec as P
+import Text.Parsec.Token
 import Text.ParserCombinators.Parsec.Language
 
 import System.Console.Readline
 import System.IO hiding (print)
 
 import System.IO.Error
+
+import Control.Monad.Identity (Identity, runIdentity)
+import qualified Control.Monad.State as State
+
+data Region = Region {rLine :: Int, rCol :: Int}
+type PosState = State.State Region
+type LPParser = P.ParsecT String Region Identity
+
+startRegion = Region 0 0
 
 catch = catchIOError
 
@@ -28,9 +37,9 @@ putstrln x = putStrLn x
 simplyTyped = makeTokenParser (haskellStyle { identStart = letter <|> P.char '_',
                                               reservedNames = ["let", "assume", "putStrLn"] })
 
-parseBindings :: CharParser () ([String], [Info])
+parseBindings :: LPParser ([String], [Info])
 parseBindings =
-                   (let rec :: [String] -> [Info] -> CharParser () ([String], [Info])
+                   (let rec :: [String] -> [Info] -> LPParser ([String], [Info])
                         rec e ts =
                           do
                            (x,t) <- parens lambdaPi
@@ -49,7 +58,7 @@ parseBindings =
   where
     pInfo = fmap HasType (parseType 0 []) <|> fmap (const (HasKind Star)) (reserved simplyTyped "*")
 
-parseStmt :: [String] -> CharParser () (Stmt ITerm Info)
+parseStmt :: [String] -> LPParser (Stmt ITerm Info)
 parseStmt e =
       do
         reserved simplyTyped "let"
@@ -71,7 +80,7 @@ parseStmt e =
         return (Out x)
   <|> fmap Eval (parseITerm 0 e)
 
-parseType :: Int -> [String] -> CharParser () Type
+parseType :: Int -> [String] -> LPParser Type
 parseType 0 e =
   try
      (do
@@ -89,7 +98,7 @@ parseType 1 e =
         return (TFree (Global x))
   <|> parens simplyTyped (parseType 0 e)
 
-parseITerm :: Int -> [String] -> CharParser () ITerm
+parseITerm :: Int -> [String] -> LPParser ITerm
 parseITerm 0 e =
   try
      (do
@@ -122,7 +131,7 @@ parseITerm 3 e =
           Nothing -> return (Free (Global x))
   <|> parens simplyTyped (parseITerm 0 e)
 
-parseCTerm :: Int -> [String] -> CharParser () CTerm
+parseCTerm :: Int -> [String] -> LPParser CTerm
 parseCTerm 0 e =
       parseLam e
   <|> fmap Inf (parseITerm 0 e)
@@ -130,7 +139,7 @@ parseCTerm p e =
       try (parens simplyTyped (parseLam e))
   <|> fmap Inf (parseITerm p e)
 
-parseLam :: [String] -> CharParser () CTerm
+parseLam :: [String] -> LPParser CTerm
 parseLam e =
       do reservedOp simplyTyped "\\"
          xs <- many1 (identifier simplyTyped)
@@ -139,8 +148,17 @@ parseLam e =
          --  reserved simplyTyped "."
          return (iterate Lam t !! length xs)
 
-parseIO :: String -> CharParser () a -> String -> IO (Maybe a)
-parseIO f p x = case P.parse (whiteSpace simplyTyped >> p >>= \ x -> eof >> return x) f x of
+parseIO :: String -> LPParser a -> String -> IO (Maybe a)
+parseIO f p x =
+  let
+    --doParse :: LPParser Int
+    doParse = do
+      whiteSpace simplyTyped
+      x <- p
+      eof
+      return x
+  in
+    case runIdentity $ P.runParserT doParse startRegion f x of
                   Left e  -> putStrLn (show e) >> return Nothing
                   Right r -> return (Just r)
 
@@ -172,7 +190,7 @@ printType = render . tPrint 0
 lambdaPi = makeTokenParser (haskellStyle { identStart = letter <|> P.char '_',
                                            reservedNames = ["forall", "let", "assume", "putStrLn", "out"] })
 
-parseStmt_ :: [String] -> CharParser () (Stmt ITerm_ CTerm_)
+parseStmt_ :: [String] -> LPParser (Stmt ITerm_ CTerm_)
 parseStmt_ e =
       do
         reserved lambdaPi "let"
@@ -194,9 +212,9 @@ parseStmt_ e =
         return (Out x)
   <|> fmap Eval (parseITerm_ 0 e)
 
-parseBindings_ :: Bool -> [String] -> CharParser () ([String], [CTerm_])
+parseBindings_ :: Bool -> [String] -> LPParser ([String], [CTerm_])
 parseBindings_ b e =
-                   (let rec :: [String] -> [CTerm_] -> CharParser () ([String], [CTerm_])
+                   (let rec :: [String] -> [CTerm_] -> LPParser ([String], [CTerm_])
                         rec e ts =
                           do
                            (x,t) <- parens lambdaPi
@@ -213,7 +231,7 @@ parseBindings_ b e =
                        t <- parseCTerm_ 0 e
                        return (x : e, [t])
 
-parseITerm_ :: Int -> [String] -> CharParser () ITerm_
+parseITerm_ :: Int -> [String] -> LPParser ITerm_
 parseITerm_ 0 e =
       do
         reserved lambdaPi "forall"
@@ -268,7 +286,7 @@ parseITerm_ 3 e =
           Nothing -> return (Free_ (Global x))
   <|> parens lambdaPi (parseITerm_ 0 e)
 
-parseCTerm_ :: Int -> [String] -> CharParser () CTerm_
+parseCTerm_ :: Int -> [String] -> LPParser CTerm_
 parseCTerm_ 0 e =
       parseLam_ e
   <|> fmap Inf_ (parseITerm_ 0 e)
@@ -276,7 +294,7 @@ parseCTerm_ p e =
       try (parens lambdaPi (parseLam_ e))
   <|> fmap Inf_ (parseITerm_ p e)
 
-parseLam_ :: [String] -> CharParser () CTerm_
+parseLam_ :: [String] -> LPParser CTerm_
 parseLam_ e =
       do reservedOp lambdaPi "\\"
          xs <- many1 (identifier lambdaPi)
@@ -466,8 +484,8 @@ data Interpreter i c v t tinf inf =
       ihastype :: t -> inf,
       icprint :: c -> Doc,
       itprint :: t -> Doc,
-      iiparse :: CharParser () i,
-      isparse :: CharParser () (Stmt i tinf),
+      iiparse :: LPParser i,
+      isparse :: LPParser (Stmt i tinf),
       iassume :: State v inf -> (String, tinf) -> IO (State v inf) }
 
 st :: Interpreter ITerm CTerm Value Type Info Info
