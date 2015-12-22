@@ -877,20 +877,22 @@ vfree_ :: Name -> Value_
 vfree_ n = VNeutral_ (NFree_ n)
 
 cEval_ :: CTerm_ -> (NameEnv Value_,Env_) -> Value_
-cEval_ (Inf_  ii)    d  =  iEval_ ii d
-cEval_ (Lam_  c)     d  =  VLam_ (\ x -> cEval_ c (((\(e, d) -> (e,  (x : d))) d)))
+cEval_ (L _ ct) d = cEval_' ct d
+  where
+    cEval_' (Inf_  ii)    d  =  iEval_ ii d
+    cEval_' (Lam_  c)     d  =  VLam_ (\ x -> cEval_ c (((\(e, d) -> (e,  (x : d))) d)))
 
-cEval_ Zero_      d  = VZero_
-cEval_ (Succ_ k)  d  = VSucc_ (cEval_ k d)
+    cEval_' Zero_      d  = VZero_
+    cEval_' (Succ_ k)  d  = VSucc_ (cEval_ k d)
 
-cEval_ (Nil_ a)          d  =  VNil_ (cEval_ a d)
-cEval_ (Cons_ a n x xs)  d  =  VCons_  (cEval_ a d) (cEval_ n d)
-                                       (cEval_ x d) (cEval_ xs d)
+    cEval_' (Nil_ a)          d  =  VNil_ (cEval_ a d)
+    cEval_' (Cons_ a n x xs)  d  =  VCons_  (cEval_ a d) (cEval_ n d)
+                                           (cEval_ x d) (cEval_ xs d)
 
-cEval_ (Refl_ a x)       d  =  VRefl_ (cEval_ a d) (cEval_ x d)
+    cEval_' (Refl_ a x)       d  =  VRefl_ (cEval_ a d) (cEval_ x d)
 
-cEval_ (FZero_ n)    d  =  VFZero_ (cEval_ n d)
-cEval_ (FSucc_ n f)  d  =  VFSucc_ (cEval_ n d) (cEval_ f d)
+    cEval_' (FZero_ n)    d  =  VFZero_ (cEval_ n d)
+    cEval_' (FSucc_ n f)  d  =  VFSucc_ (cEval_ n d) (cEval_ f d)
 
 iEval_ :: ITerm_ -> (NameEnv Value_,Env_) -> Value_
 iEval_ (Ann_  c _)       d  =  cEval_ c d
@@ -993,49 +995,53 @@ iSubst_ ii r  (FinElim_ m mz ms n f)
                                           (cSubst_ ii r n) (cSubst_ ii r f)
 
 cSubst_ :: Int -> ITerm_ -> CTerm_ -> CTerm_
-cSubst_ ii i' (Inf_ i)      =  Inf_ (iSubst_ ii i' i)
-cSubst_ ii i' (Lam_ c)      =  Lam_ (cSubst_ (ii + 1) i' c)
+cSubst_ ii i' (L reg ct) = L reg $ cSubst_' ii i' ct
+  where
+    cSubst_' ii i' (Inf_ i)      =  Inf_ (iSubst_ ii i' i)
+    cSubst_' ii i' (Lam_ c)      =  Lam_ (cSubst_ (ii + 1) i' c)
 
-cSubst_ ii r  Zero_         =  Zero_
-cSubst_ ii r  (Succ_ n)     =  Succ_ (cSubst_ ii r n)
+    cSubst_' ii r  Zero_         =  Zero_
+    cSubst_' ii r  (Succ_ n)     =  Succ_ (cSubst_ ii r n)
 
-cSubst_ ii r  (Nil_ a)      =  Nil_ (cSubst_ ii r a)
-cSubst_ ii r  (Cons_ a n x xs)
-                            =  Cons_ (cSubst_ ii r a) (cSubst_ ii r x)
-                                     (cSubst_ ii r x) (cSubst_ ii r xs)
+    cSubst_' ii r  (Nil_ a)      =  Nil_ (cSubst_ ii r a)
+    cSubst_' ii r  (Cons_ a n x xs)
+                                =  Cons_ (cSubst_ ii r a) (cSubst_ ii r x)
+                                         (cSubst_ ii r x) (cSubst_ ii r xs)
 
-cSubst_ ii r  (Refl_ a x)   =  Refl_ (cSubst_ ii r a) (cSubst_ ii r x)
+    cSubst_' ii r  (Refl_ a x)   =  Refl_ (cSubst_ ii r a) (cSubst_ ii r x)
 
-cSubst_ ii r  (FZero_ n)    =  FZero_ (cSubst_ ii r n)
-cSubst_ ii r  (FSucc_ n k)  =  FSucc_ (cSubst_ ii r n) (cSubst_ ii r k)
+    cSubst_' ii r  (FZero_ n)    =  FZero_ (cSubst_ ii r n)
+    cSubst_' ii r  (FSucc_ n k)  =  FSucc_ (cSubst_ ii r n) (cSubst_ ii r k)
 
 quote_ :: Int -> Value_ -> CTerm_
-quote_ ii (VLam_ t)
-  =     Lam_ (quote_ (ii + 1) (t (vfree_ (Quote ii))))
+quote_ ii v = L startRegion $ quote_' ii v
+  where
+    quote_' ii (VLam_ t)
+      =     Lam_ (quote_ (ii + 1) (t (vfree_ (Quote ii))))
 
 
-quote_ ii VStar_ = Inf_ Star_
-quote_ ii (VPi_ v f)
-    =  Inf_ (Pi_ (quote_ ii v) (quote_ (ii + 1) (f (vfree_ (Quote ii)))))
+    quote_' ii VStar_ = Inf_ Star_
+    quote_' ii (VPi_ v f)
+        =  Inf_ (Pi_ (quote_ ii v) (quote_ (ii + 1) (f (vfree_ (Quote ii)))))
 
-quote_ ii (VNeutral_ n)
-  =     Inf_ (neutralQuote_ ii n)
+    quote_' ii (VNeutral_ n)
+      =     Inf_ (neutralQuote_ ii n)
 
-quote_ ii VNat_       =  Inf_ Nat_
-quote_ ii VZero_      =  Zero_
-quote_ ii (VSucc_ n)  =  Succ_ (quote_ ii n)
+    quote_' ii VNat_       =  Inf_ Nat_
+    quote_' ii VZero_      =  Zero_
+    quote_' ii (VSucc_ n)  =  Succ_ (quote_ ii n)
 
-quote_ ii (VVec_ a n)         =  Inf_ (Vec_ (quote_ ii a) (quote_ ii n))
-quote_ ii (VNil_ a)           =  Nil_ (quote_ ii a)
-quote_ ii (VCons_ a n x xs)   =  Cons_  (quote_ ii a) (quote_ ii n)
-                                        (quote_ ii x) (quote_ ii xs)
+    quote_' ii (VVec_ a n)         =  Inf_ (Vec_ (quote_ ii a) (quote_ ii n))
+    quote_' ii (VNil_ a)           =  Nil_ (quote_ ii a)
+    quote_' ii (VCons_ a n x xs)   =  Cons_  (quote_ ii a) (quote_ ii n)
+                                            (quote_ ii x) (quote_ ii xs)
 
-quote_ ii (VEq_ a x y)  =  Inf_ (Eq_ (quote_ ii a) (quote_ ii x) (quote_ ii y))
-quote_ ii (VRefl_ a x)  =  Refl_ (quote_ ii a) (quote_ ii x)
+    quote_' ii (VEq_ a x y)  =  Inf_ (Eq_ (quote_ ii a) (quote_ ii x) (quote_ ii y))
+    quote_' ii (VRefl_ a x)  =  Refl_ (quote_ ii a) (quote_ ii x)
 
-quote_ ii (VFin_ n)           =  Inf_ (Fin_ (quote_ ii n))
-quote_ ii (VFZero_ n)         =  FZero_ (quote_ ii n)
-quote_ ii (VFSucc_ n f)       =  FSucc_  (quote_ ii n) (quote_ ii f)
+    quote_' ii (VFin_ n)           =  Inf_ (Fin_ (quote_ ii n))
+    quote_' ii (VFZero_ n)         =  FZero_ (quote_ ii n)
+    quote_' ii (VFSucc_ n f)       =  FSucc_  (quote_ ii n) (quote_ ii f)
 
 neutralQuote_ :: Int -> Neutral_ -> ITerm_
 neutralQuote_ ii (NFree_ v)
@@ -1044,22 +1050,22 @@ neutralQuote_ ii (NApp_ n v)
    =  neutralQuote_ ii n :$: quote_ ii v
 
 neutralQuote_ ii (NNatElim_ m z s n)
-   =  NatElim_ (quote_ ii m) (quote_ ii z) (quote_ ii s) (Inf_ (neutralQuote_ ii n))
+   =  NatElim_ (quote_ ii m) (quote_ ii z) (quote_ ii s) (L startRegion $ Inf_ (neutralQuote_ ii n))
 
 neutralQuote_ ii (NVecElim_ a m mn mc n xs)
    =  VecElim_ (quote_ ii a) (quote_ ii m)
                (quote_ ii mn) (quote_ ii mc)
-               (quote_ ii n) (Inf_ (neutralQuote_ ii xs))
+               (quote_ ii n) (L startRegion $ Inf_ (neutralQuote_ ii xs))
 
 neutralQuote_ ii (NEqElim_ a m mr x y eq)
    =  EqElim_  (quote_ ii a) (quote_ ii m) (quote_ ii mr)
                (quote_ ii x) (quote_ ii y)
-               (Inf_ (neutralQuote_ ii eq))
+               (L startRegion $ Inf_ (neutralQuote_ ii eq))
 
 neutralQuote_ ii (NFinElim_ m mz ms n f)
    =  FinElim_ (quote_ ii m)
                (quote_ ii mz) (quote_ ii ms)
-               (quote_ ii n) (Inf_ (neutralQuote_ ii f))
+               (quote_ ii n) (L startRegion $ Inf_ (neutralQuote_ ii f))
 
 boundfree_ :: Int -> Name -> ITerm_
 boundfree_ ii (Quote k)     =  Bound_ ((ii - k - 1) `max` 0)
