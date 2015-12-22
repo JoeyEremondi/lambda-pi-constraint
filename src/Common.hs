@@ -23,7 +23,10 @@ import System.IO.Error
 import Control.Monad.Identity (Identity, runIdentity)
 import qualified Control.Monad.State as State
 
-type Region = SourcePos
+data Region =
+  SourceRegion SourcePos
+  | BuiltinRegion
+  deriving (Eq, Ord, Show)
 
 data Located a = L {region :: Region, contents :: a}
   deriving (Eq, Ord, Show)
@@ -35,6 +38,8 @@ startRegion = error "TODO startRegion"
 catch = catchIOError
 
 builtin x = L startRegion x
+
+getRegion = SourceRegion `fmap` getPosition
 
 
 putstrln x = putStrLn x
@@ -237,7 +242,7 @@ parseBindings_ b e =
                        return (x : e, [t])
 
 parseITerm_ :: Int -> [String] -> LPParser ITerm_
-parseITerm_ 0 e = getPosition >>= \pos ->
+parseITerm_ 0 e = getRegion >>= \pos ->
       do
         reserved lambdaPi "forall"
         (fe,t:ts) <- parseBindings_ True e
@@ -255,11 +260,11 @@ parseITerm_ 0 e = getPosition >>= \pos ->
   where
     rest t =
       do
-        pos <- getPosition
+        pos <- getRegion
         reserved lambdaPi "->"
         t' <- parseCTerm_ 0 ([]:e)
         return (L pos $ Pi_ t t')
-parseITerm_ 1 e = getPosition >>= \pos ->
+parseITerm_ 1 e = getRegion >>= \pos ->
   try
      (do
         t <- parseITerm_ 2 e
@@ -270,18 +275,18 @@ parseITerm_ 1 e = getPosition >>= \pos ->
   where
     rest t =
       do
-        pos <- getPosition
+        pos <- getRegion
         reserved lambdaPi "::"
         t' <- parseCTerm_ 0 e
         return (L pos $ Ann_ t t')
 parseITerm_ 2 e =
       do
-        pos <- getPosition
+        pos <- getRegion
         t <- parseITerm_ 3 e
         ts <- many (parseCTerm_ 3 e)
         let app x y = L pos (x :$: y)
         return (foldl app t ts)
-parseITerm_ 3 e = getPosition >>= \pos ->
+parseITerm_ 3 e = getRegion >>= \pos ->
       do
         reserved lambdaPi "*"
         return $ L pos Star_
@@ -296,17 +301,17 @@ parseITerm_ 3 e = getPosition >>= \pos ->
   <|> parens lambdaPi (parseITerm_ 0 e)
 
 parseCTerm_ :: Int -> [String] -> LPParser CTerm_
-parseCTerm_ 0 e = getPosition >>= \pos ->
+parseCTerm_ 0 e = getRegion >>= \pos ->
   parseLam_ e
     <|> fmap (\x -> L pos (Inf_ x)) (parseITerm_ 0 e)
-parseCTerm_ p e =  getPosition >>= \pos ->
+parseCTerm_ p e =  getRegion >>= \pos ->
       try (parens lambdaPi (parseLam_ e))
   <|> fmap (L pos . Inf_) (parseITerm_ p e)
 
 parseLam_ :: [String] -> LPParser CTerm_
 parseLam_ e =
       do
-         pos <- getPosition
+         pos <- getRegion
          let mkLam x = L pos (Lam_ x)
          reservedOp lambdaPi "\\"
          xs <- many1 (identifier lambdaPi)
@@ -315,10 +320,10 @@ parseLam_ e =
          --  reserved lambdaPi "."
          return (iterate mkLam t !! length xs)
 
-toNat_ :: SourcePos -> Integer -> ITerm_
+toNat_ :: Region -> Integer -> ITerm_
 toNat_ r n = L r $ Ann_ (toNat_' r n) (L r $ Inf_ $ L r Nat_)
 
-toNat_' :: SourcePos -> Integer -> CTerm_
+toNat_' :: Region -> Integer -> CTerm_
 toNat_' r 0  = L r Zero_
 toNat_' r n  =  L r $ Succ_ (toNat_' r (n - 1))
 
