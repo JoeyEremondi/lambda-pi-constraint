@@ -37,7 +37,7 @@ startRegion = error "TODO startRegion"
 
 catch = catchIOError
 
-builtin x = L startRegion x
+builtin x = L BuiltinRegion x
 
 getRegion = SourceRegion `fmap` getPosition
 
