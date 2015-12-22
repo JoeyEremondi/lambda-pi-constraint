@@ -23,11 +23,13 @@ import System.IO.Error
 import Control.Monad.Identity (Identity, runIdentity)
 import qualified Control.Monad.State as State
 
-data Region = Region {rLine :: Int, rCol :: Int}
-type PosState = State.State Region
-type LPParser = P.ParsecT String Region Identity
 
-startRegion = Region 0 0
+data L a = L {region :: SourcePos, contents :: a}
+  deriving (Eq, Ord, Show)
+
+type LPParser = P.ParsecT String SourcePos Identity
+
+startRegion = error "TODO startRegion"
 
 catch = catchIOError
 
@@ -232,18 +234,18 @@ parseBindings_ b e =
                        return (x : e, [t])
 
 parseITerm_ :: Int -> [String] -> LPParser ITerm_
-parseITerm_ 0 e =
+parseITerm_ 0 e = getPosition >>= \pos ->
       do
         reserved lambdaPi "forall"
         (fe,t:ts) <- parseBindings_ True e
         reserved lambdaPi "."
         t' <- parseCTerm_ 0 fe
-        return (foldl (\ p t -> Pi_ t (Inf_ p)) (Pi_ t t') ts)
+        return (foldl (\ p t -> Pi_ t (L pos $ Inf_ p)) ( Pi_ t t') ts)
   <|>
   try
      (do
         t <- parseITerm_ 1 e
-        rest (Inf_ t) <|> return t)
+        rest (L pos $ Inf_ t) <|> return t)
   <|> do
         t <- parens lambdaPi (parseLam_ e)
         rest t
@@ -253,11 +255,11 @@ parseITerm_ 0 e =
         reserved lambdaPi "->"
         t' <- parseCTerm_ 0 ([]:e)
         return (Pi_ t t')
-parseITerm_ 1 e =
+parseITerm_ 1 e = getPosition >>= \pos ->
   try
      (do
         t <- parseITerm_ 2 e
-        rest (Inf_ t) <|> return t)
+        rest (L pos $ Inf_ t) <|> return t)
   <|> do
         t <- parens lambdaPi (parseLam_ e)
         rest t
@@ -272,13 +274,13 @@ parseITerm_ 2 e =
         t <- parseITerm_ 3 e
         ts <- many (parseCTerm_ 3 e)
         return (foldl (:$:) t ts)
-parseITerm_ 3 e =
+parseITerm_ 3 e = getPosition >>= \pos ->
       do
         reserved lambdaPi "*"
         return Star_
   <|> do
         n <- natural lambdaPi
-        return (toNat_ n)
+        return (toNat_ pos n)
   <|> do
         x <- identifier lambdaPi
         case findIndex (== x) e of
@@ -287,33 +289,36 @@ parseITerm_ 3 e =
   <|> parens lambdaPi (parseITerm_ 0 e)
 
 parseCTerm_ :: Int -> [String] -> LPParser CTerm_
-parseCTerm_ 0 e =
-      parseLam_ e
-  <|> fmap Inf_ (parseITerm_ 0 e)
-parseCTerm_ p e =
+parseCTerm_ 0 e = getPosition >>= \pos ->
+  parseLam_ e
+    <|> fmap (\x -> L pos (Inf_ x)) (parseITerm_ 0 e)
+parseCTerm_ p e =  getPosition >>= \pos ->
       try (parens lambdaPi (parseLam_ e))
-  <|> fmap Inf_ (parseITerm_ p e)
+  <|> fmap (L pos . Inf_) (parseITerm_ p e)
 
 parseLam_ :: [String] -> LPParser CTerm_
 parseLam_ e =
-      do reservedOp lambdaPi "\\"
+      do
+         pos <- getPosition
+         let mkLam x = L pos (Lam_ x)
+         reservedOp lambdaPi "\\"
          xs <- many1 (identifier lambdaPi)
          reservedOp lambdaPi "->"
          t <- parseCTerm_ 0 (reverse xs ++ e)
          --  reserved lambdaPi "."
-         return (iterate Lam_ t !! length xs)
+         return (iterate mkLam t !! length xs)
 
-toNat_ :: Integer -> ITerm_
-toNat_ n = Ann_ (toNat_' n) (Inf_ Nat_)
+toNat_ :: SourcePos -> Integer -> ITerm_
+toNat_ r n = Ann_ (toNat_' r n) (L r $ Inf_ Nat_)
 
-toNat_' :: Integer -> CTerm_
-toNat_' 0  =  Zero_
-toNat_' n  =  Succ_ (toNat_' (n - 1))
+toNat_' :: SourcePos -> Integer -> CTerm_
+toNat_' r 0  = L r Zero_
+toNat_' r n  =  L r $ Succ_ (toNat_' r (n - 1))
 
 iPrint_ :: Int -> Int -> ITerm_ -> Doc
 iPrint_ p ii (Ann_ c ty)       =  parensIf (p > 1) (cPrint_ 2 ii c <> text " :: " <> cPrint_ 0 ii ty)
 iPrint_ p ii Star_             =  text "*"
-iPrint_ p ii (Pi_ d (Inf_ (Pi_ d' r)))
+iPrint_ p ii (Pi_ d (L _ (Inf_ (Pi_ d' r))))
                                =  parensIf (p > 0) (nestedForall_ (ii + 2) [(ii + 1, d'), (ii, d)] r)
 iPrint_ p ii (Pi_ d r)         =  parensIf (p > 0) (sep [text "forall " <> text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d <> text " .", cPrint_ 0 (ii + 1) r])
 iPrint_ p ii (Bound_ k)        =  text (vars !! (ii - k - 1))
@@ -333,24 +338,26 @@ iPrint_ p ii (FinElim_ m mz ms n f)
 iPrint_ p ii x                 =  text ("[" ++ show x ++ "]")
 
 cPrint_ :: Int -> Int -> CTerm_ -> Doc
-cPrint_ p ii (Inf_ i)    = iPrint_ p ii i
-cPrint_ p ii (Lam_ c)    = parensIf (p > 0) (text "\\ " <> text (vars !! ii) <> text " -> " <> cPrint_ 0 (ii + 1) c)
-cPrint_ p ii Zero_       = fromNat_ 0 ii Zero_     --  text "Zero"
-cPrint_ p ii (Succ_ n)   = fromNat_ 0 ii (Succ_ n) --  iPrint_ p ii (Free_ (Global "Succ") :$: n)
-cPrint_ p ii (Nil_ a)    = iPrint_ p ii (Free_ (Global "Nil") :$: a)
-cPrint_ p ii (Cons_ a n x xs) =
-                           iPrint_ p ii (Free_ (Global "Cons") :$: a :$: n :$: x :$: xs)
-cPrint_ p ii (Refl_ a x) = iPrint_ p ii (Free_ (Global "Refl") :$: a :$: x)
-cPrint_ p ii (FZero_ n)  = iPrint_ p ii (Free_ (Global "FZero") :$: n)
-cPrint_ p ii (FSucc_ n f)= iPrint_ p ii (Free_ (Global "FSucc") :$: n :$: f)
+cPrint_ p ii (L reg ct) = cPrint_' p ii ct
+  where
+    cPrint_' p ii (Inf_ i)    = iPrint_ p ii i
+    cPrint_' p ii (Lam_ c)    = parensIf (p > 0) (text "\\ " <> text (vars !! ii) <> text " -> " <> cPrint_ 0 (ii + 1) c)
+    cPrint_' p ii Zero_       = fromNat_ 0 ii (L reg Zero_)     --  text "Zero"
+    cPrint_' p ii (Succ_ n)   = fromNat_ 0 ii (L reg $ Succ_ n) --  iPrint_ p ii (Free_ (Global "Succ") :$: n)
+    cPrint_' p ii (Nil_ a)    = iPrint_ p ii (Free_ (Global "Nil") :$: a)
+    cPrint_' p ii (Cons_ a n x xs) =
+                               iPrint_ p ii (Free_ (Global "Cons") :$: a :$: n :$: x :$: xs)
+    cPrint_' p ii (Refl_ a x) = iPrint_ p ii (Free_ (Global "Refl") :$: a :$: x)
+    cPrint_' p ii (FZero_ n)  = iPrint_ p ii (Free_ (Global "FZero") :$: n)
+    cPrint_' p ii (FSucc_ n f)= iPrint_ p ii (Free_ (Global "FSucc") :$: n :$: f)
 
 fromNat_ :: Int -> Int -> CTerm_ -> Doc
-fromNat_ n ii Zero_ = int n
-fromNat_ n ii (Succ_ k) = fromNat_ (n + 1) ii k
+fromNat_ n ii (L _ Zero_) = int n
+fromNat_ n ii (L _ (Succ_ k)) = fromNat_ (n + 1) ii k
 fromNat_ n ii t = parensIf True (int n <> text " + " <> cPrint_ 0 ii t)
 
 nestedForall_ :: Int -> [(Int, CTerm_)] -> CTerm_ -> Doc
-nestedForall_ ii ds (Inf_ (Pi_ d r)) = nestedForall_ (ii + 1) ((ii, d) : ds) r
+nestedForall_ ii ds (L _ (Inf_ (Pi_ d r))) = nestedForall_ (ii + 1) ((ii, d) : ds) r
 nestedForall_ ii ds x                = sep [text "forall " <> sep [parensIf True (text (vars !! n) <> text " :: " <> cPrint_ 0 n d) | (n,d) <- reverse ds] <> text " .", cPrint_ 0 ii x]
 
 data Stmt i tinf = Let String i           --  let x = t
@@ -556,23 +563,26 @@ lpte =      [(Global "Zero", VNat_),
                                VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f ->
                                m `vapp_` n `vapp_` f))))))]
 
+lam_ = error "TODO lam_"
+inf_ = error "TODO inf_"
+
 lpve :: Ctx Value_
 lpve =      [(Global "Zero", VZero_),
              (Global "Succ", VLam_ (\ n -> VSucc_ n)),
              (Global "Nat", VNat_),
-             (Global "natElim", cEval_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (NatElim_ (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))))) ([], [])),
+             (Global "natElim", cEval_ (lam_ (lam_ (lam_ (lam_ (inf_ (NatElim_ (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0)))))))) ([], [])),
              (Global "Nil", VLam_ (\ a -> VNil_ a)),
              (Global "Cons", VLam_ (\ a -> VLam_ (\ n -> VLam_ (\ x -> VLam_ (\ xs ->
                             VCons_ a n x xs))))),
              (Global "Vec", VLam_ (\ a -> VLam_ (\ n -> VVec_ a n))),
-             (Global "vecElim", cEval_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (VecElim_ (Inf_ (Bound_ 5)) (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))))))) ([],[])),
+             (Global "vecElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (VecElim_ (inf_ (Bound_ 5)) (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0)))))))))) ([],[])),
              (Global "Refl", VLam_ (\ a -> VLam_ (\ x -> VRefl_ a x))),
              (Global "Eq", VLam_ (\ a -> VLam_ (\ x -> VLam_ (\ y -> VEq_ a x y)))),
-             (Global "eqElim", cEval_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (EqElim_ (Inf_ (Bound_ 5)) (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))))))) ([],[])),
+             (Global "eqElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (EqElim_ (inf_ (Bound_ 5)) (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0)))))))))) ([],[])),
              (Global "FZero", VLam_ (\ n -> VFZero_ n)),
              (Global "FSucc", VLam_ (\ n -> VLam_ (\ f -> VFSucc_ n f))),
              (Global "Fin", VLam_ (\ n -> VFin_ n)),
-             (Global "finElim", cEval_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (FinElim_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))))))) ([],[]))]
+             (Global "finElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (FinElim_ (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0))))))))) ([],[]))]
 
 repLP :: TypeChecker -> Bool -> IO ()
 repLP checker b = readevalprint (lp checker) (b, [], lpve, lpte)
@@ -628,7 +638,7 @@ check int state@(inter, out, ve, te) i t kp k =
 
 stassume state@(inter, out, ve, te) x t = return (inter, out, ve, (Global x, t) : te)
 lpassume checker state@(inter, out, ve, te) x t =
-  check (lp checker) state x (Ann_ t (Inf_ Star_))
+  check (lp checker) state x (Ann_ t (L startRegion $ Inf_ Star_))
         (\ (y, v) -> return ()) --  putStrLn (render (text x <> text " :: " <> cPrint_ 0 0 (quote0_ v))))
         (\ (y, v) -> (inter, out, ve, (Global x, v) : te))
 
@@ -778,7 +788,9 @@ env1     =  [  (Global "y", HasType (tfree "a")),
 env2     =  [(Global "b", HasKind Star)] ++ env1
 
 
-data CTerm_
+type CTerm_ = L CTerm_'
+
+data CTerm_'
    =  Inf_  ITerm_
    |  Lam_  CTerm_
 
