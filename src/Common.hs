@@ -12,6 +12,7 @@ import qualified Text.PrettyPrint.HughesPJ as PP
 
 import Text.ParserCombinators.Parsec hiding (parse, State)
 import qualified Text.Parsec as P
+import qualified Text.Parsec.Pos as Pos
 import Text.Parsec.Token
 import Text.ParserCombinators.Parsec.Language
 
@@ -28,12 +29,18 @@ data Region =
   | BuiltinRegion
   deriving (Eq, Ord, Show)
 
+prettySource :: Region -> String
+prettySource (SourceRegion pos) =
+   (show $ sourceLine pos) ++ ":" ++ (show $ sourceColumn pos)
+prettySource s = "builtin:"
+
+
 data Located a = L {region :: Region, contents :: a}
   deriving (Eq, Ord, Show)
 
 type LPParser = P.ParsecT String SourcePos Identity
 
-startRegion = error "TODO startRegion"
+startRegion = SourceRegion $ Pos.initialPos ""
 
 catch = catchIOError
 
@@ -168,7 +175,7 @@ parseIO f p x =
       eof
       return x
   in
-    case runIdentity $ P.runParserT doParse startRegion f x of
+    case runIdentity $ P.runParserT doParse (Pos.initialPos "") f x of
                   Left e  -> putStrLn (show e) >> return Nothing
                   Right r -> return (Just r)
 
