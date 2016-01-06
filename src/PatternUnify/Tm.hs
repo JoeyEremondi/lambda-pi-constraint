@@ -9,6 +9,8 @@
 
 module PatternUnify.Tm where
 
+import Prelude hiding (elem, notElem) 
+
 import Control.Applicative (pure, (<*>), (<$>))
 import Data.List (unionBy)
 import Data.Function (on)

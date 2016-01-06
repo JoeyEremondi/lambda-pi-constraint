@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs, KindSignatures, TemplateHaskell,
       FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
       UndecidableInstances, GeneralizedNewtypeDeriving,
-      TypeSynonymInstances, ScopedTypeVariables #-}
+      TypeSynonymInstances, ScopedTypeVariables, PatternSynonyms #-}
 
 -- This module defines test cases for the unification algorithm, divided
 -- into those which must succeed, those which should block (possibly

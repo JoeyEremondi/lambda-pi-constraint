@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs, KindSignatures, TemplateHaskell,
       FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
       UndecidableInstances, GeneralizedNewtypeDeriving,
-      TypeSynonymInstances, ScopedTypeVariables, StandaloneDeriving #-}
+      TypeSynonymInstances, ScopedTypeVariables, StandaloneDeriving, PatternSynonyms #-}
 
 -- This module defines unification problems, metacontexts and operations
 -- for working on them in the |Contextual| monad.

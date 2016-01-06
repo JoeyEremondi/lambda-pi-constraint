@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveFunctor, DeriveFoldable, FlexibleContexts, FlexibleInstances,
-                 MultiParamTypeClasses, TypeOperators, TemplateHaskell #-}
+                 MultiParamTypeClasses, TypeOperators, TemplateHaskell, PatternSynonyms #-}
 
 -- This module defines some basic general purpose kit, in particular
 -- backwards lists and a typeclass of things that can be pretty-printed.
+
 
 module PatternUnify.Kit  (  bool
             ,  Bwd(..)
@@ -21,7 +22,10 @@ module PatternUnify.Kit  (  bool
             ,  between
             ,  commaSep
             ,  module PP
+            ,  PatternUnify.Kit.elem
+            ,  PatternUnify.Kit.notElem
             ) where
+
 
 import Control.Applicative
 import Control.Monad.Reader
@@ -29,6 +33,11 @@ import Data.Foldable
 
 import Text.PrettyPrint.HughesPJ as PP hiding (($$))
 import Unbound.LocallyNameless
+
+elem :: Eq a => a -> [a] -> Bool
+elem x y = x `Prelude.elem` y
+
+notElem x y = not $ PatternUnify.Kit.elem x y
 
 bool :: a -> a -> Bool -> a
 bool no yes b = if b then yes else no

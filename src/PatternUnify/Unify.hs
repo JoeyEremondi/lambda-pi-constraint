@@ -1,9 +1,11 @@
 -- %if False
 
 --{-# OPTIONS_GHC -F -pgmF she #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances, PatternSynonyms #-}
 
 module PatternUnify.Unify where
+
+import Prelude hiding (elem, notElem)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad.Error (catchError, throwError, when)
@@ -16,13 +18,14 @@ import Data.Set (Set, isSubsetOf)
 import Unbound.LocallyNameless (unbind, subst, substs, Fresh)
 import Unbound.Util (Collection, fromList)
 
-import PatternUnify.Kit (pp)
-import PatternUnify.Tm (Can(..), VAL(..), Elim(..), Head(..), Twin(..),
+import PatternUnify.Kit (pp, elem, notElem)
+import PatternUnify.Tm
+{- (Can(..), VAL(..), Elim(..), Head(..), Twin(..),
            Nom, Type, Subs,
            ($$), (%%), ($*$),
            var, lam, lams, lams', _Pi, _Pis, (-->),
            freshNom, compSubs, occurrence, toVars, linearOn,
-           isStrongRigid, isRigid, isFlexible, fvs, fmvs, isVar)
+           isStrongRigid, isRigid, isFlexible, fvs, fmvs, isVar) -}
 import PatternUnify.Check (checkProb, check, typecheck, equal, isReflexive)
 import PatternUnify.Context (Entry(..), ProblemState(..), Problem(..), Equation(..),
                 Dec(..), Param(..), Contextual, ProbId(..),

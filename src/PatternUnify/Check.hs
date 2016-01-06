@@ -2,14 +2,14 @@
 {-# LANGUAGE GADTs, KindSignatures, TemplateHaskell,
       FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
       UndecidableInstances, GeneralizedNewtypeDeriving,
-      TypeSynonymInstances, ScopedTypeVariables #-}
+      TypeSynonymInstances, ScopedTypeVariables, PatternSynonyms #-}
 
 -- This module defines a typechecker and definitional equality test for a
 -- simple Set-in-Set type theory.
 
 module PatternUnify.Check where
 
-import Prelude hiding (any)
+import Prelude hiding (any, elem, notElem)
 
 import Control.Applicative
 import Control.Monad
