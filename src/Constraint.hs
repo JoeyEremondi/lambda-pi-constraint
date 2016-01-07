@@ -22,7 +22,49 @@ import Control.Monad.Identity (Identity)
 import Data.Data
 import Data.Typeable
 
+import PatternUnify.Tm as Tm
 
+cToUnifForm :: Common.CTerm_ -> Tm.VAL
+cToUnifForm (Common.L _ tm) =
+  case tm of
+    Common.Inf_ itm ->
+      iToUnifForm itm
+    Common.Lam_ ctm ->
+      Tm.L ( (error "TODO bind") (cToUnifForm ctm) )
+    _ ->
+      error "TODO conversions for Vec, Eq, Nat"
+
+
+iToUnifForm :: Common.ITerm_ -> Tm.VAL
+iToUnifForm (Common.L _ tm) =
+  case tm of
+    Common.Ann_ val tp ->
+      error "TODO annotated val"
+
+    Common.Star_ ->
+      Tm.SET
+
+    Common.Pi_ s t ->
+      Tm.PI (cToUnifForm s) (cToUnifForm t)
+
+    Common.Bound_ i ->
+      error "TODO bound variables to Solver form"
+
+    Common.Free_ nm ->
+      error "TODO neutral terms1"
+
+    (_ Common.:$: _) ->
+      error "TODO application in spine form"
+
+    _ -> error "TODO iTo"
+
+--TODO make tail recursive?
+appToSpine :: Common.ITerm_ -> (Common.ITerm_, [Common.CTerm_])
+appToSpine (Common.L _ tm) =
+  case tm of
+    fn Common.:$: arg ->
+      case fn of
+        _ -> error "TODO"
 
 type ConstrContext = [(Common.Name, ConType)]
 type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)
