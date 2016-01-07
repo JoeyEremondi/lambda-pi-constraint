@@ -9,7 +9,7 @@
 
 module PatternUnify.Tm where
 
-import Prelude hiding (elem, notElem) 
+import Prelude hiding (elem, notElem)
 
 import Control.Applicative (pure, (<*>), (<$>))
 import Data.List (unionBy)
@@ -31,9 +31,9 @@ freshNom = fresh (s2n "x")
 
 
 data VAL where
-    L  :: Bind Nom VAL -> VAL
-    N  :: Head -> [Elim] -> VAL
-    C  :: Can -> [VAL] -> VAL
+    L  :: Bind Nom VAL -> VAL --Lambda
+    N  :: Head -> [Elim] -> VAL --Neutral term
+    C  :: Can -> [VAL] -> VAL --Constructor values
   deriving Show
 
 type Type = VAL
