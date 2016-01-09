@@ -23,6 +23,7 @@ executable lambda-pi-constraint
     Common,
     Constraint,
     Solver,
+    Parse,
     PatternUnify.Check,
     PatternUnify.Context,
     PatternUnify.Test,

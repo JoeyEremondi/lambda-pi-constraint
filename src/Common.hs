@@ -57,24 +57,6 @@ simplyTyped = makeTokenParser (haskellStyle { identStart = letter <|> P.char '_'
 
 
 
-parseType :: Int -> [String] -> LPParser Type
-parseType 0 e =
-  try
-     (do
-        t <- parseType 1 e
-        rest t <|> return t)
-  where
-    rest t =
-      do
-        reserved simplyTyped "->"
-        t' <- parseType 0 e
-        return (Fun t t')
-parseType 1 e =
-      do
-        x <- identifier simplyTyped
-        return (TFree (Global x))
-  <|> parens simplyTyped (parseType 0 e)
-
 
 parseIO :: String -> LPParser a -> String -> IO (Maybe a)
 parseIO f p x =
@@ -90,9 +72,6 @@ parseIO f p x =
                   Left e  -> putStrLn (show e) >> return Nothing
                   Right r -> return (Just r)
 
-tPrint :: Int -> Type -> Doc
-tPrint p (TFree (Global s))  =  text s
-tPrint p (Fun ty ty')        =  parensIf (p > 0) (sep [tPrint 0 ty <> text " ->", nest 2 (tPrint 0 ty')])
 
 vars :: [String]
 vars = [ c : n | n <- "" : map show [1..], c <- ['x','y','z'] ++ ['a'..'w'] ]
@@ -566,10 +545,6 @@ data Name
    |  Quote   Int
   deriving (Show, Eq)
 
-data Type
-   =  TFree  Name
-   |  Fun    Type Type
-  deriving (Show, Eq)
 
 data Value
    =  VLam      (Value -> Value)
