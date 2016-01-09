@@ -36,7 +36,7 @@ cToUnifForm (Common.L _ tm) =
 
 
 iToUnifForm :: Common.ITerm_ -> Tm.VAL
-iToUnifForm (Common.L _ tm) =
+iToUnifForm ltm@(Common.L _ tm) =
   case tm of
     Common.Ann_ val tp ->
       error "TODO annotated val"
@@ -54,17 +54,27 @@ iToUnifForm (Common.L _ tm) =
       error "TODO neutral terms1"
 
     (_ Common.:$: _) ->
-      error "TODO application in spine form"
+      let
+        (startHead, startSpine) = appToSpine ltm
+      in
+        case startHead of
+          Common.Bound i ->
+            Tm.N (Tm.Var ((error "TODO deBruijn to name") i) Tm.Only) (map (Tm.A . cToUnifForm) startSpine)
+          Common.Ann (Common.Lam fnBody) fnTy ->
+            error "TODO reduce lambda redex for typechecking?"
 
-    _ -> error "TODO iTo"
+    _ -> error "TODO builtIn types"
 
 --TODO make tail recursive?
 appToSpine :: Common.ITerm_ -> (Common.ITerm_, [Common.CTerm_])
-appToSpine (Common.L _ tm) =
-  case tm of
-    fn Common.:$: arg ->
-      case fn of
-        _ -> error "TODO"
+--Application: look into function to find head
+appToSpine (Common.App it ct) =
+  let
+    (subHead, subSpine) = appToSpine it
+  in
+    (subHead, subSpine ++ [ct])
+--Other expression:
+appToSpine e = (e, [])
 
 type ConstrContext = [(Common.Name, ConType)]
 type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)

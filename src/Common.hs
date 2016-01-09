@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, PatternSynonyms #-}
 module Common where
 
 import           Prelude                                hiding (print)
@@ -54,26 +54,7 @@ putstrln x = putStrLn x
 simplyTyped = makeTokenParser (haskellStyle { identStart = letter <|> P.char '_',
                                               reservedNames = ["let", "assume", "putStrLn"] })
 
-parseBindings :: LPParser ([String], [Info])
-parseBindings =
-                   (let rec :: [String] -> [Info] -> LPParser ([String], [Info])
-                        rec e ts =
-                          do
-                           (x,t) <- parens lambdaPi
-                                      (do
-                                         x <- identifier simplyTyped
-                                         reserved simplyTyped "::"
-                                         t <- pInfo
-                                         return (x,t))
-                           (rec (x : e) (t : ts) <|> return (x : e, t : ts))
-                    in rec [] [])
-                   <|>
-                   do  x <- identifier simplyTyped
-                       reserved simplyTyped "::"
-                       t <- pInfo
-                       return ([x], [t])
-  where
-    pInfo = fmap HasType (parseType 0 []) <|> fmap (const (HasKind Star)) (reserved simplyTyped "*")
+
 
 
 parseType :: Int -> [String] -> LPParser Type
@@ -601,15 +582,7 @@ data Neutral
 vfree :: Name -> Value
 vfree n = VNeutral (NFree n)
 
-data Kind = Star
-  deriving (Show)
 
-data Info
-   =  HasKind  Kind
-   |  HasType  Type
-  deriving (Show)
-
-type Context = [(Name, Info)]
 
 type Env = [Value]
 
@@ -617,16 +590,6 @@ type Env = [Value]
 vapp :: Value -> Value -> Value
 vapp (VLam f)      v  =  f v
 vapp (VNeutral n)  v  =  VNeutral (NApp n v)
-
-
-cKind :: Context -> Type -> Kind -> Result ()
-cKind g (TFree x) Star
-  =  case lookup x g of
-       Just (HasKind Star)  ->  return ()
-       Nothing              ->  throwError "unknown identifier"
-cKind g (Fun kk kk') Star
-  =  do  cKind g kk   Star
-         cKind g kk'  Star
 
 
 
@@ -653,6 +616,10 @@ data CTerm_'
 
   deriving (Show, Eq)
 
+pattern Inf it <- L _ (Inf_ it)
+pattern Lam ct <- L _ (Lam_ ct)
+
+
 type ITerm_ = Located ITerm_'
 
 data ITerm_'
@@ -676,6 +643,13 @@ data ITerm_'
    |  FinElim_ CTerm_ CTerm_ CTerm_ CTerm_ CTerm_
 
   deriving (Show, Eq)
+
+pattern Ann t1 t2 <- L _ (Ann_ t1 t2)
+pattern Star <- L _ Star_
+pattern Pi t1 t2 <- L _ (Pi_ t1 t2)
+pattern Bound i <- L _ (Bound_ i)
+pattern Free nm <- L _ (Free_ nm)
+pattern App it ct <- L _ (it :$: ct)
 
 data Value_
    =  VLam_  (Value_ -> Value_)
