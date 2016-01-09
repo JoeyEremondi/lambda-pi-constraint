@@ -34,6 +34,7 @@ data VAL where
     L  :: Bind Nom VAL -> VAL --Lambda
     N  :: Head -> [Elim] -> VAL --Neutral term
     C  :: Can -> [VAL] -> VAL --Constructor values
+    AnnVal  :: VAL -> VAL -> VAL --Annotated Values --TODO need this?
   deriving Show
 
 type Type = VAL
