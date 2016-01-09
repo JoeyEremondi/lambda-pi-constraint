@@ -13,7 +13,6 @@ module Constraint
   ) -} where
 
 import qualified Common
-import Control.Monad.State
 import qualified Control.Monad.Trans.UnionFind as UF
 import Control.Monad.Writer
 import Control.Monad.State
@@ -21,6 +20,8 @@ import Control.Monad.Trans
 import Control.Monad.Identity (Identity)
 import Data.Data
 import Data.Typeable
+
+import qualified Unbound.LocallyNameless as LN
 
 import PatternUnify.Tm as Tm
 
@@ -30,7 +31,7 @@ cToUnifForm (Common.L _ tm) =
     Common.Inf_ itm ->
       iToUnifForm itm
     Common.Lam_ ctm ->
-      Tm.L ( (error "TODO bind") (cToUnifForm ctm) )
+      Tm.L ( error "TODO bind" (cToUnifForm ctm) )
     _ ->
       error "TODO conversions for Vec, Eq, Nat"
 
@@ -50,16 +51,26 @@ iToUnifForm ltm@(Common.L _ tm) =
     Common.Bound_ i ->
       error "TODO bound variables to Solver form"
 
-    Common.Free_ nm ->
-      error "TODO neutral terms1"
+    --If we reach this point, then our neutral term isn't embedded in an application
+    Common.Free_ fv ->
+      case fv of
+        Common.Global nm ->
+          Tm.vv nm
+        Common.Local i ->
+          error "TODO deBr to nm"
+        Common.Quote i ->
+          error "Shouldn't come across quoted during checking"
 
     (_ Common.:$: _) ->
       let
         (startHead, startSpine) = appToSpine ltm
+        convertedSpine = (map (Tm.A . cToUnifForm) startSpine)
       in
         case startHead of
           Common.Bound i ->
-            Tm.N (Tm.Var ((error "TODO deBruijn to name") i) Tm.Only) (map (Tm.A . cToUnifForm) startSpine)
+            Tm.N (Tm.Var ((error "TODO deBruijn to name") i) Tm.Only) convertedSpine
+          Common.Free (Common.Global nm) ->
+            Tm.N (Tm.Var (LN.s2n nm) Tm.Only ) convertedSpine
           Common.Ann (Common.Lam fnBody) fnTy ->
             error "TODO reduce lambda redex for typechecking?"
 
@@ -120,7 +131,7 @@ data ConTyFn =
   deriving (Show)
 
 instance Show (Common.Type_ -> ConType) where
-  show f = "(\\(-1) -> " ++ (show $ f $ Common.vfree_ (Common.Quote (0-1)) )++ ")"
+  show f = "(\\(-1) -> " ++ (show $ f $ Common.vfree_ (Common.Quote ( -1)) )++ ")"
 
 --Initially, the only constraint we express is that two types unify
 data Constraint =
