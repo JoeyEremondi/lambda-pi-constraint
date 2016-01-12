@@ -32,13 +32,15 @@ cToUnifForm ii (Common.L _ tm) =
       iToUnifForm ii itm
     Common.Lam_ ctm ->
       let
-        newNom = LN.integer2Name $ toInteger ii
+        newNom = deBrToNom ii 0
         retBody = cToUnifForm (ii + 1) ctm
       in
         Tm.L $ LN.bind newNom retBody
     _ ->
       error "TODO conversions for Vec, Eq, Nat"
 
+deBrToNom :: Int -> Int -> Tm.Nom
+deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
 
 iToUnifForm :: Int -> Common.ITerm_ -> Tm.VAL
 iToUnifForm ii ltm@(Common.L _ tm) =
@@ -53,7 +55,7 @@ iToUnifForm ii ltm@(Common.L _ tm) =
       Tm.PI (cToUnifForm ii s) (cToUnifForm ii t)
 
     Common.Bound_ i ->
-      error "TODO bound variables to Solver form"
+      var $ deBrToNom ii i --Take our current depth, minus deBruijn index --TODO check
 
     --If we reach this point, then our neutral term isn't embedded in an application
     Common.Free_ fv ->
@@ -61,7 +63,7 @@ iToUnifForm ii ltm@(Common.L _ tm) =
         Common.Global nm ->
           Tm.vv nm
         Common.Local i ->
-          error "TODO deBr to nm"
+          var $ LN.integer2Name $ toInteger $ ii - i --Take our current depth, minus deBruijn index
         Common.Quote i ->
           error "Shouldn't come across quoted during checking"
 
@@ -72,7 +74,7 @@ iToUnifForm ii ltm@(Common.L _ tm) =
       in
         case startHead of
           Common.Bound i ->
-            Tm.N (Tm.Var ((error "TODO deBruijn to name") i) Tm.Only) convertedSpine
+            Tm.N (Tm.Var (deBrToNom ii i) Tm.Only) convertedSpine
           Common.Free (Common.Global nm) ->
             Tm.N (Tm.Var (LN.s2n nm) Tm.Only ) convertedSpine
           Common.Ann (Common.Lam fnBody) fnTy ->
