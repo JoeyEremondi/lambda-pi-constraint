@@ -23,19 +23,22 @@ import Common
 
 import Constraint
 
-import qualified Solver
+import qualified PatternUnify.Tm as Tm
+
+--import qualified Solver
 
 
 checker :: TypeChecker
-checker (nameEnv, context) term = do
+checker (nameEnv, context) term = error "TODO checker" {- do
   let newContext = map (\(a,b) -> (a, conType b) ) context
   let checkResults = Solver.solveConstraints $ getConstraints (nameEnv, newContext) term
   case (Solver.finalResults checkResults) of
     Solver.Err s -> error s
     Solver.Defer -> error "Should never have defer at end!"
-    Solver.Ok t -> return t
+    Solver.Ok t -> return t -}
 
-conStar = conType VStar_
+
+conStar = Tm.SET
 
 getConstraints env term = do
   finalType <- iType0_ env term

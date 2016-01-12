@@ -27,6 +27,8 @@ import PatternUnify.Tm as Tm
 
 import qualified PatternUnify.Context as UC
 
+cToUnifForm0 = cToUnifForm 0
+
 cToUnifForm :: Int -> Common.CTerm_ -> Tm.VAL
 cToUnifForm ii (Common.L _ tm) =
   case tm of
@@ -133,6 +135,9 @@ class Unifyable a where
 
 
 
+type ConType = Tm.VAL
+
+
 type ConstraintM a = WriterT [Constraint] (StateT [Int] Identity) a
 
 --Operations in our monad:
@@ -155,3 +160,13 @@ freshInt = do
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
 addConstr c = tell [c]
+
+
+metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
+
+evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
+evaluate term env = do
+  t <- metaFromInt <$> freshInt
+  tType <- metaFromInt <$> freshInt
+  let ourEntry = UC.Unify $ UC.EQN tType t tType $ cToUnifForm0 term
+  return t
