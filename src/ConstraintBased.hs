@@ -30,7 +30,7 @@ import qualified PatternUnify.Tm as Tm
 
 checker :: TypeChecker
 checker (nameEnv, context) term = error "TODO checker" {- do
-  let newContext = map (\(a,b) -> (a, conType b) ) context
+  let newContext = map (\(a,b) -> (a, cToUnifForm0 b) ) context
   let checkResults = Solver.solveConstraints $ getConstraints (nameEnv, newContext) term
   case (Solver.finalResults checkResults) of
     Solver.Err s -> error s
@@ -45,10 +45,10 @@ getConstraints env term = do
   finalVar <- freshVar
   return (finalType, finalVar)
 
-iType0_ :: (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
+iType0_ :: (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM cToUnifForm0
 iType0_ = iType_ 0
 
-iType_ :: Int -> (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
+iType_ :: Int -> (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM cToUnifForm0
 iType_ ii g (L region it) = iType_' ii g it
   where
     iType_' ii g (Ann_ e tyt )
@@ -73,7 +73,7 @@ iType_ ii g (L region it) = iType_' ii g it
                 fnType <- iType_ ii g e1
                 piArg <- fresh
                 piBody <- fresh
-                unify (fnType) (mkPi piArg piBody) g
+                unify (fnType) (Tm.PI piArg piBody) g
 
                 --Ensure that the argument has the proper type
                 cType_ ii g e2 piArg
@@ -83,48 +83,48 @@ iType_ ii g (L region it) = iType_' ii g it
 
                 --Our resulting type is the application of our arg type into the
                 --body of the pi type
-                return $ applyPi piBody argVal
+                return $ (Tm.$$) piBody argVal
 
     iType_' ii g Nat_                  =  return conStar
     iType_' ii g (NatElim_ m mz ms n)  =
-      do  cType_ ii g m (conType $ VPi_ VNat_ (const VStar_))
+      do  cType_ ii g m (cToUnifForm0 $ VPi_ VNat_ (const VStar_))
           --evaluate $ our param m
           mVal <- evaluate m g
           --Check that mz has type (m 0)
-          cType_ ii g mz (mVal `applyVal` (conType VZero_))
+          cType_ ii g mz (mVal Tm.$$ (cToUnifForm0 VZero_))
           --Check that ms has type ( (k: N) -> m k -> m (S k) )
           let recPiType =
-                mkPi (conType VNat_) $ conTyFn $ \k -> mkPi (mVal `applyVal` conType k)
-                  (conTyFn $ \_ -> mVal `applyVal` (conType $ VSucc_ k) )
+                Tm.PI (cToUnifForm0 VNat_) $ conTyFn $ \k -> Tm.PI (mVal Tm.$$ cToUnifForm0 k)
+                  (conTyFn $ \_ -> mVal Tm.$$ (cToUnifForm0 $ VSucc_ k) )
           cType_ ii g ms recPiType
           --Make sure the number param is a nat
-          cType_ ii g n (conType VNat_)
+          cType_ ii g n (cToUnifForm0 VNat_)
 
           --We infer that our final expression has type (m n)
           nVal <- evaluate n g
-          return $ mVal `applyVal` nVal
+          return $ mVal Tm.$$ nVal
 
     iType_' ii g (Vec_ a n) =
       do  cType_ ii g a  conStar
-          cType_ ii g n  (conType VNat_)
+          cType_ ii g n  (cToUnifForm0 VNat_)
           return conStar
     iType_' ii g (VecElim_ a m mn mc n vs) =
 
       do  cType_ ii g a conStar
           aVal <- evaluate a g
           cType_ ii g m
-            (  mkPi (conType VNat_) (conTyFn $ \n -> mkPi (applyPi (conTyFn $ \av -> conType $ VVec_ av n) aVal) (conTyFn $ \ _ -> conStar)))
+            (  Tm.PI (cToUnifForm0 VNat_) (conTyFn $ \n -> Tm.PI ((Tm.$$) (conTyFn $ \av -> cToUnifForm0 $ VVec_ av n) aVal) (conTyFn $ \ _ -> conStar)))
           mVal <- evaluate m g
-          cType_ ii g mn (foldl applyVal mVal [conType VZero_, (liftConTyFn $ \av -> VNil_ av ) `applyPi` aVal])
+          cType_ ii g mn (foldl applyVal mVal [cToUnifForm0 VZero_, (liftConTyFn $ \av -> VNil_ av ) Tm.$$ aVal])
           cType_ ii g mc
-            (  mkPi (conType VNat_) (conTyFn $ \ n ->
-               mkPi aVal (conTyFn $ \ y ->
-               mkPi ( (liftConTyFn $ \av -> VVec_ av n) `applyPi` aVal) (conTyFn $ \ ys ->
-               mkPi (foldl applyVal mVal $ map conType [n, ys]) (conTyFn $ \ _ ->
-               (foldl applyVal mVal [conType (VSucc_ n), (liftConTyFn $ \av -> VCons_ av n y ys) `applyPi` aVal]))))))
-          cType_ ii g n $ conType VNat_
+            (  Tm.PI (cToUnifForm0 VNat_) (conTyFn $ \ n ->
+               Tm.PI aVal (conTyFn $ \ y ->
+               Tm.PI ( (liftConTyFn $ \av -> VVec_ av n) Tm.$$ aVal) (conTyFn $ \ ys ->
+               Tm.PI (foldl applyVal mVal $ map cToUnifForm0 [n, ys]) (conTyFn $ \ _ ->
+               (foldl applyVal mVal [cToUnifForm0 (VSucc_ n), (liftConTyFn $ \av -> VCons_ av n y ys) Tm.$$ aVal]))))))
+          cType_ ii g n $ cToUnifForm0 VNat_
           nVal <- evaluate n g
-          cType_ ii g vs ((conTyFn $ \av -> (liftConTyFn $ \nv -> VVec_ av nv ) `applyPi` aVal) `applyPi` nVal)
+          cType_ ii g vs ((conTyFn $ \av -> (liftConTyFn $ \nv -> VVec_ av nv ) Tm.$$ aVal) Tm.$$ nVal)
           vsVal <- evaluate vs g
           return (foldl applyVal mVal [nVal, vsVal])
 
@@ -142,14 +142,14 @@ iType_ ii g (L region it) = iType_' ii g it
           --evaluate $ our a value
           aVal <- evaluate a g
           cType_ i g m
-            (mkPi aVal (conTyFn $ \ x ->
-             mkPi aVal (conTyFn $ \ y ->
-             mkPi ((conTyFn $ \av -> conType $ VEq_ av x y) `applyPi` aVal) (conTyFn $ \ _ -> conStar))))
+            (Tm.PI aVal (conTyFn $ \ x ->
+             Tm.PI aVal (conTyFn $ \ y ->
+             Tm.PI ((conTyFn $ \av -> cToUnifForm0 $ VEq_ av x y) Tm.$$ aVal) (conTyFn $ \ _ -> conStar))))
           --evaluate $ our given m value
           mVal <- evaluate m g
           cType_ i g mr
-            (mkPi aVal (conTyFn $ \ x ->
-             ( foldl applyVal mVal $ map conType [x, x] )))
+            (Tm.PI aVal (conTyFn $ \ x ->
+             ( foldl applyVal mVal $ map cToUnifForm0 [x, x] )))
           cType_ i g x aVal
           xVal <- evaluate x g
           cType_ i g y aVal
@@ -157,7 +157,7 @@ iType_ ii g (L region it) = iType_' ii g it
           --TODO make this nicer with a fold?
           let
             eqC =
-              (conTyFn $ \a -> (conTyFn $ \b -> (conTyFn $ \c -> conType (VEq_ a b c)) `applyPi` yVal) `applyPi` xVal ) `applyPi` aVal
+              (conTyFn $ \a -> (conTyFn $ \b -> (conTyFn $ \c -> cToUnifForm0 (VEq_ a b c)) Tm.$$ yVal) Tm.$$ xVal ) Tm.$$ aVal
           cType_ i g eq eqC
           eqVal <- evaluate eq g
           return (foldl applyVal mVal [xVal, yVal])
@@ -165,7 +165,7 @@ iType_ ii g (L region it) = iType_' ii g it
     iType_' i g (Bound_ vi) = error "TODO why never bound?"
 
 
-cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> ConType -> ConstraintM ()
+cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> cToUnifForm0 -> ConstraintM ()
 cType_ ii g (L region ct) = cType_' ii g ct
   where
     cType_' ii g (Inf_ e) tyAnnot
@@ -180,38 +180,38 @@ cType_ ii g (L region ct) = cType_' ii g ct
     cType_' ii g (Lam_ e) fnTy = do
         argTy <- fresh
         returnTyFn <- fresh
-        unify fnTy (mkPi argTy returnTyFn) g --TODO fix this
-        let returnTy = applyPi returnTyFn $ conType (vfree_ (Local ii))
+        unify fnTy (Tm.PI argTy returnTyFn) g --TODO fix this
+        let returnTy = (Tm.$$) returnTyFn $ cToUnifForm0 (vfree_ (Local ii))
         let subbedBody = cSubst_ 0 (builtin $ Free_ (Local ii)) e
         cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g) subbedBody returnTy
         --TODO better name?
 
 
 
-    cType_' ii g Zero_      ty  =  unify ty (conType VNat_) g
+    cType_' ii g Zero_      ty  =  unify ty (cToUnifForm0 VNat_) g
     cType_' ii g (Succ_ k)  ty  = do
-      unify ty (conType VNat_) g
-      cType_ ii g k (conType VNat_)
+      unify ty (cToUnifForm0 VNat_) g
+      cType_ ii g k (cToUnifForm0 VNat_)
 
     cType_' ii g (Nil_ a) ty =
       do
           bVal <- fresh
-          unify ty (mkVec bVal $ conType VZero_) g
+          unify ty (mkVec bVal $ cToUnifForm0 VZero_) g
           cType_ ii g a conStar
           aVal <- evaluate a g
           unify aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
       do  bVal <- fresh
-          k <- (fresh :: ConstraintM ConType)
-          --Trickery to get a Type_ to a ConType
-          let kVal = applyPi (liftConTyFn (\val -> VSucc_ val) ) k
+          k <- (fresh :: ConstraintM cToUnifForm0)
+          --Trickery to get a Type_ to a cToUnifForm0
+          let kVal = (Tm.$$) (liftConTyFn (\val -> VSucc_ val) ) k
           unify ty (mkVec bVal kVal) g
           cType_ ii g a conStar
 
           aVal <- evaluate a g
           unify aVal bVal g
 
-          cType_ ii g n (conType VNat_)
+          cType_ ii g n (cToUnifForm0 VNat_)
 
           --Make sure our numbers match
           nVal <- evaluate n g

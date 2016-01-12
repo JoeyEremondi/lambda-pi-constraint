@@ -170,3 +170,15 @@ evaluate term env = do
   tType <- metaFromInt <$> freshInt
   let ourEntry = UC.Unify $ UC.EQN tType t tType $ cToUnifForm0 term
   return t
+
+unknownIdent :: String -> ConstraintM a
+unknownIdent s = error $ "Unknown Identifier: " ++ show s
+
+
+
+mkEq :: ConType -> ConType -> ConType -> ConType
+mkEq = error "TODO equality type"
+
+
+conTyFn :: (Common.Type_ -> ConType) -> ConType
+conTyFn = error "conTyFn"
