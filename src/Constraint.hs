@@ -25,19 +25,23 @@ import qualified Unbound.LocallyNameless as LN
 
 import PatternUnify.Tm as Tm
 
-cToUnifForm :: Common.CTerm_ -> Tm.VAL
-cToUnifForm (Common.L _ tm) =
+cToUnifForm :: Int -> Common.CTerm_ -> Tm.VAL
+cToUnifForm ii (Common.L _ tm) =
   case tm of
-    Common.Inf_ itm ->
-      iToUnifForm itm
+    Common.Inf_ itm -> --Here we bind a new variable, so increase our counter
+      iToUnifForm ii itm
     Common.Lam_ ctm ->
-      Tm.L ( error "TODO bind" (cToUnifForm ctm) )
+      let
+        newNom = LN.integer2Name $ toInteger ii
+        retBody = cToUnifForm (ii + 1) ctm
+      in
+        Tm.L $ LN.bind newNom retBody
     _ ->
       error "TODO conversions for Vec, Eq, Nat"
 
 
-iToUnifForm :: Common.ITerm_ -> Tm.VAL
-iToUnifForm ltm@(Common.L _ tm) =
+iToUnifForm :: Int -> Common.ITerm_ -> Tm.VAL
+iToUnifForm ii ltm@(Common.L _ tm) =
   case tm of
     Common.Ann_ val tp ->
       error "TODO annotated val"
@@ -46,7 +50,7 @@ iToUnifForm ltm@(Common.L _ tm) =
       Tm.SET
 
     Common.Pi_ s t ->
-      Tm.PI (cToUnifForm s) (cToUnifForm t)
+      Tm.PI (cToUnifForm ii s) (cToUnifForm ii t)
 
     Common.Bound_ i ->
       error "TODO bound variables to Solver form"
@@ -64,7 +68,7 @@ iToUnifForm ltm@(Common.L _ tm) =
     (_ Common.:$: _) ->
       let
         (startHead, startSpine) = appToSpine ltm
-        convertedSpine = (map (Tm.A . cToUnifForm) startSpine)
+        convertedSpine = (map (Tm.A . (cToUnifForm ii)) startSpine)
       in
         case startHead of
           Common.Bound i ->
