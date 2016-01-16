@@ -184,13 +184,20 @@ class Unifyable a where
 
 instance Unifyable Tm.VAL where
   fresh = metaFromInt <$> freshInt
-  unify m1 m2 env = do
-    error "Emit Unif"
-    return ()
+  unify v1 v2 env = do
+    tType <- metaFromInt <$> freshInt
+    probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
+    let newCon = UC.Unify $ UC.EQN tType v1 tType v2
+    let ourEntry = UC.Prob probId newCon UC.Active
+    addConstr $ Constraint (error "TODO region") ourEntry
 
 
 instance Unifyable ConTyFn where
-  fresh = error "Fresh fn"
+  fresh = do
+    freshMeta <- metaFromInt <$> freshInt
+    return $ ConTyFn $ \x ->
+      freshMeta Tm.$$ (vToUnifForm x)
+
   unify m1 m2 env = error "Unify fns"
 
 type ConType = Tm.VAL
@@ -224,11 +231,10 @@ metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
 
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
 evaluate term env@(nameEnv, context) = do
-  t <- metaFromInt <$> freshInt
-  tType <- metaFromInt <$> freshInt
+  t <- fresh
   let realContext = error "TODO realContext"
   let normalForm = Common.cEval_ term (nameEnv, realContext)
-  let ourEntry = UC.Unify $ UC.EQN tType t tType $ error "TODO evaluate" --cToUnifForm0 term
+  unify t (error "TODO evaluate") env --cToUnifForm0 term
   return t
 
 unknownIdent :: String -> ConstraintM a
