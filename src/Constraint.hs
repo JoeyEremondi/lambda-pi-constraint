@@ -88,6 +88,10 @@ iToUnifForm ii ltm@(Common.L _ tm) =
     _ -> error "TODO builtIn types"
 -}
 
+data ConTyFn =
+  ConTyFn (Common.Value_ -> Tm.VAL)
+
+
 
 vToUnifForm :: Common.Value_ -> Tm.VAL
 vToUnifForm val = case val of
@@ -102,7 +106,33 @@ vToUnifForm val = case val of
   _ ->
     error "TODO nat, eq, etc."
 
+unifToValue :: Tm.VAL -> Common.Value_
+unifToValue val = case val of
+  Tm.L _ ->
+    Common.VLam_ $ \v ->
+      unifToValue $ val Tm.$$ (vToUnifForm v)
 
+  Tm.SET ->
+    Common.VStar_
+
+  Tm.PI s t ->
+    Common.VPi_ (unifToValue s) $ \x ->
+      unifToValue $ t Tm.$$ (vToUnifForm x)
+
+  Tm.SIG s t -> error "TODO sigma"
+
+  Tm.PAIR s t -> error "TODO sigma pair"
+
+  Tm.N (Tm.Var nm Tm.Only) elims ->
+    let
+      subArgs = map elimToValue elims
+      newHead = Common.NFree_ (error "TODO nom name" $ nm)
+    in
+      Common.VNeutral_ $ foldl Common.NApp_ newHead subArgs
+  _ -> error "TODO twins, etc. should never happen"
+
+
+elimToValue (Tm.A v) = unifToValue v
 
 --TODO make tail recursive?
 appToSpine :: Common.ITerm_ -> (Common.ITerm_, [Common.CTerm_])
@@ -154,6 +184,9 @@ class Unifyable a where
 
 instance Unifyable Tm.VAL where
   fresh = metaFromInt <$> freshInt
+  unify m1 m2 env = do
+    error "Emit Unif"
+    return ()
 
 
 type ConType = Tm.VAL
@@ -211,11 +244,13 @@ tyFn f =
     Tm.L (LN.bind boundVar (f $ Tm.var boundVar))
 
 
-conTyFn :: (Common.Type_ -> ConType) -> ConType
+conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
 conTyFn = error "conTyFn"
 
-applyVal :: ConType -> ConType -> ConType
-applyVal f x = f Tm.$$ x
+
+applyVal :: ConTyFn -> ConType -> ConType
+applyVal (ConTyFn f) x = error "TODO apply val"
+
 
 applyPi = (Tm.$$)
 
