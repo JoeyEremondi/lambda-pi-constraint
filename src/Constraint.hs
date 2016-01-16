@@ -105,10 +105,37 @@ vToUnifForm ii val = case val of
     Tm.SET
   Common.VPi_ s t ->
     error "V2"
-  Common.VNeutral_ _ ->
-    error "Neutral TODO"
+  Common.VNeutral_ neut ->
+    let
+      (headVar, args) = neutralToSpine ii neut
+    in
+      Tm.N headVar args
+
   _ ->
     error "TODO nat, eq, etc."
+
+neutralToHead :: Int -> Common.Neutral_ -> Tm.Head
+neutralToHead ii neut = case neut of
+  Common.NFree_ nm -> case nm of
+    Common.Global s ->
+      Tm.Var (LN.string2Name s) Tm.Only
+    Common.Local i ->
+      Tm.Var (LN.integer2Name $ toInteger $ ii - i) Tm.Only
+    Common.Quote i ->
+      Tm.Var (LN.integer2Name $ toInteger $ ii - i) Tm.Only
+
+neutralToSpine ii neut = case neut of
+  Common.NApp_ f x ->
+    let
+      (nhead, args) = neutralToSpine ii f
+    in
+      (nhead, args ++ [valToElim ii x])
+  _ -> (neutralToHead ii neut, [])
+
+valToElim :: Int -> Common.Value_ -> Tm.Elim
+valToElim ii val =
+  Tm.A $ vToUnifForm ii val
+
 
 unifToValue :: Tm.VAL -> Common.Value_
 unifToValue val = case val of
