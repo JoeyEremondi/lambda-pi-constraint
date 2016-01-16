@@ -88,8 +88,7 @@ iToUnifForm ii ltm@(Common.L _ tm) =
     _ -> error "TODO builtIn types"
 -}
 
-data ConTyFn =
-  ConTyFn (Common.Value_ -> Tm.VAL)
+type ConTyFn = Tm.VAL
 
 
 
@@ -192,13 +191,7 @@ instance Unifyable Tm.VAL where
     addConstr $ Constraint (error "TODO region") ourEntry
 
 
-instance Unifyable ConTyFn where
-  fresh = do
-    freshMeta <- metaFromInt <$> freshInt
-    return $ ConTyFn $ \x ->
-      freshMeta Tm.$$ (vToUnifForm x)
 
-  unify m1 m2 env = error "Unify fns"
 
 type ConType = Tm.VAL
 
@@ -263,7 +256,7 @@ applyVal = (Tm.$$)
 
 
 applyPi :: ConTyFn -> ConType -> ConType
-applyPi (ConTyFn f) x = f (unifToValue x)
+applyPi = applyVal
 
 mkPi :: ConType -> ConTyFn -> ConType
 mkPi = error "TODO mkPi"
