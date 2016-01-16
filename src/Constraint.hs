@@ -189,6 +189,10 @@ instance Unifyable Tm.VAL where
     return ()
 
 
+instance Unifyable ConTyFn where
+  fresh = error "Fresh fn"
+  unify m1 m2 env = error "Unify fns"
+
 type ConType = Tm.VAL
 
 
@@ -248,17 +252,20 @@ conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
 conTyFn = error "conTyFn"
 
 
-applyVal :: ConTyFn -> ConType -> ConType
-applyVal (ConTyFn f) x = error "TODO apply val"
+applyVal :: ConType -> ConType -> ConType
+applyVal = (Tm.$$)
 
 
-applyPi = (Tm.$$)
+applyPi :: ConTyFn -> ConType -> ConType
+applyPi (ConTyFn f) x = f (unifToValue x)
 
+mkPi :: ConType -> ConTyFn -> ConType
 mkPi = error "TODO mkPi"
 
+conType :: Common.Type_ -> ConType
 conType = vToUnifForm
 
 mkVec = error "TODO mkVec"
 
-liftConTyFn :: (Common.Type_ -> Common.Type_) -> Tm.VAL
+liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
 liftConTyFn f = error "TODO liftConTy"
