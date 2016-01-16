@@ -96,8 +96,8 @@ iType_ ii g (L region it) = iType_' ii g it
           cType_ ii g mz (mVal `applyVal` (conType VZero_))
           --Check that ms has type ( (k: N) -> m k -> m (S k) )
           let recPiType =
-                mkPi (conType VNat_) $ conTyFn $ \k -> mkPi (mVal `applyVal` conType k)
-                  (conTyFn $ \_ -> mVal `applyVal` (conType $ VSucc_ k) )
+                mkPi (conType VNat_) $ tyFn $ \k -> mkPi (mVal `applyVal` k)
+                  (tyFn $ \_ -> mVal `applyVal` (Tm.Succ k) )
           cType_ ii g ms recPiType
           --Make sure the number param is a nat
           cType_ ii g n (conType VNat_)
@@ -115,18 +115,18 @@ iType_ ii g (L region it) = iType_' ii g it
       do  cType_ ii g a conStar
           aVal <- evaluate a g
           cType_ ii g m
-            (  mkPi (conType VNat_) (conTyFn $ \n -> mkPi (applyPi (conTyFn $ \av -> conType $ VVec_ av n) aVal) (conTyFn $ \ _ -> conStar)))
+            (  mkPi (conType VNat_) (tyFn $ \n -> mkPi (applyPi (tyFn $ \av -> Tm.Vec av n) aVal) (tyFn $ \ _ -> conStar)))
           mVal <- evaluate m g
           cType_ ii g mn (foldl applyVal mVal [conType VZero_, (liftConTyFn $ \av -> VNil_ av ) `applyPi` aVal])
           cType_ ii g mc
-            (  mkPi (conType VNat_) (conTyFn $ \ n ->
-               mkPi aVal (conTyFn $ \ y ->
-               mkPi ( (liftConTyFn $ \av -> VVec_ av n) `applyPi` aVal) (conTyFn $ \ ys ->
-               mkPi (foldl applyVal mVal $ map conType [n, ys]) (conTyFn $ \ _ ->
-               (foldl applyVal mVal [conType (VSucc_ n), (liftConTyFn $ \av -> VCons_ av n y ys) `applyPi` aVal]))))))
+            (  mkPi (conType VNat_) (tyFn $ \ n ->
+               mkPi aVal (tyFn $ \ y ->
+               mkPi ( (tyFn $ \av -> Tm.Vec av n) `applyPi` aVal) (tyFn $ \ ys ->
+               mkPi (foldl applyVal mVal  [n, ys]) (tyFn $ \ _ ->
+               (foldl applyVal mVal [(Tm.Succ n), (tyFn $ \av -> Tm.VCons av n y ys) `applyPi` aVal]))))))
           cType_ ii g n $ conType VNat_
           nVal <- evaluate n g
-          cType_ ii g vs ((conTyFn $ \av -> (liftConTyFn $ \nv -> VVec_ av nv ) `applyPi` aVal) `applyPi` nVal)
+          cType_ ii g vs ((tyFn $ \av -> (tyFn $ \nv -> Tm.Vec av nv ) `applyPi` aVal) `applyPi` nVal)
           vsVal <- evaluate vs g
           return (foldl applyVal mVal [nVal, vsVal])
 

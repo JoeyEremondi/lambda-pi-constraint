@@ -37,6 +37,10 @@ data VAL where
     Nat :: VAL
     Vec :: VAL -> VAL -> VAL
     Eq :: VAL -> VAL -> VAL -> VAL
+    Succ :: VAL -> VAL
+    VNil :: VAL
+    VCons :: VAL -> VAL -> VAL -> VAL -> VAL
+    ERefl :: VAL
     AnnVal  :: VAL -> VAL -> VAL --Annotated Values --TODO need this?
   deriving Show
 

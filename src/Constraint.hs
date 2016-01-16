@@ -333,7 +333,7 @@ tyFn f =
 
 
 conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
-conTyFn = error "conTyFn"
+conTyFn f = error "TODO conTyFn"
 
 
 applyVal :: ConType -> ConType -> ConType
