@@ -546,25 +546,6 @@ data Name
   deriving (Show, Eq)
 
 
-data Value
-   =  VLam      (Value -> Value)
-   |  VNeutral  Neutral
-
-data Neutral
-   =  NFree  Name
-   |  NApp   Neutral Value
-
-vfree :: Name -> Value
-vfree n = VNeutral (NFree n)
-
-
-
-type Env = [Value]
-
-
-vapp :: Value -> Value -> Value
-vapp (VLam f)      v  =  f v
-vapp (VNeutral n)  v  =  VNeutral (NApp n v)
 
 
 
