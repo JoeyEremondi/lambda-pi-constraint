@@ -92,10 +92,15 @@ type ConTyFn = Tm.VAL
 
 
 
-vToUnifForm :: Common.Value_ -> Tm.VAL
-vToUnifForm val = case val of
+vToUnifForm :: Int -> Common.Value_ -> Tm.VAL
+vToUnifForm ii val = case val of
   Common.VLam_ f ->
-    error "V"
+    let
+      freeVar = Common.vfree_ $ Common.Quote ii
+      funBody = f freeVar
+      boundNom = LN.integer2Name $ toInteger ii
+    in
+      Tm.lam boundNom $ vToUnifForm (ii+1) funBody
   Common.VStar_ ->
     Tm.SET
   Common.VPi_ s t ->
@@ -109,14 +114,14 @@ unifToValue :: Tm.VAL -> Common.Value_
 unifToValue val = case val of
   Tm.L _ ->
     Common.VLam_ $ \v ->
-      unifToValue $ val Tm.$$ (vToUnifForm v)
+      unifToValue $ val Tm.$$ (vToUnifForm 0 v)
 
   Tm.SET ->
     Common.VStar_
 
   Tm.PI s t ->
     Common.VPi_ (unifToValue s) $ \x ->
-      unifToValue $ t Tm.$$ (vToUnifForm x)
+      unifToValue $ t Tm.$$ (vToUnifForm 0 x)
 
   Tm.SIG s t -> error "TODO sigma"
 
@@ -262,7 +267,7 @@ mkPi :: ConType -> ConTyFn -> ConType
 mkPi = error "TODO mkPi"
 
 conType :: Common.Type_ -> ConType
-conType = vToUnifForm
+conType = vToUnifForm 0
 
 mkVec = error "TODO mkVec"
 
