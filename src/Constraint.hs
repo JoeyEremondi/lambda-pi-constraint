@@ -125,8 +125,6 @@ vToUnifForm ii val = case val of
   Common.VEq_ t1 t2 t3 ->
     Tm.Eq (vToUnifForm ii t1) (vToUnifForm ii t2) (vToUnifForm ii t3)
 
-  _ ->
-    error "TODO nat, eq, etc."
 
 neutralToHead :: Int -> Common.Neutral_ -> Tm.Head
 neutralToHead ii neut = case neut of
@@ -174,6 +172,16 @@ unifToValue val = case val of
       newHead = Common.NFree_ (Common.Global $ LN.name2String nm)
     in
       Common.VNeutral_ $ foldl Common.NApp_ newHead subArgs
+
+  Tm.Nat ->
+    Common.VNat_
+
+  Tm.Vec t1 t2 ->
+    Common.VVec_ (unifToValue t1) (unifToValue t2)
+
+  Tm.Eq t1 t2 t3  ->
+    Common.VEq_ (unifToValue t1) (unifToValue t2) (unifToValue t3)
+
   _ -> error "TODO twins, etc. should never happen"
 
 
