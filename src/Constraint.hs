@@ -27,6 +27,7 @@ import PatternUnify.Tm as Tm
 
 import qualified PatternUnify.Context as UC
 
+{-
 cToUnifForm0 = cToUnifForm 0
 
 cToUnifForm :: Int -> Common.CTerm_ -> Tm.VAL
@@ -85,6 +86,23 @@ iToUnifForm ii ltm@(Common.L _ tm) =
             error "TODO reduce lambda redex for typechecking?"
 
     _ -> error "TODO builtIn types"
+-}
+
+
+vToUnifForm :: Common.Value_ -> Tm.VAL
+vToUnifForm val = case val of
+  Common.VLam_ f ->
+    error "V"
+  Common.VStar_ ->
+    Tm.SET
+  Common.VPi_ s t ->
+    error "V2"
+  Common.VNeutral_ _ ->
+    error "Neutral TODO"
+  _ ->
+    error "TODO nat, eq, etc."
+
+
 
 --TODO make tail recursive?
 appToSpine :: Common.ITerm_ -> (Common.ITerm_, [Common.CTerm_])
@@ -165,10 +183,12 @@ addConstr c = tell [c]
 metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
 
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
-evaluate term env = do
+evaluate term env@(nameEnv, context) = do
   t <- metaFromInt <$> freshInt
   tType <- metaFromInt <$> freshInt
-  let ourEntry = UC.Unify $ UC.EQN tType t tType $ cToUnifForm0 term
+  let realContext = error "TODO realContext"
+  let normalForm = Common.cEval_ term (nameEnv, realContext)
+  let ourEntry = UC.Unify $ UC.EQN tType t tType $ error "TODO evaluate" --cToUnifForm0 term
   return t
 
 unknownIdent :: String -> ConstraintM a
@@ -180,5 +200,20 @@ mkEq :: ConType -> ConType -> ConType -> ConType
 mkEq = error "TODO equality type"
 
 
+tyFn :: (ConType -> ConType) -> ConType
+tyFn f =
+  let
+    boundVar = (LN.s2n "_x")
+  in
+    Tm.L (LN.bind boundVar (f $ Tm.var boundVar))
+
+
 conTyFn :: (Common.Type_ -> ConType) -> ConType
 conTyFn = error "conTyFn"
+
+applyVal :: ConType -> ConType -> ConType
+applyVal f x = f Tm.$$ x
+
+mkPi = error "TODO mkPi"
+
+mkVec = error "TODO mkVec"
