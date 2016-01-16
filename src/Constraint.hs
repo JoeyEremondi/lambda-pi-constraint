@@ -103,8 +103,13 @@ vToUnifForm ii val = case val of
       Tm.lam boundNom $ vToUnifForm (ii+1) funBody
   Common.VStar_ ->
     Tm.SET
-  Common.VPi_ s t ->
-    error "V2"
+  Common.VPi_ s f ->
+    let
+      freeVar = Common.vfree_ $ Common.Quote ii
+      funBody = f freeVar
+      boundNom = LN.integer2Name $ toInteger ii
+    in
+      Tm.PI (vToUnifForm ii s) (Tm.lam boundNom $ vToUnifForm (ii+1) funBody)
   Common.VNeutral_ neut ->
     let
       (headVar, args) = neutralToSpine ii neut
