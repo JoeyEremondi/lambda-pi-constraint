@@ -152,6 +152,9 @@ class Unifyable a where
   }-}
 
 
+instance Unifyable Tm.VAL where
+  fresh = metaFromInt <$> freshInt
+
 
 type ConType = Tm.VAL
 
@@ -214,6 +217,13 @@ conTyFn = error "conTyFn"
 applyVal :: ConType -> ConType -> ConType
 applyVal f x = f Tm.$$ x
 
+applyPi = (Tm.$$)
+
 mkPi = error "TODO mkPi"
 
+conType = vToUnifForm
+
 mkVec = error "TODO mkVec"
+
+liftConTyFn :: (Common.Type_ -> Common.Type_) -> Tm.VAL
+liftConTyFn f = error "TODO liftConTy"
