@@ -126,7 +126,7 @@ unifToValue val = case val of
   Tm.N (Tm.Var nm Tm.Only) elims ->
     let
       subArgs = map elimToValue elims
-      newHead = Common.NFree_ (error "TODO nom name" $ nm)
+      newHead = Common.NFree_ (Common.Global $ LN.name2String nm)
     in
       Common.VNeutral_ $ foldl Common.NApp_ newHead subArgs
   _ -> error "TODO twins, etc. should never happen"
