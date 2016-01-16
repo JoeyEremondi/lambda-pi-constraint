@@ -142,6 +142,37 @@ neutralToSpine ii neut = case neut of
       (nhead, args) = neutralToSpine ii f
     in
       (nhead, args ++ [valToElim ii x])
+
+  Common.NNatElim_ m mz ms n ->
+    let
+      (nhead, elims) = neutralToSpine ii n
+      newElim = Tm.NatElim (vToUnifForm ii m) (vToUnifForm ii mz) (vToUnifForm ii ms)
+    in
+      (nhead, [newElim] ++ elims) --TODO which side of list?
+
+  Common.NNatElim_ m mz ms n ->
+    let
+      (nhead, elims) = neutralToSpine ii n
+      newElim = Tm.NatElim (vToUnifForm ii m) (vToUnifForm ii mz) (vToUnifForm ii ms)
+    in
+      (nhead, [newElim] ++ elims)
+
+  Common.NVecElim_ a m mn mc n xs ->
+    let
+      (nhead, elims) = neutralToSpine ii xs
+      newElim = Tm.VecElim (vToUnifForm ii a) (vToUnifForm ii m) (vToUnifForm ii mn)
+        (vToUnifForm ii mc) (vToUnifForm ii n)
+    in
+      (nhead, [newElim] ++ elims)
+
+  Common.NEqElim_ a m mr x y eq ->
+    let
+      (nhead, elims) = neutralToSpine ii eq
+      newElim = Tm.EqElim (vToUnifForm ii a) (vToUnifForm ii m) (vToUnifForm ii mr)
+        (vToUnifForm ii x) (vToUnifForm ii y)
+    in
+      (nhead, [newElim] ++ elims)
+
   _ -> (neutralToHead ii neut, [])
 
 valToElim :: Int -> Common.Value_ -> Tm.Elim

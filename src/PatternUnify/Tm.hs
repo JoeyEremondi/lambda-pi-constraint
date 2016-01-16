@@ -52,6 +52,7 @@ data Head = Var Nom Twin | Meta Nom
   deriving (Eq, Show)
 
 data Elim = A VAL | Hd | Tl
+  | NatElim VAL VAL VAL | VecElim VAL VAL VAL VAL VAL | EqElim VAL VAL VAL VAL VAL
   deriving (Eq, Show)
 
 
