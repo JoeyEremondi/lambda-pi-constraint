@@ -116,6 +116,15 @@ vToUnifForm ii val = case val of
     in
       Tm.N headVar args
 
+  Common.VNat_ ->
+    Tm.Nat
+
+  Common.VVec_ t1 t2 ->
+    Tm.Vec (vToUnifForm ii t1) (vToUnifForm ii t2)
+
+  Common.VEq_ t1 t2 t3 ->
+    Tm.Eq (vToUnifForm ii t1) (vToUnifForm ii t2) (vToUnifForm ii t3)
+
   _ ->
     error "TODO nat, eq, etc."
 

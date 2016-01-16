@@ -34,6 +34,9 @@ data VAL where
     L  :: Bind Nom VAL -> VAL --Lambda
     N  :: Head -> [Elim] -> VAL --Neutral term
     C  :: Can -> [VAL] -> VAL --Constructor values
+    Nat :: VAL
+    Vec :: VAL -> VAL -> VAL
+    Eq :: VAL -> VAL -> VAL -> VAL
     AnnVal  :: VAL -> VAL -> VAL --Annotated Values --TODO need this?
   deriving Show
 
