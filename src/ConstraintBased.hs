@@ -117,7 +117,7 @@ iType_ ii g (L region it) = iType_' ii g it
           cType_ ii g m
             (  mkPi (conType VNat_) (tyFn $ \n -> mkPi (applyPi (tyFn $ \av -> Tm.Vec av n) aVal) (tyFn $ \ _ -> conStar)))
           mVal <- evaluate m g
-          cType_ ii g mn (foldl applyVal mVal [conType VZero_, (liftConTyFn $ \av -> VNil_ av ) `applyPi` aVal])
+          cType_ ii g mn (foldl applyVal mVal [ Tm.Zero, (tyFn $ \av -> Tm.VNil av ) `applyPi` aVal])
           cType_ ii g mc
             (  mkPi (conType VNat_) (tyFn $ \ n ->
                mkPi aVal (tyFn $ \ y ->
@@ -144,14 +144,14 @@ iType_ ii g (L region it) = iType_' ii g it
           --evaluate $ our a value
           aVal <- evaluate a g
           cType_ i g m
-            (mkPi aVal (conTyFn $ \ x ->
-             mkPi aVal (conTyFn $ \ y ->
-             mkPi ((conTyFn $ \av -> conType $ VEq_ av x y) `applyPi` aVal) (conTyFn $ \ _ -> conStar))))
+            (mkPi aVal (tyFn $ \ x ->
+             mkPi aVal (tyFn $ \ y ->
+             mkPi ((tyFn $ \av ->  Tm.Eq av x y) `applyPi` aVal) (tyFn $ \ _ -> conStar))))
           --evaluate $ our given m value
           mVal <- evaluate m g
           cType_ i g mr
-            (mkPi aVal (conTyFn $ \ x ->
-             ( foldl applyVal mVal $ map conType [x, x] )))
+            (mkPi aVal (tyFn $ \ x ->
+             ( foldl applyVal mVal $ [x, x] )))
           cType_ i g x aVal
           xVal <- evaluate x g
           cType_ i g y aVal
@@ -159,7 +159,7 @@ iType_ ii g (L region it) = iType_' ii g it
           --TODO make this nicer with a fold?
           let
             eqC =
-              (conTyFn $ \a -> (conTyFn $ \b -> (conTyFn $ \c -> conType (VEq_ a b c)) `applyPi` yVal) `applyPi` xVal ) `applyPi` aVal
+              (tyFn $ \a -> (tyFn $ \b -> (tyFn $ \c -> (Tm.Eq a b c)) `applyPi` yVal) `applyPi` xVal ) `applyPi` aVal
           cType_ i g eq eqC
           eqVal <- evaluate eq g
           return (foldl applyVal mVal [xVal, yVal])
@@ -206,7 +206,7 @@ cType_ ii g (L region ct) = cType_' ii g ct
       do  bVal <- fresh
           k <- (fresh :: ConstraintM ConType)
           --Trickery to get a Type_ to a ConType
-          let kVal = applyPi (liftConTyFn (\val -> VSucc_ val) ) k
+          let kVal = applyPi (tyFn (\val -> Tm.Succ val) ) k
           unify ty (mkVec bVal kVal) g
           cType_ ii g a conStar
 

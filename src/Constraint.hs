@@ -332,8 +332,8 @@ tyFn f =
     Tm.L (LN.bind boundVar (f $ Tm.var boundVar))
 
 
-conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
-conTyFn f = error "TODO conTyFn"
+--conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
+--conTyFn f = error "TODO conTyFn"
 
 
 applyVal :: ConType -> ConType -> ConType
@@ -351,5 +351,5 @@ conType = vToUnifForm 0
 
 mkVec = error "TODO mkVec"
 
-liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
-liftConTyFn f = error "TODO liftConTy"
+--liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
+--liftConTyFn f = error "TODO liftConTy"
