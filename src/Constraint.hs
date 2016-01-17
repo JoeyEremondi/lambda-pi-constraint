@@ -99,21 +99,26 @@ iToUnifForm ii ltm@(Common.L _ tm) =
     Common.Nat_ ->
       Tm.Nat
 
-    Common.NatElim_ _ _ _ _ ->
-      error "TODO natElim"
+    Common.NatElim_ m mz ms n ->
+      (cToUnifForm ii n) Tm.%%%
+        [Tm.NatElim (cToUnifForm ii m) (cToUnifForm ii mz) (cToUnifForm ii ms)]
 
     Common.Vec_ a n ->
       Tm.Vec (cToUnifForm ii a) (cToUnifForm ii n)
 
-    Common.VecElim_ _ _ _ _ _ _ ->
-      error "TODO vecElim"
+    Common.VecElim_ a m mn mc n xs ->
+      (cToUnifForm ii xs) Tm.%%%
+        [Tm.VecElim (cToUnifForm ii a) (cToUnifForm ii m) (cToUnifForm ii mn)
+            (cToUnifForm ii mc) (cToUnifForm ii n)]
 
     Common.Eq_ a x y ->
       Tm.Eq (cToUnifForm ii a) (cToUnifForm ii x) (cToUnifForm ii y)
 
 
-    Common.EqElim_ _ _ _ _ _ _ ->
-      error "TODO eqElim"
+    Common.EqElim_ a m mr x y eq  ->
+      (cToUnifForm ii eq) Tm.%%%
+        [Tm.EqElim (cToUnifForm ii a) (cToUnifForm ii m) (cToUnifForm ii mr)
+            (cToUnifForm ii x) (cToUnifForm ii y)]
 
 
 type ConTyFn = Tm.VAL
