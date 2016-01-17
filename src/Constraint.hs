@@ -327,9 +327,14 @@ mkEq = error "TODO equality type"
 tyFn :: (ConType -> ConType) -> ConType
 tyFn f =
   let
-    boundVar = (LN.s2n "_x")
+    allVars :: [Tm.Nom]
+    allVars = map LN.integer2Name [1..]
+    dummyBody = f (Tm.var $ LN.integer2Name 0)
+    freeVars :: [Tm.Nom]
+    freeVars = Tm.fvs dummyBody
+    newFreeVar = head $ filter (not . (`elem` freeVars)) allVars
   in
-    Tm.L (LN.bind boundVar (f $ Tm.var boundVar))
+    Tm.lam newFreeVar (f $ Tm.var newFreeVar)
 
 
 --conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
