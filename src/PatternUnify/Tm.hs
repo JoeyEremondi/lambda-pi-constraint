@@ -41,7 +41,7 @@ data VAL where
     Succ :: VAL -> VAL
     VNil :: VAL -> VAL
     VCons :: VAL -> VAL -> VAL -> VAL -> VAL
-    ERefl :: VAL
+    ERefl :: VAL -> VAL -> VAL
     AnnVal  :: VAL -> VAL -> VAL --Annotated Values --TODO need this?
   deriving Show
 

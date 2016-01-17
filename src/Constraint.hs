@@ -47,8 +47,22 @@ cToUnifForm ii (Common.L _ tm) =
         retBody = cToUnifForm (ii + 1) ctm
       in
         Tm.L $ LN.bind newNom retBody
-    _ ->
-      error "TODO conversions for Vec, Eq, Nat"
+
+    Common.Zero_ ->
+      Tm.Zero
+
+    Common.Succ_ n ->
+      Tm.Succ $ cToUnifForm ii n
+
+    Common.Nil_ tp ->
+      Tm.VNil $ cToUnifForm ii tp
+
+    Common.Cons_ a n x xs ->
+      Tm.VCons (cToUnifForm ii a) (cToUnifForm ii n)
+          (cToUnifForm ii x) (cToUnifForm ii xs)
+
+    Common.Refl_ a x ->
+      Tm.ERefl (cToUnifForm ii a) (cToUnifForm ii x)
 
 deBrToNom :: Int -> Int -> Tm.Nom
 deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
@@ -82,8 +96,24 @@ iToUnifForm ii ltm@(Common.L _ tm) =
     (f Common.:$: x) ->
       (iToUnifForm ii f) Tm.$$ (cToUnifForm ii x)
 
+    Common.Nat_ ->
+      Tm.Nat
 
-    _ -> error "TODO builtIn types"
+    Common.NatElim_ _ _ _ _ ->
+      error "TODO natElim"
+
+    Common.Vec_ a n ->
+      Tm.Vec (cToUnifForm ii a) (cToUnifForm ii n)
+
+    Common.VecElim_ _ _ _ _ _ _ ->
+      error "TODO vecElim"
+
+    Common.Eq_ a x y ->
+      Tm.Eq (cToUnifForm ii a) (cToUnifForm ii x) (cToUnifForm ii y)
+
+
+    Common.EqElim_ _ _ _ _ _ _ ->
+      error "TODO eqElim"
 
 
 type ConTyFn = Tm.VAL
