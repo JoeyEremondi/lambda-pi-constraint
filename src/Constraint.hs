@@ -132,7 +132,7 @@ neutralToHead ii neut = case neut of
     Common.Global s ->
       Tm.Var (LN.string2Name s) Tm.Only
     Common.Local i ->
-      Tm.Var (LN.integer2Name $ toInteger $ ii - i) Tm.Only
+      error "Local should not occur in Neutrals"
     Common.Quote i ->
       Tm.Var (LN.integer2Name $ toInteger $ ii - i) Tm.Only
 
@@ -234,9 +234,6 @@ type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)
 
 
 
-instance Show (UF.Point a) where
-  show _ = "var"
-
 
 
 --Initially, the only constraint we express is that two types unify
@@ -289,7 +286,7 @@ freshVar :: ConstraintM Tm.VAL
 freshVar = do
   newInt <- freshInt
   --newPoint <- lift $ lift $ UF.fresh BlankSlate
-  return $  error "TODO fresh Metavariable from Int"
+  return $  metaFromInt newInt
 
 
 freshInt :: ConstraintM Int
@@ -310,9 +307,9 @@ metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
 evaluate term env@(nameEnv, context) = do
   t <- fresh
-  let realContext = error "TODO realContext"
-  let normalForm = Common.cEval_ term (nameEnv, realContext)
-  unify t (error "TODO evaluate") env --cToUnifForm0 term
+  let realContext = map (\(nm, uval) -> (unifToValue uval)) context
+  let normalForm = vToUnifForm 0 $ Common.cEval_ term (nameEnv, realContext)
+  unify t normalForm env --cToUnifForm0 term
   return t
 
 unknownIdent :: String -> ConstraintM a
@@ -321,7 +318,7 @@ unknownIdent s = error $ "Unknown Identifier: " ++ show s
 
 
 mkEq :: ConType -> ConType -> ConType -> ConType
-mkEq = error "TODO equality type"
+mkEq = Tm.Eq
 
 
 tyFn :: (ConType -> ConType) -> ConType
