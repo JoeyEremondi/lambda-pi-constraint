@@ -21,6 +21,8 @@ import Control.Monad.Identity (Identity)
 import Data.Data
 import Data.Typeable
 
+import qualified Data.List as List
+
 import qualified Unbound.LocallyNameless as LN
 
 import PatternUnify.Tm as Tm
@@ -34,15 +36,15 @@ type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)
 
 cToUnifForm0 = cToUnifForm 0
 
-cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> Tm.VAL
-cToUnifForm ii env (Common.L _ tm) =
+cToUnifForm :: Int -> Common.CTerm_ -> Tm.VAL
+cToUnifForm ii (Common.L _ tm) =
   case tm of
     Common.Inf_ itm -> --Here we bind a new variable, so increase our counter
-      iToUnifForm ii env itm
+      iToUnifForm ii itm
     Common.Lam_ ctm ->
       let
         newNom = deBrToNom ii 0
-        retBody = cToUnifForm (ii + 1) env ctm
+        retBody = cToUnifForm (ii + 1) ctm
       in
         Tm.L $ LN.bind newNom retBody
     _ ->
@@ -51,21 +53,21 @@ cToUnifForm ii env (Common.L _ tm) =
 deBrToNom :: Int -> Int -> Tm.Nom
 deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
 
-iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> Tm.VAL
-iToUnifForm ii env ltm@(Common.L _ tm) =
+iToUnifForm :: Int -> Common.ITerm_ -> Tm.VAL
+iToUnifForm ii ltm@(Common.L _ tm) =
   case tm of
     --TODO look at type during eval?
     Common.Ann_ val tp ->
-      cToUnifForm ii env val
+      cToUnifForm ii val
 
     Common.Star_ ->
       Tm.SET
 
     Common.Pi_ s t ->
-      Tm.PI (cToUnifForm ii env s) (cToUnifForm ii env t)
+      Tm.PI (cToUnifForm ii s) (cToUnifForm ii t)
 
     Common.Bound_ i ->
-      var $ deBrToNom ii i --Take our current depth, minus deBruijn index --TODO check
+      Tm.var $ deBrToNom ii i
 
     --If we reach this point, then our neutral term isn't embedded in an application
     Common.Free_ fv ->
@@ -78,7 +80,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) =
           error "Shouldn't come across quoted during checking"
 
     (f Common.:$: x) ->
-      (iToUnifForm ii env f) Tm.$$ (cToUnifForm ii env x)
+      (iToUnifForm ii f) Tm.$$ (cToUnifForm ii x)
 
 
     _ -> error "TODO builtIn types"
