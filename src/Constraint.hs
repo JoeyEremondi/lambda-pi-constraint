@@ -27,18 +27,22 @@ import PatternUnify.Tm as Tm
 
 import qualified PatternUnify.Context as UC
 
-{-
+
+type ConstrContext = [(Common.Name, Tm.VAL)]
+type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)
+
+
 cToUnifForm0 = cToUnifForm 0
 
-cToUnifForm :: Int -> Common.CTerm_ -> Tm.VAL
-cToUnifForm ii (Common.L _ tm) =
+cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> Tm.VAL
+cToUnifForm ii env (Common.L _ tm) =
   case tm of
     Common.Inf_ itm -> --Here we bind a new variable, so increase our counter
-      iToUnifForm ii itm
+      iToUnifForm ii env itm
     Common.Lam_ ctm ->
       let
         newNom = deBrToNom ii 0
-        retBody = cToUnifForm (ii + 1) ctm
+        retBody = cToUnifForm (ii + 1) env ctm
       in
         Tm.L $ LN.bind newNom retBody
     _ ->
@@ -47,17 +51,18 @@ cToUnifForm ii (Common.L _ tm) =
 deBrToNom :: Int -> Int -> Tm.Nom
 deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
 
-iToUnifForm :: Int -> Common.ITerm_ -> Tm.VAL
-iToUnifForm ii ltm@(Common.L _ tm) =
+iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> Tm.VAL
+iToUnifForm ii env ltm@(Common.L _ tm) =
   case tm of
+    --TODO look at type during eval?
     Common.Ann_ val tp ->
-      error "TODO annotated val"
+      cToUnifForm ii env val
 
     Common.Star_ ->
       Tm.SET
 
     Common.Pi_ s t ->
-      Tm.PI (cToUnifForm ii s) (cToUnifForm ii t)
+      Tm.PI (cToUnifForm ii env s) (cToUnifForm ii env t)
 
     Common.Bound_ i ->
       var $ deBrToNom ii i --Take our current depth, minus deBruijn index --TODO check
@@ -72,25 +77,16 @@ iToUnifForm ii ltm@(Common.L _ tm) =
         Common.Quote i ->
           error "Shouldn't come across quoted during checking"
 
-    (_ Common.:$: _) ->
-      let
-        (startHead, startSpine) = appToSpine ltm
-        convertedSpine = (map (Tm.A . (cToUnifForm ii)) startSpine)
-      in
-        case startHead of
-          Common.Bound i ->
-            Tm.N (Tm.Var (deBrToNom ii i) Tm.Only) convertedSpine
-          Common.Free (Common.Global nm) ->
-            Tm.N (Tm.Var (LN.s2n nm) Tm.Only ) convertedSpine
-          Common.Ann (Common.Lam fnBody) fnTy ->
-            error "TODO reduce lambda redex for typechecking?"
+    (f Common.:$: x) ->
+      (iToUnifForm ii env f) Tm.$$ (cToUnifForm ii env x)
+
 
     _ -> error "TODO builtIn types"
--}
+
 
 type ConTyFn = Tm.VAL
 
-
+{-
 
 vToUnifForm :: Int -> Common.Value_ -> Tm.VAL
 vToUnifForm ii val = case val of
@@ -119,11 +115,23 @@ vToUnifForm ii val = case val of
   Common.VNat_ ->
     Tm.Nat
 
+  Common.VZero_ ->
+    Tm.Zero
+
+  Common.VSucc_ n ->
+    Tm.Succ (vToUnifForm ii n)
+
   Common.VVec_ t1 t2 ->
     Tm.Vec (vToUnifForm ii t1) (vToUnifForm ii t2)
 
+  Common.VNil_ tp ->
+    Tm.VNil (vToUnifForm ii tp)
+
+  --TODO other cases
+
   Common.VEq_ t1 t2 t3 ->
     Tm.Eq (vToUnifForm ii t1) (vToUnifForm ii t2) (vToUnifForm ii t3)
+
 
 
 neutralToHead :: Int -> Common.Neutral_ -> Tm.Head
@@ -178,8 +186,8 @@ neutralToSpine ii neut = case neut of
 valToElim :: Int -> Common.Value_ -> Tm.Elim
 valToElim ii val =
   Tm.A $ vToUnifForm ii val
-
-
+-}
+{-
 unifToValue :: Tm.VAL -> Common.Value_
 unifToValue val = case val of
   Tm.L _ ->
@@ -214,9 +222,9 @@ unifToValue val = case val of
     Common.VEq_ (unifToValue t1) (unifToValue t2) (unifToValue t3)
 
   _ -> error "TODO twins, etc. should never happen"
+-}
 
-
-elimToValue (Tm.A v) = unifToValue v
+--elimToValue (Tm.A v) = unifToValue v
 
 --TODO make tail recursive?
 appToSpine :: Common.ITerm_ -> (Common.ITerm_, [Common.CTerm_])
@@ -229,8 +237,7 @@ appToSpine (Common.App it ct) =
 --Other expression:
 appToSpine e = (e, [])
 
-type ConstrContext = [(Common.Name, Tm.VAL)]
-type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)
+
 
 
 
@@ -307,8 +314,8 @@ metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
 evaluate term env@(nameEnv, context) = do
   t <- fresh
-  let realContext = map (\(nm, uval) -> (unifToValue uval)) context
-  let normalForm = vToUnifForm 0 $ Common.cEval_ term (nameEnv, realContext)
+  let realContext = map (\(nm, uval) -> ((error "toValue") uval)) context
+  let normalForm = (error "toValue") 0 $ Common.cEval_ term (nameEnv, realContext)
   unify t normalForm env --cToUnifForm0 term
   return t
 
@@ -348,8 +355,8 @@ applyPi = applyVal
 mkPi :: ConType -> ConTyFn -> ConType
 mkPi = Tm.PI
 
-conType :: Common.Type_ -> ConType
-conType = vToUnifForm 0
+--conType :: Common.Type_ -> ConType
+--conType = vToUnifForm 0
 
 mkVec :: ConType -> ConType -> ConType
 mkVec = Tm.Vec
