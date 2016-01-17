@@ -349,12 +349,13 @@ applyPi :: ConTyFn -> ConType -> ConType
 applyPi = applyVal
 
 mkPi :: ConType -> ConTyFn -> ConType
-mkPi = error "TODO mkPi"
+mkPi = Tm.PI
 
 conType :: Common.Type_ -> ConType
 conType = vToUnifForm 0
 
-mkVec = error "TODO mkVec"
+mkVec :: ConType -> ConType -> ConType
+mkVec = Tm.Vec
 
 --liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
 --liftConTyFn f = error "TODO liftConTy"
