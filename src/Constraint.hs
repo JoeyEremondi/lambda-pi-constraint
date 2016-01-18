@@ -25,7 +25,7 @@ import qualified Data.List as List
 
 import qualified Unbound.LocallyNameless as LN
 
-import PatternUnify.Tm as Tm
+import qualified PatternUnify.Tm as Tm
 
 import qualified PatternUnify.Context as UC
 
@@ -99,7 +99,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) =
         Common.Global nm ->
           Tm.vv nm
         Common.Local i ->
-          var $ LN.integer2Name $ toInteger $ ii - i --Take our current depth, minus deBruijn index
+          Tm.var $ LN.integer2Name $ toInteger $ ii - i --Take our current depth, minus deBruijn index
         Common.Quote i ->
           error "Shouldn't come across quoted during checking"
 
@@ -297,7 +297,7 @@ maybeHead (h:_) = Just h
 
 class Unifyable a where
   unify :: a -> a -> WholeEnv -> ConstraintM ()
-  fresh :: ConstraintM a
+  fresh :: Tm.VAL -> ConstraintM a
 
 
   --Define a "Constrain" monad, which lets us generate
@@ -312,7 +312,11 @@ class Unifyable a where
 
 
 instance Unifyable Tm.VAL where
-  fresh = metaFromInt <$> freshInt
+  fresh tp = do
+    ourNom <- freshNom
+    let ourEntry = UC.E ourNom tp UC.HOLE
+    addConstr $ Constraint (error "TODO region" ) ourEntry
+    return $ Tm.meta ourNom
   unify v1 v2 env = do
     tType <- metaFromInt <$> freshInt
     probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
@@ -360,10 +364,10 @@ metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
 
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
 evaluate term env = do
-  t <- fresh
+  --t <- fresh (error "TODO type in eval")
   let normalForm = cToUnifForm 0 env term
-  unify t normalForm env --cToUnifForm0 term
-  return t
+  --unify t normalForm env --cToUnifForm0 term
+  return normalForm
 
 unknownIdent :: String -> ConstraintM a
 unknownIdent s = error $ "Unknown Identifier: " ++ show s
