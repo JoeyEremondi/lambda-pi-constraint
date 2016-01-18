@@ -40,8 +40,8 @@ conStar = Tm.SET
 
 getConstraints env term = do
   finalType <- iType0_ env term
-  finalVar <- freshNom
-  unify finalType (Tm.var finalVar) env
+  (Tm.N (Tm.Meta finalVar) _) <- fresh conStar
+  unifySets finalType (Tm.var finalVar) env
   return finalVar
 
 iType0_ :: (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
@@ -72,7 +72,7 @@ iType_ ii g (L region it) = iType_' ii g it
                 fnType <- iType_ ii g e1
                 piArg <- fresh conStar
                 piBody <- fresh conStar --TODO star to star?
-                unify (fnType) (mkPi piArg piBody) g
+                unifySets (fnType) (mkPi piArg piBody) g
 
                 --Ensure that the argument has the proper type
                 cType_ ii g e2 piArg
@@ -173,13 +173,13 @@ cType_ ii g (L region ct) = cType_' ii g ct
               tyInferred <- iType_ ii g e
               --Ensure that the annotation type and our inferred type unify
               --We have to evaluate $ our normal form
-              unify tyAnnot tyInferred g
+              unifySets tyAnnot tyInferred g
 
 
     cType_' ii g (Lam_ e) fnTy = do
         argTy <- fresh conStar
         returnTyFn <- fresh conStar
-        unify fnTy (mkPi argTy returnTyFn) g --TODO fix this
+        unifySets fnTy (mkPi argTy returnTyFn) g --TODO fix this
         let returnTy = applyPi returnTyFn $ (error "conType1") (vfree_ (Local ii))
         let subbedBody = cSubst_ 0 (builtin $ Free_ (Local ii)) e
         cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g) subbedBody returnTy
@@ -187,34 +187,34 @@ cType_ ii g (L region ct) = cType_' ii g ct
 
 
 
-    cType_' ii g Zero_      ty  =  unify ty Tm.Nat g
+    cType_' ii g Zero_      ty  =  unifySets ty Tm.Nat g
     cType_' ii g (Succ_ k)  ty  = do
-      unify ty Tm.Nat g
+      unifySets ty Tm.Nat g
       cType_ ii g k Tm.Nat
 
     cType_' ii g (Nil_ a) ty =
       do
           bVal <- fresh conStar
-          unify ty (mkVec bVal Tm.Zero) g
+          unifySets ty (mkVec bVal Tm.Zero) g
           cType_ ii g a conStar
           aVal <- evaluate a g
-          unify aVal bVal g
+          unifySets aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
       do  bVal <- fresh conStar
           k <- (fresh Tm.Nat :: ConstraintM ConType)
           --Trickery to get a Type_ to a ConType
           let kVal = applyPi (tyFn (\val -> Tm.Succ val) ) k
-          unify ty (mkVec bVal kVal) g
+          unifySets ty (mkVec bVal kVal) g
           cType_ ii g a conStar
 
           aVal <- evaluate a g
-          unify aVal bVal g
+          unifySets aVal bVal g
 
           cType_ ii g n Tm.Nat
 
           --Make sure our numbers match
           nVal <- evaluate n g
-          unify nVal kVal g
+          unify nVal kVal Tm.Nat g
 
           --Make sure our new head has the right list type
           cType_ ii g x aVal
@@ -225,14 +225,14 @@ cType_ ii g (L region ct) = cType_' ii g ct
       do  bVal <- fresh conStar
           xVal <- fresh bVal
           yVal <- fresh bVal
-          unify ty (mkEq bVal xVal yVal) g
+          unifySets ty (mkEq bVal xVal yVal) g
           --Check that our type argument has kind *
           cType_ ii g a conStar
           --Get evaluation constraint for our type argument
           aVal <- evaluate a g
 
           --Check that our given type is the same as our inferred type --TODO is this right?
-          unify aVal bVal g
+          unifySets aVal bVal g
 
           --Check that the value we're proving on has type A
           cType_ ii g z aVal
@@ -241,6 +241,6 @@ cType_ ii g (L region ct) = cType_' ii g ct
           zVal <- evaluate z g
 
           --Show constraint that the type parameters must match that type
-          unify zVal xVal g
-          unify zVal yVal g
+          unify zVal xVal bVal g
+          unify zVal yVal bVal g
           --TODO something special for quoting

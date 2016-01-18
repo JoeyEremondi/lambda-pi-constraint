@@ -238,7 +238,7 @@ etaContract (PAIR s t) = case (etaContract s, etaContract t) of
 etaContract (C c as) = C c (map etaContract as)
 
 occursIn :: (Alpha t, Rep a) => Name a -> t -> Bool
-x `occursIn` t = error "OccursIn" --x `elem` fv t
+x `occursIn` t = x `elem` fv t
 
 
 data Strength   = Weak | Strong
@@ -324,6 +324,8 @@ eval g (L b)   = L (bind x (eval g t))
                      where (x, t) = unsafeUnbind b
 eval g (N u as)  = evalHead g u %%% map (mapElim (eval g)) as
 eval g (C c as)  = C c (map (eval g) as)
+
+eval g t = error $ "Missing eval case for " ++ show t
 
 evalHead :: Subs -> Head -> VAL
 evalHead g hv = case lookup (headVar hv) g of

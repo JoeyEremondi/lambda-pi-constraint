@@ -295,9 +295,10 @@ maybeHead (h:_) = Just h
 
 
 
-class Unifyable a where
-  unify :: a -> a -> WholeEnv -> ConstraintM ()
-  fresh :: Tm.VAL -> ConstraintM a
+--class Unifyable a where
+--  unify :: a -> a -> WholeEnv -> ConstraintM ()
+--  fresh :: Tm.VAL -> ConstraintM a
+
 
 
   --Define a "Constrain" monad, which lets us generate
@@ -311,19 +312,19 @@ class Unifyable a where
   }-}
 
 
-instance Unifyable Tm.VAL where
-  fresh tp = do
+
+fresh tp = do
     ourNom <- freshNom
     let ourEntry = UC.E ourNom tp UC.HOLE
     addConstr $ Constraint (error "TODO region" ) ourEntry
     return $ Tm.meta ourNom
-  unify v1 v2 env = do
-    tType <- metaFromInt <$> freshInt
+unify v1 v2 tp env = do
     probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
-    let newCon = UC.Unify $ UC.EQN tType v1 tType v2
+    let newCon = UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
     addConstr $ Constraint (error "TODO region") ourEntry
 
+unifySets v1 v2 env = unify v1 v2 Tm.SET env
 
 
 
@@ -333,12 +334,7 @@ type ConType = Tm.VAL
 type ConstraintM a = WriterT [Constraint] (StateT [Int] Identity) a
 
 --Operations in our monad:
---Make fresh types, and unify types together
-freshVar :: ConstraintM Tm.VAL
-freshVar = do
-  newInt <- freshInt
-  --newPoint <- lift $ lift $ UF.fresh BlankSlate
-  return $  metaFromInt newInt
+
 
 
 freshInt :: ConstraintM Int
@@ -360,7 +356,7 @@ addConstr :: Constraint -> ConstraintM ()
 addConstr c = tell [c]
 
 
-metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
+--metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
 
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
 evaluate term env = do
