@@ -1,5 +1,5 @@
 
-module ConstraintBased () where
+module ConstraintBased (checker) where
 
 import Prelude hiding (print)
 
