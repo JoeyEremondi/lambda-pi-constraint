@@ -22,7 +22,7 @@ executable lambda-pi-constraint
     ConstraintBased,
     Common,
     Constraint,
-    Solver,
+--    Solver,
     Parse,
     PatternUnify.Check,
     PatternUnify.Context,

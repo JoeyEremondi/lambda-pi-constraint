@@ -32,6 +32,12 @@ test = runTest (const True)
 initialise :: Contextual ()
 initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 
+
+solveEntries :: [Entry] -> Either Err ((), Context)
+solveEntries es  = runContextual (B0, map Right es)
+                    (initialise >> ambulando [] [] >> validate (const True))
+
+
 runTest :: (ProblemState -> Bool) -> [Entry] -> IO ()
 runTest q es = do  putStrLn $ "Initial context:\n" ++
                                 render (runPretty (prettyEntries es))
@@ -40,6 +46,7 @@ runTest q es = do  putStrLn $ "Initial context:\n" ++
                    case r of
                        Left err  -> putStrLn $ "Error: " ++ err
                        Right ((), cx)  -> putStrLn $ "Final context:\n" ++ pp cx ++ "\n"
+
 
 runTestSolved, runTestStuck, runTestFailed :: IO ()
 runTestSolved = mapM_ (runTest (== Solved)) tests

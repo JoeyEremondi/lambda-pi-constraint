@@ -25,27 +25,24 @@ import Constraint
 
 import qualified PatternUnify.Tm as Tm
 
+
 --import qualified Solver
 
-{-
+
 checker :: TypeChecker
 checker (nameEnv, context) term = do
-  let newContext = map (\(a,b) -> (a, conType b) ) context
-  let checkResults = Solver.solveConstraints $ getConstraints (nameEnv, newContext) term
-  case (Solver.finalResults checkResults) of
-    Solver.Err s -> error s
-    Solver.Defer -> error "Should never have defer at end!"
-    Solver.Ok t -> return t
+  let newContext = map (\(a,b) -> (a, vToUnifForm 0 b) ) context
+  let finalVar =  getConstraints (nameEnv, newContext) term
+  unifToValue <$> solveConstraintM finalVar
 
-
--}
 
 conStar = Tm.SET
 
 getConstraints env term = do
   finalType <- iType0_ env term
-  finalVar <- freshVar
-  return (finalType, finalVar)
+  finalVar <- freshNom
+  unify finalType (Tm.var finalVar) env
+  return finalVar
 
 iType0_ :: (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
