@@ -40,7 +40,7 @@ conStar = Tm.SET
 
 getConstraints env term = do
   finalType <- iType0_ env term
-  (Tm.N (Tm.Meta finalVar) _) <- fresh conStar
+  (Tm.N (Tm.Meta finalVar) _) <- freshType
   unifySets finalType (Tm.var finalVar) env
   return finalVar
 
@@ -70,9 +70,9 @@ iType_ ii g (L region it) = iType_' ii g it
     iType_' ii g (e1 :$: e2)
       =     do
                 fnType <- iType_ ii g e1
-                piArg <- fresh conStar
-                piBody <- fresh conStar --TODO star to star?
-                unifySets (fnType) (mkPi piArg piBody) g
+                piArg <- freshType
+                piBody <- freshType --TODO star to star?
+                unifySets (fnType) (Tm.PI piArg piBody) g
 
                 --Ensure that the argument has the proper type
                 cType_ ii g e2 piArg
@@ -93,8 +93,8 @@ iType_ ii g (L region it) = iType_' ii g it
           cType_ ii g mz (mVal `applyVal` Tm.Zero)
           --Check that ms has type ( (k: N) -> m k -> m (S k) )
           let recPiType =
-                mkPi Tm.Nat $ tyFn $ \k -> mkPi (mVal `applyVal` k)
-                  (tyFn $ \_ -> mVal `applyVal` (Tm.Succ k) )
+                mkPiFn Tm.Nat $ \k -> mkPiFn (mVal `applyVal` k)
+                  ( \_ -> mVal `applyVal` (Tm.Succ k) )
           cType_ ii g ms recPiType
           --Make sure the number param is a nat
           cType_ ii g n Tm.Nat
@@ -112,14 +112,14 @@ iType_ ii g (L region it) = iType_' ii g it
       do  cType_ ii g a conStar
           aVal <- evaluate a g
           cType_ ii g m
-            (  mkPi Tm.Nat (tyFn $ \n -> mkPi (applyPi (tyFn $ \av -> Tm.Vec av n) aVal) (tyFn $ \ _ -> conStar)))
+            (  mkPiFn Tm.Nat ( \n -> mkPiFn (applyPi (tyFn $ \av -> Tm.Vec av n) aVal) ( \ _ -> conStar)))
           mVal <- evaluate m g
           cType_ ii g mn (foldl applyVal mVal [ Tm.Zero, (tyFn $ \av -> Tm.VNil av ) `applyPi` aVal])
           cType_ ii g mc
-            (  mkPi Tm.Nat (tyFn $ \ n ->
-               mkPi aVal (tyFn $ \ y ->
-               mkPi ( (tyFn $ \av -> Tm.Vec av n) `applyPi` aVal) (tyFn $ \ ys ->
-               mkPi (foldl applyVal mVal  [n, ys]) (tyFn $ \ _ ->
+            (  mkPiFn Tm.Nat ( \ n ->
+               mkPiFn aVal ( \ y ->
+               mkPiFn ( tyFn ( \av -> Tm.Vec av n) `applyPi` aVal) ( \ ys ->
+               mkPiFn (foldl applyVal mVal  [n, ys]) ( \ _ ->
                (foldl applyVal mVal [(Tm.Succ n), (tyFn $ \av -> Tm.VCons av n y ys) `applyPi` aVal]))))))
           cType_ ii g n $ Tm.Nat
           nVal <- evaluate n g
@@ -141,13 +141,13 @@ iType_ ii g (L region it) = iType_' ii g it
           --evaluate $ our a value
           aVal <- evaluate a g
           cType_ i g m
-            (mkPi aVal (tyFn $ \ x ->
-             mkPi aVal (tyFn $ \ y ->
-             mkPi ((tyFn $ \av ->  Tm.Eq av x y) `applyPi` aVal) (tyFn $ \ _ -> conStar))))
+            (mkPiFn aVal (\ x ->
+             mkPiFn aVal ( \ y ->
+             mkPiFn (( tyFn $ \av ->  Tm.Eq av x y) `applyPi` aVal) ( \ _ -> conStar))))
           --evaluate $ our given m value
           mVal <- evaluate m g
           cType_ i g mr
-            (mkPi aVal (tyFn $ \ x ->
+            (mkPiFn aVal ( \ x ->
              ( foldl applyVal mVal $ [x, x] )))
           cType_ i g x aVal
           xVal <- evaluate x g
@@ -177,11 +177,13 @@ cType_ ii g (L region ct) = cType_' ii g ct
 
 
     cType_' ii g (Lam_ e) fnTy = do
-        argTy <- fresh conStar
-        returnTyFn <- fresh conStar
-        unifySets fnTy (mkPi argTy returnTyFn) g --TODO fix this
-        let returnTy = applyPi returnTyFn $ (error "conType1") (vfree_ (Local ii))
-        let subbedBody = cSubst_ 0 (builtin $ Free_ (Local ii)) e
+        argTy <- freshType
+        returnTyFn <- freshType
+        let arg = builtin $ Free_ (Local ii)
+        let argVal = iToUnifForm ii g arg
+        unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
+        let returnTy = returnTyFn `applyPi` argVal
+        let subbedBody = cSubst_ 0 arg e
         cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g) subbedBody returnTy
         --TODO better name?
 
@@ -194,13 +196,13 @@ cType_ ii g (L region ct) = cType_' ii g ct
 
     cType_' ii g (Nil_ a) ty =
       do
-          bVal <- fresh conStar
+          bVal <- freshType
           unifySets ty (mkVec bVal Tm.Zero) g
           cType_ ii g a conStar
           aVal <- evaluate a g
           unifySets aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
-      do  bVal <- fresh conStar
+      do  bVal <- freshType
           k <- (fresh Tm.Nat :: ConstraintM ConType)
           --Trickery to get a Type_ to a ConType
           let kVal = applyPi (tyFn (\val -> Tm.Succ val) ) k
@@ -222,7 +224,7 @@ cType_ ii g (L region ct) = cType_' ii g ct
           cType_ ii g xs (mkVec bVal k)
 
     cType_' ii g (Refl_ a z) ty =
-      do  bVal <- fresh conStar
+      do  bVal <- freshType
           xVal <- fresh bVal
           yVal <- fresh bVal
           unifySets ty (mkEq bVal xVal yVal) g

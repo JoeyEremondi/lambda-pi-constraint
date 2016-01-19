@@ -33,6 +33,8 @@ import qualified PatternUnify.Test as PUtest
 
 import Control.Monad.Identity (runIdentity)
 
+import Debug.Trace (trace)
+
 type ConstrContext = [(Common.Name, Tm.VAL)]
 type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)
 
@@ -53,8 +55,10 @@ cToUnifForm ii env (Common.L _ tm) =
       iToUnifForm ii env itm
     Common.Lam_ ctm ->
       let
-        newNom = deBrToNom ii 0
-        retBody = cToUnifForm (ii + 1) env ctm
+        newNom = LN.s2n ("lamVar" ++ show ii)
+        (globals, boundVars) = env
+        newEnv = (globals, (Common.Local ii, Tm.var newNom) : boundVars)
+        retBody = cToUnifForm (ii + 1) newEnv ctm
       in
         Tm.L $ LN.bind newNom retBody
 
@@ -74,11 +78,16 @@ cToUnifForm ii env (Common.L _ tm) =
     Common.Refl_ a x ->
       Tm.ERefl (cToUnifForm ii env a) (cToUnifForm ii env x)
 
-deBrToNom :: Int -> Int -> Tm.Nom
-deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
+--deBrToNom :: Int -> Int -> Tm.Nom
+--deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
+
+listLookup l i =
+  if (i >= length l)
+  then error $ "No elem " ++ show i ++ " in" ++ show l
+  else l List.!! i
 
 iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> Tm.VAL
-iToUnifForm ii env ltm@(Common.L _ tm) =
+iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
   case tm of
     --TODO look at type during eval?
     Common.Ann_ val tp ->
@@ -88,10 +97,13 @@ iToUnifForm ii env ltm@(Common.L _ tm) =
       Tm.SET
 
     Common.Pi_ s t ->
-      Tm.PI (cToUnifForm ii env s) (cToUnifForm ii env t)
+      let
+        newEnv x = (fst env, (Common.Local ii, x) : snd env)
+      in mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
-    Common.Bound_ i ->
-      Tm.var $ deBrToNom ii i
+    Common.Bound_ i -> trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
+      (snd $ snd env `listLookup` (ii - (i+1) ) )
+      --Tm.var $ deBrToNom ii i
 
     --If we reach this point, then our neutral term isn't embedded in an application
     Common.Free_ fv ->
@@ -148,11 +160,9 @@ vToUnifForm ii val = case val of
     Tm.SET
   Common.VPi_ s f ->
     let
-      freeVar = Common.vfree_ $ Common.Quote ii
-      funBody = f freeVar
-      boundNom = LN.integer2Name $ toInteger ii
+      tyFnVal = (vToUnifForm (ii + 1)) . f . unifToValue
     in
-      Tm.PI (vToUnifForm ii s) (Tm.lam boundNom $ vToUnifForm (ii+1) funBody)
+      mkPiFn (vToUnifForm ii s) tyFnVal
   Common.VNeutral_ neut ->
     let
       (headVar, args) = neutralToSpine ii neut
@@ -326,7 +336,7 @@ unify v1 v2 tp env = do
 
 unifySets v1 v2 env = unify v1 v2 Tm.SET env
 
-
+freshType = fresh Tm.SET
 
 type ConType = Tm.VAL
 
@@ -348,7 +358,7 @@ freshNom :: ConstraintM Tm.Nom
 freshNom = do
   (h:t) <- lift $ get
   put t
-  return $ LN.integer2Name $ toInteger h
+  return $ LN.string2Name $ "fresh" ++ (show h)
 
 
 --Helpful utility function
@@ -378,8 +388,8 @@ tyFn :: (ConType -> ConType) -> ConType
 tyFn f =
   let
     allVars :: [Tm.Nom]
-    allVars = map LN.integer2Name [1..]
-    dummyBody = f (Tm.var $ LN.integer2Name 0)
+    allVars = map (\i -> LN.string2Name $ "tyFn" ++ show i ) [1..]
+    dummyBody = f (Tm.vv "dummy")
     freeVars :: [Tm.Nom]
     freeVars = Tm.fvs dummyBody
     newFreeVar = head $ filter (not . (`elem` freeVars)) allVars
@@ -398,8 +408,11 @@ applyVal = (Tm.$$)
 applyPi :: ConTyFn -> ConType -> ConType
 applyPi = applyVal
 
-mkPi :: ConType -> ConTyFn -> ConType
-mkPi = Tm.PI
+--mkPi :: ConType -> ConTyFn -> ConType
+--mkPi = Tm._PI "piVar"
+
+mkPiFn :: ConType -> (ConType -> ConType) -> ConType
+mkPiFn s t = Tm.PI s (tyFn t)
 
 --conType :: Common.Type_ -> ConType
 --conType = vToUnifForm 0

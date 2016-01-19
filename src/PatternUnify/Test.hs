@@ -18,6 +18,8 @@ import PatternUnify.Unify
 import PatternUnify.Context
 import PatternUnify.Check
 
+import Debug.Trace (trace)
+
 
 -- The |test| function executes the constraint solving algorithm on the
 -- given metacontext.
@@ -34,7 +36,10 @@ initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 
 
 solveEntries :: [Entry] -> Either Err ((), Context)
-solveEntries es  = runContextual (B0, map Right es)
+solveEntries es  =
+  trace ("Initial context:\n" ++
+                                  render (runPretty (prettyEntries es)))
+  $ runContextual (B0, map Right es)
                     (initialise >> ambulando [] [] >> validate (const True))
 
 

@@ -414,7 +414,10 @@ lp checker = I { iname = "lambda-Pi",
          isparse = parseStmt_ [],
          iassume = \ s (x, t) -> lpassume checker s x t }
 
+--TODO put this back
 lpte :: Ctx Value_
+lpte = []
+{-
 lpte =      [(Global "Zero", VNat_),
              (Global "Succ", VPi_ VNat_ (\ _ -> VNat_)),
              (Global "Nat", VStar_),
@@ -455,6 +458,7 @@ lpte =      [(Global "Zero", VNat_),
                                VPi_ (VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f -> VPi_ (m `vapp_` n `vapp_` f) (\ _ -> m `vapp_` (VSucc_ n) `vapp_` (VFSucc_ n f))))) (\ _ ->
                                VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f ->
                                m `vapp_` n `vapp_` f))))))]
+-}
 
 lam_ = error "TODO lam_"
 inf_ = error "TODO inf_"

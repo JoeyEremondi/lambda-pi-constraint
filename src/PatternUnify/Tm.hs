@@ -112,6 +112,23 @@ instance Pretty VAL where
                           (\ c' as' -> c' <+> hsep as')
                           <$> pretty c <*> mapM (prettyAt ArgSize) as
 
+    pretty Nat = return $ text "Nat"
+    pretty (Vec a n )= (\pa pn -> text "Vec" <+> pa <+> pn) <$> pretty a <*> pretty n
+    pretty (Eq a x y) = (\pa px py -> text "Eq" <+> pa <+> px <+> py) <$> pretty a <*> pretty x <*> pretty y
+
+    pretty Zero = return $ text "0"
+    pretty (Succ n) =  (\pn -> text "S(" <+> pn <+> text ")") <$> pretty n
+
+    pretty (VNil _) = return $ text "[]"
+    pretty (VCons a n h t) = (\pa pn ph pt -> ph <+> (text "::{" <+> pa <+> pn <+> text "}") <+> pt)
+      <$> pretty a <*> pretty n <*> pretty h <*> pretty t
+
+    pretty (ERefl a x) = (\pa px -> text "Refl" <+> pa <+> px)
+      <$> pretty a <*> pretty x
+
+
+    pretty _ = return $ text "prettyTODO"
+
 instance Pretty Can where
     pretty c = return $ text $ show c
 
@@ -121,7 +138,10 @@ instance Pretty Twin where
     pretty TwinR  = return $ (text "^>")
 
 instance Pretty Head where
-    pretty (Var x w)  =  error "TODO pretty head" --(pretty x) <> (pretty w)
+    pretty (Var x w)  =  do
+      h1 <- (pretty x)
+      h2 <- (pretty w)
+      return $ h1 <> h2
     pretty (Meta x)   = (text "?" <>) <$> pretty x
 
 instance Pretty Elim where
@@ -324,6 +344,15 @@ eval g (L b)   = L (bind x (eval g t))
                      where (x, t) = unsafeUnbind b
 eval g (N u as)  = evalHead g u %%% map (mapElim (eval g)) as
 eval g (C c as)  = C c (map (eval g) as)
+
+eval g Nat = Nat
+eval g (Vec a n) = Vec (eval g a) (eval g n)
+eval g (Eq a x y) = Eq (eval g a) (eval g x) (eval g y)
+
+eval _ Zero = Zero
+eval g (Succ n) = Succ (eval g n)
+eval g (VCons a n h t) = VCons (eval g a) (eval g n) (eval g h) (eval g t)
+eval g (ERefl a x) = ERefl (eval g a) (eval g x)
 
 eval g t = error $ "Missing eval case for " ++ show t
 
