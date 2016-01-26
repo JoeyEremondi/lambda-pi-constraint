@@ -29,17 +29,19 @@ import Debug.Trace (trace)
 
 --import qualified Solver
 
+mapSnd f (a,b) = (a, f b)
 
 checker :: TypeChecker
 checker (nameEnv, context) term = do
-  let newContext = map (\(a,b) -> (a, vToUnifForm 0 b) ) context
-  let translatedEnv = error "TODO translate env"
-  let finalVar =  getConstraints translatedEnv term
+  let newContext = map (mapSnd $ vToUnifForm 0) context
+  let translatedEnv = map (mapSnd $ vToUnifForm 0) nameEnv
+  let finalVar =  getConstraints (WholeEnv translatedEnv newContext) term
   unifToValue <$> solveConstraintM finalVar
 
 
 conStar = Tm.SET
 
+getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
 getConstraints env term = do
   finalType <- iType0_ env term
   (Tm.N (Tm.Meta finalVar) _) <- freshType
