@@ -33,7 +33,8 @@ import Debug.Trace (trace)
 checker :: TypeChecker
 checker (nameEnv, context) term = do
   let newContext = map (\(a,b) -> (a, vToUnifForm 0 b) ) context
-  let finalVar =  getConstraints (nameEnv, newContext) term
+  let translatedEnv = error "TODO translate env"
+  let finalVar =  getConstraints translatedEnv term
   unifToValue <$> solveConstraintM finalVar
 
 
@@ -45,10 +46,10 @@ getConstraints env term = do
   unifySets finalType (Tm.var finalVar) env
   return finalVar
 
-iType0_ :: (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
+iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
-iType_ :: Int -> (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
+iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
 iType_ iiGlobal g (L region it) = iType_' iiGlobal g it
   where
     iType_' ii g (Ann_ e tyt )
@@ -62,11 +63,11 @@ iType_ iiGlobal g (L region it) = iType_' iiGlobal g it
        =  do  cType_ ii g tyt conStar
               ty <- evaluate tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
-              cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, ty) : g))) g)
+              cType_  (ii + 1) (addType (Local ii, ty)  g)
                         (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
               return conStar
     iType_' ii g (Free_ x)
-      =     case lookup x (snd g) of
+      =     case lookup x (typeEnv g) of
               Just ty        ->  return ty
               Nothing        ->  unknownIdent (render (iPrint_ 0 0 (builtin $ Free_ x)))
     iType_' ii g (e1 :$: e2)
@@ -167,7 +168,7 @@ iType_ iiGlobal g (L region it) = iType_' iiGlobal g it
       --return $ (snd $ snd g `listLookup` (ii - (vi+1) ) ) --TODO is this right?
 
 
-cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> ConType -> ConstraintM ()
+cType_ :: Int -> WholeEnv -> CTerm_ -> ConType -> ConstraintM ()
 cType_ iiGlobal g (L region ct) = cType_' iiGlobal g ct
   where
     cType_' ii g (Inf_ e) tyAnnot
@@ -185,7 +186,7 @@ cType_ iiGlobal g (L region ct) = cType_' iiGlobal g ct
         returnTyFn <- fresh (argTy Tm.--> conStar)
         returnTy <- freshType --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Bound_ ii --TODO free or bound?
-        let newEnv = ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g)
+        let newEnv = addType (Local ii, argTy ) g
         let argVal = iToUnifForm ii newEnv arg
         unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
         unifySets returnTy (returnTyFn `applyPi` argVal) g --TODO is argVal good?

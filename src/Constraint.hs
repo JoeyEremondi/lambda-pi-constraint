@@ -36,7 +36,18 @@ import Control.Monad.Identity (runIdentity)
 import Debug.Trace (trace)
 
 type ConstrContext = [(Common.Name, Tm.VAL)]
-type WholeEnv = (Common.NameEnv Common.Value_, ConstrContext)
+
+data WholeEnv =
+  WholeEnv
+  { valueEnv :: [(Common.Name, Tm.VAL)]
+  , typeEnv :: [(Common.Name, Tm.VAL)]
+  }
+
+addValue :: (Common.Name, Tm.VAL) -> WholeEnv -> WholeEnv
+addValue x env = env {valueEnv = x : valueEnv env }
+
+addType :: (Common.Name, Tm.VAL) -> WholeEnv -> WholeEnv
+addType x env = env {typeEnv = x : typeEnv env }
 
 solveConstraintM :: ConstraintM Tm.Nom -> Either String Tm.VAL
 solveConstraintM cm = do
@@ -56,8 +67,8 @@ cToUnifForm ii env (Common.L _ tm) =
     Common.Lam_ ctm ->
       let
         newNom = LN.s2n ("lamVar" ++ show ii)
-        (globals, boundVars) = env
-        newEnv = (globals, (Common.Local ii, Tm.var newNom) : boundVars)
+        --(globals, boundVars) = env
+        newEnv = addType (Common.Local ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
         retBody = cToUnifForm (ii + 1) newEnv ctm
       in
         Tm.L $ LN.bind newNom retBody
@@ -98,15 +109,16 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
 
     Common.Pi_ s t ->
       let
-        newEnv x = (fst env, (Common.Local ii, x) : snd env)
+        newEnv x = addType (Common.Local ii, x) env --(fst env, (Common.Local ii, x) : snd env)
       in mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
     Common.Bound_ i -> trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
-      (snd $ snd env `listLookup` (ii - (i+1) ) )
+      snd $ (typeEnv env `listLookup` (ii - (i+1) ) )
       --Tm.var $ deBrToNom ii i
 
     --If we reach this point, then our neutral term isn't embedded in an application
-    Common.Free_ fv ->
+    Common.Free_ fv -> error "TODO actually store values in env?"
+    {-
       case fv of
         Common.Global nm ->
           Tm.vv nm
@@ -114,6 +126,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
           Tm.var $ LN.integer2Name $ toInteger $ ii - i --Take our current depth, minus deBruijn index
         Common.Quote i ->
           error "Shouldn't come across quoted during checking"
+    -}
 
     (f Common.:$: x) ->
       (iToUnifForm ii env f) Tm.$$ (cToUnifForm ii env x)
