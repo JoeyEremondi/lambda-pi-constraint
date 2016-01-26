@@ -117,16 +117,18 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       --Tm.var $ deBrToNom ii i
 
     --If we reach this point, then our neutral term isn't embedded in an application
-    Common.Free_ fv -> error "TODO actually store values in env?"
-    {-
-      case fv of
-        Common.Global nm ->
-          Tm.vv nm
-        Common.Local i ->
-          Tm.var $ LN.integer2Name $ toInteger $ ii - i --Take our current depth, minus deBruijn index
-        Common.Quote i ->
-          error "Shouldn't come across quoted during checking"
-    -}
+    Common.Free_ fv ->
+      case List.lookup fv (valueEnv env) of
+        Just x -> x
+        Nothing ->
+          case fv of
+            Common.Global nm ->
+              Tm.vv nm
+            Common.Local i ->
+              Tm.var $ LN.integer2Name $ toInteger $ ii - i --Take our current depth, minus deBruijn index
+            Common.Quote i ->
+              error "Shouldn't come across quoted during checking"
+
 
     (f Common.:$: x) ->
       (iToUnifForm ii env f) Tm.$$ (cToUnifForm ii env x)
