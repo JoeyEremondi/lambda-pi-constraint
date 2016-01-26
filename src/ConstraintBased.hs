@@ -25,6 +25,7 @@ import Constraint
 
 import qualified PatternUnify.Tm as Tm
 
+import Debug.Trace (trace)
 
 --import qualified Solver
 
@@ -48,7 +49,7 @@ iType0_ :: (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
 iType_ :: Int -> (NameEnv Value_, ConstrContext) -> ITerm_ -> ConstraintM ConType
-iType_ ii g (L region it) = iType_' ii g it
+iType_ iiGlobal g (L region it) = iType_' iiGlobal g it
   where
     iType_' ii g (Ann_ e tyt )
       =     do  cType_  ii g tyt conStar
@@ -59,7 +60,8 @@ iType_ ii g (L region it) = iType_' ii g it
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
-              ty <- evaluate tyt g
+              ty <- evaluate tyt g --Ensure LHS has type Set
+              --Ensure, when we apply free var to RHS, we get a set
               cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, ty) : g))) g)
                         (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
               return conStar
@@ -161,11 +163,12 @@ iType_ ii g (L region it) = iType_' ii g it
           eqVal <- evaluate eq g
           return (foldl applyVal mVal [xVal, yVal])
 
-    iType_' i g (Bound_ vi) = error "TODO why never bound?"
+    iType_' ii g (Bound_ vi) = error "TODO why never bound?"
+      --return $ (snd $ snd g `listLookup` (ii - (vi+1) ) ) --TODO is this right?
 
 
 cType_ :: Int -> (NameEnv Value_,ConstrContext) -> CTerm_ -> ConType -> ConstraintM ()
-cType_ ii g (L region ct) = cType_' ii g ct
+cType_ iiGlobal g (L region ct) = cType_' iiGlobal g ct
   where
     cType_' ii g (Inf_ e) tyAnnot
           =
@@ -178,13 +181,17 @@ cType_ ii g (L region ct) = cType_' ii g ct
 
     cType_' ii g (Lam_ e) fnTy = do
         argTy <- freshType
-        returnTyFn <- freshType
-        let arg = builtin $ Free_ (Local ii)
-        let argVal = iToUnifForm ii g arg
+        --Our return type should be a function, from input type to set
+        returnTyFn <- fresh (argTy Tm.--> conStar)
+        returnTy <- freshType --TODO constrain this!!
+        let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Bound_ ii --TODO free or bound?
+        let newEnv = ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g)
+        let argVal = iToUnifForm ii newEnv arg
         unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
-        let returnTy = returnTyFn `applyPi` argVal
+        unifySets returnTy (returnTyFn `applyPi` argVal) g --TODO is argVal good?
+        --let returnTy = returnTyFn `applyPi` argVal
         let subbedBody = cSubst_ 0 arg e
-        cType_  (ii + 1) ((\ (d,g) -> (d,  ((Local ii, argTy ) : g))) g) subbedBody returnTy
+        cType_  (ii + 1) newEnv subbedBody returnTy
         --TODO better name?
 
 

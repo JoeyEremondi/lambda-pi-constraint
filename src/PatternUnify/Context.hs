@@ -265,7 +265,8 @@ lookupVar :: MonadReader Params m => Nom -> Twin -> m Type
 lookupVar x w = look =<< ask
   where
     look [] = fail $ "lookupVar: missing " ++ show x
-    look ((y, e) : _) | x == y = case (e, w) of
+    look ((y, e) : _) | x == y = trace ("lookVar comparing " ++ show x ++ " to " ++ show y) $
+      case (e, w) of
         (P _T,         Only)   -> return _T
         (Twins _S _T,  TwinL)  -> return _S
         (Twins _S _T,  TwinR)  -> return _T
