@@ -66,7 +66,7 @@ iType_ iiGlobal g (L region it) = iType_' iiGlobal g it
               let argNom = localName ii 0
               ty <- evaluate tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
-              forallVar argNom Tm.SET $ do
+              forallVar argNom ty $ do
                 cType_  (ii + 1) (addType (Local ii, ty)  g)
                         (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
               return conStar
@@ -193,12 +193,12 @@ cType_ iiGlobal g (L region ct) = cType_' iiGlobal g ct
         let newEnv = addType (Local ii, argTy ) g
         let argName = localName ii 0 --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
-        forallVar argName Tm.SET $ do
+        forallVar argName argTy $ do
           unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
           unifySets returnTy (returnTyFn `applyPi` argVal) g --TODO is argVal good?
         --let returnTy = returnTyFn `applyPi` argVal
-        let subbedBody = cSubst_ 0 arg e
-        cType_  (ii + 1) newEnv subbedBody returnTy
+          let subbedBody = cSubst_ 0 arg e
+          cType_  (ii + 1) newEnv subbedBody returnTy
         --TODO better name?
 
 
