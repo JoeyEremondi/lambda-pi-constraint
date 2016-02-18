@@ -45,7 +45,7 @@ getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
 getConstraints env term = do
   finalType <- iType0_ env term
   (Tm.N (Tm.Meta finalVar) _) <- freshType
-  unifySets finalType (Tm.var finalVar) env
+  unifySets finalType (Tm.meta finalVar) env
   return finalVar
 
 iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
