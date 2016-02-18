@@ -1,99 +1,181 @@
-Interpreter for lambda-Pi.
-Type :? for help.
 LP> :load test.lp
-Checking term
-((Free_ (Global "natElim") :$: Lam_ (Inf_ (Pi_ (Inf_ (Free_ (Global "Nat"))) (Inf_ (Free_ (Global "Nat")))))) :$: Lam_ (Inf_ (Bound_ 0))) :$: Lam_ (Lam_ (Lam_ (Inf_ (Free_ (Global "Succ") :$: Inf_ (Bound_ 1 :$: Inf_ (Bound_ 0))))))
-
-
-Whole list [
-LitType (VPi_ (VPi_ VNat_ <<Lam_ (Inf_ Star_)>>) <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0 :$: Zero_)) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))))>>) === PiType (VarType <0>) (TyFnVar <1>) |ENV: Just (Global "Zero",LitType VNat_),
-VarType <0> === PiType (VarType <2>) (TyFnVar <3>) |ENV: Just (Global "Zero",LitType VNat_),
-LitType VStar_ === LitType VStar_ |ENV: Just (Local 0,VarType <2>),
-VarType <4> ~~> Inf_ (Free_ (Global "Nat")) |ENV: Just (Local 0,VarType <2>),
-LitType VStar_ === LitType VStar_ |ENV: Just (Local 1,VarType <4>),
-AppType (TyFnVar <3>) (LitType (VNeutral_ (NFree_ (Local 0)))) === LitType VStar_ |ENV: Just (Local 0,VarType <2>),
-VarType <5> ~~> Lam_ (Inf_ (Pi_ (Inf_ (Free_ (Global "Nat"))) (Inf_ (Free_ (Global "Nat"))))) |ENV: Just (Global "Zero",LitType VNat_),
-AppType (TyFnVar <1>) (VarType <0>) === PiType (VarType <6>) (TyFnVar <7>) |ENV: Just (Global "Zero",LitType VNat_),
-VarType <6> === PiType (VarType <8>) (TyFnVar <9>) |ENV: Just (Global "Zero",LitType VNat_),
-AppType (TyFnVar <9>) (LitType (VNeutral_ (NFree_ (Local 0)))) === VarType <8> |ENV: Just (Local 0,VarType <8>),
-VarType <10> ~~> Lam_ (Inf_ (Bound_ 0)) |ENV: Just (Global "Zero",LitType VNat_),
-AppType (TyFnVar <7>) (VarType <6>) === PiType (VarType <11>) (TyFnVar <12>) |ENV: Just (Global "Zero",LitType VNat_),
-VarType <11> === PiType (VarType <13>) (TyFnVar <14>) |ENV: Just (Global "Zero",LitType VNat_),
-AppType (TyFnVar <14>) (LitType (VNeutral_ (NFree_ (Local 0)))) === PiType (VarType <15>) (TyFnVar <16>) |ENV: Just (Local 0,VarType <13>),
-AppType (TyFnVar <16>) (LitType (VNeutral_ (NFree_ (Local 1)))) === PiType (VarType <17>) (TyFnVar <18>) |ENV: Just (Local 1,VarType <15>),
-LitType (VPi_ VNat_ <<Lam_ (Inf_ Nat_)>>) === PiType (VarType <19>) (TyFnVar <20>) |ENV: Just (Local 2,VarType <17>),
-VarType <15> === PiType (VarType <21>) (TyFnVar <22>) |ENV: Just (Local 2,VarType <17>),
-VarType <21> === VarType <17> |ENV: Just (Local 2,VarType <17>),
-VarType <23> ~~> Inf_ (Free_ (Local 2)) |ENV: Just (Local 2,VarType <17>),
-VarType <19> === AppType (TyFnVar <22>) (VarType <21>) |ENV: Just (Local 2,VarType <17>),
-VarType <24> ~~> Inf_ (Free_ (Local 1) :$: Inf_ (Free_ (Local 2))) |ENV: Just (Local 2,VarType <17>),
-AppType (TyFnVar <18>) (LitType (VNeutral_ (NFree_ (Local 2)))) === AppType (TyFnVar <20>) (VarType <19>) |ENV: Just (Local 2,VarType <17>),
-VarType <25> ~~> Lam_ (Lam_ (Lam_ (Inf_ (Free_ (Global "Succ") :$: Inf_ (Bound_ 1 :$: Inf_ (Bound_ 0)))))) |ENV: Just (Global "Zero",LitType VNat_)]
-=========================
-
-VarType <26> === AppType (TyFnVar <12>) (VarType <11>) |ENV: Nothing
-
-Repr for <26> is BlankSlate
-
-LitType (VPi_ (VPi_ VNat_ <<Lam_ (Inf_ Star_)>>) <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0 :$: Zero_)) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))))>>) === PiType (VarType <0>) (TyFnVar <1>) |ENV: Just (Global "Zero",LitType VNat_)
-
-New Repr for <26> is TypeRepr (AppType (TyFnVar <12>) (VarType <11>))
-
-Repr for <0> is BlankSlate
-
-VarType <0> === PiType (VarType <2>) (TyFnVar <3>) |ENV: Just (Global "Zero",LitType VNat_)
-
-New Repr for <1> is TypeFnRepr (\(-1) -> LitType (VPi_ (VNeutral_ (NApp_ (NFree_ (Quote (-1))) VZero_)) <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))>>))
-
-New Repr for <0> is TypeRepr (LitType (VPi_ VNat_ <<Lam_ (Inf_ Star_)>>))
-
-Repr for <0> is TypeRepr (LitType (VPi_ VNat_ <<Lam_ (Inf_ Star_)>>))
-
-Repr for <2> is BlankSlate
-
-LitType VStar_ === LitType VStar_ |ENV: Just (Local 0,VarType <2>)
-
-VarType <4> ~~> Inf_ (Free_ (Global "Nat")) |ENV: Just (Local 0,VarType <2>)
-
-New Repr for <3> is TypeFnRepr (\(-1) -> LitType VStar_)
-
-New Repr for <2> is TypeRepr (LitType VNat_)
-
-Repr for <2> is TypeRepr (LitType VNat_)
-
-Repr for <4> is BlankSlate
-
-LitType VStar_ === LitType VStar_ |ENV: Just (Local 1,VarType <4>)
-
-AppType (TyFnVar <3>) (LitType (VNeutral_ (NFree_ (Local 0)))) === LitType VStar_ |ENV: Just (Local 0,VarType <2>)
-
-New Repr for <4> is TypeRepr (LitType VNat_)
-
-Repr for <3> is TypeFnRepr (\(-1) -> LitType VStar_)
-Trying to make real (\(-1) -> LitType VStar_)
-in env ([(Global "Zero",VZero_),(Global "Succ",VLam_ <<Lam_ (Succ_ (Inf_ (Bound_ 0)))>>),(Global "Nat",VNat_),(Global "natElim",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (NatElim_ (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))))>>),(Global "Nil",VLam_ <<Lam_ (Nil_ (Inf_ (Bound_ 0)))>>),(Global "Cons",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Cons_ (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))))>>),(Global "Vec",VLam_ <<Lam_ (Lam_ (Inf_ (Vec_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))>>),(Global "vecElim",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (VecElim_ (Inf_ (Bound_ 5)) (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))))))>>),(Global "Refl",VLam_ <<Lam_ (Lam_ (Refl_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))>>),(Global "Eq",VLam_ <<Lam_ (Lam_ (Lam_ (Inf_ (Eq_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))))>>),(Global "eqElim",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (EqElim_ (Inf_ (Bound_ 5)) (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))))))>>),(Global "FZero",VLam_ <<Lam_ (FZero_ (Inf_ (Bound_ 0)))>>),(Global "FSucc",VLam_ <<Lam_ (Lam_ (FSucc_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))>>),(Global "Fin",VLam_ <<Lam_ (Inf_ (Fin_ (Inf_ (Bound_ 0))))>>),(Global "finElim",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (FinElim_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))))))>>)],[(Local 0,VarType <2>),(Global "Zero",LitType VNat_),(Global "Succ",LitType (VPi_ VNat_ <<Lam_ (Inf_ Nat_)>>)),(Global "Nat",LitType VStar_),(Global "natElim",LitType (VPi_ (VPi_ VNat_ <<Lam_ (Inf_ Star_)>>) <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0 :$: Zero_)) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))))>>)),(Global "Nil",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Vec_ (Inf_ (Bound_ 0)) Zero_))>>)),(Global "Cons",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 1)) (Inf_ (Pi_ (Inf_ (Vec_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)))) (Inf_ (Vec_ (Inf_ (Bound_ 3)) (Succ_ (Inf_ (Bound_ 2)))))))))))>>)),(Global "Vec",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ Star_)))>>)),(Global "vecElim",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Vec_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))) (Inf_ Star_))))) (Inf_ (Pi_ (Inf_ ((Bound_ 0 :$: Zero_) :$: Nil_ (Inf_ (Bound_ 1)))) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 3)) (Inf_ (Pi_ (Inf_ (Vec_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 1)))) (Inf_ (Pi_ (Inf_ ((Bound_ 4 :$: Inf_ (Bound_ 2)) :$: Inf_ (Bound_ 0))) (Inf_ ((Bound_ 5 :$: Succ_ (Inf_ (Bound_ 3))) :$: Cons_ (Inf_ (Bound_ 6)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)))))))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Vec_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 0)))) (Inf_ ((Bound_ 4 :$: Inf_ (Bound_ 1)) :$: Inf_ (Bound_ 0)))))))))))))>>)),(Global "Refl",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0)) (Inf_ (Eq_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)) (Inf_ (Bound_ 0))))))>>)),(Global "Eq",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0)) (Inf_ (Pi_ (Inf_ (Bound_ 1)) (Inf_ Star_)))))>>)),(Global "eqElim",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ (Bound_ 0)) (Inf_ (Pi_ (Inf_ (Bound_ 1)) (Inf_ (Pi_ (Inf_ (Eq_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))) (Inf_ Star_))))))) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ (Bound_ 1)) (Inf_ (((Bound_ 1 :$: Inf_ (Bound_ 0)) :$: Inf_ (Bound_ 0)) :$: Refl_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 0)))))) (Inf_ (Pi_ (Inf_ (Bound_ 2)) (Inf_ (Pi_ (Inf_ (Bound_ 3)) (Inf_ (Pi_ (Inf_ (Eq_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))) (Inf_ (((Bound_ 4 :$: Inf_ (Bound_ 2)) :$: Inf_ (Bound_ 1)) :$: Inf_ (Bound_ 0)))))))))))))>>)),(Global "FZero",LitType (VPi_ VNat_ <<Lam_ (Inf_ (Fin_ (Succ_ (Inf_ (Bound_ 0)))))>>)),(Global "FSucc",LitType (VPi_ VNat_ <<Lam_ (Inf_ (Pi_ (Inf_ (Fin_ (Inf_ (Bound_ 0)))) (Inf_ (Fin_ (Succ_ (Inf_ (Bound_ 1)))))))>>)),(Global "Fin",LitType (VPi_ VNat_ <<Lam_ (Inf_ Star_)>>)),(Global "finElim",LitType (VPi_ (VPi_ VNat_ <<Lam_ (Inf_ (Pi_ (Inf_ (Fin_ (Inf_ (Bound_ 0)))) (Inf_ Star_)))>>) <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ ((Bound_ 1 :$: Succ_ (Inf_ (Bound_ 0))) :$: FZero_ (Inf_ (Bound_ 0)))))) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Fin_ (Inf_ (Bound_ 0)))) (Inf_ (Pi_ (Inf_ ((Bound_ 3 :$: Inf_ (Bound_ 1)) :$: Inf_ (Bound_ 0))) (Inf_ ((Bound_ 4 :$: Succ_ (Inf_ (Bound_ 2))) :$: FSucc_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)))))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Fin_ (Inf_ (Bound_ 0)))) (Inf_ ((Bound_ 4 :$: Inf_ (Bound_ 1)) :$: Inf_ (Bound_ 0)))))))))))>>))])
-
-Repr for <2> is TypeRepr (LitType VNat_)
-Made function (\(-1) -> LitType VStar_) into VLam_ <<Lam_ (Inf_ Star_)>>
-Unify: applying <<Lam_ (Inf_ Star_)>> to VNeutral_ (NFree_ (Local 0))
-
-VarType <5> ~~> Lam_ (Inf_ (Pi_ (Inf_ (Free_ (Global "Nat"))) (Inf_ (Free_ (Global "Nat"))))) |ENV: Just (Global "Zero",LitType VNat_)
-
-Repr for <5> is BlankSlate
-
-AppType (TyFnVar <1>) (VarType <0>) === PiType (VarType <6>) (TyFnVar <7>) |ENV: Just (Global "Zero",LitType VNat_)
-
-New Repr for <5> is TypeRepr (LitType (VLam_ <<Lam_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ Nat_)))>>))
-
-Repr for <0> is TypeRepr (LitType (VPi_ VNat_ <<Lam_ (Inf_ Star_)>>))
-
-Repr for <1> is TypeFnRepr (\(-1) -> LitType (VPi_ (VNeutral_ (NApp_ (NFree_ (Quote (-1))) VZero_)) <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))>>))
-Trying to make real (\(-1) -> LitType (VPi_ (VNeutral_ (NApp_ (NFree_ (Quote (-1))) VZero_)) <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))>>))
-in env ([(Global "Zero",VZero_),(Global "Succ",VLam_ <<Lam_ (Succ_ (Inf_ (Bound_ 0)))>>),(Global "Nat",VNat_),(Global "natElim",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (NatElim_ (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))))>>),(Global "Nil",VLam_ <<Lam_ (Nil_ (Inf_ (Bound_ 0)))>>),(Global "Cons",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Cons_ (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))))>>),(Global "Vec",VLam_ <<Lam_ (Lam_ (Inf_ (Vec_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))>>),(Global "vecElim",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (VecElim_ (Inf_ (Bound_ 5)) (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))))))>>),(Global "Refl",VLam_ <<Lam_ (Lam_ (Refl_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))>>),(Global "Eq",VLam_ <<Lam_ (Lam_ (Lam_ (Inf_ (Eq_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))))>>),(Global "eqElim",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (EqElim_ (Inf_ (Bound_ 5)) (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))))))))>>),(Global "FZero",VLam_ <<Lam_ (FZero_ (Inf_ (Bound_ 0)))>>),(Global "FSucc",VLam_ <<Lam_ (Lam_ (FSucc_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))>>),(Global "Fin",VLam_ <<Lam_ (Inf_ (Fin_ (Inf_ (Bound_ 0))))>>),(Global "finElim",VLam_ <<Lam_ (Lam_ (Lam_ (Lam_ (Lam_ (Inf_ (FinElim_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0))))))))>>)],[(Global "Zero",LitType VNat_),(Global "Succ",LitType (VPi_ VNat_ <<Lam_ (Inf_ Nat_)>>)),(Global "Nat",LitType VStar_),(Global "natElim",LitType (VPi_ (VPi_ VNat_ <<Lam_ (Inf_ Star_)>>) <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0 :$: Zero_)) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))))>>)),(Global "Nil",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Vec_ (Inf_ (Bound_ 0)) Zero_))>>)),(Global "Cons",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 1)) (Inf_ (Pi_ (Inf_ (Vec_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)))) (Inf_ (Vec_ (Inf_ (Bound_ 3)) (Succ_ (Inf_ (Bound_ 2)))))))))))>>)),(Global "Vec",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ Star_)))>>)),(Global "vecElim",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Vec_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))) (Inf_ Star_))))) (Inf_ (Pi_ (Inf_ ((Bound_ 0 :$: Zero_) :$: Nil_ (Inf_ (Bound_ 1)))) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 3)) (Inf_ (Pi_ (Inf_ (Vec_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 1)))) (Inf_ (Pi_ (Inf_ ((Bound_ 4 :$: Inf_ (Bound_ 2)) :$: Inf_ (Bound_ 0))) (Inf_ ((Bound_ 5 :$: Succ_ (Inf_ (Bound_ 3))) :$: Cons_ (Inf_ (Bound_ 6)) (Inf_ (Bound_ 3)) (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)))))))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Vec_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 0)))) (Inf_ ((Bound_ 4 :$: Inf_ (Bound_ 1)) :$: Inf_ (Bound_ 0)))))))))))))>>)),(Global "Refl",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0)) (Inf_ (Eq_ (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)) (Inf_ (Bound_ 0))))))>>)),(Global "Eq",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0)) (Inf_ (Pi_ (Inf_ (Bound_ 1)) (Inf_ Star_)))))>>)),(Global "eqElim",LitType (VPi_ VStar_ <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ (Bound_ 0)) (Inf_ (Pi_ (Inf_ (Bound_ 1)) (Inf_ (Pi_ (Inf_ (Eq_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))) (Inf_ Star_))))))) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ (Bound_ 1)) (Inf_ (((Bound_ 1 :$: Inf_ (Bound_ 0)) :$: Inf_ (Bound_ 0)) :$: Refl_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 0)))))) (Inf_ (Pi_ (Inf_ (Bound_ 2)) (Inf_ (Pi_ (Inf_ (Bound_ 3)) (Inf_ (Pi_ (Inf_ (Eq_ (Inf_ (Bound_ 4)) (Inf_ (Bound_ 1)) (Inf_ (Bound_ 0)))) (Inf_ (((Bound_ 4 :$: Inf_ (Bound_ 2)) :$: Inf_ (Bound_ 1)) :$: Inf_ (Bound_ 0)))))))))))))>>)),(Global "FZero",LitType (VPi_ VNat_ <<Lam_ (Inf_ (Fin_ (Succ_ (Inf_ (Bound_ 0)))))>>)),(Global "FSucc",LitType (VPi_ VNat_ <<Lam_ (Inf_ (Pi_ (Inf_ (Fin_ (Inf_ (Bound_ 0)))) (Inf_ (Fin_ (Succ_ (Inf_ (Bound_ 1)))))))>>)),(Global "Fin",LitType (VPi_ VNat_ <<Lam_ (Inf_ Star_)>>)),(Global "finElim",LitType (VPi_ (VPi_ VNat_ <<Lam_ (Inf_ (Pi_ (Inf_ (Fin_ (Inf_ (Bound_ 0)))) (Inf_ Star_)))>>) <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ ((Bound_ 1 :$: Succ_ (Inf_ (Bound_ 0))) :$: FZero_ (Inf_ (Bound_ 0)))))) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Fin_ (Inf_ (Bound_ 0)))) (Inf_ (Pi_ (Inf_ ((Bound_ 3 :$: Inf_ (Bound_ 1)) :$: Inf_ (Bound_ 0))) (Inf_ ((Bound_ 4 :$: Succ_ (Inf_ (Bound_ 2))) :$: FSucc_ (Inf_ (Bound_ 2)) (Inf_ (Bound_ 1)))))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Fin_ (Inf_ (Bound_ 0)))) (Inf_ ((Bound_ 4 :$: Inf_ (Bound_ 1)) :$: Inf_ (Bound_ 0)))))))))))>>))])
-Made function (\(-1) -> LitType <9>(VPi_ (VNeutral_ (NApp_ (NFree_ (Quote (-1))) VZero_)) <<Lam_ (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))>>)) into VLam_ <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0 :$: Zero_)) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))))>>
-Unify: applying <<Lam_ (Inf_ (Pi_ (Inf_ (Bound_ 0 :$: Zero_)) (Inf_ (Pi_ (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Pi_ (Inf_ (Bound_ 2 :$: Inf_ (Bound_ 0))) (Inf_ (Bound_ 3 :$: Succ_ (Inf_ (Bound_ 1)))))))) (Inf_ (Pi_ (Inf_ Nat_) (Inf_ (Bound_ 3 :$: Inf_ (Bound_ 0)))))))))>> to VPi_ VNat_ <<Lam_ (Inf_ Star_)>>
-
-Repr for <6> is BlankSlate
-
-VarType <6> === PiType (VarType <8>) (TyFnVar <9>) |ENV: Just (Global "Zero",LitType VNat_)
-*** Exception: Cannot apply value VPi_ VNat_ <<Lam_ (Inf_ Star_)>> to value VNeutral_ (NFree_ (Quote 0))
+ITYPEAnn_ (L {region = SourceRegion "test.lp" (line 2, column 14), contents = Lam_ (L {region = SourceRegion "test.lp" (line 2, column 14), contents = Lam_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Bound_ 0})})})}) (L {region = SourceRegion "test.lp" (line 2, column 29), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 29), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})})})
+CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 29), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})})
+ITYPEPi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})
+CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})
+ITYPEStar_
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _1) (Unify (EQN (C Set []) (C Set []) (C Set []) (C Set []))) Active}
+CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Free_ (Local 0)})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Free_ (Local 0)})})})
+ITYPEPi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Free_ (Local 0)})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Free_ (Local 0)})})
+CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Free_ (Local 0)})
+ITYPEFree_ (Local 0)
+ITO Star_
+RESULT C Set []
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})
+Result:C Set []
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _2) (All (P (C Set [])) (<local0> Unify (EQN (C Set []) (C Set []) (C Set []) (C Set [])))) Active}
+CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Free_ (Local 0)})
+ITYPEFree_ (Local 0)
+ITO Free_ (Local 0)
+RESULT N (Var local0 Only) []
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Free_ (Local 0)})
+Result:N (Var local0 Only) []
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _3) (All (P (N (Var local0 Only) [])) (<local1> All (P (C Set [])) (<local0> Unify (EQN (C Set []) (C Set []) (C Set []) (C Set []))))) Active}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _4) (All (P (C Set [])) (<local0> Unify (EQN (C Set []) (C Set []) (C Set []) (C Set [])))) Active}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _5) (Unify (EQN (C Set []) (C Set []) (C Set []) (C Set []))) Active}
+CTYPELam_ (L {region = SourceRegion "test.lp" (line 2, column 14), contents = Lam_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Bound_ 0})})})
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta6 (C Set []) HOLE}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta7 (C Pi [N (Meta freshMeta6) [],L (<xp> C Set [])]) HOLE}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta8 (C Set []) HOLE}
+ITO Star_
+RESULT C Set []
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})
+Result:C Set []
+Lookup ii1 i 0
+ITO Bound_ 0
+RESULT N (Var dummy Only) []
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})
+Result:N (Var dummy Only) []
+Lookup ii2 i 1
+ITO Bound_ 1
+RESULT N (Var dummy Only) []
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})
+Result:N (Var dummy Only) []
+Lookup ii2 i 1
+ITO Bound_ 1
+RESULT N (Var tyFn1 Only) []
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})
+Result:N (Var tyFn1 Only) []
+ITO Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})
+RESULT C Pi [N (Var dummy Only) [],L (<tyFn1> N (Var 0@0 Only) [])]
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})
+Result:C Pi [N (Var dummy Only) [],L (<tyFn1> N (Var 0@0 Only) [])]
+Lookup ii1 i 0
+ITO Bound_ 0
+RESULT N (Var tyFn1 Only) []
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})
+Result:N (Var tyFn1 Only) []
+Lookup ii2 i 1
+ITO Bound_ 1
+RESULT N (Var dummy Only) []
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})
+Result:N (Var dummy Only) []
+Lookup ii2 i 1
+ITO Bound_ 1
+RESULT N (Var tyFn1 Only) []
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})
+Result:N (Var tyFn1 Only) []
+ITO Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})
+RESULT C Pi [N (Var tyFn1 Only) [],L (<tyFn1> N (Var 0@0 Only) [])]
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})
+Result:C Pi [N (Var tyFn1 Only) [],L (<tyFn1> N (Var 0@0 Only) [])]
+ITO Pi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})
+RESULT C Pi [C Set [],L (<tyFn1> C Pi [N (Var 0@0 Only) [],L (<tyFn1> N (Var 0@0 Only) [])])]
+CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 29), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})})
+Result:C Pi [C Set [],L (<tyFn1> C Pi [N (Var 0@0 Only) [],L (<tyFn1> N (Var 0@0 Only) [])])]
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _9) (All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (C Pi [C Set [],L (<tyFn1> C Pi [N (Var 0@0 Only) [],L (<tyFn1> N (Var 0@0 Only) [])])]) (C Set []) (C Pi [N (Meta freshMeta6) [],N (Meta freshMeta7) []])))) Active}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _10) (All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (N (Meta freshMeta8) []) (C Set []) (N (Meta freshMeta7) [A (N (Var 0@0 Only) [])])))) Active}
+Lambda giving arg 0
+CTYPELam_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Bound_ 0})})
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta11 (C Set []) HOLE}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta12 (C Pi [N (Meta freshMeta11) [],L (<xp> C Set [])]) HOLE}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta13 (C Set []) HOLE}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _14) (All (P (N (Meta freshMeta11) [])) (<local1> All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (N (Meta freshMeta8) []) (C Set []) (C Pi [N (Meta freshMeta11) [],N (Meta freshMeta12) []]))))) Active}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _15) (All (P (N (Meta freshMeta11) [])) (<local1> All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (N (Meta freshMeta13) []) (C Set []) (N (Meta freshMeta12) [A (N (Var 1@0 Only) [])]))))) Active}
+Lambda giving arg 1
+CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Free_ (Local 1)})
+ITYPEFree_ (Local 1)
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _16) (All (P (N (Meta freshMeta11) [])) (<local1> All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (N (Meta freshMeta13) []) (C Set []) (N (Meta freshMeta11) []))))) Active}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta17 (C Set []) HOLE}
+Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _18) (Unify (EQN (C Set []) (C Pi [C Set [],L (<tyFn1> C Pi [N (Var 0@0 Only) [],L (<tyFn1> N (Var 0@0 Only) [])])]) (C Set []) (N (Var freshMeta17 Only) []))) Active}
+Initial context:
+_1 ?? : (Set : Set) == (Set : Set) <= ACTIVE
+_2 ?? : ALL (local0 : Set) -> (Set : Set) == (Set : Set) <= ACTIVE
+_3 ?? : ALL (local1 : local0) -> ALL (local0 : Set) -> (Set : Set) == (Set : Set) <= ACTIVE
+_4 ?? : ALL (local0 : Set) -> (Set : Set) == (Set : Set) <= ACTIVE
+_5 ?? : (Set : Set) == (Set : Set) <= ACTIVE
+freshMeta6 ? : Set
+freshMeta7 ? : ?freshMeta6 -> Set
+freshMeta8 ? : Set
+_9 ?? : ALL (local0 : ?freshMeta6) -> (Pi (tyFn1 : Set) (Pi (tyFn11 : tyFn1) tyFn11) : Set) == (Pi ?freshMeta6 ?freshMeta7 : Set) <= ACTIVE
+_10 ?? : ALL (local0 : ?freshMeta6) -> (?freshMeta8 : Set) == (?freshMeta7 local0 : Set) <= ACTIVE
+freshMeta11 ? : Set
+freshMeta12 ? : ?freshMeta11 -> Set
+freshMeta13 ? : Set
+_14 ?? : ALL (local1 : ?freshMeta11) -> ALL (local0 : ?freshMeta6) -> (?freshMeta8 : Set) == (Pi ?freshMeta11 ?freshMeta12 : Set) <= ACTIVE
+_15 ?? : ALL (local1 : ?freshMeta11) -> ALL (local0 : ?freshMeta6) -> (?freshMeta13 : Set) == (?freshMeta12 local1 : Set) <= ACTIVE
+_16 ?? : ALL (local1 : ?freshMeta11) -> ALL (local0 : ?freshMeta6) -> (?freshMeta13 : Set) == (?freshMeta11 : Set) <= ACTIVE
+freshMeta17 ? : Set
+_18 ?? : (Pi (tyFn1 : Set) (Pi (tyFn11 : tyFn1) tyFn11) : Set) == (freshMeta17 : Set) <= ACTIVE
+All vars lookup [xq13]
+lookVar comparing xq13 to xq13
+All vars lookup [xq13,xq15]
+lookVar comparing xq13 to xq13
+All vars lookup [xq19]
+lookVar comparing xq19 to xq19
+All vars lookup [xq30]
+lookVar comparing xq30 to xq30
+All vars lookup [xq30,xq32]
+lookVar comparing xq30 to xq30
+All vars lookup [xq34]
+lookVar comparing xq34 to xq34
+All vars lookup [x39]
+lookVar comparing x39 to x39
+All vars lookup [x39,xq41]
+lookVar comparing x39 to x39
+All vars lookup [x39]
+lookVar comparing x39 to x39
+All vars lookup [x44]
+lookVar comparing x44 to x44
+All vars lookup [x44,tyFn146]
+lookVar comparing x44 to x44
+All vars lookup [x39,x48]
+lookVar comparing x48 to x48
+All vars lookup [x39,x48,tyFn150]
+lookVar comparing x48 to x48
+All vars lookup [x52]
+lookVar comparing x52 to x52
+All vars lookup [x52,xq54]
+lookVar comparing x52 to x52
+All vars lookup [x52]
+lookVar comparing x52 to x52
+All vars lookup [x52,xq57]
+lookVar comparing x52 to x52
+All vars lookup [x52]
+lookVar comparing x52 to x52
+All vars lookup [x52,tyFn160]
+lookVar comparing x52 to x52
+All vars lookup [x52]
+lookVar comparing x52 to x52
+All vars lookup [x52,tyFn163]
+lookVar comparing x52 to x52
+All vars lookup [x52]
+lookVar comparing x52 to x52
+All vars lookup [x52,xq66]
+lookVar comparing x52 to x52
+All vars lookup [x52]
+lookVar comparing x52 to x52
+All vars lookup [x52,xq69]
+lookVar comparing x52 to x52
+All vars lookup [local071]
+lookVar comparing local071 to local071
+All vars lookup [local071,xq73]
+lookVar comparing local071 to local071
+All vars lookup [xq81]
+lookVar comparing xq81 to xq81
+All vars lookup [xq100]
+lookVar comparing xq100 to xq100
+All vars lookup [xq103]
+lookVar comparing xq103 to xq103
+All vars lookup [xq122]
+lookVar comparing xq122 to xq122
+All vars lookup [xq125]
+lookVar comparing xq125 to xq125
+All vars lookup [local1130]
+lookVar comparing local1130 to local1130
+All vars lookup [xq141]
+lookVar comparing xq141 to xq141
+All vars lookup [xq141,xq143]
+lookVar comparing xq141 to xq141
+All vars lookup []
+LP> ^C^C

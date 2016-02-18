@@ -442,6 +442,7 @@ tryPrune _ q _ = error $ "tryPrune: " ++ show q
 prune ::  [Nom] -> VAL ->
               Contextual [(Nom, Type, VAL -> VAL)]
 prune xs SET           = return []
+prune xs Nat = return []
 prune xs (PI _S _T)    = (++) <$> prune xs _S  <*> prune xs _T
 prune xs (SIG _S _T)   = (++) <$> prune xs _S  <*> prune xs _T
 prune xs (PAIR s t)    = (++) <$> prune xs s   <*> prune xs t

@@ -262,7 +262,9 @@ localParams :: (Params -> Params) -> Contextual a -> Contextual a
 localParams = local
 
 lookupVar :: MonadReader Params m => Nom -> Twin -> m Type
-lookupVar x w = look =<< ask
+lookupVar x w = do
+  vars <- ask
+  trace ("All vars lookup " ++ show (map fst vars)) $ look vars
   where
     look [] = fail $ "lookupVar: missing " ++ show x
     look ((y, e) : _) | x == y = trace ("lookVar comparing " ++ show x ++ " to " ++ show y) $

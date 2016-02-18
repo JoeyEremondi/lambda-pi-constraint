@@ -416,7 +416,7 @@ lp checker = I { iname = "lambda-Pi",
 
 --TODO put this back
 lpte :: Ctx Value_
-lpte = []
+lpte = [(Global "Nat", VStar_)]
 {-
 lpte =      [(Global "Zero", VNat_),
              (Global "Succ", VPi_ VNat_ (\ _ -> VNat_)),

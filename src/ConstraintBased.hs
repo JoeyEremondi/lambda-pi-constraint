@@ -52,7 +52,8 @@ iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
-iType_ iiGlobal g (L region it) = iType_' iiGlobal g it
+iType_ iiGlobal g (L region it) = trace ("ITYPE" ++ show it) $
+  iType_' iiGlobal g it
   where
     iType_' ii g (Ann_ e tyt )
       =     do  cType_  ii g tyt conStar
@@ -173,7 +174,8 @@ iType_ iiGlobal g (L region it) = iType_' iiGlobal g it
 
 
 cType_ :: Int -> WholeEnv -> CTerm_ -> ConType -> ConstraintM ()
-cType_ iiGlobal g (L region ct) = cType_' iiGlobal g ct
+cType_ iiGlobal g (L region ct) = trace ("CTYPE" ++ show ct) $
+  cType_' iiGlobal g ct
   where
     cType_' ii g (Inf_ e) tyAnnot
           =
@@ -217,7 +219,7 @@ cType_ iiGlobal g (L region ct) = cType_' iiGlobal g ct
           unifySets aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
       do  bVal <- freshType
-          k <- (fresh Tm.Nat :: ConstraintM ConType)
+          k <- fresh Tm.Nat
           --Trickery to get a Type_ to a ConType
           let kVal = applyPi (tyFn (\val -> Tm.Succ val) ) k
           unifySets ty (mkVec bVal kVal) g

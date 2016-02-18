@@ -305,6 +305,8 @@ instance Occurs VAL where
         | y `elem` xs  = Just (Rigid Strong)
         | otherwise    = const Flexible <$> occurrence xs as
 
+    occurrence xs _ = Nothing --TODO occurrence cases
+
     frees isMeta (L (B _ t))  = frees isMeta t
     frees isMeta (C _ as)     = unions (map (frees isMeta) as)
     frees isMeta (N h es)     = unions (map (frees isMeta) es)
@@ -313,6 +315,7 @@ instance Occurs VAL where
                     Var v _  | not isMeta && isFree v  -> singleton v
                     Meta v   | isMeta && isFree v      -> singleton v
                     _                                  -> emptyC
+    frees isMeta _ = emptyC --TODO frees cases
 
 instance Occurs Elim where
    occurrence xs  (A a)  = occurrence xs a

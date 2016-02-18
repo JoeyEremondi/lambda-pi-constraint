@@ -54,6 +54,7 @@ typecheck _T t = (check _T t >> return True) `catchError`
                      (\ _ -> return False)
 
 check :: Type -> VAL -> Contextual ()
+check (SET) (Nat) = return ()
 check (C c as)    (C v bs)  =  do
                                tel <- canTy (c, as) v
                                checkTel tel bs
@@ -116,6 +117,8 @@ quote (C c as)     (C v bs)  = do  tel <- canTy (c, as) v
 
 quote _T           (N h as)  = do  _S <- infer h
                                    quoteSpine _S (N h []) as
+
+quote SET Nat = return SET
 
 quote _T           t         = error $ "quote: type " ++ pp _T ++
                                        " does not accept " ++ pp t

@@ -69,33 +69,36 @@ cToUnifForm0 = cToUnifForm 0
 
 cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> Tm.VAL
 cToUnifForm ii env (Common.L _ tm) =
-  case tm of
-    Common.Inf_ itm -> --Here we bind a new variable, so increase our counter
-      iToUnifForm ii env itm
-    Common.Lam_ ctm ->
-      let
-        newNom = LN.s2n ("lamVar" ++ show ii)
-        --(globals, boundVars) = env
-        newEnv = addType (Common.Local ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
-        retBody = cToUnifForm (ii + 1) newEnv ctm
-      in
-        Tm.L $ LN.bind newNom retBody
+ let
+  result =
+    case tm of
+      Common.Inf_ itm -> --Here we bind a new variable, so increase our counter
+        iToUnifForm ii env itm
+      Common.Lam_ ctm ->
+        let
+          newNom = LN.s2n ("lamVar" ++ show ii)
+          --(globals, boundVars) = env
+          newEnv = addType (Common.Local ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
+          retBody = cToUnifForm (ii + 1) newEnv ctm
+        in
+          Tm.L $ LN.bind newNom retBody
 
-    Common.Zero_ ->
-      Tm.Zero
+      Common.Zero_ ->
+        Tm.Zero
 
-    Common.Succ_ n ->
-      Tm.Succ $ cToUnifForm ii env n
+      Common.Succ_ n ->
+        Tm.Succ $ cToUnifForm ii env n
 
-    Common.Nil_ tp ->
-      Tm.VNil $ cToUnifForm ii env tp
+      Common.Nil_ tp ->
+        Tm.VNil $ cToUnifForm ii env tp
 
-    Common.Cons_ a n x xs ->
-      Tm.VCons (cToUnifForm ii env a) (cToUnifForm ii env n)
-          (cToUnifForm ii env x) (cToUnifForm ii env xs)
+      Common.Cons_ a n x xs ->
+        Tm.VCons (cToUnifForm ii env a) (cToUnifForm ii env n)
+            (cToUnifForm ii env x) (cToUnifForm ii env xs)
 
-    Common.Refl_ a x ->
-      Tm.ERefl (cToUnifForm ii env a) (cToUnifForm ii env x)
+      Common.Refl_ a x ->
+        Tm.ERefl (cToUnifForm ii env a) (cToUnifForm ii env x)
+  in trace ("CToUnif " ++ show tm ++ "\nResult:" ++ show result) result
 
 --deBrToNom :: Int -> Int -> Tm.Nom
 --deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
@@ -112,64 +115,66 @@ localName ii i =
 
 iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> Tm.VAL
 iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
-  case tm of
-    --TODO look at type during eval?
-    Common.Ann_ val tp ->
-      cToUnifForm ii env val
+  let
+   result =
+    case tm of
+      --TODO look at type during eval?
+      Common.Ann_ val tp ->
+        cToUnifForm ii env val
 
-    Common.Star_ ->
-      Tm.SET
+      Common.Star_ ->
+        Tm.SET
 
-    Common.Pi_ s t ->
-      let
-        newEnv x = addType (Common.Local ii, x) env --(fst env, (Common.Local ii, x) : snd env)
-      in mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
+      Common.Pi_ s t ->
+        let
+          newEnv x = addType (Common.Local ii, x) env --(fst env, (Common.Local ii, x) : snd env)
+        in mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
-    Common.Bound_ i -> trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
-      snd $ (typeEnv env `listLookup` (ii - (i+1) ) )
-      --Tm.var $ deBrToNom ii i
+      Common.Bound_ i -> trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
+        snd $ (typeEnv env `listLookup` (ii - (i+1) ) )
+        --Tm.var $ deBrToNom ii i
 
-    --If we reach this point, then our neutral term isn't embedded in an application
-    Common.Free_ fv ->
-      case List.lookup fv (valueEnv env) of
-        Just x -> x
-        Nothing ->
-          case fv of
-            Common.Global nm ->
-              Tm.vv nm
-            Common.Local i ->
-              Tm.var $ localName ii i --Take our current depth, minus deBruijn index
-            Common.Quote i ->
-              error "Shouldn't come across quoted during checking"
-
-
-    (f Common.:$: x) ->
-      (iToUnifForm ii env f) Tm.$$ (cToUnifForm ii env x)
-
-    Common.Nat_ ->
-      Tm.Nat
-
-    Common.NatElim_ m mz ms n ->
-      (cToUnifForm ii env n) Tm.%%%
-        [Tm.NatElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms)]
-
-    Common.Vec_ a n ->
-      Tm.Vec (cToUnifForm ii env a) (cToUnifForm ii env n)
-
-    Common.VecElim_ a m mn mc n xs ->
-      (cToUnifForm ii env xs) Tm.%%%
-        [Tm.VecElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mn)
-            (cToUnifForm ii env mc) (cToUnifForm ii env n)]
-
-    Common.Eq_ a x y ->
-      Tm.Eq (cToUnifForm ii env a) (cToUnifForm ii env x) (cToUnifForm ii env y)
+      --If we reach this point, then our neutral term isn't embedded in an application
+      Common.Free_ fv ->
+        case List.lookup fv (valueEnv env) of
+          Just x -> x
+          Nothing ->
+            case fv of
+              Common.Global nm ->
+                Tm.vv nm
+              Common.Local i ->
+                Tm.var $ localName ii i --Take our current depth, minus deBruijn index
+              Common.Quote i ->
+                error "Shouldn't come across quoted during checking"
 
 
-    Common.EqElim_ a m mr x y eq  ->
-      (cToUnifForm ii env eq) Tm.%%%
-        [Tm.EqElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mr)
-            (cToUnifForm ii env x) (cToUnifForm ii env y)]
+      (f Common.:$: x) ->
+        (iToUnifForm ii env f) Tm.$$ (cToUnifForm ii env x)
 
+      Common.Nat_ ->
+        Tm.Nat
+
+      Common.NatElim_ m mz ms n ->
+        (cToUnifForm ii env n) Tm.%%%
+          [Tm.NatElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms)]
+
+      Common.Vec_ a n ->
+        Tm.Vec (cToUnifForm ii env a) (cToUnifForm ii env n)
+
+      Common.VecElim_ a m mn mc n xs ->
+        (cToUnifForm ii env xs) Tm.%%%
+          [Tm.VecElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mn)
+              (cToUnifForm ii env mc) (cToUnifForm ii env n)]
+
+      Common.Eq_ a x y ->
+        Tm.Eq (cToUnifForm ii env a) (cToUnifForm ii env x) (cToUnifForm ii env y)
+
+
+      Common.EqElim_ a m mr x y eq  ->
+        (cToUnifForm ii env eq) Tm.%%%
+          [Tm.EqElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mr)
+              (cToUnifForm ii env x) (cToUnifForm ii env y)]
+  in trace ("ITO " ++ show tm ++ "\nRESULT " ++ show result) result
 
 type ConTyFn = Tm.VAL
 
@@ -325,6 +330,7 @@ data Constraint =
   Constraint
     {conRegion :: Common.Region
     , conEntry :: UC.Entry }
+    deriving (Show)
 
 maybeHead :: [a] -> Maybe a
 maybeHead [] = Nothing
@@ -352,9 +358,9 @@ maybeHead (h:_) = Just h
 
 fresh :: Tm.VAL -> ConstraintM Tm.VAL
 fresh tp = do
-    ourNom <- freshNom
+    ourNom <- freshNom "Meta"
     let ourEntry = UC.E ourNom tp UC.HOLE
-    addConstr $ Constraint (error "TODO region" ) ourEntry
+    addConstr $ Constraint Common.startRegion ourEntry
     return $ Tm.meta ourNom
 
 unify :: Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
@@ -364,7 +370,7 @@ unify v1 v2 tp env = do
     let newCon = wrapProblemForalls currentQuants
           $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
-    addConstr $ Constraint (error "TODO region") ourEntry
+    addConstr $ Constraint (Common.startRegion) ourEntry
 
 unifySets v1 v2 env = unify v1 v2 Tm.SET env
 
@@ -386,7 +392,7 @@ forAllUnify quantVar quantType v1 v2 tp env = do
     probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
     let newCon = UC.All (UC.P quantType) $ LN.bind quantVar $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
-    addConstr $ Constraint (error "TODO region") ourEntry
+    addConstr $ Constraint (Common.startRegion) ourEntry
 -}
 
 
@@ -415,16 +421,16 @@ freshInt = do
   return h
 
 
-freshNom :: ConstraintM Tm.Nom
-freshNom = do
+freshNom :: String -> ConstraintM Tm.Nom
+freshNom hint = do
   (h:t) <- lift $ intStore <$> get
   modify (\st -> st {intStore = t})
-  return $ LN.string2Name $ "fresh" ++ (show h)
+  return $ LN.string2Name $ "fresh" ++ hint ++ (show h)
 
 
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
-addConstr c = tell [c]
+addConstr c = trace ("Adding constraint " ++ show c) $ tell [c]
 
 
 --metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
