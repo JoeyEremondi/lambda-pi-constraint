@@ -3,16 +3,16 @@ module ConstraintBased (checker) where
 
 import Prelude hiding (print)
 
-import Data.List
 import Data.Char
+import Data.List
 
 import Text.PrettyPrint.HughesPJ hiding (parens)
 import qualified Text.PrettyPrint.HughesPJ as PP
 
-import Text.ParserCombinators.Parsec hiding (parse, State)
+import Text.ParserCombinators.Parsec hiding (State, parse)
 import qualified Text.ParserCombinators.Parsec as P
-import Text.ParserCombinators.Parsec.Token
 import Text.ParserCombinators.Parsec.Language
+import Text.ParserCombinators.Parsec.Token
 
 import System.Console.Readline
 import System.IO hiding (print)
@@ -187,7 +187,7 @@ cType_ iiGlobal g (L region ct) = cType_' iiGlobal g ct
         --Our return type should be a function, from input type to set
         returnTyFn <- fresh (argTy Tm.--> conStar)
         returnTy <- freshType --TODO constrain this!!
-        let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Bound_ ii --TODO free or bound?
+        let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
         let newEnv = addType (Local ii, argTy ) g
         let argVal = iToUnifForm ii newEnv arg
         unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this

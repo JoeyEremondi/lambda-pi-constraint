@@ -13,11 +13,11 @@ module Constraint
   ) -} where
 
 import qualified Common
-import qualified Control.Monad.Trans.UnionFind as UF
-import Control.Monad.Writer
+import Control.Monad.Identity (Identity)
 import Control.Monad.State
 import Control.Monad.Trans
-import Control.Monad.Identity (Identity)
+import qualified Control.Monad.Trans.UnionFind as UF
+import Control.Monad.Writer
 import Data.Data
 import Data.Typeable
 
@@ -39,7 +39,7 @@ type ConstrContext = [(Common.Name, Tm.VAL)]
 
 data WholeEnv =
   WholeEnv
-  { valueEnv :: [(Common.Name, Tm.VAL)]
+  { valueEnv     :: [(Common.Name, Tm.VAL)]
   , typeEnv :: [(Common.Name, Tm.VAL)]
   }
 
@@ -125,7 +125,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
             Common.Global nm ->
               Tm.vv nm
             Common.Local i ->
-              Tm.var $ LN.integer2Name $ toInteger $ ii - i --Take our current depth, minus deBruijn index
+              Tm.vv ( "local" ++ show (ii - i)) --Take our current depth, minus deBruijn index
             Common.Quote i ->
               error "Shouldn't come across quoted during checking"
 
@@ -168,7 +168,7 @@ vToUnifForm ii val = case val of
     let
       freeVar = Common.vfree_ $ Common.Quote ii
       funBody = f freeVar
-      boundNom = LN.integer2Name $ toInteger ii
+      boundNom = LN.string2Name $ "local" ++ show ii
     in
       Tm.lam boundNom $ vToUnifForm (ii+1) funBody
   Common.VStar_ ->
@@ -214,7 +214,7 @@ neutralToHead ii neut = case neut of
     Common.Local i ->
       error "Local should not occur in Neutrals"
     Common.Quote i ->
-      Tm.Var (LN.integer2Name $ toInteger $ ii - i) Tm.Only
+      Tm.Var (LN.string2Name $ "local" ++ show (ii-i)) Tm.Only
 
 neutralToSpine ii neut = case neut of
   Common.NApp_ f x ->
