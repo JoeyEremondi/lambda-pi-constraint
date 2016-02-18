@@ -97,6 +97,11 @@ listLookup l i =
   then error $ "No elem " ++ show i ++ " in" ++ show l
   else l List.!! i
 
+--The name for a local variable i at depth ii
+localName ii i =
+  LN.string2Name ( "local" ++ show (ii - i))
+
+
 iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> Tm.VAL
 iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
   case tm of
@@ -125,7 +130,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
             Common.Global nm ->
               Tm.vv nm
             Common.Local i ->
-              Tm.vv ( "local" ++ show (ii - i)) --Take our current depth, minus deBruijn index
+              Tm.var $ localName ii i --Take our current depth, minus deBruijn index
             Common.Quote i ->
               error "Shouldn't come across quoted during checking"
 
@@ -350,6 +355,21 @@ unify v1 v2 tp env = do
     addConstr $ Constraint (error "TODO region") ourEntry
 
 unifySets v1 v2 env = unify v1 v2 Tm.SET env
+
+forAllUnify
+  :: LN.Name Tm.VAL
+  -> Tm.VAL
+  -> Tm.VAL
+  -> Tm.VAL
+  -> Tm.VAL
+  -> WholeEnv
+  -> ConstraintM ()
+forAllUnify quantVar quantType v1 v2 tp env = do
+    probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
+    let newCon = UC.All (UC.P quantType) $ LN.bind quantVar $ UC.Unify $ UC.EQN tp v1 tp v2
+    let ourEntry = UC.Prob probId newCon UC.Active
+    addConstr $ Constraint (error "TODO region") ourEntry
+
 
 freshType = fresh Tm.SET
 
