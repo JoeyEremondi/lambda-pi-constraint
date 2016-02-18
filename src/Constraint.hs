@@ -350,12 +350,14 @@ maybeHead (h:_) = Just h
   }-}
 
 
-
+fresh :: Tm.VAL -> ConstraintM Tm.VAL
 fresh tp = do
     ourNom <- freshNom
     let ourEntry = UC.E ourNom tp UC.HOLE
     addConstr $ Constraint (error "TODO region" ) ourEntry
     return $ Tm.meta ourNom
+
+unify :: Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
 unify v1 v2 tp env = do
     probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
     currentQuants <- lift $ quantParams <$> get
