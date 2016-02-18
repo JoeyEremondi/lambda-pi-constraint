@@ -63,9 +63,11 @@ iType_ iiGlobal g (L region it) = iType_' iiGlobal g it
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
+              let argNom = localName ii 0
               ty <- evaluate tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
-              cType_  (ii + 1) (addType (Local ii, ty)  g)
+              forallVar argNom Tm.SET $ do
+                cType_  (ii + 1) (addType (Local ii, ty)  g)
                         (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
               return conStar
     iType_' ii g (Free_ x)
@@ -190,9 +192,10 @@ cType_ iiGlobal g (L region ct) = cType_' iiGlobal g ct
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
         let newEnv = addType (Local ii, argTy ) g
         let argName = localName ii 0 --TODO ii or 0?
-        let argVal = iToUnifForm ii newEnv arg
-        unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
-        forAllUnify argName Tm.SET returnTy (returnTyFn `applyPi` argVal) Tm.SET g --TODO is argVal good?
+        let argVal = Tm.var argName --iToUnifForm ii newEnv arg
+        forallVar argName Tm.SET $ do
+          unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
+          unifySets returnTy (returnTyFn `applyPi` argVal) g --TODO is argVal good?
         --let returnTy = returnTyFn `applyPi` argVal
         let subbedBody = cSubst_ 0 arg e
         cType_  (ii + 1) newEnv subbedBody returnTy

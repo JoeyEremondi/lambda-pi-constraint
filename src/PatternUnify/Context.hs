@@ -77,7 +77,7 @@ instance Pretty Problem where
         e'  <- pretty e
         x'  <- pretty x
         p'  <- pretty p
-        return $ parens (x' <+> colon <+> e') <+> text "->" <+> p'
+        return $ (text "ALL") <+> parens (x' <+> colon <+> e') <+> text "->" <+> p'
 
 
 allProb :: Nom -> Type -> Problem -> Problem

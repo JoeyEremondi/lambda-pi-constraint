@@ -43,6 +43,14 @@ data WholeEnv =
   , typeEnv :: [(Common.Name, Tm.VAL)]
   }
 
+
+data ConstrainState =
+  ConstrainState
+  { intStore :: [Int]
+  , quantParams :: [(Tm.Nom, Tm.VAL)]
+  }
+
+
 addValue :: (Common.Name, Tm.VAL) -> WholeEnv -> WholeEnv
 addValue x env = env {valueEnv = x : valueEnv env }
 
@@ -51,7 +59,7 @@ addType x env = env {typeEnv = x : typeEnv env }
 
 solveConstraintM :: ConstraintM Tm.Nom -> Either String Tm.VAL
 solveConstraintM cm = do
-    let ((nom, constraints), _) = runIdentity $ runStateT (runWriterT cm) [1..]
+    let ((nom, constraints), _) = runIdentity $ runStateT (runWriterT cm) (ConstrainState [1..] [])
     (_, context) <- PUtest.solveEntries $ map conEntry constraints
     return $ evalState (UC.lookupMeta nom) context
 
@@ -350,12 +358,20 @@ fresh tp = do
     return $ Tm.meta ourNom
 unify v1 v2 tp env = do
     probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
-    let newCon = UC.Unify $ UC.EQN tp v1 tp v2
+    currentQuants <- lift $ quantParams <$> get
+    let newCon = wrapProblemForalls currentQuants
+          $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
     addConstr $ Constraint (error "TODO region") ourEntry
 
 unifySets v1 v2 env = unify v1 v2 Tm.SET env
 
+wrapProblemForalls :: [(Tm.Nom, Tm.VAL)] -> UC.Problem -> UC.Problem
+wrapProblemForalls [] prob = prob
+wrapProblemForalls ((nm, tp) : rest) prob =
+  UC.All (UC.P tp) $ LN.bind nm $ wrapProblemForalls rest prob
+
+{-
 forAllUnify
   :: LN.Name Tm.VAL
   -> Tm.VAL
@@ -369,6 +385,7 @@ forAllUnify quantVar quantType v1 v2 tp env = do
     let newCon = UC.All (UC.P quantType) $ LN.bind quantVar $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
     addConstr $ Constraint (error "TODO region") ourEntry
+-}
 
 
 freshType = fresh Tm.SET
@@ -376,23 +393,30 @@ freshType = fresh Tm.SET
 type ConType = Tm.VAL
 
 
-type ConstraintM a = WriterT [Constraint] (StateT [Int] Identity) a
+type ConstraintM a = WriterT [Constraint] (StateT ConstrainState Identity) a
 
 --Operations in our monad:
 
-
+--Do the given computation with the given name added to our quantifier list
+--Then remove it from the list when we're done
+forallVar :: Tm.Nom -> Tm.VAL -> (ConstraintM a) -> ConstraintM a
+forallVar nm tp cm = do
+  modify (\st -> st {quantParams = (nm, tp) : quantParams st})
+  result <- cm
+  modify (\st -> st {quantParams = tail $ quantParams st})
+  return result
 
 freshInt :: ConstraintM Int
 freshInt = do
-  (h:t) <- lift $ get
-  put t
+  (h:t) <- lift $ intStore <$> get
+  modify (\st -> st {intStore = t})
   return h
 
 
 freshNom :: ConstraintM Tm.Nom
 freshNom = do
-  (h:t) <- lift $ get
-  put t
+  (h:t) <- lift $ intStore <$> get
+  modify (\st -> st {intStore = t})
   return $ LN.string2Name $ "fresh" ++ (show h)
 
 
