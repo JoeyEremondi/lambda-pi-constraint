@@ -125,10 +125,13 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       Common.Star_ ->
         Tm.SET
 
-      Common.Pi_ s t ->
+      Common.Pi_ s t@(Common.L tReg _) ->
         let
           newEnv x = addType (Common.Local ii, x) env --(fst env, (Common.Local ii, x) : snd env)
-        in mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
+          localVal = Tm.var $ localName ii 0
+          tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
+        in Tm.PI  (cToUnifForm ii env s) (cToUnifForm (ii+1) (newEnv localVal) tFn)
+          --mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
       Common.Bound_ i -> trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
         snd $ (typeEnv env `listLookup` (ii - (i+1) ) )
