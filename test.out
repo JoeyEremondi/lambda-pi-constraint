@@ -1,93 +1,12 @@
 LP> :load test.lp
-ITYPEAnn_ (L {region = SourceRegion "test.lp" (line 2, column 14), contents = Lam_ (L {region = SourceRegion "test.lp" (line 2, column 14), contents = Lam_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Bound_ 0})})})}) (L {region = SourceRegion "test.lp" (line 2, column 29), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 29), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})})})
-CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 29), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})})
-ITYPEPi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})
-CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})
-ITYPEStar_
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _1) (Unify (EQN (C Set []) (C Set []) (C Set []) (C Set []))) Active}
-CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Free_ (Local 0)})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Free_ (Local 0)})})})
-ITYPEPi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Free_ (Local 0)})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Free_ (Local 0)})})
-CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Free_ (Local 0)})
-ITYPEFree_ (Local 0)
-ITO Star_
-RESULT C Set []
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})
-Result:C Set []
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _2) (All (P (C Set [])) (<local0> Unify (EQN (C Set []) (C Set []) (C Set []) (C Set [])))) Active}
-CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Free_ (Local 0)})
-ITYPEFree_ (Local 0)
-ITO Free_ (Local 0)
-RESULT N (Var local0 Only) []
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Free_ (Local 0)})
-Result:N (Var local0 Only) []
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _3) (All (P (N (Var local0 Only) [])) (<local1> All (P (C Set [])) (<local0> Unify (EQN (C Set []) (C Set []) (C Set []) (C Set []))))) Active}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _4) (All (P (C Set [])) (<local0> Unify (EQN (C Set []) (C Set []) (C Set []) (C Set [])))) Active}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _5) (Unify (EQN (C Set []) (C Set []) (C Set []) (C Set []))) Active}
-CTYPELam_ (L {region = SourceRegion "test.lp" (line 2, column 14), contents = Lam_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Bound_ 0})})})
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta6 (C Set []) HOLE}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta7 (C Pi [N (Meta freshMeta6) [],L (<xp> C Set [])]) HOLE}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta8 (C Set []) HOLE}
-ITO Star_
-RESULT C Set []
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})
-Result:C Set []
-Lookup ii1 i 0
-ITO Bound_ 0
-RESULT N (Var dummy Only) []
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})
-Result:N (Var dummy Only) []
-Lookup ii2 i 1
-ITO Bound_ 1
-RESULT N (Var dummy Only) []
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})
-Result:N (Var dummy Only) []
-Lookup ii2 i 1
-ITO Bound_ 1
-RESULT N (Var tyFn1 Only) []
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})
-Result:N (Var tyFn1 Only) []
-ITO Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})
-RESULT C Pi [N (Var dummy Only) [],L (<tyFn1> N (Var 0@0 Only) [])]
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})
-Result:C Pi [N (Var dummy Only) [],L (<tyFn1> N (Var 0@0 Only) [])]
-Lookup ii1 i 0
-ITO Bound_ 0
-RESULT N (Var tyFn1 Only) []
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})
-Result:N (Var tyFn1 Only) []
-Lookup ii2 i 1
-ITO Bound_ 1
-RESULT N (Var dummy Only) []
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})
-Result:N (Var dummy Only) []
-Lookup ii2 i 1
-ITO Bound_ 1
-RESULT N (Var tyFn1 Only) []
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})
-Result:N (Var tyFn1 Only) []
-ITO Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})
-RESULT C Pi [N (Var tyFn1 Only) [],L (<tyFn1> N (Var 0@0 Only) [])]
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})
-Result:C Pi [N (Var tyFn1 Only) [],L (<tyFn1> N (Var 0@0 Only) [])]
-ITO Pi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})
-RESULT C Pi [C Set [],L (<tyFn1> C Pi [N (Var 0@0 Only) [],L (<tyFn1> N (Var 0@0 Only) [])])]
-CToUnif Inf_ (L {region = SourceRegion "test.lp" (line 2, column 29), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 42), contents = Star_})}) (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 49), contents = Pi_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 47), contents = Bound_ 0})}) (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 52), contents = Bound_ 1})})})})})
-Result:C Pi [C Set [],L (<tyFn1> C Pi [N (Var 0@0 Only) [],L (<tyFn1> N (Var 0@0 Only) [])])]
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _9) (All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (C Pi [C Set [],L (<tyFn1> C Pi [N (Var 0@0 Only) [],L (<tyFn1> N (Var 0@0 Only) [])])]) (C Set []) (C Pi [N (Meta freshMeta6) [],N (Meta freshMeta7) []])))) Active}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _10) (All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (N (Meta freshMeta8) []) (C Set []) (N (Meta freshMeta7) [A (N (Var 0@0 Only) [])])))) Active}
 Lambda giving arg 0
-CTYPELam_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Inf_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Bound_ 0})})
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta11 (C Set []) HOLE}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta12 (C Pi [N (Meta freshMeta11) [],L (<xp> C Set [])]) HOLE}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta13 (C Set []) HOLE}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _14) (All (P (N (Meta freshMeta11) [])) (<local1> All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (N (Meta freshMeta8) []) (C Set []) (C Pi [N (Meta freshMeta11) [],N (Meta freshMeta12) []]))))) Active}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _15) (All (P (N (Meta freshMeta11) [])) (<local1> All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (N (Meta freshMeta13) []) (C Set []) (N (Meta freshMeta12) [A (N (Var 1@0 Only) [])]))))) Active}
 Lambda giving arg 1
-CTYPEInf_ (L {region = SourceRegion "test.lp" (line 2, column 23), contents = Free_ (Local 1)})
-ITYPEFree_ (Local 1)
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _16) (All (P (N (Meta freshMeta11) [])) (<local1> All (P (N (Meta freshMeta6) [])) (<local0> Unify (EQN (C Set []) (N (Meta freshMeta13) []) (C Set []) (N (Meta freshMeta11) []))))) Active}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = E freshMeta17 (C Set []) HOLE}
-Adding constraint Constraint {conRegion = SourceRegion (line 1, column 1), conEntry = Prob (ProbId _18) (Unify (EQN (C Set []) (C Pi [C Set [],L (<tyFn1> C Pi [N (Var 0@0 Only) [],L (<tyFn1> N (Var 0@0 Only) [])])]) (C Set []) (N (Var freshMeta17 Only) []))) Active}
+Lookup ii1 i 0
+Lookup ii1 i 0
+Lookup ii2 i 1
+Lookup ii2 i 1
+Lookup ii2 i 1
+Lookup ii2 i 1
 Initial context:
 _1 ?? : (Set : Set) == (Set : Set) <= ACTIVE
 _2 ?? : ALL (local0 : Set) -> (Set : Set) == (Set : Set) <= ACTIVE
@@ -106,76 +25,43 @@ _14 ?? : ALL (local1 : ?freshMeta11) -> ALL (local0 : ?freshMeta6) -> (?freshMet
 _15 ?? : ALL (local1 : ?freshMeta11) -> ALL (local0 : ?freshMeta6) -> (?freshMeta13 : Set) == (?freshMeta12 local1 : Set) <= ACTIVE
 _16 ?? : ALL (local1 : ?freshMeta11) -> ALL (local0 : ?freshMeta6) -> (?freshMeta13 : Set) == (?freshMeta11 : Set) <= ACTIVE
 freshMeta17 ? : Set
-_18 ?? : (Pi (tyFn1 : Set) (Pi (tyFn11 : tyFn1) tyFn11) : Set) == (freshMeta17 : Set) <= ACTIVE
-All vars lookup [xq13]
-lookVar comparing xq13 to xq13
-All vars lookup [xq13,xq15]
-lookVar comparing xq13 to xq13
-All vars lookup [xq19]
-lookVar comparing xq19 to xq19
-All vars lookup [xq30]
-lookVar comparing xq30 to xq30
-All vars lookup [xq30,xq32]
-lookVar comparing xq30 to xq30
-All vars lookup [xq34]
-lookVar comparing xq34 to xq34
-All vars lookup [x39]
-lookVar comparing x39 to x39
-All vars lookup [x39,xq41]
-lookVar comparing x39 to x39
-All vars lookup [x39]
-lookVar comparing x39 to x39
-All vars lookup [x44]
-lookVar comparing x44 to x44
-All vars lookup [x44,tyFn146]
-lookVar comparing x44 to x44
-All vars lookup [x39,x48]
-lookVar comparing x48 to x48
-All vars lookup [x39,x48,tyFn150]
-lookVar comparing x48 to x48
-All vars lookup [x52]
-lookVar comparing x52 to x52
-All vars lookup [x52,xq54]
-lookVar comparing x52 to x52
-All vars lookup [x52]
-lookVar comparing x52 to x52
-All vars lookup [x52,xq57]
-lookVar comparing x52 to x52
-All vars lookup [x52]
-lookVar comparing x52 to x52
-All vars lookup [x52,tyFn160]
-lookVar comparing x52 to x52
-All vars lookup [x52]
-lookVar comparing x52 to x52
-All vars lookup [x52,tyFn163]
-lookVar comparing x52 to x52
-All vars lookup [x52]
-lookVar comparing x52 to x52
-All vars lookup [x52,xq66]
-lookVar comparing x52 to x52
-All vars lookup [x52]
-lookVar comparing x52 to x52
-All vars lookup [x52,xq69]
-lookVar comparing x52 to x52
-All vars lookup [local071]
-lookVar comparing local071 to local071
-All vars lookup [local071,xq73]
-lookVar comparing local071 to local071
-All vars lookup [xq81]
-lookVar comparing xq81 to xq81
-All vars lookup [xq100]
-lookVar comparing xq100 to xq100
-All vars lookup [xq103]
-lookVar comparing xq103 to xq103
-All vars lookup [xq122]
-lookVar comparing xq122 to xq122
-All vars lookup [xq125]
-lookVar comparing xq125 to xq125
-All vars lookup [local1130]
-lookVar comparing local1130 to local1130
-All vars lookup [xq141]
-lookVar comparing xq141 to xq141
-All vars lookup [xq141,xq143]
-lookVar comparing xq141 to xq141
-All vars lookup []
-LP> ^C^C
+_18 ?? : (Pi (tyFn1 : Set) (Pi (tyFn11 : tyFn1) tyFn11) : Set) == (?freshMeta17 : Set) <= ACTIVE
+Interpreter for lambda-Pi.
+Type :? for help.
+lambda-pi-constraint: Inferred type tyFn1149 of tyFn1151 is not Set
+when validating
+_1 ?? : (Set : Set) == (Set : Set) <= SOLVED
+x2 ?? : (Set : Set) == (Set : Set) <= SOLVED
+_2 ?? : ALL (local0 : Set) -> (Set : Set) == (Set : Set) <= SOLVED
+x6 ?? : (Set : Set) == (Set : Set) <= SOLVED
+x4 ?? : ALL (local0 : Set) -> (Set : Set) == (Set : Set) <= SOLVED
+_3 ?? : ALL (local1 : local0) -> ALL (local0 : Set) -> (Set : Set) == (Set : Set) <= SOLVED
+x8 ?? : (Set : Set) == (Set : Set) <= SOLVED
+_4 ?? : ALL (local0 : Set) -> (Set : Set) == (Set : Set) <= SOLVED
+_5 ?? : (Set : Set) == (Set : Set) <= SOLVED
+freshMeta6 := Set : Set
+x21 ?? : (Set : Set) == (Set : Set) <= SOLVED
+freshMeta7 := (\ x . x -> x) : Set -> Set
+x37 ?? : ALL (x : Set) -> (x -> x : Set) == (x -> x : Set) <= SOLVED
+freshMeta11 ? : Set
+x132 := ?freshMeta11 : Set
+x139 ?? : (?freshMeta11 : Set) == (?freshMeta11 : Set) <= SOLVED
+freshMeta12 := (\ _ . ?freshMeta11) : ?freshMeta11 -> Set
+freshMeta8 := ?freshMeta11 -> ?freshMeta11 : Set
+x79 ?? : (Pi ?freshMeta11 ?freshMeta12 : Set) == (Pi ?freshMeta11 ?freshMeta12 : Set) <= SOLVED
+x36 ?? : (Set : Set) == (Set : Set) <= SOLVED
+x22 ?? : (\ tyFn1 . Pi (tyFn11 : tyFn1) tyFn11 : Set -> Set) == (\ x . x -> x : Set -> Set) <= SOLVED
+x11 ?? : (Pi (tyFn1 : Set) (Pi (tyFn11 : tyFn1) tyFn11) : Set) == (Pi (x : Set) (x -> x) : Set) <= SOLVED
+_9 ?? : ALL (local0 : Set) -> (Pi (tyFn1 : Set) (Pi (tyFn11 : tyFn1) tyFn11) : Set) == (Pi (x : Set) (x -> x) : Set) <= SOLVED
+_10 ?? : ALL (local0 : Set) -> (?freshMeta8 : Set) == (local0 -> local0 : Set) <= FAILED: pruning error
+freshMeta13 := ?freshMeta11 : Set
+x135 ?? : (?x132 : Set) == (?x132 : Set) <= SOLVED
+x77 ?? : ALL (local0 : Set) -> (Pi ?freshMeta11 ?freshMeta12 : Set) == (Pi ?freshMeta11 ?freshMeta12 : Set) <= SOLVED
+_14 ?? : ALL (local1 : ?freshMeta11) -> ALL (local0 : Set) -> (Pi ?freshMeta11 ?freshMeta12 : Set) == (Pi ?freshMeta11 ?freshMeta12 : Set) <= SOLVED
+x129 ?? : ALL (local1 : ?freshMeta11) -> (?x132 : Set) == (?x132 : Set) <= SOLVED
+_15 ?? : ALL (local1 : ?freshMeta11) -> ALL (local0 : Set) -> (?x132 : Set) == (?x132 : Set) <= SOLVED
+x137 ?? : ALL (local0 : Set) -> (?freshMeta11 : Set) == (?freshMeta11 : Set) <= SOLVED
+_16 ?? : ALL (local1 : ?freshMeta11) -> ALL (local0 : Set) -> (?freshMeta11 : Set) == (?freshMeta11 : Set) <= SOLVED
+freshMeta17 ? : Set
+_18 ?? : (?freshMeta17 : Set) == (Pi (tyFn1 : Set) (Pi (tyFn11 : tyFn1) tyFn11) : Set) <= BLOCKED
+*

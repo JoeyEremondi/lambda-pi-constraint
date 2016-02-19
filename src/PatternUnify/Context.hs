@@ -264,10 +264,10 @@ localParams = local
 lookupVar :: MonadReader Params m => Nom -> Twin -> m Type
 lookupVar x w = do
   vars <- ask
-  trace ("All vars lookup " ++ show (map fst vars)) $ look vars
+  look vars
   where
     look [] = fail $ "lookupVar: missing " ++ show x
-    look ((y, e) : _) | x == y = trace ("lookVar comparing " ++ show x ++ " to " ++ show y) $
+    look ((y, e) : _) | x == y =
       case (e, w) of
         (P _T,         Only)   -> return _T
         (Twins _S _T,  TwinL)  -> return _S
