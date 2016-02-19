@@ -1,4 +1,65 @@
-LP> :laod test.lp
+LP> :load test.lp
+Lambda giving arg 0
+Lambda giving arg 1
+Lookup ii2 i 0
+Lookup ii4 i 1
+Initial context:
+_1 ?? : (Set : Set) == (Set : Set) <= ACTIVE
+_2 ?? : ∀ (x : Set)  .  (Set : Set) == (Set : Set) <= ACTIVE
+_3 ?? : ∀ (x : Set)  .  ∀ (y : x)  .  (Set : Set) == (Set : Set) <= ACTIVE
+_4 ?? : ∀ (x : Set)  .  (Set : Set) == (Set : Set) <= ACTIVE
+_5 ?? : (Set : Set) == (Set : Set) <= ACTIVE
+α_6 ? : Set
+α_7 ? : ?α_6 -> Set
+α_8 ? : Set
+_9 ?? : ∀ (x : ?α_6)  .  (Pi (lamVar1 : Set) (Set -> lamVar1) : Set) == (Pi ?α_6 ?α_7 : Set) <= ACTIVE
+_10 ?? : ∀ (x : ?α_6)  .  (?α_8 : Set) == (?α_7 x : Set) <= ACTIVE
+α_11 ? : Set
+α_12 ? : ?α_11 -> Set
+α_13 ? : Set
+_14 ?? : ∀ (x : ?α_6)  .  ∀ (y : ?α_11)  .  (?α_8 : Set) == (Pi ?α_11 ?α_12 : Set) <= ACTIVE
+_15 ?? : ∀ (x : ?α_6)  .  ∀ (y : ?α_11)  .  (?α_13 : Set) == (?α_12 y : Set) <= ACTIVE
+_16 ?? : ∀ (x : ?α_6)  .  ∀ (y : ?α_11)  .  (?α_13 : Set) == (?α_11 : Set) <= ACTIVE
+α_17 ? : Set
+_18 ?? : (Pi (lamVar1 : Set) (Set -> lamVar1) : Set) == (?α_17 : Set) <= ACTIVE
+
+=============
+Final
+_1 ?? : (Set : Set) == (Set : Set) <= SOLVED
+x2 ?? : (Set : Set) == (Set : Set) <= SOLVED
+_2 ?? : ∀ (x : Set)  .  (Set : Set) == (Set : Set) <= SOLVED
+x7 ?? : (Set : Set) == (Set : Set) <= SOLVED
+x5 ?? : ∀ (x : Set)  .  (Set : Set) == (Set : Set) <= SOLVED
+_3 ?? : ∀ (x : Set)  .  ∀ (y : x)  .  (Set : Set) == (Set : Set) <= SOLVED
+x9 ?? : (Set : Set) == (Set : Set) <= SOLVED
+_4 ?? : ∀ (x : Set)  .  (Set : Set) == (Set : Set) <= SOLVED
+_5 ?? : (Set : Set) == (Set : Set) <= SOLVED
+α_6 := Set : Set
+x22 ?? : (Set : Set) == (Set : Set) <= SOLVED
+α_7 := (\ x . Set -> x) : Set -> Set
+x38 ?? : ∀ (x : Set)  .  (Set -> x : Set) == (Set -> x : Set) <= SOLVED
+α_11 ? : Set
+x132 := ?α_11 : Set
+x139 ?? : (?α_11 : Set) == (?α_11 : Set) <= SOLVED
+α_12 := (\ _ . ?α_11) : ?α_11 -> Set
+α_8 := ?α_11 -> ?α_11 : Set
+x80 ?? : (Pi ?α_11 ?α_12 : Set) == (Pi ?α_11 ?α_12 : Set) <= SOLVED
+x37 ?? : (Set : Set) == (Set : Set) <= SOLVED
+x23 ?? : (\ lamVar1 . Set -> lamVar1 : Set -> Set) == (\ x . Set -> x : Set -> Set) <= SOLVED
+x12 ?? : (Pi (lamVar1 : Set) (Set -> lamVar1) : Set) == (Pi (x : Set) (Set -> x) : Set) <= SOLVED
+_9 ?? : ∀ (x : Set)  .  (Pi (lamVar1 : Set) (Set -> lamVar1) : Set) == (Pi (x1 : Set) (Set -> x1) : Set) <= SOLVED
+_10 ?? : ∀ (x : Set)  .  (?α_8 : Set) == (Set -> x : Set) <= FAILED: pruning error
+α_13 := ?α_11 : Set
+x135 ?? : (?x132 : Set) == (?x132 : Set) <= SOLVED
+x78 ?? : ∀ (y : ?α_11)  .  (Pi ?α_11 ?α_12 : Set) == (Pi ?α_11 ?α_12 : Set) <= SOLVED
+_14 ?? : ∀ (x : Set)  .  ∀ (y : ?α_11)  .  (Pi ?α_11 ?α_12 : Set) == (Pi ?α_11 ?α_12 : Set) <= SOLVED
+x129 ?? : ∀ (y : ?α_11)  .  (?x132 : Set) == (?x132 : Set) <= SOLVED
+_15 ?? : ∀ (x : Set)  .  ∀ (y : ?α_11)  .  (?x132 : Set) == (?x132 : Set) <= SOLVED
+x137 ?? : ∀ (y : ?α_11)  .  (?α_11 : Set) == (?α_11 : Set) <= SOLVED
+_16 ?? : ∀ (x : Set)  .  ∀ (y : ?α_11)  .  (?α_11 : Set) == (?α_11 : Set) <= SOLVED
+α_17 := Pi (lamVar1 : Set) (Set -> lamVar1) : Set
+_18 ?? : (Pi (lamVar1 : Set) (Set -> lamVar1) : Set) == (Pi (lamVar1 : Set) (Set -> lamVar1) : Set) <= SOLVED
+*
 LP> Interpreter for lambda-Pi.
 Type :? for help.
-Unknown command `:laod'. Type :? for help.
+id :: *

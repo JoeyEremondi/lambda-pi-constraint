@@ -37,10 +37,18 @@ initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 
 solveEntries :: [Entry] -> Either Err ((), Context)
 solveEntries es  =
-  trace ("Initial context:\n" ++
-                                  render (runPretty (prettyEntries es)))
-  $ runContextual (B0, map Right es)
-                    (initialise >> ambulando [] [] >> validate (const True))
+  let
+    result = runContextual (B0, map Right es)
+                      (initialise >> ambulando [] [] >> validate (const True))
+    resultString = case result of
+      Left _ -> "ERROR"
+      Right (_, ctx) -> render $ runPretty $ pretty ctx
+  in
+    trace ("Initial context:\n" ++
+            render (runPretty (prettyEntries es) )
+           ++ "\n\n=============\nFinal\n" ++ resultString)
+    result
+
 
 
 runTest :: (ProblemState -> Bool) -> [Entry] -> IO ()
