@@ -430,7 +430,7 @@ freshNom hint = do
 
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
-addConstr c = -- trace ("Adding constraint " ++ show c) $ 
+addConstr c = -- trace ("Adding constraint " ++ show c) $
   tell [c]
 
 
@@ -452,17 +452,6 @@ mkEq :: ConType -> ConType -> ConType -> ConType
 mkEq = Tm.Eq
 
 
-tyFn :: (ConType -> ConType) -> ConType
-tyFn f =
-  let
-    allVars :: [Tm.Nom]
-    allVars = map (\i -> LN.string2Name $ "tyFn" ++ show i ) [1..]
-    dummyBody = f (Tm.vv "dummy")
-    freeVars :: [Tm.Nom]
-    freeVars = Tm.fvs dummyBody
-    newFreeVar = head $ filter (not . (`elem` freeVars)) allVars
-  in
-    Tm.lam newFreeVar (f $ Tm.var newFreeVar)
 
 
 --conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
@@ -480,7 +469,16 @@ applyPi = applyVal
 --mkPi = Tm._PI "piVar"
 
 mkPiFn :: ConType -> (ConType -> ConType) -> ConType
-mkPiFn s t = Tm.PI s (tyFn t)
+mkPiFn s f =
+  let
+    allVars :: [Tm.Nom]
+    allVars = map (\i -> LN.string2Name $ "tyPiFn" ++ show i ) [1..]
+    dummyBody = f (Tm.vv "dummy")
+    freeVars :: [Tm.Nom]
+    freeVars = Tm.fvs dummyBody
+    newFreeVar = head $ filter (not . (`elem` freeVars)) allVars
+  in
+    Tm.PI s  $ Tm.lam newFreeVar (f $ Tm.var newFreeVar)
 
 --conType :: Common.Type_ -> ConType
 --conType = vToUnifForm 0
