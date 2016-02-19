@@ -120,18 +120,18 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
       do  cType_ ii g a conStar
           aVal <- evaluate a g
           cType_ ii g m
-            (  mkPiFn Tm.Nat ( \n -> mkPiFn (applyPi (tyFn $ \av -> Tm.Vec av n) aVal) ( \ _ -> conStar)))
+            (  mkPiFn Tm.Nat ( \n -> mkPiFn  (Tm.Vec aVal n) ( \ _ -> conStar)))
           mVal <- evaluate m g
-          cType_ ii g mn (foldl applyVal mVal [ Tm.Zero, (tyFn $ \av -> Tm.VNil av ) `applyPi` aVal])
+          cType_ ii g mn (foldl applyVal mVal [ Tm.Zero, Tm.VNil aVal ])
           cType_ ii g mc
             (  mkPiFn Tm.Nat ( \ n ->
                mkPiFn aVal ( \ y ->
-               mkPiFn ( tyFn ( \av -> Tm.Vec av n) `applyPi` aVal) ( \ ys ->
+               mkPiFn ( Tm.Vec aVal n) ( \ ys ->
                mkPiFn (foldl applyVal mVal  [n, ys]) ( \ _ ->
-               (foldl applyVal mVal [(Tm.Succ n), (tyFn $ \av -> Tm.VCons av n y ys) `applyPi` aVal]))))))
+               (foldl applyVal mVal [(Tm.Succ n), Tm.VCons aVal n y ys]))))))
           cType_ ii g n $ Tm.Nat
           nVal <- evaluate n g
-          cType_ ii g vs ((tyFn $ \av -> (tyFn $ \nv -> Tm.Vec av nv ) `applyPi` aVal) `applyPi` nVal)
+          cType_ ii g vs ((Tm.Vec aVal nVal ))
           vsVal <- evaluate vs g
           return (foldl applyVal mVal [nVal, vsVal])
 
@@ -151,7 +151,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
           cType_ i g m
             (mkPiFn aVal (\ x ->
              mkPiFn aVal ( \ y ->
-             mkPiFn (( tyFn $ \av ->  Tm.Eq av x y) `applyPi` aVal) ( \ _ -> conStar))))
+             mkPiFn ((  Tm.Eq aVal x y)) ( \ _ -> conStar))))
           --evaluate $ our given m value
           mVal <- evaluate m g
           cType_ i g mr
@@ -164,7 +164,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
           --TODO make this nicer with a fold?
           let
             eqC =
-              (tyFn $ \a -> (tyFn $ \b -> (tyFn $ \c -> (Tm.Eq a b c)) `applyPi` yVal) `applyPi` xVal ) `applyPi` aVal
+              ((Tm.Eq yVal xVal aVal))
           cType_ i g eq eqC
           eqVal <- evaluate eq g
           return (foldl applyVal mVal [xVal, yVal])
@@ -221,7 +221,7 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
       do  bVal <- freshType
           k <- fresh Tm.Nat
           --Trickery to get a Type_ to a ConType
-          let kVal = applyPi (tyFn (\val -> Tm.Succ val) ) k
+          let kVal = Tm.Succ k
           unifySets ty (mkVec bVal kVal) g
           cType_ ii g a conStar
 
