@@ -110,7 +110,14 @@ listLookup l i =
 
 --The name for a local variable i at depth ii
 localName ii i =
-  LN.string2Name ( "local" ++ show (ii - i))
+  let
+    ourIndex = (ii - i)
+  in
+    LN.string2Name $ case ourIndex of
+      0 -> "x"
+      1 -> "y"
+      2 -> "z"
+      _ ->  ( "local" ++ show ourIndex)
 
 
 iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> Tm.VAL
@@ -364,7 +371,7 @@ maybeHead (h:_) = Just h
 
 fresh :: Tm.VAL -> ConstraintM Tm.VAL
 fresh tp = do
-    ourNom <- freshNom "Meta"
+    ourNom <- freshNom "α_"
     let ourEntry = UC.E ourNom tp UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
     return $ Tm.meta ourNom
@@ -372,7 +379,8 @@ fresh tp = do
 unify :: Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
 unify v1 v2 tp env = do
     probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
-    currentQuants <- lift $ quantParams <$> get
+    --TODO right to reverse?
+    currentQuants <- reverse <$> (lift $ quantParams <$> get)
     let newCon = wrapProblemForalls currentQuants
           $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
@@ -431,7 +439,7 @@ freshNom :: String -> ConstraintM Tm.Nom
 freshNom hint = do
   (h:t) <- lift $ intStore <$> get
   modify (\st -> st {intStore = t})
-  return $ LN.string2Name $ "fresh" ++ hint ++ (show h)
+  return $ LN.string2Name $ hint ++ (show h)
 
 
 --Helpful utility function
