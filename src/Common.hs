@@ -460,11 +460,11 @@ lpte =      [(Global "Zero", VNat_),
                                m `vapp_` n `vapp_` f))))))]
 -}
 
-lam_ = error "TODO lam_"
-inf_ = error "TODO inf_"
+lam_ x = L startRegion (Lam_ x)
+inf_ x = L startRegion (Inf_ x)
 
 lpve :: Ctx Value_
-lpve =      [(Global "Zero", VZero_),
+lpve =  [] {-    [(Global "Zero", VZero_),
              (Global "Succ", VLam_ (\ n -> VSucc_ n)),
              (Global "Nat", VNat_),
              (Global "natElim", cEval_ (lam_ (lam_ (lam_ (lam_ (inf_ (NatElim_ (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0)))))))) ([], [])),
@@ -480,6 +480,7 @@ lpve =      [(Global "Zero", VZero_),
              (Global "FSucc", VLam_ (\ n -> VLam_ (\ f -> VFSucc_ n f))),
              (Global "Fin", VLam_ (\ n -> VFin_ n)),
              (Global "finElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (FinElim_ (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0))))))))) ([],[]))]
+-}
 
 repLP :: TypeChecker -> Bool -> IO ()
 repLP checker b = readevalprint (lp checker) (b, [], lpve, lpte)

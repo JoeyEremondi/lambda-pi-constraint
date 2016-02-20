@@ -19,11 +19,15 @@ import System.IO hiding (print)
 
 import System.IO.Error
 
+import Control.Applicative
+
 import Common
 
 import Constraint
 
 import qualified PatternUnify.Tm as Tm
+
+import PatternUnify.Test (prettyString)
 
 import Debug.Trace (trace)
 
@@ -56,10 +60,13 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
   iType_' iiGlobal g it
   where
     iType_' ii g (Ann_ e tyt )
-      =     do  cType_  ii g tyt conStar
-                ty <- evaluate tyt g
-                cType_ ii g e ty
-                return ty
+      =
+        do
+          cType_  ii g tyt conStar
+          ty <- evaluate tyt g
+          trace ("Annotated " ++ show tyt ++ " as " ++ prettyString ty ++ "\nenv: " ++ show g) $
+            cType_ ii g e ty
+          return ty
     iType_' ii g Star_
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')

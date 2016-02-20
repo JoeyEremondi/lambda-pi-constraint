@@ -34,6 +34,7 @@ test = runTest (const True)
 initialise :: Contextual ()
 initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 
+prettyString t = render $ runPretty $ pretty t
 
 solveEntries :: [Entry] -> Either Err ((), Context)
 solveEntries es  =

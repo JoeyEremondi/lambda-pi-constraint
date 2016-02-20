@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, PatternSynonyms #-}
 module Constraint
 {-
   ( ConType
@@ -21,6 +21,8 @@ import Control.Monad.Writer
 import Data.Data
 import Data.Typeable
 
+import Control.Applicative
+
 import qualified Data.List as List
 
 import qualified Unbound.LocallyNameless as LN
@@ -41,7 +43,7 @@ data WholeEnv =
   WholeEnv
   { valueEnv     :: [(Common.Name, Tm.VAL)]
   , typeEnv :: [(Common.Name, Tm.VAL)]
-  }
+  } deriving (Show)
 
 
 data ConstrainState =
@@ -76,7 +78,7 @@ cToUnifForm ii env (Common.L _ tm) =
         iToUnifForm ii env itm
       Common.Lam_ ctm ->
         let
-          newNom = LN.s2n ("lamVar" ++ show ii)
+          newNom = localName ii 0 --LN.s2n ("lamVar" ++ show ii)
           --(globals, boundVars) = env
           newEnv = addType (Common.Local ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
           retBody = cToUnifForm (ii + 1) newEnv ctm
@@ -111,7 +113,7 @@ listLookup l i =
 --The name for a local variable i at depth ii
 localName ii i =
   let
-    ourIndex = (ii - i)
+    ourIndex = (ii - (i+1))
   in
     LN.string2Name $ case ourIndex of
       0 -> "x"
@@ -143,8 +145,9 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
         in Tm.PI sVal (cToUnifForm (ii+1) newEnv tFn)
           --mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
-      Common.Bound_ i -> trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
-        snd $ (typeEnv env `listLookup` (ii - (i+1) ) )
+      Common.Bound_ i -> --trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
+        --snd $ (typeEnv env `listLookup` (ii - i ) )
+        Tm.var $ localName ii i --Local name, just get the corresponding Nom
         --Tm.var $ deBrToNom ii i
 
       --If we reach this point, then our neutral term isn't embedded in an application
