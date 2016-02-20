@@ -64,14 +64,14 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
         do
           cType_  ii g tyt conStar
           ty <- evaluate tyt g
-          trace ("Annotated " ++ show tyt ++ " as " ++ prettyString ty ++ "\nenv: " ++ show g) $
+          trace ("&&" ++ show ii ++ "Annotated " ++ show tyt ++ " as " ++ prettyString ty ++ "\nenv: " ++ show g) $
             cType_ ii g e ty
           return ty
     iType_' ii g Star_
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
-              let argNom = localName ii 0
+              let argNom = localName (ii+1) 0
               ty <- evaluate tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               forallVar argNom ty $ do
@@ -200,7 +200,7 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
         returnTy <- freshType --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
         let newEnv = addType (Local ii, argTy ) g
-        let argName = localName ii 0 --TODO ii or 0?
+        let argName = localName (ii+1) 0 --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
         forallVar argName argTy $ do
           unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
