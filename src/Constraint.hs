@@ -393,9 +393,9 @@ maybeHead (h:_) = Just h
 fresh :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh env tp = do
     ourNom <- freshNom "α_"
-    let lambdaType = foldr (Tm.-->) tp (typeEnv env)
+    let lambdaType = foldl (Tm.-->) tp (typeEnv env)
     let ii = length (typeEnv env)
-    let appVal = foldr (Tm.$$) (Tm.meta ourNom) $
+    let appVal = foldl (Tm.$$) (Tm.meta ourNom) $
           map (\i -> Tm.var $ localName ii i) [ii-1 .. 0]
     let ourEntry = UC.E ourNom tp UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
