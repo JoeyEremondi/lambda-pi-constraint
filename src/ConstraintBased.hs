@@ -73,8 +73,8 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
         do
           cType_  ii g tyt conStar
           ty <- evaluate tyt g
-          trace ("&&" ++ show ii ++ "Annotated " ++ show tyt ++ " as " ++ prettyString ty ++ "\nenv: " ++ show g) $
-            cType_ ii g e ty
+          --trace ("&&" ++ show ii ++ "Annotated " ++ show tyt ++ " as " ++ prettyString ty ++ "\nenv: " ++ show g) $
+          cType_ ii g e ty
           return ty
     iType_' ii g Star_
        =  return conStar

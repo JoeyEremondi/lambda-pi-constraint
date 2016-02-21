@@ -117,7 +117,7 @@ cToUnifForm ii env (Common.L _ tm) =
 
       Common.Refl_ a x ->
         Tm.ERefl (cToUnifForm ii env a) (cToUnifForm ii env x)
-  in trace ("\n**CToUnif" ++ show ii ++ " " ++ show tm ++ "\nResult:" ++ show result) result
+  in result -- trace ("\n**CToUnif" ++ show ii ++ " " ++ show tm ++ "\nResult:" ++ show result) result
 
 --deBrToNom :: Int -> Int -> Tm.Nom
 --deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
@@ -131,9 +131,9 @@ listLookup l i =
 localName :: Int -> Int -> Tm.Nom
 localName ii i =
   LN.string2Name $ case (ii - i) of
-      --0 -> "x"
-      --1 -> "y"
-      --2 -> "z"
+      0 -> "x"
+      1 -> "y"
+      2 -> "z"
       ourIndex ->  ( "local" ++ show ourIndex)
 
 
@@ -207,7 +207,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
         (cToUnifForm ii env eq) Tm.%%%
           [Tm.EqElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mr)
               (cToUnifForm ii env x) (cToUnifForm ii env y)]
-  in trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
+  in result --trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
 
 type ConTyFn = Tm.VAL
 
