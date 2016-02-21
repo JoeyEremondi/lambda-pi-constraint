@@ -144,7 +144,8 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
           --mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
       Common.Bound_ i -> trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
-        snd $ (typeEnv env `listLookup` (ii - (i+1) ) )
+        --We treat bound bariables just like free Locals --TODO is this right?
+        Tm.var $ localName ii i --snd $ (typeEnv env `listLookup` (ii - (i+1) ) )
         --Tm.var $ deBrToNom ii i
 
       --If we reach this point, then our neutral term isn't embedded in an application
