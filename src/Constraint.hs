@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, PatternSynonyms #-}
 module Constraint
 {-
   ( ConType
@@ -20,6 +20,8 @@ import qualified Control.Monad.Trans.UnionFind as UF
 import Control.Monad.Writer
 import Data.Data
 import Data.Typeable
+
+import Control.Applicative
 
 import qualified Data.List as List
 
@@ -93,7 +95,7 @@ cToUnifForm ii env (Common.L _ tm) =
         iToUnifForm ii env itm
       Common.Lam_ ctm ->
         let
-          newNom = LN.s2n ("lamVar" ++ show ii)
+          newNom = localName (ii+1) 0 --LN.s2n ("lamVar" ++ show ii)
           --(globals, boundVars) = env
           newEnv = addType (Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
           retBody = cToUnifForm (ii + 1) newEnv ctm
@@ -115,7 +117,7 @@ cToUnifForm ii env (Common.L _ tm) =
 
       Common.Refl_ a x ->
         Tm.ERefl (cToUnifForm ii env a) (cToUnifForm ii env x)
-  in result -- trace ("CToUnif " ++ show tm ++ "\nResult:" ++ show result) result
+  in trace ("\n**CToUnif" ++ show ii ++ " " ++ show tm ++ "\nResult:" ++ show result) result
 
 --deBrToNom :: Int -> Int -> Tm.Nom
 --deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
@@ -128,14 +130,11 @@ listLookup l i =
 --The name for a local variable i at depth ii
 localName :: Int -> Int -> Tm.Nom
 localName ii i =
-  let
-    ourIndex = (ii - i)
-  in
-    LN.string2Name $ case ourIndex of
-      0 -> "x"
-      1 -> "y"
-      2 -> "z"
-      _ ->  ( "local" ++ show ourIndex)
+  LN.string2Name $ case (ii - i) of
+      --0 -> "x"
+      --1 -> "y"
+      --2 -> "z"
+      ourIndex ->  ( "local" ++ show ourIndex)
 
 
 iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> Tm.VAL
@@ -153,17 +152,19 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       Common.Pi_ s t@(Common.L tReg _) ->
         let
            --(fst env, (Common.Local ii, x) : snd env)
-          localVal = Tm.var $ localName ii 0
+          freeNom =  localName (ii+1) 0
+          localVal = Tm.var freeNom
           sVal = (cToUnifForm ii env s)
           --Our argument in t function has type S
           newEnv = addType (sVal) env
-          tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
-        in Tm.PI sVal (cToUnifForm (ii+1) newEnv tFn)
+          translatedFn = (cToUnifForm (ii + 1) newEnv t)
+          --tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
+        in Tm.PI sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
           --mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
-      Common.Bound_ i -> trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
-        --We treat bound bariables just like free Locals --TODO is this right?
-        Tm.var $ localName ii i --snd $ (typeEnv env `listLookup` (ii - (i+1) ) )
+      Common.Bound_ i -> --trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
+        --snd $ (typeEnv env `listLookup` (ii - i ) )
+        Tm.var $ localName ii i --Local name, just get the corresponding Nom
         --Tm.var $ deBrToNom ii i
 
       --If we reach this point, then our neutral term isn't embedded in an application
@@ -206,7 +207,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
         (cToUnifForm ii env eq) Tm.%%%
           [Tm.EqElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mr)
               (cToUnifForm ii env x) (cToUnifForm ii env y)]
-  in result --trace ("ITO " ++ show tm ++ "\nRESULT " ++ show result) result
+  in trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
 
 type ConTyFn = Tm.VAL
 
@@ -220,7 +221,7 @@ vToUnifForm ii val = case val of
       funBody = f freeVar
       boundNom = LN.string2Name $ "local" ++ show ii
     in
-      Tm.lam boundNom $ vToUnifForm (ii+1) funBody
+      Tm.lam boundNom $ vToUnifForm (ii + 1) funBody
   Common.VStar_ ->
     Tm.SET
   Common.VPi_ s f ->

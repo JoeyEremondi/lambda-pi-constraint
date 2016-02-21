@@ -30,7 +30,7 @@ executable lambda-pi-constraint
     PatternUnify.Tm,
     PatternUnify.Unify
   -- other-extensions:
-  build-depends:       base >=4.8 && <4.9
+  build-depends:       base >=4.7 && <4.9
                        , mtl
                        , parsec
                        , pretty

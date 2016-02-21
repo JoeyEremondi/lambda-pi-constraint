@@ -19,11 +19,15 @@ import System.IO hiding (print)
 
 import System.IO.Error
 
+import Control.Applicative
+
 import Common
 
 import Constraint
 
 import qualified PatternUnify.Tm as Tm
+
+import PatternUnify.Test (prettyString)
 
 import Debug.Trace (trace)
 
@@ -65,15 +69,18 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
   iType_' iiGlobal g it
   where
     iType_' ii g (Ann_ e tyt )
-      =     do  cType_  ii g tyt conStar
-                ty <- evaluate tyt g
-                cType_ ii g e ty
-                return ty
+      =
+        do
+          cType_  ii g tyt conStar
+          ty <- evaluate tyt g
+          trace ("&&" ++ show ii ++ "Annotated " ++ show tyt ++ " as " ++ prettyString ty ++ "\nenv: " ++ show g) $
+            cType_ ii g e ty
+          return ty
     iType_' ii g Star_
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
-              let argNom = localName ii 0
+              let argNom = localName (ii+1) 0
               ty <- evaluate tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               forallVar argNom ty $ do
@@ -201,8 +208,8 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
         returnTyFn <- fresh g (argTy Tm.--> conStar)
         returnTy <- freshType g --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
-        let newEnv = addType argTy g
-        let argName = localName ii 0 --TODO ii or 0?
+        let newEnv = addType (argTy ) g
+        let argName = localName (ii+1) 0 --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
         forallVar argName argTy $ do
           unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
