@@ -387,13 +387,23 @@ maybeHead (h:_) = Just h
 fresh :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh env tp = do
     ourNom <- freshNom "α_"
-    let lambdaType = foldl (Tm.-->) tp (map snd $ typeEnv env) --TODO right order?
-    let ii = length (typeEnv env)
+    let lambdaType = trace ("Lambda type with env " ++ show (typeEnv env) ) $ foldr (Tm.-->) tp (map snd $ typeEnv env) --TODO right order?
+    let ii = trace ("Made fresh lambda type " ++ PUtest.prettyString lambdaType)
+          $ length (typeEnv env)
     let appVal = foldl (Tm.$$) (Tm.meta ourNom) $
-          map (\i -> Tm.var $ localName ii i) [ii-1 .. 0]
-    let ourEntry = UC.E ourNom tp UC.HOLE
+          map (\i -> Tm.var $ localName ii i) (reverse [0 .. ii-1])
+    let ourEntry = trace ("Made fresh meta app " ++ PUtest.prettyString appVal ++"\nii" ++ show ii)
+          $ UC.E ourNom lambdaType UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
     return appVal
+
+freshTopLevel ::Tm.VAL -> ConstraintM Tm.Nom
+freshTopLevel tp = do
+    ourNom <- freshNom "topLevel"
+    let ourEntry =
+          UC.E ourNom tp UC.HOLE
+    addConstr $ Constraint Common.startRegion ourEntry
+    return ourNom
 
 unify :: Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
 unify v1 v2 tp env = do

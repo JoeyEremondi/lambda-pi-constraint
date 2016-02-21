@@ -1,5 +1,5 @@
 --{-# OPTIONS_GHC -F -pgmF she #-}
-{-# LANGUAGE GADTs, KindSignatures, TemplateHaskell,
+{-# LANGUAGE GADTs, KindSignatures, TemplateHaskell, BangPatterns,
       FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
       UndecidableInstances, GeneralizedNewtypeDeriving,
       TypeSynonymInstances, ScopedTypeVariables, PatternSynonyms #-}
@@ -37,18 +37,17 @@ initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 prettyString t = render $ runPretty $ pretty t
 
 solveEntries :: [Entry] -> Either Err ((), Context)
-solveEntries es  =
+solveEntries !es  =
   let
-    result = runContextual (B0, map Right es)
-                      (initialise >> ambulando [] [] >> validate (const True))
+    !initialContextString = render (runPretty (prettyEntries es))
+    result = trace ("Initial context:\n" ++ initialContextString ) $
+      runContextual (B0, map Right es) (initialise >> ambulando [] [] >> validate (const True))
     resultString = case result of
       Left _ -> "ERROR"
       Right (_, ctx) -> render $ runPretty $ pretty ctx
   in
-    trace ("Initial context:\n" ++
-            render (runPretty (prettyEntries es) )
-           ++ "\n\n=============\nFinal\n" ++ resultString)
-    result
+    trace ("\n\n=============\nFinal\n" ++ resultString)
+      result
 
 
 
