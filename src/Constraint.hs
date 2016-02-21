@@ -43,7 +43,7 @@ data WholeEnv =
   , typeEnv :: [Tm.VAL]
   , globalValues :: [(String, Tm.VAL)]
   , globalTypes :: [(String, Tm.VAL)]
-  }
+  } deriving (Show)
 
 typeLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
 typeLookup (Common.Global s) env = List.lookup s (globalTypes env)
@@ -387,13 +387,18 @@ maybeHead (h:_) = Just h
   , constraintsSoFar :: [Constraint]
   }-}
 
-
+--We abstract over the environment
+--And return a value which applies the local variables to it
 fresh :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh env tp = do
     ourNom <- freshNom "α_"
+    let lambdaType = foldr (Tm.-->) tp (typeEnv env)
+    let ii = length (typeEnv env)
+    let appVal = foldr (Tm.$$) (Tm.meta ourNom) $
+          map (\i -> Tm.var $ localName ii i) [ii-1 .. 0]
     let ourEntry = UC.E ourNom tp UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
-    return $ Tm.meta ourNom
+    return appVal
 
 unify :: Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
 unify v1 v2 tp env = do
@@ -476,8 +481,10 @@ evaluate term env = do
   --unify t normalForm env --cToUnifForm0 term
   return normalForm
 
-unknownIdent :: String -> ConstraintM a
-unknownIdent s = error $ "Unknown Identifier: " ++ show s
+unknownIdent :: WholeEnv -> String -> ConstraintM a
+unknownIdent env s = error $
+  "Unknown Identifier: " ++ show s
+  ++ " in env " ++ show env
 
 
 
