@@ -57,7 +57,7 @@ conStar = Tm.SET
 getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
 getConstraints env term = do
   finalType <- iType0_ env term
-  (Tm.N (Tm.Meta finalVar) _) <- freshType env
+  finalVar <- freshNom "topLevel"
   unifySets finalType (Tm.meta finalVar) env
   return finalVar
 
