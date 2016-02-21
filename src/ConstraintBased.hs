@@ -35,14 +35,14 @@ import Debug.Trace (trace)
 
 mapSnd f (a,b) = (a, f b)
 
-splitContext :: [(Name, a)] -> ([(String, a)], [a])
+splitContext :: [(Name, a)] -> ([(String, a)], [(Int, a)])
 splitContext entries = helper entries [] []
   where
     helper [] globals locals = (globals, locals)
     helper ( (Global s, x) : rest) globals locals =
       helper rest ((s,x) : globals) locals
     helper ((Local i, x) : rest) globals locals =
-      helper rest globals (x : locals)
+      helper rest globals ((i,x) : locals)
 
 checker :: TypeChecker
 checker (nameEnv, context) term = do
@@ -84,7 +84,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
               ty <- evaluate tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               forallVar argNom ty $ do
-                cType_  (ii + 1) (addType (ty)  g)
+                cType_  (ii + 1) (addType (ii, ty)  g)
                         (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
               return conStar
     iType_' ii g (Free_ x)
@@ -208,7 +208,7 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
         returnTyFn <- fresh g (argTy Tm.--> conStar)
         returnTy <- freshType g --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
-        let newEnv = addType (argTy ) g
+        let newEnv = addType (ii, argTy ) g
         let argName = localName (ii+1) 0 --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
         forallVar argName argTy $ do

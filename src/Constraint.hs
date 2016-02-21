@@ -41,8 +41,8 @@ type ConstrContext = [(Common.Name, Tm.VAL)]
 
 data WholeEnv =
   WholeEnv
-  { valueEnv     :: [Tm.VAL]
-  , typeEnv :: [Tm.VAL]
+  { valueEnv     :: [(Int, Tm.VAL)]
+  , typeEnv :: [(Int, Tm.VAL)]
   , globalValues :: [(String, Tm.VAL)]
   , globalTypes :: [(String, Tm.VAL)]
   } deriving (Show)
@@ -50,18 +50,12 @@ data WholeEnv =
 typeLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
 typeLookup (Common.Global s) env = List.lookup s (globalTypes env)
 typeLookup (Common.Local i) env =
-  if (List.length (typeEnv env) <= i)
-  then Nothing
-  else
-    Just $ typeEnv env List.!! i
+  List.lookup i (typeEnv env)
 
 valueLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
 valueLookup (Common.Global s) env = List.lookup s (globalValues env)
 valueLookup (Common.Local i) env =
-  if (List.length (valueEnv env) <= i)
-  then Nothing
-  else
-    Just $ valueEnv env List.!! i
+  List.lookup i (valueEnv env)
 
 data ConstrainState =
   ConstrainState
@@ -70,10 +64,10 @@ data ConstrainState =
   }
 
 
-addValue :: (Tm.VAL) -> WholeEnv -> WholeEnv
+addValue :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
 addValue x env = env {valueEnv = x : valueEnv env }
 
-addType :: (Tm.VAL) -> WholeEnv -> WholeEnv
+addType :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
 addType x env = env {typeEnv = x : typeEnv env }
 
 solveConstraintM :: ConstraintM Tm.Nom -> Either String Tm.VAL
@@ -97,7 +91,7 @@ cToUnifForm ii env (Common.L _ tm) =
         let
           newNom = localName (ii+1) 0 --LN.s2n ("lamVar" ++ show ii)
           --(globals, boundVars) = env
-          newEnv = addType (Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
+          newEnv = addType (ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
           retBody = cToUnifForm (ii + 1) newEnv ctm
         in
           Tm.L $ LN.bind newNom retBody
@@ -156,7 +150,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
           localVal = Tm.var freeNom
           sVal = (cToUnifForm ii env s)
           --Our argument in t function has type S
-          newEnv = addType (sVal) env
+          newEnv = addType (ii, sVal) env
           translatedFn = (cToUnifForm (ii + 1) newEnv t)
           --tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
         in Tm.PI sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
@@ -393,7 +387,7 @@ maybeHead (h:_) = Just h
 fresh :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh env tp = do
     ourNom <- freshNom "α_"
-    let lambdaType = foldl (Tm.-->) tp (typeEnv env)
+    let lambdaType = foldl (Tm.-->) tp (map snd $ typeEnv env) --TODO right order?
     let ii = length (typeEnv env)
     let appVal = foldl (Tm.$$) (Tm.meta ourNom) $
           map (\i -> Tm.var $ localName ii i) [ii-1 .. 0]
