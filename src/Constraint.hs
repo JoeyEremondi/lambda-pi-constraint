@@ -50,7 +50,7 @@ data WholeEnv =
 typeLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
 typeLookup (Common.Global s) env = List.lookup s (globalTypes env)
 typeLookup (Common.Local i) env =
-  if (List.length (typeEnv env) >= i)
+  if (List.length (typeEnv env) <= i)
   then Nothing
   else
     Just $ typeEnv env List.!! i
@@ -58,7 +58,7 @@ typeLookup (Common.Local i) env =
 valueLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
 valueLookup (Common.Global s) env = List.lookup s (globalValues env)
 valueLookup (Common.Local i) env =
-  if (List.length (valueEnv env) >= i)
+  if (List.length (valueEnv env) <= i)
   then Nothing
   else
     Just $ valueEnv env List.!! i
