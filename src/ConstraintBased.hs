@@ -53,7 +53,7 @@ conStar = Tm.SET
 getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
 getConstraints env term = do
   finalType <- iType0_ env term
-  (Tm.N (Tm.Meta finalVar) _) <- freshType
+  (Tm.N (Tm.Meta finalVar) _) <- freshType env
   unifySets finalType (Tm.meta finalVar) env
   return finalVar
 
@@ -87,8 +87,8 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
     iType_' ii g (e1 :$: e2)
       =     do
                 fnType <- iType_ ii g e1
-                piArg <- freshType
-                piBody <- freshType --TODO star to star?
+                piArg <- freshType g
+                piBody <- freshType g --TODO star to star?
                 unifySets (fnType) (Tm.PI piArg piBody) g
 
                 --Ensure that the argument has the proper type
@@ -196,10 +196,10 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
 
 
     cType_' ii g (Lam_ e) fnTy = do
-        argTy <- freshType
+        argTy <- freshType g
         --Our return type should be a function, from input type to set
-        returnTyFn <- fresh (argTy Tm.--> conStar)
-        returnTy <- freshType --TODO constrain this!!
+        returnTyFn <- fresh g (argTy Tm.--> conStar)
+        returnTy <- freshType g --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
         let newEnv = addType argTy g
         let argName = localName ii 0 --TODO ii or 0?
@@ -221,14 +221,14 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
 
     cType_' ii g (Nil_ a) ty =
       do
-          bVal <- freshType
+          bVal <- freshType g
           unifySets ty (mkVec bVal Tm.Zero) g
           cType_ ii g a conStar
           aVal <- evaluate a g
           unifySets aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
-      do  bVal <- freshType
-          k <- fresh Tm.Nat
+      do  bVal <- freshType g
+          k <- fresh g Tm.Nat
           --Trickery to get a Type_ to a ConType
           let kVal = Tm.Succ k
           unifySets ty (mkVec bVal kVal) g
@@ -249,9 +249,9 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
           cType_ ii g xs (mkVec bVal k)
 
     cType_' ii g (Refl_ a z) ty =
-      do  bVal <- freshType
-          xVal <- fresh bVal
-          yVal <- fresh bVal
+      do  bVal <- freshType g
+          xVal <- fresh g bVal
+          yVal <- fresh g bVal
           unifySets ty (mkEq bVal xVal yVal) g
           --Check that our type argument has kind *
           cType_ ii g a conStar

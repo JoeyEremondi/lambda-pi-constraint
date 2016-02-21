@@ -388,8 +388,8 @@ maybeHead (h:_) = Just h
   }-}
 
 
-fresh :: Tm.VAL -> ConstraintM Tm.VAL
-fresh tp = do
+fresh :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
+fresh env tp = do
     ourNom <- freshNom "α_"
     let ourEntry = UC.E ourNom tp UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
@@ -429,7 +429,7 @@ forAllUnify quantVar quantType v1 v2 tp env = do
 -}
 
 
-freshType = fresh Tm.SET
+freshType env = fresh env Tm.SET
 
 type ConType = Tm.VAL
 
