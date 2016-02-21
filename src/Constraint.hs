@@ -39,10 +39,27 @@ type ConstrContext = [(Common.Name, Tm.VAL)]
 
 data WholeEnv =
   WholeEnv
-  { valueEnv     :: [(Common.Name, Tm.VAL)]
-  , typeEnv :: [(Common.Name, Tm.VAL)]
+  { valueEnv     :: [Tm.VAL]
+  , typeEnv :: [Tm.VAL]
+  , globalValues :: [(String, Tm.VAL)]
+  , globalTypes :: [(String, Tm.VAL)]
   }
 
+typeLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
+typeLookup (Common.Global s) env = List.lookup s (globalTypes env)
+typeLookup (Common.Local i) env =
+  if (List.length (typeEnv env) >= i)
+  then Nothing
+  else
+    Just $ typeEnv env List.!! i
+
+valueLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
+valueLookup (Common.Global s) env = List.lookup s (globalValues env)
+valueLookup (Common.Local i) env =
+  if (List.length (valueEnv env) >= i)
+  then Nothing
+  else
+    Just $ valueEnv env List.!! i
 
 data ConstrainState =
   ConstrainState
@@ -51,10 +68,10 @@ data ConstrainState =
   }
 
 
-addValue :: (Common.Name, Tm.VAL) -> WholeEnv -> WholeEnv
+addValue :: (Tm.VAL) -> WholeEnv -> WholeEnv
 addValue x env = env {valueEnv = x : valueEnv env }
 
-addType :: (Common.Name, Tm.VAL) -> WholeEnv -> WholeEnv
+addType :: (Tm.VAL) -> WholeEnv -> WholeEnv
 addType x env = env {typeEnv = x : typeEnv env }
 
 solveConstraintM :: ConstraintM Tm.Nom -> Either String Tm.VAL
@@ -78,7 +95,7 @@ cToUnifForm ii env (Common.L _ tm) =
         let
           newNom = LN.s2n ("lamVar" ++ show ii)
           --(globals, boundVars) = env
-          newEnv = addType (Common.Local ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
+          newEnv = addType (Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
           retBody = cToUnifForm (ii + 1) newEnv ctm
         in
           Tm.L $ LN.bind newNom retBody
@@ -109,6 +126,7 @@ listLookup l i =
   else l List.!! i
 
 --The name for a local variable i at depth ii
+localName :: Int -> Int -> Tm.Nom
 localName ii i =
   let
     ourIndex = (ii - i)
@@ -138,7 +156,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
           localVal = Tm.var $ localName ii 0
           sVal = (cToUnifForm ii env s)
           --Our argument in t function has type S
-          newEnv = addType (Common.Local ii, sVal) env
+          newEnv = addType (sVal) env
           tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
         in Tm.PI sVal (cToUnifForm (ii+1) newEnv tFn)
           --mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
@@ -150,9 +168,9 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
 
       --If we reach this point, then our neutral term isn't embedded in an application
       Common.Free_ fv ->
-        case List.lookup fv (valueEnv env) of
-          Just x -> x
-          Nothing ->
+        case valueLookup fv env of
+        Just x -> x
+        Nothing ->
             case fv of
               Common.Global nm ->
                 Tm.vv nm

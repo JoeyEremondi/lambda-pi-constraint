@@ -31,11 +31,20 @@ import Debug.Trace (trace)
 
 mapSnd f (a,b) = (a, f b)
 
+splitContext :: [(Name, a)] -> ([(String, a)], [a])
+splitContext entries = helper entries [] []
+  where
+    helper [] globals locals = (globals, locals)
+    helper ( (Global s, x) : rest) globals locals =
+      helper rest ((s,x) : globals) locals
+    helper ((Local i, x) : rest) globals locals =
+      helper rest globals (x : locals)
+
 checker :: TypeChecker
 checker (nameEnv, context) term = do
-  let newContext = map (mapSnd $ vToUnifForm 0) context
-  let translatedEnv = map (mapSnd $ vToUnifForm 0) nameEnv
-  let finalVar =  getConstraints (WholeEnv translatedEnv newContext) term
+  let (typeGlobals, typeLocals) = splitContext $ map (mapSnd $ vToUnifForm 0) context
+  let (valGlobals, valLocals) = splitContext $ map (mapSnd $ vToUnifForm 0) nameEnv
+  let finalVar =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
   unifToValue <$> solveConstraintM finalVar
 
 
@@ -68,11 +77,11 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
               ty <- evaluate tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               forallVar argNom ty $ do
-                cType_  (ii + 1) (addType (Local ii, ty)  g)
+                cType_  (ii + 1) (addType (ty)  g)
                         (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
               return conStar
     iType_' ii g (Free_ x)
-      =     case lookup x (typeEnv g) of
+      =     case typeLookup x g of
               Just ty        ->  return ty
               Nothing        ->  unknownIdent (render (iPrint_ 0 0 (builtin $ Free_ x)))
     iType_' ii g (e1 :$: e2)
@@ -192,7 +201,7 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
         returnTyFn <- fresh (argTy Tm.--> conStar)
         returnTy <- freshType --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
-        let newEnv = addType (Local ii, argTy ) g
+        let newEnv = addType argTy g
         let argName = localName ii 0 --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
         forallVar argName argTy $ do
