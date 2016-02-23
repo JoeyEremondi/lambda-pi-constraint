@@ -60,7 +60,7 @@ valueLookup (Common.Local i) env =
 data ConstrainState =
   ConstrainState
   { intStore :: [Int]
-  , quantParams :: [(Tm.Nom, Tm.VAL)]
+  --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }
 
 
@@ -72,7 +72,7 @@ addType x env = env {typeEnv = x : typeEnv env }
 
 solveConstraintM :: ConstraintM Tm.Nom -> Either String Tm.VAL
 solveConstraintM cm = do
-    let ((nom, constraints), _) = runIdentity $ runStateT (runWriterT cm) (ConstrainState [1..] [])
+    let ((nom, constraints), _) = runIdentity $ runStateT (runWriterT cm) (ConstrainState [1..] )
     (_, context) <- PUtest.solveEntries $ map conEntry constraints
     return $ evalState (UC.lookupMeta nom) context
 
@@ -409,7 +409,7 @@ unify :: Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
 unify v1 v2 tp env = do
     probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
     --TODO right to reverse?
-    currentQuants <- reverse <$> (lift $ quantParams <$> get)
+    let currentQuants = typeEnv env
     let newCon = wrapProblemForalls currentQuants
           $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
@@ -417,10 +417,10 @@ unify v1 v2 tp env = do
 
 unifySets v1 v2 env = unify v1 v2 Tm.SET env
 
-wrapProblemForalls :: [(Tm.Nom, Tm.VAL)] -> UC.Problem -> UC.Problem
+wrapProblemForalls :: [(Int, Tm.VAL)] -> UC.Problem -> UC.Problem
 wrapProblemForalls [] prob = prob
-wrapProblemForalls ((nm, tp) : rest) prob =
-  UC.All (UC.P tp) $ LN.bind nm $ wrapProblemForalls rest prob
+wrapProblemForalls ((i, tp) : rest) prob =
+  UC.All (UC.P tp) $ LN.bind (localName i 0) $ wrapProblemForalls rest prob
 
 {-
 forAllUnify
@@ -448,6 +448,7 @@ type ConstraintM a = WriterT [Constraint] (StateT ConstrainState Identity) a
 
 --Operations in our monad:
 
+{-
 --Do the given computation with the given name added to our quantifier list
 --Then remove it from the list when we're done
 forallVar :: Tm.Nom -> Tm.VAL -> (ConstraintM a) -> ConstraintM a
@@ -456,6 +457,7 @@ forallVar nm tp cm = do
   result <- cm
   modify (\st -> st {quantParams = tail $ quantParams st})
   return result
+-}
 
 freshInt :: ConstraintM Int
 freshInt = do

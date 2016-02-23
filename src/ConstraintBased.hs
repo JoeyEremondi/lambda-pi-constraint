@@ -83,8 +83,8 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
               let argNom = localName (ii+1) 0
               ty <- evaluate tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
-              forallVar argNom ty $ do
-                cType_  (ii + 1) (addType (ii, ty)  g)
+              let newEnv = (addType (ii, ty)  g)
+              cType_  (ii + 1) newEnv
                         (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
               return conStar
     iType_' ii g (Free_ x)
@@ -205,13 +205,14 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
     cType_' ii g (Lam_ e) fnTy = do
         argTy <- freshType g
         --Our return type should be a function, from input type to set
-        returnTyFn <- fresh g (argTy Tm.--> conStar)
+        let newEnv = addType (ii, argTy ) g
+        returnTyFn <- fresh newEnv (argTy Tm.--> conStar)
         returnTy <- freshType g --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
-        let newEnv = addType (ii, argTy ) g
         let argName = localName (ii+1) 0 --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
-        forallVar argName argTy $ do
+        --forallVar argName argTy $ do
+        id $ do
           unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
           unifySets returnTy (returnTyFn `applyPi` argVal) g --TODO is argVal good?
         --let returnTy = returnTyFn `applyPi` argVal
