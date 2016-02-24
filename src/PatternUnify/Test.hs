@@ -20,6 +20,8 @@ import PatternUnify.Check
 
 import Debug.Trace (trace)
 
+import Data.List (intercalate)
+
 
 -- The |test| function executes the constraint solving algorithm on the
 -- given metacontext.
@@ -38,7 +40,7 @@ prettyString t = render $ runPretty $ pretty t
 
 solveEntries :: [Entry] -> Either Err ((), Context)
 solveEntries !es  =
-  let
+  let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es))
     result = trace ("Initial context:\n" ++ initialContextString ) $
       runContextual (B0, map Right es) (initialise >> ambulando [] [] >> validate (const True))
@@ -52,8 +54,11 @@ solveEntries !es  =
 
 
 runTest :: (ProblemState -> Bool) -> [Entry] -> IO ()
-runTest q es = do  putStrLn $ "Initial context:\n" ++
+runTest q es = do
+                   putStrLn $ "Raw context:\n" ++ show (map show es)
+                   putStrLn $ "Initial context:\n" ++
                                 render (runPretty (prettyEntries es))
+
                    let r = runContextual (B0, map Right es)
                                        (initialise >> ambulando [] [] >> validate q)
                    case r of

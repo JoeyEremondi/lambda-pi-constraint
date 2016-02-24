@@ -206,11 +206,13 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
         argTy <- freshType g
         --Our return type should be a function, from input type to set
         let newEnv = addType (ii, argTy ) g
-        returnTyFn <- fresh newEnv (argTy Tm.--> conStar)
+        --returnTyFn <- fresh newEnv (argTy Tm.--> conStar)
+        returnTyBody <- freshType g --newEnv
         returnTy <- freshType g --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
         let argName = localName (ii+1) 0 --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
+        let returnTyFn = Tm.lam argName returnTyBody
         --forallVar argName argTy $ do
         id $ do
           unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this

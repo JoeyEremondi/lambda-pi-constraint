@@ -48,9 +48,11 @@ instance Occurs Equation where
     frees isMeta (EQN _S s _T t) = frees isMeta [_S, s, _T, t]
 
 instance Pretty Equation where
-  pretty (EQN _S s _T t) =  f <$> (pretty _S) <*> (pretty s) <*> (pretty _T) <*> (pretty t)
+  pretty (EQN _S s _T t) =  f <$> (pretty _S) <*> (pretty s) <*> (pretty _T) <*> (prettyVal t)
       where f _S' s' _T' t' = parens (s' <+> colon <+> _S') <+>
-                                  text "==" <+> parens (t' <+> colon <+> _T')
+                                  text "===" <+> parens (t' <+> colon <+> _T')
+            prettyVal :: (Applicative m, LFresh m, MonadReader Size m) => VAL -> m Doc
+            prettyVal v = pretty v
 
 data Problem  =  Unify Equation
               |  All Param (Bind Nom Problem)
