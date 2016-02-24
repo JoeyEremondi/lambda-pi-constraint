@@ -387,15 +387,21 @@ maybeHead (h:_) = Just h
 fresh :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh env tp = do
     ourNom <- freshNom "α_"
-    let lambdaType = trace ("Lambda type with env " ++ show (typeEnv env) ) $ foldr (Tm.-->) tp (map snd $ typeEnv env) --TODO right order?
-    let ii = trace ("Made fresh lambda type " ++ PUtest.prettyString lambdaType)
-          $ length (typeEnv env)
-    let appVal = foldl (Tm.$$) (Tm.meta ourNom) $
-          map (\i -> Tm.var $ localName ii i) (reverse [0 .. ii-1])
-    let ourEntry = trace ("Made fresh meta app " ++ PUtest.prettyString appVal ++"\nii" ++ show ii)
+    let currentQuants = reverse $ typeEnv env
+    let lambdaType =
+          foldr (\(i, t) arrowSoFar -> Tm._Pi (localName i 0) t arrowSoFar)
+            tp (currentQuants) --TODO right order?
+    --let ii = trace ("Made fresh lambda type " ++ PUtest.prettyString lambdaType)
+    --      $ length (typeEnv env)
+    let ourHead =
+          trace ("Lambda type " ++ PUtest.prettyString lambdaType ++ " with env " ++ show currentQuants)
+            $ Tm.Meta ourNom
+    let ourElims = map (\(i,_) -> Tm.A $ Tm.var $ localName i 0) currentQuants
+    let ourNeutral = Tm.N ourHead ourElims
+    let ourEntry = trace ("Made fresh meta app " ++ PUtest.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants)
           $ UC.E ourNom lambdaType UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
-    return appVal
+    return ourNeutral
 
 freshTopLevel ::Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
@@ -409,7 +415,7 @@ unify :: Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
 unify v1 v2 tp env = do
     probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
     --TODO right to reverse?
-    let currentQuants = typeEnv env
+    let currentQuants = reverse $ typeEnv env
     let newCon = wrapProblemForalls currentQuants
           $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
