@@ -511,12 +511,6 @@ mkEq = Tm.Eq
 --conTyFn f = error "TODO conTyFn"
 
 
-applyVal :: ConType -> ConType -> ConType
-applyVal = (Tm.$$)
-
-
-applyPi :: ConTyFn -> ConType -> ConType
-applyPi = applyVal
 
 --mkPi :: ConType -> ConTyFn -> ConType
 --mkPi = Tm._PI "piVar"

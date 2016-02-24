@@ -106,7 +106,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
 
                 --Our resulting type is the application of our arg type into the
                 --body of the pi type
-                return $ applyPi piBody argVal
+                return $ piBody Tm.$$ argVal
 
     iType_' ii g Nat_                  =  return conStar
     iType_' ii g (NatElim_ m mz ms n)  =
@@ -114,18 +114,18 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
           --evaluate $ our param m
           mVal <- evaluate m g
           --Check that mz has type (m 0)
-          cType_ ii g mz (mVal `applyVal` Tm.Zero)
+          cType_ ii g mz (mVal Tm.$$ Tm.Zero)
           --Check that ms has type ( (k: N) -> m k -> m (S k) )
           let recPiType =
-                mkPiFn Tm.Nat $ \k -> mkPiFn (mVal `applyVal` k)
-                  ( \_ -> mVal `applyVal` (Tm.Succ k) )
+                mkPiFn Tm.Nat $ \k -> mkPiFn (mVal Tm.$$ k)
+                  ( \_ -> mVal Tm.$$ (Tm.Succ k) )
           cType_ ii g ms recPiType
           --Make sure the number param is a nat
           cType_ ii g n Tm.Nat
 
           --We infer that our final expression has type (m n)
           nVal <- evaluate n g
-          return $ mVal `applyVal` nVal
+          return $ mVal Tm.$$ nVal
 
     iType_' ii g (Vec_ a n) =
       do  cType_ ii g a  conStar
@@ -138,18 +138,18 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
           cType_ ii g m
             (  mkPiFn Tm.Nat ( \n -> mkPiFn  (Tm.Vec aVal n) ( \ _ -> conStar)))
           mVal <- evaluate m g
-          cType_ ii g mn (foldl applyVal mVal [ Tm.Zero, Tm.VNil aVal ])
+          cType_ ii g mn (foldl (Tm.$$) mVal [ Tm.Zero, Tm.VNil aVal ])
           cType_ ii g mc
             (  mkPiFn Tm.Nat ( \ n ->
                mkPiFn aVal ( \ y ->
                mkPiFn ( Tm.Vec aVal n) ( \ ys ->
-               mkPiFn (foldl applyVal mVal  [n, ys]) ( \ _ ->
-               (foldl applyVal mVal [(Tm.Succ n), Tm.VCons aVal n y ys]))))))
+               mkPiFn (foldl (Tm.$$) mVal  [n, ys]) ( \ _ ->
+               (foldl (Tm.$$) mVal [(Tm.Succ n), Tm.VCons aVal n y ys]))))))
           cType_ ii g n $ Tm.Nat
           nVal <- evaluate n g
           cType_ ii g vs ((Tm.Vec aVal nVal ))
           vsVal <- evaluate vs g
-          return (foldl applyVal mVal [nVal, vsVal])
+          return (foldl (Tm.$$) mVal [nVal, vsVal])
 
 
     iType_' i g (Eq_ a x y) =
@@ -172,7 +172,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
           mVal <- evaluate m g
           cType_ i g mr
             (mkPiFn aVal ( \ x ->
-             ( foldl applyVal mVal $ [x, x] )))
+             ( foldl (Tm.$$) mVal $ [x, x] )))
           cType_ i g x aVal
           xVal <- evaluate x g
           cType_ i g y aVal
@@ -183,7 +183,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
               ((Tm.Eq yVal xVal aVal))
           cType_ i g eq eqC
           eqVal <- evaluate eq g
-          return (foldl applyVal mVal [xVal, yVal])
+          return (foldl (Tm.$$) mVal [xVal, yVal])
 
     iType_' ii g (Bound_ vi) = error "TODO why never bound?"
       --return $ (snd $ snd g `listLookup` (ii - (vi+1) ) ) --TODO is this right?
@@ -214,7 +214,7 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
         --forallVar argName argTy $ do
         id $ do
           unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
-          unifySets returnTy (returnTyFn `applyPi` argVal) g --TODO is argVal good?
+          unifySets returnTy (returnTyFn Tm.$$ argVal) g --TODO is argVal good?
         --let returnTy = returnTyFn `applyPi` argVal
           let subbedBody = cSubst_ 0 arg e
           cType_  (ii + 1) newEnv subbedBody returnTy
