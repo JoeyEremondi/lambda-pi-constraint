@@ -80,12 +80,12 @@ instance Subst VAL Head
 instance Subst VAL Elim
 
 instance Pretty VAL where
-    pretty (PI _S _T@(L b)) =
+    pretty (PI _S (L b)) =
       lunbind b $ \ (x, _T) ->
       wrapDoc PiSize $
       if x `occursIn` _T --TODO put back?
-      then (\ {-x'-} _S' _T' -> text "Pi" <+> parens ({-x' <+> colon <+>-} _S') <+> _T')
-           <$> {-prettyHigh x <*>-} prettyHigh _S <*> prettyAt ArgSize _T
+      then (\ x' _S' _T' -> text "Pi" <+> parens (x' <+> colon <+> _S') <+> _T')
+           <$> prettyHigh x <*> prettyHigh _S <*> prettyAt ArgSize _T
       else between (text "->") <$> prettyAt AppSize _S <*> prettyAt PiSize _T
 -- >
     pretty (SIG _S (L b)) =
