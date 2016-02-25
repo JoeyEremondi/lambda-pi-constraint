@@ -68,6 +68,13 @@ iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
 iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
   iType_' iiGlobal g it
   where
+    iType_' ii g m@(Meta_ s) = do
+      metaType <- freshType g
+      let ourNom = metaNom s
+      --Add metavariable to our context
+      declareMeta ourNom metaType
+      return metaType
+
     iType_' ii g (Ann_ e tyt )
       =
         do
@@ -80,7 +87,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
-              let argNom = localName (ii+1) 0
+              let argNom = localName (ii+1)
               ty <- evaluate tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               let newEnv = (addType (ii, ty)  g)
@@ -95,8 +102,8 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
       =     do
                 fnType <- iType_ ii g e1
                 piArg <- freshType g
-                piBody <- freshType g --TODO star to star?
-                unifySets (fnType) (Tm.PI piArg piBody) g
+                piBodyFn <- fresh g (piArg Tm.--> Tm.SET) --TODO star to star?
+                unifySets (fnType) (Tm.PI piArg piBodyFn) g
 
                 --Ensure that the argument has the proper type
                 cType_ ii g e2 piArg
@@ -106,7 +113,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
 
                 --Our resulting type is the application of our arg type into the
                 --body of the pi type
-                return $ piBody Tm.$$ argVal
+                return $ piBodyFn Tm.$$ argVal
 
     iType_' ii g Nat_                  =  return conStar
     iType_' ii g (NatElim_ m mz ms n)  =
@@ -206,12 +213,12 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
       let newEnv = addType (ii, argTy ) g
           arg = builtin $ Free_ (Local ii)
           subbedBody = cSubst_ 0 arg body
-          argVal = Tm.var $ localName (ii) 0
+          argVal = Tm.var $ localName (ii)
       cType_  (ii + 1) newEnv subbedBody (returnTy Tm.$$ argVal)
     --TODO is this okay? Fns should always be fully annotated?
 
     --Special case when we have metavariable in type
-    cType_' ii g (Lam_ body) fnTy = do
+    cType_' ii g (Lam_ body) fnTy = error "BadCase" $ do
         argTy <- freshType g
         --Our return type should be a function, from input type to set
         let newEnv = trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $ addType (ii, argTy ) g
@@ -219,7 +226,7 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
         --returnTyBody <- freshType g --newEnv
         returnTy <- freshType g --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
-        let argName = localName (ii) 0 --TODO ii or 0?
+        let argName = localName (ii) --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
         --let returnTyFn = Tm.lam argName returnTyBody
         --forallVar argName argTy $ do

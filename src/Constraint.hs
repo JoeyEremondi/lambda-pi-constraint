@@ -89,7 +89,7 @@ cToUnifForm ii env (Common.L _ tm) =
         iToUnifForm ii env itm
       Common.Lam_ ctm ->
         let
-          newNom = localName (ii+1) 0 --LN.s2n ("lamVar" ++ show ii)
+          newNom = localName (ii+1) --LN.s2n ("lamVar" ++ show ii)
           --(globals, boundVars) = env
           newEnv = addType (ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
           retBody = cToUnifForm (ii + 1) newEnv ctm
@@ -122,9 +122,9 @@ listLookup l i =
   else l List.!! i
 
 --The name for a local variable i at depth ii
-localName :: Int -> Int -> Tm.Nom
-localName ii i =
-  LN.string2Name $ case (ii - i) of
+localName :: Int -> Tm.Nom
+localName ii =
+  LN.string2Name $ case ii of
       0 -> "x"
       1 -> "y"
       2 -> "z"
@@ -137,6 +137,8 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
    result =
     case tm of
       --TODO look at type during eval?
+      Common.Meta_ nm ->
+        Tm.meta $ LN.string2Name nm
       Common.Ann_ val tp ->
         cToUnifForm ii env val
 
@@ -146,7 +148,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       Common.Pi_ s t@(Common.L tReg _) ->
         let
            --(fst env, (Common.Local ii, x) : snd env)
-          freeNom =  localName (ii+1) 0
+          freeNom =  localName (ii+1)
           localVal = Tm.var freeNom
           sVal = (cToUnifForm ii env s)
           --Our argument in t function has type S
@@ -158,7 +160,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
 
       Common.Bound_ i -> --trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
         --snd $ (typeEnv env `listLookup` (ii - i ) )
-        Tm.var $ localName ii i --Local name, just get the corresponding Nom
+        Tm.var $ localName (ii - i) --Local name, just get the corresponding Nom
         --Tm.var $ deBrToNom ii i
 
       --If we reach this point, then our neutral term isn't embedded in an application
@@ -170,7 +172,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
               Common.Global nm ->
                 Tm.vv nm
               Common.Local i ->
-                Tm.var $ localName ii i --Take our current depth, minus deBruijn index
+                Tm.var $ localName i --Take our current depth, minus deBruijn index
               Common.Quote i ->
                 error "Shouldn't come across quoted during checking"
 
@@ -406,6 +408,15 @@ fresh env tp = do
     addConstr $ Constraint Common.startRegion ourEntry
     return $ Tm.meta ourNom
 
+declareMeta :: Tm.Nom -> Tm.VAL -> ConstraintM ()
+declareMeta ourNom tp = do
+  let ourEntry =  UC.E ourNom tp UC.HOLE
+  addConstr $ Constraint Common.startRegion ourEntry
+
+
+metaNom :: String -> Tm.Nom
+metaNom = LN.string2Name
+
 freshTopLevel ::Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
     ourNom <- freshNom "topLevel"
@@ -429,7 +440,7 @@ unifySets v1 v2 env = unify v1 v2 Tm.SET env
 wrapProblemForalls :: [(Int, Tm.VAL)] -> UC.Problem -> UC.Problem
 wrapProblemForalls [] prob = prob
 wrapProblemForalls ((i, tp) : rest) prob =
-  UC.All (UC.P tp) $ LN.bind (localName i 0) $ wrapProblemForalls rest prob
+  UC.All (UC.P tp) $ LN.bind (localName i) $ wrapProblemForalls rest prob
 
 {-
 forAllUnify
