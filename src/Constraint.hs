@@ -403,6 +403,7 @@ fresh env tp = do
     addConstr $ Constraint Common.startRegion ourEntry
     --return ourNeutral-}
     let ourEntry =  UC.E ourNom tp UC.HOLE
+    addConstr $ Constraint Common.startRegion ourEntry
     return $ Tm.meta ourNom
 
 freshTopLevel ::Tm.VAL -> ConstraintM Tm.Nom

@@ -80,12 +80,12 @@ instance Subst VAL Head
 instance Subst VAL Elim
 
 instance Pretty VAL where
-    pretty (PI _S (L b)) =
-      lunbind b $ \ (x, _T) ->
+    pretty (PI _S _T {-(L b)-}) =
+      --lunbind b $ \ (x, _T) ->
       wrapDoc PiSize $
-      if x `occursIn` _T --TODO put back?
-      then (\ x' _S' _T' -> text "Pii" <+> parens (x' <+> colon <+> _S') <+> _T')
-           <$> prettyHigh x <*> prettyHigh _S <*> prettyAt ArgSize _T
+      if True--if x `occursIn` _T --TODO put back?
+      then (\ {-x'-} _S' _T' -> text "Pi" <+> parens ({-x' <+> colon <+>-} _S') <+> _T')
+           <$> {-prettyHigh x <*>-} prettyHigh _S <*> prettyAt ArgSize _T
       else between (text "->") <$> prettyAt AppSize _S <*> prettyAt PiSize _T
 -- >
     pretty (SIG _S (L b)) =
@@ -99,7 +99,7 @@ instance Pretty VAL where
     pretty (L b) = wrapDoc LamSize $ (text "\\" <+>) <$> prettyLam b
       where
         prettyLam u = lunbind u $ \ (x, t) -> do
-            v <- if x `occursIn` t then prettyLow x else return (text "_")
+            v <- if True {-x `occursIn` t-} then prettyLow x else return (text "_")
             case t of
                 L b'  -> (v <+>) <$> prettyLam b'
                 _     -> (\ t' -> v <+> text "." <+> t') <$> prettyAt LamSize t
