@@ -1,5 +1,5 @@
 -- addition of natural numbers
-let id    = (\ a x -> x) :: forall (a :: *) . a ->  a -> a
+let id    = (\ x y -> y) :: forall (x :: *) .  x -> x
 
 --let intId = (\x -> x) :: Nat -> Nat
 

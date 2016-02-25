@@ -65,7 +65,7 @@ iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
-iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
+iType_ iiGlobal g (L region it) = trace ("ITYPE" ++ show it) $
   iType_' iiGlobal g it
   where
     iType_' ii g m@(Meta_ s) = do
@@ -197,7 +197,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
 
 
 cType_ :: Int -> WholeEnv -> CTerm_ -> ConType -> ConstraintM ()
-cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
+cType_ iiGlobal g (L region ct) = trace ("CTYPE" ++ show ct) $
   cType_' iiGlobal g ct
   where
     cType_' ii g (Inf_ e) tyAnnot
@@ -206,7 +206,8 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
               tyInferred <- iType_ ii g e
               --Ensure that the annotation type and our inferred type unify
               --We have to evaluate $ our normal form
-              unifySets region tyAnnot tyInferred g
+              trace ("INF " ++ show e ++ "\nunifying " ++ show [tyAnnot, tyInferred] ++ "\nenv " ++ show g) $
+                unifySets region tyAnnot tyInferred g
     {-
     --Default: can't fully infer function types? --TODO
     cType_' ii g (Lam_ body) (Tm.PI argTy returnTy) = do
