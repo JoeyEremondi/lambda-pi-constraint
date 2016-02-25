@@ -201,7 +201,16 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
               --We have to evaluate $ our normal form
               unifySets tyAnnot tyInferred g
 
+    --Default: can't fully infer function types? --TODO
+    cType_' ii g (Lam_ body) (Tm.PI argTy returnTy) = do
+      let newEnv = addType (ii, argTy ) g
+          arg = builtin $ Free_ (Local ii)
+          subbedBody = cSubst_ 0 arg body
+          argVal = Tm.var $ localName (ii) 0
+      cType_  (ii + 1) newEnv subbedBody (returnTy Tm.$$ argVal)
+    --TODO is this okay? Fns should always be fully annotated?
 
+    --Special case when we have metavariable in type
     cType_' ii g (Lam_ body) fnTy = do
         argTy <- freshType g
         --Our return type should be a function, from input type to set
