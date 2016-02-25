@@ -389,24 +389,24 @@ maybeHead (h:_) = Just h
 fresh :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh env tp = do
     ourNom <- freshNom "α_"
-    {-let currentQuants = reverse $ typeEnv env
+    let currentQuants = reverse $ typeEnv env
     let lambdaType =
-          foldr (\(i, t) arrowSoFar -> Tm._Pi (localName i 0) t arrowSoFar)
+          foldr (\(i, t) arrowSoFar -> Tm._Pi (localName i) t arrowSoFar)
             tp (currentQuants) --TODO right order?
     --let ii = trace ("Made fresh lambda type " ++ PUtest.prettyString lambdaType)
     --      $ length (typeEnv env)
     let ourHead =
           trace ("Lambda type " ++ PUtest.prettyString lambdaType ++ " with env " ++ show currentQuants)
             $ Tm.Meta ourNom
-    let ourElims = map (\(i,_) -> Tm.A $ Tm.var $ localName i 0) currentQuants
+    let ourElims = map (\(i,_) -> Tm.A $ Tm.var $ localName i) currentQuants
     let ourNeutral = Tm.N ourHead ourElims
     let ourEntry = trace ("Made fresh meta app " ++ PUtest.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants)
           $ UC.E ourNom lambdaType UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
-    --return ourNeutral-}
-    let ourEntry =  UC.E ourNom tp UC.HOLE
-    addConstr $ Constraint Common.startRegion ourEntry
-    return $ Tm.meta ourNom
+    return ourNeutral
+    --let ourEntry =  UC.E ourNom tp UC.HOLE
+    --addConstr $ Constraint Common.startRegion ourEntry
+    --return $ Tm.meta ourNom
 
 declareMeta :: Tm.Nom -> Tm.VAL -> ConstraintM ()
 declareMeta ourNom tp = do
