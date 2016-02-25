@@ -58,7 +58,7 @@ getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
 getConstraints env term = do
   finalType <- iType0_ env term
   finalVar <- freshTopLevel Tm.SET
-  unifySets finalType (Tm.meta finalVar) env
+  unifySets startRegion finalType (Tm.meta finalVar) env
   return finalVar
 
 iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
@@ -103,7 +103,7 @@ iType_ iiGlobal g (L region it) = -- trace ("ITYPE" ++ show it) $
                 fnType <- iType_ ii g e1
                 piArg <- freshType g
                 piBodyFn <- fresh g (piArg Tm.--> Tm.SET) --TODO star to star?
-                unifySets (fnType) (Tm.PI piArg piBodyFn) g
+                unifySets region (fnType) (Tm.PI piArg piBodyFn) g
 
                 --Ensure that the argument has the proper type
                 cType_ ii g e2 piArg
@@ -206,7 +206,7 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
               tyInferred <- iType_ ii g e
               --Ensure that the annotation type and our inferred type unify
               --We have to evaluate $ our normal form
-              unifySets tyAnnot tyInferred g
+              unifySets region tyAnnot tyInferred g
     {-
     --Default: can't fully infer function types? --TODO
     cType_' ii g (Lam_ body) (Tm.PI argTy returnTy) = do
@@ -224,51 +224,47 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
         --Our return type should be a function, from input type to set
         let newEnv = trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $ addType (ii, argTy ) g
         returnTyFn <- fresh g (argTy Tm.--> conStar)
-        --returnTyBody <- freshType g --newEnv
-        returnTy <- freshType g --TODO constrain this!!
-        let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
+        let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii)
         let argName = localName (ii) --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
-        --let returnTyFn = Tm.lam argName returnTyBody
-        --forallVar argName argTy $ do
-        unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
-        unify  returnTyFn (Tm.lam argName returnTy) (argTy Tm.--> conStar) g --TODO is argVal good?
-        --let returnTy = returnTyFn `applyPi` argVal\
+        unifySets region fnTy (Tm.PI argTy returnTyFn)  g
+        returnTy <- freshType newEnv
+        unifySets region returnTy (returnTyFn Tm.$$ argVal) newEnv
+        --unify  returnTyFn (Tm.lam argName returnTy) (argTy Tm.--> conStar) g --TODO is argVal good?
         --Convert bound instances of our variable into free ones
         let subbedBody = cSubst_ 0 arg body
-        cType_  (ii + 1) newEnv subbedBody returnTy --(returnTyFn Tm.$$ argVal)
-        --TODO better name?
+        cType_  (ii + 1) newEnv subbedBody returnTy
 
 
 
-    cType_' ii g Zero_      ty  =  unifySets ty Tm.Nat g
+    cType_' ii g Zero_      ty  =  unifySets region ty Tm.Nat g
     cType_' ii g (Succ_ k)  ty  = do
-      unifySets ty Tm.Nat g
+      unifySets region ty Tm.Nat g
       cType_ ii g k Tm.Nat
 
     cType_' ii g (Nil_ a) ty =
       do
           bVal <- freshType g
-          unifySets ty (mkVec bVal Tm.Zero) g
+          unifySets region ty (mkVec bVal Tm.Zero) g
           cType_ ii g a conStar
           aVal <- evaluate a g
-          unifySets aVal bVal g
+          unifySets region aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
       do  bVal <- freshType g
           k <- fresh g Tm.Nat
           --Trickery to get a Type_ to a ConType
           let kVal = Tm.Succ k
-          unifySets ty (mkVec bVal kVal) g
+          unifySets region ty (mkVec bVal kVal) g
           cType_ ii g a conStar
 
           aVal <- evaluate a g
-          unifySets aVal bVal g
+          unifySets region aVal bVal g
 
           cType_ ii g n Tm.Nat
 
           --Make sure our numbers match
           nVal <- evaluate n g
-          unify nVal kVal Tm.Nat g
+          unify region nVal kVal Tm.Nat g
 
           --Make sure our new head has the right list type
           cType_ ii g x aVal
@@ -279,14 +275,14 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
       do  bVal <- freshType g
           xVal <- fresh g bVal
           yVal <- fresh g bVal
-          unifySets ty (mkEq bVal xVal yVal) g
+          unifySets region ty (mkEq bVal xVal yVal) g
           --Check that our type argument has kind *
           cType_ ii g a conStar
           --Get evaluation constraint for our type argument
           aVal <- evaluate a g
 
           --Check that our given type is the same as our inferred type --TODO is this right?
-          unifySets aVal bVal g
+          unifySets region aVal bVal g
 
           --Check that the value we're proving on has type A
           cType_ ii g z aVal
@@ -295,6 +291,6 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
           zVal <- evaluate z g
 
           --Show constraint that the type parameters must match that type
-          unify zVal xVal bVal g
-          unify zVal yVal bVal g
+          unify region zVal xVal bVal g
+          unify region zVal yVal bVal g
           --TODO something special for quoting

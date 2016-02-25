@@ -425,17 +425,17 @@ freshTopLevel tp = do
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNom
 
-unify :: Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
-unify v1 v2 tp env = do
+unify :: Common.Region -> Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
+unify reg v1 v2 tp env = do
     probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
     --TODO right to reverse?
     let currentQuants = reverse $ typeEnv env
     let newCon = wrapProblemForalls currentQuants
           $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
-    addConstr $ Constraint (Common.startRegion) ourEntry
+    addConstr $ Constraint reg  ourEntry
 
-unifySets v1 v2 env = unify v1 v2 Tm.SET env
+unifySets reg v1 v2 env = unify reg v1 v2 Tm.SET env
 
 wrapProblemForalls :: [(Int, Tm.VAL)] -> UC.Problem -> UC.Problem
 wrapProblemForalls [] prob = prob
@@ -496,7 +496,7 @@ freshNom hint = do
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
 addConstr c = -- trace ("Adding constraint " ++ show c) $
-  tell [c]
+  trace ("Adding constraint " ++ show c)$ tell [c]
 
 
 --metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
