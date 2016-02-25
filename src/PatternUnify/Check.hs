@@ -120,6 +120,11 @@ quote _T           (N h as)  = do  _S <- infer h
 
 quote SET Nat = return SET
 
+quote Nat Zero = return Nat
+quote Nat (Succ k) = do
+  quote Nat k
+  return Nat
+
 quote _T           t         = error $ "quote: type " ++ pp _T ++
                                        " does not accept " ++ pp t
 

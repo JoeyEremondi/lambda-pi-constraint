@@ -495,8 +495,8 @@ freshNom hint = do
 
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
-addConstr c = -- trace ("Adding constraint " ++ show c) $
-  trace ("Adding constraint " ++ show c)$ tell [c]
+addConstr c = tell [c]
+  --trace ("Adding constraint " ++ show c)$ tell [c]
 
 
 --metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
