@@ -76,6 +76,9 @@ check _T          (C c as)  =  fail $ "check: canonical inhabitant " ++ pp (C c 
 
 check _T          (L _)     =  fail $ "check: lambda cannot inhabit " ++ pp _T
 
+check (Nat) Zero = return ()
+check Nat (Succ k) = check Nat k
+
 infer :: Head -> Contextual Type
 infer (Var x w)  = lookupVar x w
 infer (Meta x)   = lookupMeta x

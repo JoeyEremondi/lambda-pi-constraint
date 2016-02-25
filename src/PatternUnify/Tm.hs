@@ -256,6 +256,9 @@ etaContract (PAIR s t) = case (etaContract s, etaContract t) of
                        as' == bs'  -> N x as'
     (s', t') -> PAIR s' t'
 etaContract (C c as) = C c (map etaContract as)
+etaContract Nat = Nat
+etaContract Zero = Zero
+etaContract (Succ k) = Succ (etaContract k)
 
 occursIn :: (Alpha t, Rep a) => Name a -> t -> Bool
 x `occursIn` t = x `elem` fv t

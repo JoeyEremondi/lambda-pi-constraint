@@ -74,7 +74,7 @@ solveConstraintM :: ConstraintM Tm.Nom -> Either String Tm.VAL
 solveConstraintM cm = do
     let ((nom, constraints), _) = runIdentity $ runStateT (runWriterT cm) (ConstrainState [1..] )
     (_, context) <- PUtest.solveEntries $ map conEntry constraints
-    return $ evalState (UC.lookupMeta nom) context
+    return $ evalState (UC.metaValue nom) context
 
 
 
@@ -495,8 +495,8 @@ freshNom hint = do
 
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
-addConstr c = tell [c]
-  --trace ("Adding constraint " ++ show c)$ tell [c]
+addConstr c = --tell [c]
+  trace ("Adding constraint " ++ show c)$ tell [c]
 
 
 --metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti

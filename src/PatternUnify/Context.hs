@@ -286,5 +286,14 @@ lookupMeta x = look =<< getL
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx
 
+metaValue :: MonadState Context m => Nom -> m VAL
+metaValue x = look =<< getL
+  where
+    look :: Monad m => ContextL -> m Type
+    look B0 = fail $ "lookupMeta: missing " ++ show x
+    look (cx  :< E y _ (DEFN val))  | x == y     = return val
+                           | otherwise  = look cx
+    look (cx  :< Prob _ _ _) = look cx
+
 
 $(derive[''Problem, ''ProblemState, ''Dec, ''Entry, ''Equation, ''Param, ''ProbId])
