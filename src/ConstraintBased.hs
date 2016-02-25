@@ -207,7 +207,7 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
               --Ensure that the annotation type and our inferred type unify
               --We have to evaluate $ our normal form
               unifySets tyAnnot tyInferred g
-
+    {-
     --Default: can't fully infer function types? --TODO
     cType_' ii g (Lam_ body) (Tm.PI argTy returnTy) = do
       let newEnv = addType (ii, argTy ) g
@@ -216,13 +216,14 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
           argVal = Tm.var $ localName (ii)
       cType_  (ii + 1) newEnv subbedBody (returnTy Tm.$$ argVal)
     --TODO is this okay? Fns should always be fully annotated?
+    -}
 
     --Special case when we have metavariable in type
-    cType_' ii g (Lam_ body) fnTy = error "BadCase" $ do
+    cType_' ii g (Lam_ body) fnTy = do
         argTy <- freshType g
         --Our return type should be a function, from input type to set
         let newEnv = trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $ addType (ii, argTy ) g
-        returnTyFn <- fresh newEnv (argTy Tm.--> conStar)
+        returnTyFn <- fresh g (argTy Tm.--> conStar)
         --returnTyBody <- freshType g --newEnv
         returnTy <- freshType g --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
