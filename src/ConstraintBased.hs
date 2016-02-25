@@ -202,24 +202,24 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
               unifySets tyAnnot tyInferred g
 
 
-    cType_' ii g (Lam_ e) fnTy = do
+    cType_' ii g (Lam_ body) fnTy = do
         argTy <- freshType g
         --Our return type should be a function, from input type to set
-        let newEnv = addType (ii, argTy ) g
-        --returnTyFn <- fresh newEnv (argTy Tm.--> conStar)
-        returnTyBody <- freshType g --newEnv
+        let newEnv = trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $ addType (ii, argTy ) g
+        returnTyFn <- fresh newEnv (argTy Tm.--> conStar)
+        --returnTyBody <- freshType g --newEnv
         returnTy <- freshType g --TODO constrain this!!
         let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii) --TODO free or bound?
-        let argName = localName (ii+1) 0 --TODO ii or 0?
+        let argName = localName (ii) 0 --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
-        let returnTyFn = Tm.lam argName returnTyBody
+        --let returnTyFn = Tm.lam argName returnTyBody
         --forallVar argName argTy $ do
-        id $ do
-          unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
-          unifySets returnTy (returnTyFn Tm.$$ argVal) g --TODO is argVal good?
-        --let returnTy = returnTyFn `applyPi` argVal
-          let subbedBody = cSubst_ 0 arg e
-          cType_  (ii + 1) newEnv subbedBody returnTy
+        unifySets fnTy (Tm.PI argTy returnTyFn)  g --TODO fix this
+        unify  returnTyFn (Tm.lam argName returnTy) (argTy Tm.--> conStar) g --TODO is argVal good?
+        --let returnTy = returnTyFn `applyPi` argVal\
+        --Convert bound instances of our variable into free ones
+        let subbedBody = cSubst_ 0 arg body
+        cType_  (ii + 1) newEnv subbedBody returnTy --(returnTyFn Tm.$$ argVal)
         --TODO better name?
 
 
