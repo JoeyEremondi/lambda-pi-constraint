@@ -51,7 +51,7 @@ getRegion = SourceRegion `fmap` getPosition
 
 putstrln x = putStrLn x
 
-simplyTyped = makeTokenParser (haskellStyle { identStart = letter <|> P.char '_',
+simplyTyped = makeTokenParser (haskellStyle { identStart = letter {-<|> P.char '_'-},
                                               reservedNames = ["let", "assume", "putStrLn"] })
 
 
@@ -175,6 +175,9 @@ parseITerm_ 3 e = getRegion >>= \pos ->
         reserved lambdaPi "*"
         return $ L pos Star_
   <|> do
+        reserved lambdaPi "_"
+        return $ L pos $ Meta_ (show pos)
+  <|> do
         n <- natural lambdaPi
         return (toNat_ pos n)
   <|> do
@@ -186,11 +189,12 @@ parseITerm_ 3 e = getRegion >>= \pos ->
 
 parseCTerm_ :: Int -> [String] -> LPParser CTerm_
 parseCTerm_ 0 e = getRegion >>= \pos ->
-  parseLam_ e
+      parseLam_ e
     <|> fmap (\x -> L pos (Inf_ x)) (parseITerm_ 0 e)
 parseCTerm_ p e =  getRegion >>= \pos ->
       try (parens lambdaPi (parseLam_ e))
   <|> fmap (L pos . Inf_) (parseITerm_ p e)
+
 
 parseLam_ :: [String] -> LPParser CTerm_
 parseLam_ e =
@@ -460,11 +464,12 @@ lpte =      [(Global "Zero", VNat_),
                                m `vapp_` n `vapp_` f))))))]
 -}
 
-lam_ x = L startRegion (Lam_ x)
-inf_ x = L startRegion (Inf_ x)
+lam_ = error "TODO lam_"
+inf_ = error "TODO inf_"
 
 lpve :: Ctx Value_
-lpve =  [] {-    [(Global "Zero", VZero_),
+lpve = [(Global "Nat", VNat_)]
+{-     [(Global "Zero", VZero_),
              (Global "Succ", VLam_ (\ n -> VSucc_ n)),
              (Global "Nat", VNat_),
              (Global "natElim", cEval_ (lam_ (lam_ (lam_ (lam_ (inf_ (NatElim_ (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0)))))))) ([], [])),
@@ -590,6 +595,8 @@ data ITerm_'
    |  Bound_  Int
    |  Free_  Name
    |  ITerm_ :$: CTerm_
+
+   | Meta_ String --Metavariables for implicits
 
    |  Nat_
    |  NatElim_ CTerm_ CTerm_ CTerm_ CTerm_
