@@ -443,6 +443,17 @@ prune ::  [Nom] -> VAL ->
               Contextual [(Nom, Type, VAL -> VAL)]
 prune xs SET           = return []
 prune xs Nat = return []
+prune xs (Vec a n) = (++) <$> prune xs a <*> prune xs n
+prune xs (Eq a x y) = (\x y z -> x ++ y ++ z) <$> prune xs a <*> prune xs x <*> prune xs y
+
+prune xs Zero = return []
+prune xs (Succ n) = prune xs n
+prune xs (VNil a) = prune xs a
+prune xs (VCons a h t n) =
+  (\x y z m -> x ++ y ++ z ++ m) <$> prune xs a <*> prune xs h <*> prune xs t <*> prune xs n
+
+prune xs (ERefl a x) = (++) <$> prune xs a <*> prune xs x
+
 prune xs (PI _S _T)    = (++) <$> prune xs _S  <*> prune xs _T
 prune xs (SIG _S _T)   = (++) <$> prune xs _S  <*> prune xs _T
 prune xs (PAIR s t)    = (++) <$> prune xs s   <*> prune xs t

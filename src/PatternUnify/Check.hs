@@ -163,7 +163,7 @@ quote SET (Eq a x y) = Eq <$> quote SET a <*> quote a x <*> quote a y
 
 quote Nat Zero = return Zero
 quote Nat (Succ k) = Succ <$> quote Nat k
-
+--TODO why not <->
 quote (Vec a _) (VNil b) =
   if (a == b)
   then VNil <$> quote a SET --TODO check equal?

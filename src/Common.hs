@@ -424,8 +424,7 @@ lp checker = I { iname = "lambda-Pi",
 
 --TODO put this back
 lpte :: Ctx Value_
-lpte = [(Global "Nat", VStar_)]
-{-
+--lpte = --[(Global "Nat", VStar_)]
 lpte =      [(Global "Zero", VNat_),
              (Global "Succ", VPi_ VNat_ (\ _ -> VNat_)),
              (Global "Nat", VStar_),
@@ -466,14 +465,14 @@ lpte =      [(Global "Zero", VNat_),
                                VPi_ (VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f -> VPi_ (m `vapp_` n `vapp_` f) (\ _ -> m `vapp_` (VSucc_ n) `vapp_` (VFSucc_ n f))))) (\ _ ->
                                VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f ->
                                m `vapp_` n `vapp_` f))))))]
--}
+
 
 lam_ = error "TODO lam_"
 inf_ = error "TODO inf_"
 
 lpve :: Ctx Value_
-lpve = [(Global "Nat", VNat_)]
-{-     [(Global "Zero", VZero_),
+lpve = -- [(Global "Nat", VNat_)]
+     [(Global "Zero", VZero_),
              (Global "Succ", VLam_ (\ n -> VSucc_ n)),
              (Global "Nat", VNat_),
              (Global "natElim", cEval_ (lam_ (lam_ (lam_ (lam_ (inf_ (NatElim_ (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0)))))))) ([], [])),
@@ -489,7 +488,7 @@ lpve = [(Global "Nat", VNat_)]
              (Global "FSucc", VLam_ (\ n -> VLam_ (\ f -> VFSucc_ n f))),
              (Global "Fin", VLam_ (\ n -> VFin_ n)),
              (Global "finElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (FinElim_ (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0))))))))) ([],[]))]
--}
+
 
 repLP :: TypeChecker -> Bool -> IO ()
 repLP checker b = readevalprint (lp checker) (b, [], lpve, lpte)
