@@ -54,7 +54,7 @@ typecheck _T t = (check _T t >> return True) `catchError`
                      (\ _ -> return False)
 
 check :: Type -> VAL -> Contextual ()
-check (SET) (Nat) = return ()
+
 check (C c as)    (C v bs)  =  do
                                tel <- canTy (c, as) v
                                checkTel tel bs
@@ -71,13 +71,49 @@ check _T          (N u as)  =  do
                                                   " of " ++ pp (N u as) ++
                                                   " is not " ++ pp _T
 
+check (SET) (Nat) = return ()
+check (SET) (Vec a n) = do
+  check SET a
+  check Nat n
+check (SET) (Eq a x y) = do
+  check SET a
+  check a x
+  check a y
+
+check (Nat) Zero = return ()
+check Nat (Succ k) = check Nat k
+
+check (Vec a Zero) (VNil a') = do
+  eq <- a <-> a'
+  check SET a
+  unless eq $ fail $ "check: Nil index " ++ (pp a') ++ " does not match type index " ++ (pp a)
+
+check (Vec a (Succ n)) (VCons a' h t n') = do
+  eq1 <- a <-> a'
+  eq2 <- n <-> n'
+  check SET a
+  check a h
+  check (Vec a n) t
+  check n Nat
+  unless eq1 $ fail $ "check: Cons type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
+  unless eq2 $ fail $ "check: Cons length index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+
+check (Eq a x1 x2) (ERefl a' x) = do
+  eq1 <- a <-> a'
+  eq2 <- x <-> x1
+  eq3 <- x <-> x2
+  check SET a
+  check a x
+  unless eq1 $ fail $ "check: Refl type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
+  unless eq2 $ fail $ "check: Refl value index " ++ (pp x) ++ " does not match index in type " ++ (pp x1)
+  unless eq3 $ fail $ "check: Refl value index " ++ (pp x) ++ " does not match second index in type " ++ (pp x2)
+
 check _T          (C c as)  =  fail $ "check: canonical inhabitant " ++ pp (C c as) ++
                                       " of non-canonical type " ++ pp _T
 
 check _T          (L _)     =  fail $ "check: lambda cannot inhabit " ++ pp _T
 
-check (Nat) Zero = return ()
-check Nat (Succ k) = check Nat k
+
 
 infer :: Head -> Contextual Type
 infer (Var x w)  = lookupVar x w
@@ -122,7 +158,7 @@ quote _T           (N h as)  = do  _S <- infer h
                                    quoteSpine _S (N h []) as
 
 quote SET Nat = return Nat
-quote SET (Vec a k) = Vec <$> quote SET a <*> quote Nat k
+quote SET (Vec a Zero) = Vec <$> quote SET a <*> quote Nat Zero
 quote SET (Eq a x y) = Eq <$> quote SET a <*> quote a x <*> quote a y
 
 quote Nat Zero = return Zero
