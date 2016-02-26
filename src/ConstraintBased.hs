@@ -12,7 +12,7 @@ import qualified Text.PrettyPrint.HughesPJ as PP
 import Text.ParserCombinators.Parsec hiding (State, parse)
 import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec.Language
-import Text.ParserCombinators.Parsec.Token
+import Text.ParserCombinators.Parsec.Token 
 
 import qualified Unbound.LocallyNameless as LN
 

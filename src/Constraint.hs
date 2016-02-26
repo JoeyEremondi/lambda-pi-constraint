@@ -37,6 +37,8 @@ import Control.Monad.Identity (runIdentity)
 
 import Debug.Trace (trace)
 
+import qualified Data.Map as Map
+
 type ConstrContext = [(Common.Name, Tm.VAL)]
 
 data WholeEnv =
@@ -63,6 +65,16 @@ data ConstrainState =
   --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }
 
+getRegionDict :: [Constraint] -> Map.Map Tm.Nom Common.Region
+getRegionDict = foldr foldFun Map.empty
+  where
+    foldFun cstr dictSoFar =
+      case conEntry cstr of
+        (UC.Prob (UC.ProbId ident) _ _) ->
+          Map.insert ident (conRegion cstr) dictSoFar
+        _ ->
+          dictSoFar
+
 
 addValue :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
 addValue x env = env {valueEnv = x : valueEnv env }
@@ -70,11 +82,17 @@ addValue x env = env {valueEnv = x : valueEnv env }
 addType :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
 addType x env = env {typeEnv = x : typeEnv env }
 
-solveConstraintM :: ConstraintM Tm.Nom -> Either String Tm.VAL
-solveConstraintM cm = do
-    let ((nom, constraints), _) = runIdentity $ runStateT (runWriterT cm) (ConstrainState [1..] )
-    (_, context) <- PUtest.solveEntries $ map conEntry constraints
-    return $ evalState (UC.metaValue nom) context
+solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] Tm.VAL
+solveConstraintM cm =
+  let
+    ((nom, constraints), _) = runIdentity $ runStateT (runWriterT cm) (ConstrainState [1..] )
+    regionDict = getRegionDict constraints
+    ret = do
+      (_, context) <- PUtest.solveEntries $ map conEntry constraints
+      return $ evalState (UC.metaValue nom) context
+  in case ret of
+      Left pairs -> Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) pairs
+      Right x -> Right x
 
 
 
