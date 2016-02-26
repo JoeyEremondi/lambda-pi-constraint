@@ -437,5 +437,10 @@ mcType a m = (pi_ Nat "n" (\ n ->
 
 vResultType m n xs = m $$ n $$ xs
 
+eqmType a = pi_ a "x" (\ x -> pi_ a "y" (\ y -> (Eq a x y) --> ( SET)))
+
+eqmrType a m = pi_ a "x" (\ x -> m $$ x $$ x $$ ERefl a x)
+
+eqResultType m x y eq = m $$ x $$ y $$ eq
 
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])
