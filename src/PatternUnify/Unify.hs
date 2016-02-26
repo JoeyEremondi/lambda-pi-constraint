@@ -290,6 +290,22 @@ matchSpine
      ] ++) <$>
       matchSpine (m $$ u) (u %% elim1) ds (m' $$ v) (v %% elim2) es
 
+matchSpine
+  (Vec a len) u (elim1@(VecElim b motive mn mc n) : ds)
+  (Vec a' len') v (elim2@(VecElim b' motive' mn' mc' n') : es) =
+    ([ EQN SET a SET a'
+     , EQN SET b SET b'
+     , EQN SET a' SET b'
+     , EQN Nat len Nat len'
+     , EQN Nat len Nat n
+     , EQN Nat len' Nat n'
+     , EQN (vmType b) motive (vmType b') motive'
+     , EQN (mnType b motive) mn (mnType b' motive') (mn')
+     , EQN (mcType b motive) mc (mcType b' motive') (mc')
+     , EQN Nat n Nat n'
+     ] ++) <$>
+      matchSpine (motive $$ u) (u %% elim1) ds (motive' $$ v) (v %% elim2) es
+
 matchSpine _ _ []  _ _ []  = return []
 matchSpine _ _ _   _ _ _   = throwError "spine mismatch"
 
