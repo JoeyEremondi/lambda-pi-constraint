@@ -334,7 +334,13 @@ unifToValue val = case val of
   Tm.Eq t1 t2 t3  ->
     Common.VEq_ (unifToValue t1) (unifToValue t2) (unifToValue t3)
 
-  _ -> error "TODO twins, etc. should never happen"
+  Tm.Zero ->
+    Common.VZero_
+
+  Tm.Succ k ->
+    Common.VSucc_ $ unifToValue k
+
+  _ -> error $ "TODO twins, etc. should never happen\n" ++ PUtest.prettyString val
 
 
 elimToValue (Tm.A v) = unifToValue v

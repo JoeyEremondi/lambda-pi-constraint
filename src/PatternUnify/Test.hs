@@ -42,7 +42,7 @@ solveEntries :: [Entry] -> Either Err ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es))
-    result = --trace ("Initial context:\n" ++ initialContextString ) $
+    result = trace ("Initial context:\n" ++ initialContextString ) $
       runContextual (B0, map Right es) (initialise >> ambulando [] [] >> validate (const True))
     resultString = case result of
       Left _ -> "ERROR"

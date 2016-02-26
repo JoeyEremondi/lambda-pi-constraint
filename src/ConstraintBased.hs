@@ -14,6 +14,9 @@ import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec.Language
 import Text.ParserCombinators.Parsec.Token
 
+import qualified Unbound.LocallyNameless as LN
+
+
 import System.Console.Readline
 import System.IO hiding (print)
 
@@ -123,9 +126,14 @@ iType_ iiGlobal g (L region it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ sh
           --Check that mz has type (m 0)
           cType_ ii g mz (mVal Tm.$$ Tm.Zero)
           --Check that ms has type ( (k: N) -> m k -> m (S k) )
+          let ln = LN.s2n "l"
+          let lv = Tm.var ln
           let recPiType =
-                mkPiFn Tm.Nat $ \k -> mkPiFn (mVal Tm.$$ k)
-                  ( \_ -> mVal Tm.$$ (Tm.Succ k) )
+                Tm.PI Tm.Nat
+                  (Tm.lam ln
+                    ((mVal Tm.$$ lv) Tm.--> (mVal Tm.$$ (Tm.Succ lv))))
+                --mkPiFn Tm.Nat $ \k -> mkPiFn (mVal Tm.$$ k)
+                --  ( \_ -> mVal Tm.$$ (Tm.Succ k) )
           cType_ ii g ms recPiType
           --Make sure the number param is a nat
           cType_ ii g n Tm.Nat
@@ -223,7 +231,7 @@ cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
     cType_' ii g (Lam_ body) fnTy = do
         argTy <- freshType g
         --Our return type should be a function, from input type to set
-        let newEnv = -- trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $ 
+        let newEnv = -- trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $
               addType (ii, argTy ) g
         returnTyFn <- fresh g (argTy Tm.--> conStar)
         let arg = -- trace ("Lambda giving arg " ++ show ii) $
