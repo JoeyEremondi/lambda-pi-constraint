@@ -1,5 +1,5 @@
 -- addition of natural numbers
-let id    = (\ x y -> y) :: forall (x :: *) .  x -> x -> x
+let id    = (\ x y -> y) :: forall (x :: *) .  x -> x
 
 --let intId = (\x -> x) :: Nat -> Nat
 
@@ -10,6 +10,6 @@ let id    = (\ x y -> y) :: forall (x :: *) .  x -> x -> x
 -- addition of natural numbers
 let plus =
   natElim
-    _           -- motive
+    ( \ _ -> _ -> _ )           -- motive
     ( \ n -> n )                    -- case for Zero
     ( \ p rec n -> Succ (rec n) )   -- case for Succ

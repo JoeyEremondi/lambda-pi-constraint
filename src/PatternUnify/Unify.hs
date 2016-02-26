@@ -643,6 +643,8 @@ solver n (All p b) = do
 -- simplification rules in Figure~\ref{fig:solve}. If it cannot be
 -- simplified, it appends it to the (left) context.
 
+--TODO lower for elim cases?
+
 lower :: [(Nom, Type)] -> Nom -> Type -> Contextual ()
 lower _Phi alpha (SIG _S _T) =  hole _Phi _S $ \ s ->
                                 hole _Phi (_T $$ s) $ \ t ->

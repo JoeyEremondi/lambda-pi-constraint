@@ -56,7 +56,7 @@ solveEntries !es  =
     resultString = case result of
       Left s -> "ERROR " ++ s
       Right (_, ctx) -> render $ runPretty $ pretty ctx
-  in trace ("\n\n=============\nFinal\n" ++ resultString) $
+  in --trace ("\n\n=============\nFinal\n" ++ resultString) $
     case result of
       Left err -> Left [(ProbId $ LN.string2Name "builtinLoc", err)]
       Right ((), ctx) -> getContextErrors es ctx

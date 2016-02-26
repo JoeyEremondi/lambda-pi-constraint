@@ -843,6 +843,7 @@ iEval_ (L _ it) d = iEval_' it d
 iSubst_ :: Int -> ITerm_ -> ITerm_ -> ITerm_
 iSubst_ ii i' (L reg it) = L reg $ iSubst_' ii i' it
   where
+    iSubst_' _ _ (Meta_ x) = Meta_ x
     iSubst_' ii i'   (Ann_ c c')     =  Ann_ (cSubst_ ii i' c) (cSubst_ ii i' c')
 
 
