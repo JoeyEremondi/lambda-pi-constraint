@@ -24,6 +24,9 @@ import           System.IO.Error
 import           Control.Monad.Identity                 (Identity, runIdentity)
 import qualified Control.Monad.State                    as State
 
+import Unbound.LocallyNameless (s2n)
+import qualified PatternUnify.Tm as Tm
+
 data Region =
   SourceRegion SourcePos
   | BuiltinRegion
@@ -322,7 +325,7 @@ type NameEnv v = [(Name, v)]
 type Ctx inf = [(Name, inf)]
 type State v inf = (Bool, String, NameEnv v, Ctx inf)
 
-type TypeChecker = (NameEnv Value_, [(Name, Value_)]) -> ITerm_ -> Result Type_
+type TypeChecker = (NameEnv Tm.VAL, [(Name, Tm.VAL)]) -> ITerm_ -> Result Type_
 
 commands :: [InteractiveCommand]
 commands
@@ -423,11 +426,11 @@ lp checker = I { iname = "lambda-Pi",
          iassume = \ s (x, t) -> lpassume checker s x t }
 
 --TODO put this back
-lpte :: Ctx Value_
+lpte :: Ctx Tm.VAL
 --lpte = --[(Global "Nat", VStar_)]
-lpte =      [(Global "Zero", VNat_),
-             (Global "Succ", VPi_ VNat_ (\ _ -> VNat_)),
-             (Global "Nat", VStar_),
+lpte =      [(Global "Zero", Tm.Nat),
+             (Global "Succ", Tm.Nat Tm.--> Tm.Nat),
+             (Global "Nat", Tm.SET),
              (Global "natElim", VPi_ (VPi_ VNat_ (\ _ -> VStar_)) (\ m ->
                                VPi_ (m `vapp_` VZero_) (\ _ ->
                                VPi_ (VPi_ VNat_ (\ k -> VPi_ (m `vapp_` k) (\ _ -> (m `vapp_` (VSucc_ k))))) ( \ _ ->
@@ -467,27 +470,48 @@ lpte =      [(Global "Zero", VNat_),
                                m `vapp_` n `vapp_` f))))))]
 
 
-lam_ = error "TODO lam_"
+lam_ s f = Tm.lam (s2n s) (f $ Tm.vv s)
 inf_ = error "TODO inf_"
 
-lpve :: Ctx Value_
+lpve :: Ctx Tm.VAL
 lpve = -- [(Global "Nat", VNat_)]
-     [(Global "Zero", VZero_),
-             (Global "Succ", VLam_ (\ n -> VSucc_ n)),
-             (Global "Nat", VNat_),
-             (Global "natElim", cEval_ (lam_ (lam_ (lam_ (lam_ (inf_ (NatElim_ (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0)))))))) ([], [])),
-             (Global "Nil", VLam_ (\ a -> VNil_ a)),
-             (Global "Cons", VLam_ (\ a -> VLam_ (\ n -> VLam_ (\ x -> VLam_ (\ xs ->
-                            VCons_ a n x xs))))),
-             (Global "Vec", VLam_ (\ a -> VLam_ (\ n -> VVec_ a n))),
-             (Global "vecElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (VecElim_ (inf_ (Bound_ 5)) (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0)))))))))) ([],[])),
-             (Global "Refl", VLam_ (\ a -> VLam_ (\ x -> VRefl_ a x))),
-             (Global "Eq", VLam_ (\ a -> VLam_ (\ x -> VLam_ (\ y -> VEq_ a x y)))),
-             (Global "eqElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (EqElim_ (inf_ (Bound_ 5)) (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0)))))))))) ([],[])),
-             (Global "FZero", VLam_ (\ n -> VFZero_ n)),
-             (Global "FSucc", VLam_ (\ n -> VLam_ (\ f -> VFSucc_ n f))),
-             (Global "Fin", VLam_ (\ n -> VFin_ n)),
-             (Global "finElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (FinElim_ (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0))))))))) ([],[]))]
+     [(Global "Zero", Tm.Zero),
+             (Global "Succ", lam_ "n" (\ n -> Tm.Succ n)),
+             (Global "Nat", Tm.Nat),
+             (Global "natElim",
+                lam_ "m" $ \m ->
+                lam_ "mz" $ \mz ->
+                lam_ "ms" $ \ms ->
+                lam_ "k" $ \k ->
+                  k Tm.%% (Tm.NatElim m mz ms)
+                  ),
+             (Global "Nil", lam_ "a" (\ a -> Tm.VNil a)),
+             (Global "Cons", lam_ "a" (\ a -> lam_ "n" (\ n -> lam_ "x" (\ x -> lam_ "xs" (\ xs ->
+                            Tm.VCons a n x xs))))),
+             (Global "Vec", lam_ "a" (\ a -> lam_ "n" (\ n -> Tm.Vec a n))),
+             (Global "vecElim",
+                lam_ "a" $ \a ->
+                lam_ "m" $ \m ->
+                lam_ "mn" $ \mn ->
+                lam_ "mc" $ \mc ->
+                lam_ "k" $ \mk ->
+                lam_ "xs" $ \xs ->
+                  xs Tm.%% Tm.VecElim a m mn mc mk),
+             (Global "Refl", lam_ "a" (\ a -> lam_ "x" (\ x -> Tm.ERefl a x))),
+             (Global "Eq", lam_ "a" (\ a -> lam_ "x" (\ x -> lam_ "y" (\ y -> Tm.Eq a x y)))),
+             (Global "eqElim",
+                lam_ "a" $ \a ->
+                lam_ "m" $ \m ->
+                lam_ "mr" $ \mr ->
+                lam_ "x" $ \x ->
+                lam_ "y" $ \y ->
+                lam_ "eq" $ \eq ->
+                eq Tm.%% Tm.EqElim a m mr x y)
+             --(Global "FZero", VLam_ (\ n -> VFZero_ n)),
+             --(Global "FSucc", VLam_ (\ n -> VLam_ (\ f -> VFSucc_ n f))),
+             --(Global "Fin", VLam_ (\ n -> VFin_ n)),
+             --(Global "finElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (FinElim_ (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0))))))))) ([],[]))
+             ]
 
 
 repLP :: TypeChecker -> Bool -> IO ()
