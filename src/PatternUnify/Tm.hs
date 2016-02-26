@@ -420,4 +420,10 @@ f $*$ _Gam = f $$$ map (var . fst) _Gam
 (%%%) :: VAL -> [Elim] -> VAL
 (%%%) = foldl (%%)
 
+lam_ s f = lam (s2n s) (f $ vv s)
+pi_ s str f = PI s $ lam_ str f
+
+msType m = (pi_ Nat "l" (\ l -> (m $$ l) --> ((m $$ (Succ l)))))
+
+
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])

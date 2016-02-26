@@ -245,6 +245,10 @@ rigidRigid (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z')) =
       , EQN SET a' SET b'
       , EQN a x b x'
       , EQN a y b y'
+      , EQN a x a' z
+      , EQN a y a' z
+      , EQN b x' b' z'
+      , EQN b y' b' z'
       , EQN a' z b' z']
 
 -- >
@@ -276,6 +280,16 @@ matchSpine (SIG _A _B) u (Tl:ds)  (SIG _S _T) v (Tl:es) =
     matchSpine (_B $$ a) b ds (_T $$ s) t es
   where   (a, b)  = (u %% Hd, u %% Tl)
           (s, t)  = (v %% Hd, v %% Tl)
+--Match datatype eliminators
+matchSpine
+  Nat u (elim1@(NatElim m mz ms) : ds)
+  Nat v (elim2@(NatElim m' mz' ms') : es) =
+    ([ EQN (Nat --> SET) m (Nat --> SET) m'
+     , EQN (m $$ Zero) mz (m' $$ Zero) mz'
+     , EQN (msType m) ms (msType m') ms'
+     ] ++) <$>
+      matchSpine (m $$ u) (u %% elim1) ds (m' $$ v) (v %% elim2) es
+
 matchSpine _ _ []  _ _ []  = return []
 matchSpine _ _ _   _ _ _   = throwError "spine mismatch"
 

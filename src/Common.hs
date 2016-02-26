@@ -433,7 +433,7 @@ unifte =      [(Global "Zero", Tm.Nat),
              (Global "Nat", Tm.SET),
              (Global "natElim", pi_ (Tm.Nat Tm.--> Tm.SET) "m" (\ m ->
                                (m Tm.$$ Tm.Zero) Tm.--> (
-                               (pi_ Tm.Nat "k" (\ k -> (m Tm.$$ k) Tm.--> ((m Tm.$$ (Tm.Succ k))))) Tm.--> (
+                               (Tm.msType m) Tm.--> (
                                pi_ Tm.Nat "n" (\ n -> m Tm.$$ n))))),
              (Global "Nil", pi_ Tm.SET "a" (\ a -> Tm.Vec a Tm.Zero)),
              (Global "Cons", pi_ Tm.SET "a" (\ a ->
