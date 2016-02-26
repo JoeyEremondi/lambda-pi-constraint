@@ -7,4 +7,4 @@ import Common
 import PatternUnify.Test
 
 main :: IO ()
-main = repLP CB.checker True
+main = repLP (CB.checker (unifve, unifte) ) True

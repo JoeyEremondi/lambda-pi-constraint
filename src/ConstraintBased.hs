@@ -47,10 +47,10 @@ splitContext entries = helper entries [] []
     helper ((Local i, x) : rest) globals locals =
       helper rest globals ((i,x) : locals)
 
-checker :: TypeChecker
-checker (nameEnv, context) term = do
-  let (typeGlobals, typeLocals) = splitContext $ map (mapSnd $ vToUnifForm 0) context
-  let (valGlobals, valLocals) = splitContext $ map (mapSnd $ vToUnifForm 0) nameEnv
+checker :: (Ctx Tm.VAL, Ctx Tm.VAL) -> TypeChecker
+checker (nameEnv, context) _ term = do
+  let (typeGlobals, typeLocals) = splitContext context
+  let (valGlobals, valLocals) = splitContext  nameEnv
   let finalVar =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
   unifToValue <$> solveConstraintM finalVar
 
