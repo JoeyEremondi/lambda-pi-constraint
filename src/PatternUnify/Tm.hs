@@ -372,6 +372,8 @@ elim (L b)       (A a)  = eval [(x, a)] t where (x, t) = unsafeUnbind b
 elim (N u as)    e      = N u $ as ++ [e]
 elim (PAIR x _)  Hd     = x
 elim (PAIR _ y)  Tl     = y
+elim Zero (NatElim m mz ms) = mz
+elim (Succ l) theElim@(NatElim m mz ms) = ms $$$ [l, (elim l theElim)] 
 elim t           a      = error $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 ($$) :: VAL -> VAL -> VAL
