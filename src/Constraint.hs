@@ -66,7 +66,7 @@ data ConstrainState =
   }
 
 getRegionDict :: [Constraint] -> Map.Map Tm.Nom Common.Region
-getRegionDict = foldr foldFun Map.empty
+getRegionDict = foldr foldFun $ Map.singleton (LN.string2Name "builtinLoc") (Common.BuiltinRegion)
   where
     foldFun cstr dictSoFar =
       case conEntry cstr of
@@ -358,7 +358,7 @@ unifToValue val = case val of
   Tm.Succ k ->
     Common.VSucc_ $ unifToValue k
 
-  _ -> error $ "TODO twins, etc. should never happen\n" ++ PUtest.prettyString val
+  _ -> error $ "TODO twins, etc. should never happen\n" ++ Tm.prettyString val
 
 
 elimToValue (Tm.A v) = unifToValue v

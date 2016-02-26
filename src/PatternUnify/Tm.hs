@@ -24,6 +24,8 @@ import Unbound.Util (unions)
 
 import PatternUnify.Kit
 
+prettyString t = render $ runPretty $ pretty t
+
 type Nom = Name VAL
 
 freshNom :: Fresh m => m Nom

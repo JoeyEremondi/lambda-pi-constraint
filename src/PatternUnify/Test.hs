@@ -25,6 +25,9 @@ import Debug.Trace (trace)
 
 import Data.List (intercalate)
 
+import qualified Unbound.LocallyNameless as LN
+
+
 
 -- The |test| function executes the constraint solving algorithm on the
 -- given metacontext.
@@ -39,13 +42,13 @@ test = runTest (const True)
 initialise :: Contextual ()
 initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 
-prettyString t = render $ runPretty $ pretty t
+--prettyString t = render $ runPretty $ pretty t
 
 solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es))
-    result = --trace ("Initial context:\n" ++ initialContextString ) $
+    result = trace ("Initial context:\n" ++ initialContextString ) $
        runContextual (B0, map Right es) $ do
           initialise
           ambulando [] []
@@ -55,7 +58,7 @@ solveEntries !es  =
       Right (_, ctx) -> render $ runPretty $ pretty ctx
   in trace ("\n\n=============\nFinal\n" ++ resultString) $
     case result of
-      Left err -> Left [(error "TODO probId", err)]
+      Left err -> Left [(ProbId $ LN.string2Name "builtinLoc", err)]
       Right ((), ctx) -> getContextErrors es ctx
 
 

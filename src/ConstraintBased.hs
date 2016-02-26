@@ -32,7 +32,6 @@ import qualified Data.List as List
 
 import qualified PatternUnify.Tm as Tm
 
-import PatternUnify.Test (prettyString)
 
 import Debug.Trace (trace)
 

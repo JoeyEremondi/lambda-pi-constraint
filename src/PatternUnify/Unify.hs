@@ -196,8 +196,62 @@ rigidRigid (EQN _S (N (Var x w) ds) _T (N (Var y w') es))
     (EQN SET _X SET _Y :) <$>
         matchSpine  _X  (N (Var x w) [])   ds
                     _Y  (N (Var y w') [])  es
+
+rigidRigid (EQN SET Nat SET Nat) = return []
+
+rigidRigid (EQN SET (Vec a m) SET (Vec b n)) =
+    return  [  EQN SET a SET b
+            ,  EQN Nat m Nat n]
+
+--TODO need twins here?
+rigidRigid (EQN SET (Eq a x y) SET (Eq a' x' y')) =
+    return  [  EQN SET a SET a'
+            ,  EQN a x a' x'
+            ,  EQN a y a' y']
+
+rigidRigid (EQN Nat Zero Nat Zero) = return []
+
+rigidRigid (EQN Nat (Succ m) Nat (Succ n)) =
+    return  [  EQN Nat m Nat n]
+
+--TODO need to unify type indices of vectors?
+rigidRigid (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b')) =
+    return
+      [ EQN SET a SET a'
+      , EQN SET b SET b'
+      , EQN SET a' SET b']
+
+--TODO need to unify type indices of vectors?
+rigidRigid (EQN
+  (Vec a (Succ m))
+  (VCons a' h t (Succ m'))
+  (Vec b (Succ n))
+  (VCons b' h' t' (Succ n'))
+  ) =
+    return
+      [ EQN SET a SET a'
+      , EQN SET b SET b'
+      , EQN SET a' SET b'
+      , EQN Nat m Nat m'
+      , EQN Nat n Nat n'
+      , EQN Nat m' Nat n'
+      , EQN a h b h'
+      , EQN (Vec a m) t (Vec b n) t']
+
+rigidRigid (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z')) =
+    return
+      [ EQN SET a SET a'
+      , EQN SET b SET b'
+      , EQN SET a' SET b'
+      , EQN a x b x'
+      , EQN a y b y'
+      , EQN a' z b' z']
+
 -- >
-rigidRigid _ = throwError "Rigid-rigid mismatch"
+rigidRigid (EQN t1 v1 t2 v2) =
+  throwError $ "Cannot rigidly match ("
+  ++ prettyString v1 ++ " : " ++ prettyString t1 ++ ")  with ("
+  ++ prettyString v2 ++ " : " ++ prettyString t2 ++ ")"
 
 
 -- When we have the same rigid variable (or twins) at the head on both
