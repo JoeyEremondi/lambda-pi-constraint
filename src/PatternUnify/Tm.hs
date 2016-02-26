@@ -148,7 +148,31 @@ instance Pretty Elim where
     pretty (A a)  = pretty a
     pretty Hd     = return $ text "!"
     pretty Tl     = return $ text "-"
+    pretty (VecElim a m mn mc n)  =
+      (\a' m' mn' mc' n' -> text "VecElim" <+> a' <+> m' <+> mn' <+> mc' <+> n')
+      <$> pretty a
+      <*> pretty m
+      <*> pretty mn
+      <*> pretty mc
+      <*> pretty n
 
+    pretty (NatElim m mz ms)  =
+      (\m' mz' ms' -> text "NatElim" <+> m' <+> mz' <+> ms')
+      <$> pretty m
+      <*> pretty mz
+      <*> pretty ms
+
+    pretty (EqElim a m mr x y)  =
+      (\a' m' mr' x' y' -> text "VecElim" <+> a' <+> m' <+> mr' <+> x' <+> y')
+      <$> pretty a
+      <*> pretty m
+      <*> pretty mr
+      <*> pretty x
+      <*> pretty y
+
+{-
+mapElim f (EqElim a m mr x y) = EqElim (f a) (f m) (f mr) (f x) (f y)
+-}
 
 
 pattern SET           = C Set []
