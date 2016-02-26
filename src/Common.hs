@@ -325,7 +325,7 @@ type NameEnv v = [(Name, v)]
 type Ctx inf = [(Name, inf)]
 type State v inf = (Bool, String, NameEnv v, Ctx inf)
 
-type TypeChecker = (NameEnv Tm.VAL, [(Name, Tm.VAL)]) -> ITerm_ -> Result Type_
+type TypeChecker = (NameEnv Value_, [(Name, Value_)]) -> ITerm_ -> Result Type_
 
 commands :: [InteractiveCommand]
 commands
@@ -426,9 +426,9 @@ lp checker = I { iname = "lambda-Pi",
          iassume = \ s (x, t) -> lpassume checker s x t }
 
 --TODO put this back
-lpte :: Ctx Tm.VAL
+unifte :: Ctx Tm.VAL
 --lpte = --[(Global "Nat", Tm.SET)]
-lpte =      [(Global "Zero", Tm.Nat),
+unifte =      [(Global "Zero", Tm.Nat),
              (Global "Succ", Tm.Nat Tm.--> Tm.Nat),
              (Global "Nat", Tm.SET),
              (Global "natElim", pi_ (Tm.Nat Tm.--> Tm.SET) "m" (\ m ->
@@ -476,8 +476,72 @@ lam_ s f = Tm.lam (s2n s) (f $ Tm.vv s)
 pi_ s str f = Tm.PI s $ lam_ str f
 --inf_ = error "TODO inf_"
 
-lpve :: Ctx Tm.VAL
-lpve = -- [(Global "Nat", VNat_)]
+lpte :: Ctx Value_
+lpte =      [(Global "Zero", VNat_),
+             (Global "Succ", VPi_ VNat_ (\ _ -> VNat_)),
+             (Global "Nat", VStar_),
+             (Global "natElim", VPi_ (VPi_ VNat_ (\ _ -> VStar_)) (\ m ->
+                               VPi_ (m `vapp_` VZero_) (\ _ ->
+                               VPi_ (VPi_ VNat_ (\ k -> VPi_ (m `vapp_` k) (\ _ -> (m `vapp_` (VSucc_ k))))) ( \ _ ->
+                               VPi_ VNat_ (\ n -> m `vapp_` n))))),
+             (Global "Nil", VPi_ VStar_ (\ a -> VVec_ a VZero_)),
+             (Global "Cons", VPi_ VStar_ (\ a ->
+                            VPi_ VNat_ (\ n ->
+                            VPi_ a (\ _ -> VPi_ (VVec_ a n) (\ _ -> VVec_ a (VSucc_ n)))))),
+             (Global "Vec", VPi_ VStar_ (\ _ -> VPi_ VNat_ (\ _ -> VStar_))),
+             (Global "vecElim", VPi_ VStar_ (\ a ->
+                               VPi_ (VPi_ VNat_ (\ n -> VPi_ (VVec_ a n) (\ _ -> VStar_))) (\ m ->
+                               VPi_ (m `vapp_` VZero_ `vapp_` (VNil_ a)) (\ _ ->
+                               VPi_ (VPi_ VNat_ (\ n ->
+                                     VPi_ a (\ x ->
+                                     VPi_ (VVec_ a n) (\ xs ->
+                                     VPi_ (m `vapp_` n `vapp_` xs) (\ _ ->
+                                     m `vapp_` VSucc_ n `vapp_` VCons_ a n x xs))))) (\ _ ->
+                               VPi_ VNat_ (\ n ->
+                               VPi_ (VVec_ a n) (\ xs -> m `vapp_` n `vapp_` xs))))))),
+             (Global "Refl", VPi_ VStar_ (\ a -> VPi_ a (\ x ->
+                            VEq_ a x x))),
+             (Global "Eq", VPi_ VStar_ (\ a -> VPi_ a (\ x -> VPi_ a (\ y -> VStar_)))),
+             (Global "eqElim", VPi_ VStar_ (\ a ->
+                              VPi_ (VPi_ a (\ x -> VPi_ a (\ y -> VPi_ (VEq_ a x y) (\ _ -> VStar_)))) (\ m ->
+                              VPi_ (VPi_ a (\ x -> m `vapp_` x `vapp_` x `vapp_` VRefl_ a x)) (\ _ ->
+                              VPi_ a (\ x -> VPi_ a (\ y ->
+                              VPi_ (VEq_ a x y) (\ eq ->
+                              m `vapp_` x `vapp_` y `vapp_` eq))))))),
+             (Global "FZero", VPi_ VNat_ (\ n -> VFin_ (VSucc_ n))),
+             (Global "FSucc", VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f ->
+                             VFin_ (VSucc_ n)))),
+             (Global "Fin", VPi_ VNat_ (\ n -> VStar_)),
+             (Global "finElim", VPi_ (VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ _ -> VStar_))) (\ m ->
+                               VPi_ (VPi_ VNat_ (\ n -> m `vapp_` (VSucc_ n) `vapp_` (VFZero_ n))) (\ _ ->
+                               VPi_ (VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f -> VPi_ (m `vapp_` n `vapp_` f) (\ _ -> m `vapp_` (VSucc_ n) `vapp_` (VFSucc_ n f))))) (\ _ ->
+                               VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f ->
+                               m `vapp_` n `vapp_` f))))))]
+
+lpve :: Ctx Value_
+lpve =      [(Global "Zero", VZero_),
+             (Global "Succ", VLam_ (\ n -> VSucc_ n)),
+             (Global "Nat", VNat_),
+             (Global "natElim", cEval_ (blam_ (blam_ (blam_ (blam_ (inf_ (builtin $ NatElim_ (inf_ (bbound_ 3)) (inf_ (bbound_ 2)) (inf_ (bbound_ 1)) (inf_ (bbound_ 0)))))))) ([], [])),
+             (Global "Nil", VLam_ (\ a -> VNil_ a)),
+             (Global "Cons", VLam_ (\ a -> VLam_ (\ n -> VLam_ (\ x -> VLam_ (\ xs ->
+                            VCons_ a n x xs))))),
+             (Global "Vec", VLam_ (\ a -> VLam_ (\ n -> VVec_ a n))),
+             (Global "vecElim", cEval_ (blam_ (blam_ (blam_ (blam_ (blam_ (blam_ (inf_ (builtin $ VecElim_ (inf_ (bbound_ 5)) (inf_ (bbound_ 4)) (inf_ (bbound_ 3)) (inf_ (bbound_ 2)) (inf_ (bbound_ 1)) (inf_ (bbound_ 0)))))))))) ([],[])),
+             (Global "Refl", VLam_ (\ a -> VLam_ (\ x -> VRefl_ a x))),
+             (Global "Eq", VLam_ (\ a -> VLam_ (\ x -> VLam_ (\ y -> VEq_ a x y)))),
+             (Global "eqElim", cEval_ (blam_ (blam_ (blam_ (blam_ (blam_ (blam_ (inf_ (builtin $ EqElim_ (inf_ (bbound_ 5)) (inf_ (bbound_ 4)) (inf_ (bbound_ 3)) (inf_ (bbound_ 2)) (inf_ (bbound_ 1)) (inf_ (bbound_ 0)))))))))) ([],[])),
+             (Global "FZero", VLam_ (\ n -> VFZero_ n)),
+             (Global "FSucc", VLam_ (\ n -> VLam_ (\ f -> VFSucc_ n f))),
+             (Global "Fin", VLam_ (\ n -> VFin_ n)),
+             (Global "finElim", cEval_ (blam_ (blam_ (blam_ (blam_ (blam_ (inf_ (builtin $ FinElim_ (inf_ (bbound_ 4)) (inf_ (bbound_ 3)) (inf_ (bbound_ 2)) (inf_ (bbound_ 1)) (inf_ (bbound_ 0))))))))) ([],[]))]
+
+blam_ = builtin . Lam_
+inf_ = builtin . Inf_
+bbound_ = builtin . Bound_
+
+unifve :: Ctx Tm.VAL
+unifve = -- [(Global "Nat", VNat_)]
      [(Global "Zero", Tm.Zero),
              (Global "Succ", lam_ "n" (\ n -> Tm.Succ n)),
              (Global "Nat", Tm.Nat),
