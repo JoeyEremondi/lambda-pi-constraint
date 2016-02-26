@@ -85,6 +85,7 @@ iType_ iiGlobal g (L region it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ sh
     iType_' ii g m@(Meta_ s) = do
       metaType <- freshType g
       let ourNom = metaNom s
+      recordSourceMeta ourNom
       --Add metavariable to our context
       declareMeta ourNom metaType
       return metaType

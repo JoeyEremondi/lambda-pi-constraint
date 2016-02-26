@@ -62,6 +62,7 @@ valueLookup (Common.Local i) env =
 data ConstrainState =
   ConstrainState
   { intStore :: [Int]
+  , sourceMetas :: [Tm.Nom]
   --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }
 
@@ -82,10 +83,13 @@ addValue x env = env {valueEnv = x : valueEnv env }
 addType :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
 addType x env = env {typeEnv = x : typeEnv env }
 
+recordSourceMeta :: (Tm.Nom) -> ConstraintM ()
+recordSourceMeta nm = lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas x)} )
+
 solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] Tm.VAL
 solveConstraintM cm =
   let
-    ((nom, constraints), _) = runIdentity $ runStateT (runWriterT cm) (ConstrainState [1..] )
+    ((nom, constraints), _) = runIdentity $ runStateT (runWriterT cm) (ConstrainState [1..] [] )
     regionDict = getRegionDict constraints
     ret = do
       (_, context) <- PUtest.solveEntries $ map conEntry constraints
