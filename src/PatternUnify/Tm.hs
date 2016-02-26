@@ -216,6 +216,9 @@ mapElim :: (VAL -> VAL) -> Elim -> Elim
 mapElim f  (A a)  = A (f a)
 mapElim _  Hd     = Hd
 mapElim _  Tl     = Tl
+mapElim f (NatElim m mz ms) = NatElim (f m) (f mz) (f ms)
+mapElim f (VecElim a m mn mc n) = VecElim (f a) (f m) (f mn) (f mc) (f n)
+mapElim f (EqElim a m mr x y) = EqElim (f a) (f m) (f mr) (f x) (f y)
 
 headVar :: Head -> Nom
 headVar (Var x _)  = x
@@ -373,7 +376,7 @@ elim (N u as)    e      = N u $ as ++ [e]
 elim (PAIR x _)  Hd     = x
 elim (PAIR _ y)  Tl     = y
 elim Zero (NatElim m mz ms) = mz
-elim (Succ l) theElim@(NatElim m mz ms) = ms $$$ [l, (elim l theElim)] 
+elim (Succ l) theElim@(NatElim m mz ms) = ms $$$ [l, (elim l theElim)]
 elim t           a      = error $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 ($$) :: VAL -> VAL -> VAL
