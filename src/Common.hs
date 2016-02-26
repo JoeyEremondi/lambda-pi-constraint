@@ -441,15 +441,11 @@ unifte =      [(Global "Zero", Tm.Nat),
                             a Tm.--> ((Tm.Vec a n) Tm.--> (Tm.Vec a (Tm.Succ n)))))),
              (Global "Vec", Tm.SET Tm.--> (Tm.Nat Tm.--> ( Tm.SET))),
              (Global "vecElim", pi_ Tm.SET "a" (\ a ->
-                               pi_ (pi_ Tm.Nat "n" (\ n -> (Tm.Vec a n) Tm.--> ( Tm.SET))) "m" (\ m ->
-                               (m Tm.$$ Tm.Zero Tm.$$ (Tm.VNil a)) Tm.--> (
-                               (pi_ Tm.Nat "n" (\ n ->
-                                     pi_ a "x" (\ x ->
-                                     pi_ (Tm.Vec a n) "xs" (\ xs ->
-                                     (m Tm.$$ n Tm.$$ xs) Tm.--> (
-                                     m Tm.$$ Tm.Succ n Tm.$$ Tm.VCons a n x xs))))) Tm.--> (
+                               pi_ (Tm.vmType a) "m" (\ m ->
+                               (Tm.mnType a m) Tm.--> (
+                               (Tm.mcType a m ) Tm.--> (
                                pi_ Tm.Nat "n" (\ n ->
-                               pi_ (Tm.Vec a n) "xs" (\ xs -> m Tm.$$ n Tm.$$ xs))))))),
+                               pi_ (Tm.Vec a n) "xs" (\ xs -> vResultType m n xs))))))),
              (Global "Refl", pi_ Tm.SET "a" (\ a -> pi_ a "x" (\ x ->
                             Tm.Eq a x x))),
              (Global "Eq", pi_ Tm.SET "a" (\ a -> pi_ a "x" (\ x -> pi_ a "y" (\ y -> Tm.SET)))),

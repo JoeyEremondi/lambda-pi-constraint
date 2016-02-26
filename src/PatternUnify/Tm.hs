@@ -425,5 +425,17 @@ pi_ s str f = PI s $ lam_ str f
 
 msType m = (pi_ Nat "l" (\ l -> (m $$ l) --> ((m $$ (Succ l)))))
 
+vmType a =(pi_ Nat "n" (\ n -> (Vec a n) --> ( SET)))
+
+mnType a m = (m $$ Zero $$ (VNil a))
+
+mcType a m = (pi_ Nat "n" (\ n ->
+      pi_ a "x" (\ x ->
+      pi_ (Vec a n) "xs" (\ xs ->
+      (m $$ n $$ xs) --> (
+      m $$ Succ n $$ VCons a n x xs)))))
+
+vResultType m n xs = m $$ n $$ xs
+
 
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])
