@@ -427,51 +427,54 @@ lp checker = I { iname = "lambda-Pi",
 
 --TODO put this back
 lpte :: Ctx Tm.VAL
---lpte = --[(Global "Nat", VStar_)]
+--lpte = --[(Global "Nat", Tm.SET)]
 lpte =      [(Global "Zero", Tm.Nat),
              (Global "Succ", Tm.Nat Tm.--> Tm.Nat),
              (Global "Nat", Tm.SET),
-             (Global "natElim", VPi_ (VPi_ VNat_ (\ _ -> VStar_)) (\ m ->
-                               VPi_ (m `vapp_` VZero_) (\ _ ->
-                               VPi_ (VPi_ VNat_ (\ k -> VPi_ (m `vapp_` k) (\ _ -> (m `vapp_` (VSucc_ k))))) ( \ _ ->
-                               VPi_ VNat_ (\ n -> m `vapp_` n))))),
-             (Global "Nil", VPi_ VStar_ (\ a -> VVec_ a VZero_)),
-             (Global "Cons", VPi_ VStar_ (\ a ->
-                            VPi_ VNat_ (\ n ->
-                            VPi_ a (\ _ -> VPi_ (VVec_ a n) (\ _ -> VVec_ a (VSucc_ n)))))),
-             (Global "Vec", VPi_ VStar_ (\ _ -> VPi_ VNat_ (\ _ -> VStar_))),
-             (Global "vecElim", VPi_ VStar_ (\ a ->
-                               VPi_ (VPi_ VNat_ (\ n -> VPi_ (VVec_ a n) (\ _ -> VStar_))) (\ m ->
-                               VPi_ (m `vapp_` VZero_ `vapp_` (VNil_ a)) (\ _ ->
-                               VPi_ (VPi_ VNat_ (\ n ->
-                                     VPi_ a (\ x ->
-                                     VPi_ (VVec_ a n) (\ xs ->
-                                     VPi_ (m `vapp_` n `vapp_` xs) (\ _ ->
-                                     m `vapp_` VSucc_ n `vapp_` VCons_ a n x xs))))) (\ _ ->
-                               VPi_ VNat_ (\ n ->
-                               VPi_ (VVec_ a n) (\ xs -> m `vapp_` n `vapp_` xs))))))),
-             (Global "Refl", VPi_ VStar_ (\ a -> VPi_ a (\ x ->
-                            VEq_ a x x))),
-             (Global "Eq", VPi_ VStar_ (\ a -> VPi_ a (\ x -> VPi_ a (\ y -> VStar_)))),
-             (Global "eqElim", VPi_ VStar_ (\ a ->
-                              VPi_ (VPi_ a (\ x -> VPi_ a (\ y -> VPi_ (VEq_ a x y) (\ _ -> VStar_)))) (\ m ->
-                              VPi_ (VPi_ a (\ x -> m `vapp_` x `vapp_` x `vapp_` VRefl_ a x)) (\ _ ->
-                              VPi_ a (\ x -> VPi_ a (\ y ->
-                              VPi_ (VEq_ a x y) (\ eq ->
-                              m `vapp_` x `vapp_` y `vapp_` eq))))))),
-             (Global "FZero", VPi_ VNat_ (\ n -> VFin_ (VSucc_ n))),
-             (Global "FSucc", VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f ->
-                             VFin_ (VSucc_ n)))),
-             (Global "Fin", VPi_ VNat_ (\ n -> VStar_)),
-             (Global "finElim", VPi_ (VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ _ -> VStar_))) (\ m ->
-                               VPi_ (VPi_ VNat_ (\ n -> m `vapp_` (VSucc_ n) `vapp_` (VFZero_ n))) (\ _ ->
-                               VPi_ (VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f -> VPi_ (m `vapp_` n `vapp_` f) (\ _ -> m `vapp_` (VSucc_ n) `vapp_` (VFSucc_ n f))))) (\ _ ->
-                               VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f ->
-                               m `vapp_` n `vapp_` f))))))]
+             (Global "natElim", pi_ (Tm.Nat Tm.--> Tm.SET) "m" (\ m ->
+                               (m Tm.$$ Tm.Zero) Tm.--> (
+                               (pi_ Tm.Nat "k" (\ k -> (m Tm.$$ k) Tm.--> ((m Tm.$$ (Tm.Succ k))))) Tm.--> (
+                               pi_ Tm.Nat "n" (\ n -> m Tm.$$ n))))),
+             (Global "Nil", pi_ Tm.SET "a" (\ a -> Tm.Vec a Tm.Zero)),
+             (Global "Cons", pi_ Tm.SET "a" (\ a ->
+                            pi_ Tm.Nat "n" (\ n ->
+                            a Tm.--> ((Tm.Vec a n) Tm.--> (Tm.Vec a (Tm.Succ n)))))),
+             (Global "Vec", Tm.SET Tm.--> (Tm.Nat Tm.--> ( Tm.SET))),
+             (Global "vecElim", pi_ Tm.SET "a" (\ a ->
+                               pi_ (pi_ Tm.Nat "n" (\ n -> (Tm.Vec a n) Tm.--> ( Tm.SET))) "m" (\ m ->
+                               (m Tm.$$ Tm.Zero Tm.$$ (Tm.VNil a)) Tm.--> (
+                               (pi_ Tm.Nat "n" (\ n ->
+                                     pi_ a "x" (\ x ->
+                                     pi_ (Tm.Vec a n) "xs" (\ xs ->
+                                     (m Tm.$$ n Tm.$$ xs) Tm.--> (
+                                     m Tm.$$ Tm.Succ n Tm.$$ Tm.VCons a n x xs))))) Tm.--> (
+                               pi_ Tm.Nat "n" (\ n ->
+                               pi_ (Tm.Vec a n) "xs" (\ xs -> m Tm.$$ n Tm.$$ xs))))))),
+             (Global "Refl", pi_ Tm.SET "a" (\ a -> pi_ a "x" (\ x ->
+                            Tm.Eq a x x))),
+             (Global "Eq", pi_ Tm.SET "a" (\ a -> pi_ a "x" (\ x -> pi_ a "y" (\ y -> Tm.SET)))),
+             (Global "eqElim", pi_ Tm.SET "a" (\ a ->
+                              pi_ (pi_ a "x" (\ x -> pi_ a "y" (\ y -> (Tm.Eq a x y) Tm.--> ( Tm.SET)))) "m" (\ m ->
+                              (pi_ a "x" (\ x -> m Tm.$$ x Tm.$$ x Tm.$$ Tm.ERefl a x)) Tm.--> (
+                              pi_ a "x" (\ x -> pi_ a "y" (\ y ->
+                              pi_ (Tm.Eq a x y) "eq" (\ eq ->
+                              m Tm.$$ x Tm.$$ y Tm.$$ eq)))))))
+--             (Global "FZero", Tm.PI Tm.Nat (\ n -> VFin_ (Tm.Succ n))),
+--             (Global "FSucc", Tm.PI Tm.Nat (\ n -> Tm.PI (VFin_ n) (\ f ->
+--                             VFin_ (Tm.Succ n)))),
+--             (Global "Fin", Tm.PI Tm.Nat (\ n -> Tm.SET)),
+--             (Global "finElim", Tm.PI (Tm.PI Tm.Nat (\ n -> Tm.PI (VFin_ n) (\ _ -> Tm.SET))) (\ m ->
+--                               Tm.PI (Tm.PI Tm.Nat (\ n -> m Tm.$$ (Tm.Succ n) Tm.$$ (VFZero_ n))) (\ _ ->
+--                               Tm.PI (Tm.PI Tm.Nat (\ n -> Tm.PI (VFin_ n) (\ f -> Tm.PI (m Tm.$$ n Tm.$$ f) (\ _ -> m Tm.$$ (Tm.Succ n) Tm.$$ (VFSucc_ n f))))) (\ _ ->
+--                               Tm.PI Tm.Nat (\ n -> Tm.PI (VFin_ n) (\ f ->
+--                               m Tm.$$ n Tm.$$ f))))))
+        ]
+
 
 
 lam_ s f = Tm.lam (s2n s) (f $ Tm.vv s)
-inf_ = error "TODO inf_"
+pi_ s str f = Tm.PI s $ lam_ str f
+--inf_ = error "TODO inf_"
 
 lpve :: Ctx Tm.VAL
 lpve = -- [(Global "Nat", VNat_)]
