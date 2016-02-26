@@ -224,9 +224,9 @@ rigidRigid (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b')) =
 --TODO need to unify type indices of vectors?
 rigidRigid (EQN
   (Vec a (Succ m))
-  (VCons a' h t (Succ m'))
+  (VCons a' (Succ m') h t )
   (Vec b (Succ n))
-  (VCons b' h' t' (Succ n'))
+  (VCons b' (Succ n') h' t' )
   ) =
     return
       [ EQN SET a SET a'
@@ -517,7 +517,7 @@ prune xs (Eq a x y) = (\x y z -> x ++ y ++ z) <$> prune xs a <*> prune xs x <*> 
 prune xs Zero = return []
 prune xs (Succ n) = prune xs n
 prune xs (VNil a) = prune xs a
-prune xs (VCons a h t n) =
+prune xs (VCons a n h t) =
   (\x y z m -> x ++ y ++ z ++ m) <$> prune xs a <*> prune xs h <*> prune xs t <*> prune xs n
 
 prune xs (ERefl a x) = (++) <$> prune xs a <*> prune xs x

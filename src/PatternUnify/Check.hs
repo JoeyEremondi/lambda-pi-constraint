@@ -88,7 +88,7 @@ check (Vec a Zero) (VNil a') = do
   check SET a
   unless eq $ fail $ "check: Nil index " ++ (pp a') ++ " does not match type index " ++ (pp a)
 
-check (Vec a (Succ n)) (VCons a' h t n') = do
+check (Vec a (Succ n)) (VCons a' n' h t) = do
   eq1 <- a <-> a'
   eq2 <- n <-> n'
   check SET a
@@ -144,7 +144,7 @@ checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
       lv = var ln
   check ms (PI Nat $ (m $$ lv) --> m $$ (Succ lv))
   checkSpine (m $$ u) (u %% elim) ts
-  
+
 checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty
                                            ++ " does not permit " ++ pp s
 
@@ -177,14 +177,15 @@ quote (Vec a _) (VNil b) =
   if (a == b)
   then VNil <$> quote a SET --TODO check equal?
   else error "Bad quote NIL "
-quote (Vec a (Succ n)) (VCons b h t m) =
+quote (Vec a (Succ n)) (VCons b m h t) =
   if (m /= n || a /= b)
   then error "Bad quote CONS"
   else VCons
     <$> quote SET a
+    <*> quote Nat n
     <*> quote a h
     <*> quote (Vec a n) t
-    <*> quote Nat n
+
 
 quote (Eq a x y) (ERefl b z) =
   if (x /= y && x /= z && a /= b)
