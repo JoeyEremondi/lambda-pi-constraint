@@ -215,7 +215,7 @@ vToUnifForm ii val = case val of
     let
       freeVar = Common.vfree_ $ Common.Quote ii
       funBody = f freeVar
-      boundNom = LN.string2Name $ "local" ++ show ii
+      boundNom = localName ii--LN.string2Name $ "local" ++ show ii
     in
       Tm.lam boundNom $ vToUnifForm (ii + 1) funBody
   Common.VStar_ ->
@@ -223,8 +223,10 @@ vToUnifForm ii val = case val of
   Common.VPi_ s f ->
     let
       tyFnVal = (vToUnifForm (ii + 1)) . f . unifToValue
+      varName = localName ii
+      tyFn = Tm.lam varName $ tyFnVal (Tm.var varName)
     in
-      mkPiFn (vToUnifForm ii s) tyFnVal
+      Tm.PI (vToUnifForm ii s) tyFn
   Common.VNeutral_ neut ->
     let
       (headVar, args) = neutralToSpine ii neut
@@ -261,7 +263,7 @@ neutralToHead ii neut = case neut of
     Common.Local i ->
       error "Local should not occur in Neutrals"
     Common.Quote i ->
-      Tm.Var (LN.string2Name $ "local" ++ show (ii-i)) Tm.Only
+      Tm.Var (localName (ii-i)) Tm.Only
 
 neutralToSpine ii neut = case neut of
   Common.NApp_ f x ->
@@ -501,6 +503,7 @@ addConstr c = tell [c]
 
 --metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
 
+
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
 evaluate term env = do
   --t <- fresh (error "TODO type in eval")
@@ -529,6 +532,7 @@ mkEq = Tm.Eq
 --mkPi :: ConType -> ConTyFn -> ConType
 --mkPi = Tm._PI "piVar"
 
+
 mkPiFn :: ConType -> (ConType -> ConType) -> ConType
 mkPiFn s f =
   let
@@ -540,6 +544,7 @@ mkPiFn s f =
     newFreeVar = head $ filter (not . (`elem` freeVars)) allVars
   in
     Tm.PI s  $ Tm.lam newFreeVar (f $ Tm.var newFreeVar)
+
 
 --conType :: Common.Type_ -> ConType
 --conType = vToUnifForm 0
