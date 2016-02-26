@@ -121,12 +121,30 @@ quote (C c as)     (C v bs)  = do  tel <- canTy (c, as) v
 quote _T           (N h as)  = do  _S <- infer h
                                    quoteSpine _S (N h []) as
 
-quote SET Nat = return SET
+quote SET Nat = return Nat
+quote SET (Vec a k) = Vec <$> quote SET a <*> quote Nat k
+quote SET (Eq a x y) = Eq <$> quote SET a <*> quote a x <*> quote a y
 
-quote Nat Zero = return Nat
-quote Nat (Succ k) = do
-  quote Nat k
-  return Nat
+quote Nat Zero = return Zero
+quote Nat (Succ k) = Succ <$> quote Nat k
+
+quote (Vec a _) (VNil b) =
+  if (a == b)
+  then VNil <$> quote a SET --TODO check equal?
+  else error "Bad quote NIL "
+quote (Vec a (Succ n)) (VCons b h t m) =
+  if (m /= n || a /= b)
+  then error "Bad quote CONS"
+  else VCons
+    <$> quote SET a
+    <*> quote a h
+    <*> quote (Vec a n) t
+    <*> quote Nat n
+
+quote (Eq a x y) (ERefl b z) =
+  if (x /= y && x /= z && a /= b)
+  then error "Bad quote REFL"
+  else ERefl <$> quote SET a <*> quote a x
 
 quote _T           t         = error $ "quote: type " ++ pp _T ++
                                        " does not accept " ++ pp t

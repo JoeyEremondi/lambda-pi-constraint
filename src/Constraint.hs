@@ -396,12 +396,12 @@ fresh env tp = do
     --let ii = trace ("Made fresh lambda type " ++ PUtest.prettyString lambdaType)
     --      $ length (typeEnv env)
     let ourHead =
-          trace ("Lambda type " ++ PUtest.prettyString lambdaType ++ " with env " ++ show currentQuants)
-            $ Tm.Meta ourNom
+          --trace ("Lambda type " ++ PUtest.prettyString lambdaType ++ " with env " ++ show currentQuants) $
+            Tm.Meta ourNom
     let ourElims = map (\(i,_) -> Tm.A $ Tm.var $ localName i) currentQuants
     let ourNeutral = Tm.N ourHead ourElims
-    let ourEntry = trace ("Made fresh meta app " ++ PUtest.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants)
-          $ UC.E ourNom lambdaType UC.HOLE
+    let ourEntry = --trace ("Made fresh meta app " ++ PUtest.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
+          UC.E ourNom lambdaType UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNeutral
     --let ourEntry =  UC.E ourNom tp UC.HOLE
@@ -495,8 +495,8 @@ freshNom hint = do
 
 --Helpful utility function
 addConstr :: Constraint -> ConstraintM ()
-addConstr c = --tell [c]
-  trace ("Adding constraint " ++ show c)$ tell [c]
+addConstr c = tell [c]
+  --trace ("Adding constraint " ++ show c)$ tell [c]
 
 
 --metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti

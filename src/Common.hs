@@ -56,7 +56,7 @@ getRegion = SourceRegion `fmap` getPosition
 putstrln x = putStrLn x
 
 simplyTyped = makeTokenParser (haskellStyle { identStart = letter {-<|> P.char '_'-},
-                                              reservedNames = ["let", "assume", "putStrLn"] })
+                                              reservedNames = ["_", "match", "let", "assume", "putStrLn"] })
 
 
 

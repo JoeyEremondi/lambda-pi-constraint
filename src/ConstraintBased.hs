@@ -65,7 +65,7 @@ iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
-iType_ iiGlobal g (L region it) = trace ("ITYPE" ++ show it ++ "\nenv: " ++ show g) $
+iType_ iiGlobal g (L region it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show g) $
   iType_' iiGlobal g it
   where
     iType_' ii g m@(Meta_ s) = do
@@ -197,7 +197,7 @@ iType_ iiGlobal g (L region it) = trace ("ITYPE" ++ show it ++ "\nenv: " ++ show
 
 
 cType_ :: Int -> WholeEnv -> CTerm_ -> ConType -> ConstraintM ()
-cType_ iiGlobal g (L region ct) = trace ("CTYPE" ++ show ct) $
+cType_ iiGlobal g (L region ct) = --trace ("CTYPE" ++ show ct) $
   cType_' iiGlobal g ct
   where
     cType_' ii g (Inf_ e) tyAnnot
@@ -223,9 +223,11 @@ cType_ iiGlobal g (L region ct) = trace ("CTYPE" ++ show ct) $
     cType_' ii g (Lam_ body) fnTy = do
         argTy <- freshType g
         --Our return type should be a function, from input type to set
-        let newEnv = trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $ addType (ii, argTy ) g
+        let newEnv = -- trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $ 
+              addType (ii, argTy ) g
         returnTyFn <- fresh g (argTy Tm.--> conStar)
-        let arg = trace ("Lambda giving arg " ++ show ii) $ builtin $ Free_ (Local ii)
+        let arg = -- trace ("Lambda giving arg " ++ show ii) $
+              builtin $ Free_ (Local ii)
         let argName = localName (ii) --TODO ii or 0?
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
         unifySets region fnTy (Tm.PI argTy returnTyFn)  g
