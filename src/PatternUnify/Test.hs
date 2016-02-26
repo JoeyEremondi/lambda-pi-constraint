@@ -53,7 +53,7 @@ solveEntries !es  =
     resultString = case result of
       Left s -> "ERROR " ++ s
       Right (_, ctx) -> render $ runPretty $ pretty ctx
-  in --trace ("\n\n=============\nFinal\n" ++ resultString) $
+  in trace ("\n\n=============\nFinal\n" ++ resultString) $
     case result of
       Left err -> Left [(error "TODO probId", err)]
       Right ((), ctx) -> getContextErrors es ctx
@@ -67,12 +67,12 @@ getContextErrors startEntries cx@(lcx, rcx) = do
     [] -> return ((), cx)
     ret -> Left ret
     where
-      getIdent (Prob _ ident _) = Just ident
+      getIdent (Prob ident _ _) = Just ident
       getIdent _ = Nothing
 
       initialIdents = Maybe.catMaybes $ map getIdent startEntries
 
-      isInitial (Prob _ ident _) = ident `Prelude.elem` initialIdents
+      isInitial (Prob ident _ _) = ident `Prelude.elem` initialIdents
       isInitial _ = False
 
       isFailed (Prob _ _ (Failed e)) = True
@@ -86,8 +86,7 @@ getContextErrors startEntries cx@(lcx, rcx) = do
         let
           failures = filter isFailed entries
           initPending = filter isInitial $ filter isPending entries
-          failedInits =
-            map (\(Prob ident _ (Failed s)) -> (ident, s)) $ filter isInitial failures
+          failedInits = map (\(Prob ident _ (Failed s)) -> (ident, s)) $ filter isInitial failures
           pendOnFailed =
             [(ident, err)
             | (Prob failId _ (Failed err)) <- failures
