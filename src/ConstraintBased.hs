@@ -12,7 +12,7 @@ import qualified Text.PrettyPrint.HughesPJ as PP
 import Text.ParserCombinators.Parsec hiding (State, parse)
 import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec.Language
-import Text.ParserCombinators.Parsec.Token 
+import Text.ParserCombinators.Parsec.Token
 
 import qualified Unbound.LocallyNameless as LN
 
@@ -27,6 +27,8 @@ import Control.Applicative
 import Common
 
 import Constraint
+
+import qualified Data.List as List
 
 import qualified PatternUnify.Tm as Tm
 
@@ -47,12 +49,22 @@ splitContext entries = helper entries [] []
     helper ((Local i, x) : rest) globals locals =
       helper rest globals ((i,x) : locals)
 
+errorMsg :: [(Region, String)] -> String
+errorMsg pairs =
+  List.intercalate "\n" $
+  map (\(reg, err) -> show reg ++ ": " ++ show err ) pairs
+
 checker :: (Ctx Tm.VAL, Ctx Tm.VAL) -> TypeChecker
-checker (nameEnv, context) _ term = do
-  let (typeGlobals, typeLocals) = splitContext context
-  let (valGlobals, valLocals) = splitContext  nameEnv
-  let finalVar =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
-  unifToValue <$> solveConstraintM finalVar
+checker (nameEnv, context) _ term =
+  let
+    (typeGlobals, typeLocals) = splitContext context
+    (valGlobals, valLocals) = splitContext  nameEnv
+    finalVar =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
+    eitherVal = unifToValue <$> solveConstraintM finalVar
+  in
+    case eitherVal of
+      Left pairs -> Left $ errorMsg pairs
+      Right x -> Right x
 
 
 conStar = Tm.SET
