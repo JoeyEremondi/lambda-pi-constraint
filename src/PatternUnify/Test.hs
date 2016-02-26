@@ -18,6 +18,9 @@ import PatternUnify.Unify
 import PatternUnify.Context
 import PatternUnify.Check
 
+import qualified Data.Either as Either
+import qualified Data.Maybe as Maybe
+
 import Debug.Trace (trace)
 
 import Data.List (intercalate)
@@ -42,14 +45,55 @@ solveEntries :: [Entry] -> Either Err ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es))
-    result = trace ("Initial context:\n" ++ initialContextString ) $
-      runContextual (B0, map Right es) (initialise >> ambulando [] [] >> validate (const True))
+    result = --trace ("Initial context:\n" ++ initialContextString ) $
+       runContextual (B0, map Right es) $ do
+          initialise
+          ambulando [] []
+          validate (const True)
     resultString = case result of
-      Left _ -> "ERROR"
+      Left s -> "ERROR " ++ s
       Right (_, ctx) -> render $ runPretty $ pretty ctx
   in
     --trace ("\n\n=============\nFinal\n" ++ resultString)
       result
+
+getContextErrors :: [Entry] -> Context -> Either [(ProbId, Err)] ()
+getContextErrors startEntries (lcx, rcx) = do
+  let leftErrors = getErrorPairs (trail lcx)
+      rightErrors = getErrorPairs (Either.rights rcx)
+  case (leftErrors ++ rightErrors) of
+    [] -> return ()
+    ret -> Left ret
+    where
+      getIdent (Prob _ ident _) = Just ident
+      getIdent _ = Nothing
+
+      initialIdents = Maybe.catMaybes $ map getIdent startEntries
+
+      isInitial (Prob _ ident _) = ident `Prelude.elem` initialIdents
+      isInitial _ = False
+
+      isFailed (Prob _ _ (Failed e)) = True
+      isFailed _ = False
+
+      isPending (Prob _ _ (Pending _)) = True
+      isPending _ = False
+
+      getErrorPairs :: [Entry] -> [(ProbId, String)]
+      getErrorPairs entries =
+        let
+          failures = filter isFailed entries
+          initPending = filter isInitial $ filter isPending entries
+          failedInits =
+            map (\(Prob ident _ (Failed s)) -> (ident, s)) $ filter isInitial failures
+          pendOnFailed =
+            [(ident, err)
+            | (Prob failId _ (Failed err)) <- failures
+            , (Prob ident _ (Pending pendingOn)) <- initPending
+            , failId `Prelude.elem` pendingOn
+            ]
+        in
+          failedInits ++ pendOnFailed
 
 
 

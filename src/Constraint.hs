@@ -128,7 +128,7 @@ localName ii =
       0 -> "x"
       1 -> "y"
       2 -> "z"
-      ourIndex ->  ( "local" ++ show ourIndex)
+      ourIndex ->  ( "local" ++ show ourIndex ++ "_")
 
 
 iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> Tm.VAL
