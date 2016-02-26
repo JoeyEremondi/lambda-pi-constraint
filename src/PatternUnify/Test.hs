@@ -41,7 +41,7 @@ initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 
 prettyString t = render $ runPretty $ pretty t
 
-solveEntries :: [Entry] -> Either Err ((), Context)
+solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es))
@@ -53,16 +53,18 @@ solveEntries !es  =
     resultString = case result of
       Left s -> "ERROR " ++ s
       Right (_, ctx) -> render $ runPretty $ pretty ctx
-  in
-    --trace ("\n\n=============\nFinal\n" ++ resultString)
-      result
+  in --trace ("\n\n=============\nFinal\n" ++ resultString) $
+    case result of
+      Left err -> Left [(error "TODO probId", err)]
+      Right ((), ctx) -> getContextErrors es ctx
 
-getContextErrors :: [Entry] -> Context -> Either [(ProbId, Err)] ()
-getContextErrors startEntries (lcx, rcx) = do
+
+getContextErrors :: [Entry] -> Context -> Either [(ProbId, Err)] ((), Context)
+getContextErrors startEntries cx@(lcx, rcx) = do
   let leftErrors = getErrorPairs (trail lcx)
       rightErrors = getErrorPairs (Either.rights rcx)
   case (leftErrors ++ rightErrors) of
-    [] -> return ()
+    [] -> return ((), cx)
     ret -> Left ret
     where
       getIdent (Prob _ ident _) = Just ident
