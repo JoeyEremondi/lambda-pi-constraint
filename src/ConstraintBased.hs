@@ -61,7 +61,12 @@ checker (nameEnv, context) _ term =
     finalVar =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
     soln = solveConstraintM finalVar
     solvedMetas = snd <$> soln
-    eitherVal = trace ("Solved metas " ++ show solvedMetas ) $ (unifToValue . fst) <$> soln
+    solvedString = case solvedMetas of
+      Left _ -> ""
+      Right pairs ->
+        "Solved metas:\n"
+        ++ (intercalate "\n" (map (\(s, v) -> s ++ " := " ++ Tm.prettyString v) pairs))
+    eitherVal = trace solvedString $ (unifToValue . fst) <$> soln
   in
     case eitherVal of
       Left pairs -> Left $ errorMsg pairs
