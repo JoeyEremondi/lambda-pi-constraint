@@ -1,7 +1,7 @@
 -- %if False
 
 --{-# OPTIONS_GHC -F -pgmF she #-}
-{-# LANGUAGE TypeSynonymInstances, PatternSynonyms #-}
+{-# LANGUAGE TypeSynonymInstances, PatternSynonyms, BangPatterns #-}
 
 module PatternUnify.Unify where
 
@@ -32,6 +32,8 @@ import PatternUnify.Context (Entry(..), ProblemState(..), Problem(..), Equation(
                 allProb, allTwinsProb, wrapProb,
                 pushL, popL, pushR, popR,
                 lookupVar, localParams, lookupMeta)
+
+import Debug.Trace (trace)
 
 notSubsetOf :: Ord a => Set a -> Set a -> Bool
 a `notSubsetOf` b = not (a `isSubsetOf` b)
@@ -626,7 +628,7 @@ solver n (Unify q) = isReflexive q >>= \ b ->
           else  unify n q `catchError` failed n q
 solver n (All p b) = do
     (x, q)  <- unbind b
-    case p of
+    trace ("Solver unbound " ++ show (x, prettyString q)) $ case p of
         _ |  x `notElem` fvs q -> simplify n (All p b) [q]
         P _S         -> splitSig [] x _S >>= \ m -> case m of
             Just (y, _A, z, _B, s, _) ->

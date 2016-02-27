@@ -23,6 +23,8 @@ import PatternUnify.Kit
 import PatternUnify.Tm
 import PatternUnify.Context
 
+import Debug.Trace (trace)
+
 
 data Tel where
     Stop  :: Tel
@@ -176,10 +178,10 @@ quote Nat (Succ k) = Succ <$> quote Nat k
 quote (Vec a _) (VNil b) =
   if (a == b)
   then VNil <$> quote a SET --TODO check equal?
-  else error "Bad quote NIL "
+  else fail "Bad quote NIL "
 quote (Vec a (Succ n)) (VCons b m h t) =
   if (m /= n || a /= b)
-  then error "Bad quote CONS"
+  then fail "Bad quote CONS"
   else VCons
     <$> quote SET a
     <*> quote Nat n
@@ -189,10 +191,10 @@ quote (Vec a (Succ n)) (VCons b m h t) =
 
 quote (Eq a x y) (ERefl b z) =
   if (x /= y && x /= z && a /= b)
-  then error "Bad quote REFL"
+  then fail "Bad quote REFL"
   else ERefl <$> quote SET a <*> quote a x
 
-quote _T           t         = error $ "quote: type " ++ pp _T ++
+quote _T           t         = fail $ "quote: type " ++ pp _T ++
                                        " does not accept " ++ pp t
 
 
@@ -202,7 +204,7 @@ quoteTel (Ask _S _T)  (s:ss)  = do  s'   <- quote _S s
                                     tel  <- supply _T s
                                     ss'  <- quoteTel tel ss
                                     return $ s':ss'
-quoteTel _            _       = error "quoteTel: arity error"
+quoteTel _            _       = fail "quoteTel: arity error"
 
 
 quoteSpine :: Type -> VAL -> [Elim] -> Contextual VAL
@@ -212,7 +214,7 @@ quoteSpine (PI _S _T)   u (A s:as)  =  do
                                        quoteSpine (_T $$ s') (u $$ s') as
 quoteSpine (SIG _S _T)  u (Hd:as)   =  quoteSpine _S (u %% Hd) as
 quoteSpine (SIG _S _T)  u (Tl:as)   =  quoteSpine (_T $$ (u %% Hd)) (u %% Tl) as
-quoteSpine _T           u (s:_)     =  error $ "quoteSpine: type " ++ pp _T ++
+quoteSpine _T           u (s:_)     =  fail $ "quoteSpine: type " ++ pp _T ++
                                                " of " ++ pp u ++
                                                " does not permit " ++ pp s
 
@@ -222,7 +224,7 @@ equal :: Type -> VAL -> VAL -> Contextual Bool
 equal _T s t = do
     s'   <- quote _T s
     t'   <- quote _T t
-    return $ s' == t'
+    trace ("Equal comparing " ++ show (prettyString s, prettyString s', prettyString t, prettyString t', s' == t')) $ return $ s' == t'
 
 (<->) :: Type -> Type -> Contextual Bool
 _S <-> _T = equal SET _S _T
@@ -243,7 +245,7 @@ checkProb st p@(Unify (EQN _S s _T t)) = do
    check _T t
    if st == Solved
        then do  eq <- isReflexive (EQN _S s _T t)
-                unless eq $ error $ "checkProb: not unified " ++ pp p
+                unless eq $ fail $ "checkProb: not unified " ++ pp p
        else return ()
 checkProb st (All (P _T) b) = do
     check SET _T
@@ -260,9 +262,9 @@ checkProb st (All (Twins _S _T) b) = do
 validate :: (ProblemState -> Bool) -> Contextual ()
 validate q = local (const []) $ do
     _Del' <- getR
-    unless (null _Del') $ error "validate: not at far right"
+    unless (null _Del') $ fail "validate: not at far right"
     _Del <- getL
-    help _Del `catchError` (error . (++ ("\nwhen validating\n" ++ pp (_Del, _Del'))))
+    help _Del `catchError` (fail . (++ ("\nwhen validating\n" ++ pp (_Del, _Del'))))
     putL _Del
   where
     help :: ContextL -> Contextual ()

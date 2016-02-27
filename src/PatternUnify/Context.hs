@@ -1,5 +1,5 @@
 --{-# OPTIONS_GHC -F -pgmF she #-}
-{-# LANGUAGE GADTs, KindSignatures, TemplateHaskell,
+{-# LANGUAGE GADTs, KindSignatures, TemplateHaskell, BangPatterns,
       FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
       UndecidableInstances, GeneralizedNewtypeDeriving,
       TypeSynonymInstances, ScopedTypeVariables, StandaloneDeriving, PatternSynonyms #-}
@@ -220,11 +220,13 @@ modifyR :: (ContextR -> ContextR) -> Contextual ()
 modifyR f = modify (\ (x, y) -> (x, f y))
 
 pushL :: Entry -> Contextual ()
-pushL e = modifyL (:< e)
+pushL e = trace ("Push left " ++ prettyString e) $
+  modifyL (:< e)
 
 pushR :: Either Subs Entry -> Contextual ()
 pushR (Left s)   = pushSubs s
-pushR (Right e)  = modifyR (Right e :)
+pushR (Right e)  =trace ("Push right " ++ prettyString e) $
+ modifyR (Right e :)
 
 pushSubs :: Subs -> Contextual ()
 pushSubs []  = return ()
@@ -235,7 +237,7 @@ popL = do
     cx <- getL
     case cx of
         (cx' :< e)  -> putL cx' >> return e
-        B0          -> error "popL ran out of context"
+        B0          -> fail "popL ran out of context"
 
 popR :: Contextual (Maybe (Either Subs Entry))
 popR = do
@@ -294,6 +296,8 @@ metaValue x = look =<< getL
     look (cx  :< E y _ (DEFN val))  | x == y     = return val
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx
+
+
 
 
 $(derive[''Problem, ''ProblemState, ''Dec, ''Entry, ''Equation, ''Param, ''ProbId])
