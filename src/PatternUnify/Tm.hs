@@ -347,6 +347,14 @@ instance Occurs VAL where
                     Var v _  | not isMeta && isFree v  -> singleton v
                     Meta v   | isMeta && isFree v      -> singleton v
                     _                                  -> emptyC
+    frees isMeta (Nat) = emptyC
+    frees isMeta (Zero) = emptyC
+    frees isMeta (Succ n) = frees isMeta n
+    frees isMeta (Vec a n) = (frees isMeta a `union` frees isMeta n)
+    frees isMeta (VNil a) = frees isMeta a
+    frees isMeta (VCons a n h t) = unions (map (frees isMeta) [a,n,h,t])
+    frees isMeta (Eq a x y) = unions (map (frees isMeta) [a,x,y])
+    frees isMeta (ERefl a x) = unions (map (frees isMeta) [a,x])
     frees isMeta _ = emptyC --TODO frees cases
 
 instance Occurs Elim where

@@ -221,7 +221,7 @@ quoteSpine _T           u (s:_)     =  fail $ "quoteSpine: type " ++ pp _T ++
 
 
 equal :: Type -> VAL -> VAL -> Contextual Bool
-equal _T s t = do
+equal _T s t = trace ("Pre Equal comparing " ++ show (prettyString s, prettyString t)) $ do
     s'   <- quote _T s
     t'   <- quote _T t
     trace ("Equal comparing " ++ show (prettyString s, prettyString s', prettyString t, prettyString t', s' == t')) $ return $ s' == t'
@@ -230,8 +230,9 @@ equal _T s t = do
 _S <-> _T = equal SET _S _T
 
 isReflexive :: Equation -> Contextual Bool
-isReflexive (EQN _S s _T t) =do
-    eq <- equal SET _S _T
+isReflexive (EQN _S s _T t) = trace ("Reflex " ++ show (prettyString _S, prettyString s, prettyString _T, prettyString t)) $ do
+    vars <- ask
+    eq <- trace ("isReflexive vars " ++ show vars) $ equal SET _S _T
     if eq  then  equal _S s t
            else  return False
 
