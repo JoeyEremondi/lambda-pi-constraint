@@ -59,7 +59,9 @@ checker (nameEnv, context) _ term =
     (typeGlobals, typeLocals) = splitContext context
     (valGlobals, valLocals) = splitContext  nameEnv
     finalVar =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
-    eitherVal = unifToValue <$> solveConstraintM finalVar
+    soln = solveConstraintM finalVar
+    solvedMetas = snd <$> soln
+    eitherVal = trace ("Solved metas " ++ show solvedMetas ) $ (unifToValue . fst) <$> soln
   in
     case eitherVal of
       Left pairs -> Left $ errorMsg pairs
@@ -85,7 +87,7 @@ iType_ iiGlobal g (L region it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ sh
     iType_' ii g m@(Meta_ s) = do
       metaType <- freshType g
       let ourNom = metaNom s
-      recordSourceMeta ourNom
+      recordSourceMeta s
       --Add metavariable to our context
       declareMeta ourNom metaType
       return metaType
