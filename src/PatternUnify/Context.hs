@@ -220,12 +220,12 @@ modifyR :: (ContextR -> ContextR) -> Contextual ()
 modifyR f = modify (\ (x, y) -> (x, f y))
 
 pushL :: Entry -> Contextual ()
-pushL e = trace ("Push left " ++ prettyString e) $
+pushL e = -- trace ("Push left " ++ prettyString e) $
   modifyL (:< e)
 
 pushR :: Either Subs Entry -> Contextual ()
 pushR (Left s)   = pushSubs s
-pushR (Right e)  =trace ("Push right " ++ prettyString e) $
+pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
  modifyR (Right e :)
 
 pushSubs :: Subs -> Contextual ()
@@ -268,7 +268,7 @@ localParams = local
 lookupVar :: MonadReader Params m => Nom -> Twin -> m Type
 lookupVar x w = do
   vars <- ask
-  trace ("Lookup var " ++ prettyString x ++ " in " ++ show vars) $ look vars
+  look vars
   where
     look [] = fail $ "lookupVar: missing " ++ show x
     look ((y, e) : _) | x == y =
