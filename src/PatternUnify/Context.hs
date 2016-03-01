@@ -220,7 +220,7 @@ modifyR :: (ContextR -> ContextR) -> Contextual ()
 modifyR f = modify (\ (x, y) -> (x, f y))
 
 pushL :: Entry -> Contextual ()
-pushL e = -- trace ("Push left " ++ prettyString e) $
+pushL e = trace ("Push left " ++ prettyString e) $
   modifyL (:< e)
 
 pushR :: Either Subs Entry -> Contextual ()

@@ -90,7 +90,7 @@ hole    ::  [(Nom, Type)] -> Type ->
 define  ::  [(Nom, Type)] -> Nom -> Type -> VAL ->
                     Contextual ()
 
-hole _Gam _T f = do  check SET (_Pis _Gam _T) `catchError`
+hole _Gam _T f = do  trace ("hole check") check SET (_Pis _Gam _T) `catchError`
                          (error . (++ "\nwhen creating hole of type " ++
                                        pp (_Pis _Gam _T)))
                      x <- freshNom
@@ -101,7 +101,7 @@ hole _Gam _T f = do  check SET (_Pis _Gam _T) `catchError`
 
 defineGlobal ::  Nom -> Type -> VAL -> Contextual a ->
                 Contextual a
-defineGlobal x _T v m = do   check _T v `catchError`
+defineGlobal x _T v m = do   trace ("defineGlobal check") $ check _T v `catchError`
                                   (error . (++ "\nwhen defining " ++
                                             pp x ++ " : " ++ pp _T ++
                                             " to be " ++ pp v))
@@ -369,7 +369,7 @@ flexRigid _ _ q = error $ "flexRigid: " ++ show q
 
 tryInvert ::  ProbId -> Equation -> Type -> Contextual () ->
                   Contextual ()
-tryInvert n q@(EQN _ (N (Meta alpha) es) _ s) _T k =
+tryInvert n q@(EQN _ (N (Meta alpha) es) _ s) _T k = trace ("Try invert " ++ show [pp n, pp q, pp alpha, show (map pp es), pp s, pp _T]) $
     invert alpha _T es s >>= \ m -> case m of
         Nothing  ->  k
         Just v   ->  active n q >>
@@ -396,7 +396,8 @@ invert alpha _T es t = do
     when (isStrongRigid o) $ throwError "occurrence"
     case toVars es of
         Just xs | o == Nothing && linearOn t xs -> do
-            b <- localParams (const []) (typecheck _T (lams xs t))
+            b <- localParams (const []) (trace ("Invert check " ++ pp alpha ++ " SOLVED to " ++ pp _T ++ " ||| " ++ pp (lams xs t)) $
+                    typecheck _T (lams xs t))
             return $ if b then Just (lams xs t) else Nothing
         _ -> return Nothing
 
@@ -660,7 +661,7 @@ lower _Phi alpha (PI _S _T) = do
             hole _Phi (_Pi y _A  (_Pi z _B (_T $$ s))) $ \ w ->
                 define _Phi alpha (PI _S _T) (lam x (w $$ u $$ v)))
 
-lower _Phi alpha _T = pushL (E alpha (_Pis _Phi _T) HOLE)
+lower _Phi alpha _T = trace ("Lower pushL " ++ show [show alpha, show _T]) $ pushL (E alpha (_Pis _Phi _T) HOLE)
 
 
 -- Both |solver| and |lower| above need to split $\Sigma$-types (possibly
@@ -736,7 +737,7 @@ ambulando ns theta = popR >>= \ x -> case x of
                                ambulando ns []
     Prob n p Solved        ->  pushL (Prob n p Solved) >>
                                ambulando (n:ns) theta
-    E alpha _T HOLE        ->  lower [] alpha _T >>
+    E alpha _T HOLE        ->  (trace ("Ambulando entry " ++ show (pp alpha, pp _T)) $ lower [] alpha _T) >>
                                ambulando ns theta
     e'                     ->  pushL e' >>
                                ambulando ns theta

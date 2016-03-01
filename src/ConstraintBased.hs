@@ -101,16 +101,16 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
       =
         do
           cType_  ii g tyt conStar
-          ty <- evaluate tyt g
-          --trace ("&&" ++ show ii ++ "Annotated " ++ show tyt ++ " as " ++ prettyString ty ++ "\nenv: " ++ show g) $
-          cType_ ii g e ty
+          ty <- evaluate ii tyt g
+          trace ("&&" ++ show ii ++ "Annotated " ++ show e ++ " as " ++ show ty)  $
+            cType_ ii g e ty
           return ty
     iType_' ii g Star_
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
               let argNom = localName (ii+1)
-              ty <- evaluate tyt g --Ensure LHS has type Set
+              ty <- evaluate ii tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               let newEnv = (addType (ii, ty)  g)
               cType_  (ii + 1) newEnv
@@ -118,7 +118,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
               return conStar
     iType_' ii g (Free_ x)
       =     case typeLookup x g of
-              Just ty        ->  return ty
+              Just ty        ->  trace ("Looked up type " ++ show ty ++ " of " ++ show x) $ return ty
               Nothing        ->  unknownIdent g (render (iPrint_ 0 0 (builtin $ Free_ x)))
     iType_' ii g (e1 :$: e2)
       =     do
@@ -131,7 +131,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
                 cType_ ii g e2 piArg
 
                 --Get a type for the evaluation of the argument
-                argVal <- evaluate e2 g
+                argVal <- evaluate ii e2 g
 
                 --Our resulting type is the application of our arg type into the
                 --body of the pi type
@@ -140,8 +140,8 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
     iType_' ii g Nat_                  =  return conStar
     iType_' ii g (NatElim_ m mz ms n)  =
       do  cType_ ii g m (Tm.Nat Tm.--> Tm.SET)
-          --evaluate $ our param m
-          mVal <- evaluate m g
+          --evaluate ii $ our param m
+          mVal <- evaluate ii m g
           --Check that mz has type (m 0)
           cType_ ii g mz (mVal Tm.$$ Tm.Zero)
           --Check that ms has type ( (k: N) -> m k -> m (S k) )
@@ -152,7 +152,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
           cType_ ii g n Tm.Nat
 
           --We infer that our final expression has type (m n)
-          nVal <- evaluate n g
+          nVal <- evaluate ii n g
           return $ mVal Tm.$$ nVal
 
     iType_' ii g (Vec_ a n) =
@@ -162,10 +162,10 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
     iType_' ii g (VecElim_ a m mn mc n vs) =
 
       do  cType_ ii g a conStar
-          aVal <- evaluate a g
+          aVal <- evaluate ii a g
           cType_ ii g m
             (  mkPiFn Tm.Nat ( \n -> mkPiFn  (Tm.Vec aVal n) ( \ _ -> conStar)))
-          mVal <- evaluate m g
+          mVal <- evaluate ii m g
           cType_ ii g mn (foldl (Tm.$$) mVal [ Tm.Zero, Tm.VNil aVal ])
           cType_ ii g mc
             (  mkPiFn Tm.Nat ( \ n ->
@@ -174,43 +174,43 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
                mkPiFn (foldl (Tm.$$) mVal  [n, ys]) ( \ _ ->
                (foldl (Tm.$$) mVal [(Tm.Succ n), Tm.VCons aVal n y ys]))))))
           cType_ ii g n $ Tm.Nat
-          nVal <- evaluate n g
+          nVal <- evaluate ii n g
           cType_ ii g vs ((Tm.Vec aVal nVal ))
-          vsVal <- evaluate vs g
+          vsVal <- evaluate ii vs g
           return (foldl (Tm.$$) mVal [nVal, vsVal])
 
 
-    iType_' i g (Eq_ a x y) =
-      do  cType_ i g a conStar
-          aVal <- evaluate a g
-          cType_ i g x aVal
-          cType_ i g y aVal
+    iType_' ii g (Eq_ a x y) =
+      do  cType_ ii g a conStar
+          aVal <- evaluate ii a g
+          cType_ ii g x aVal
+          cType_ ii g y aVal
           return conStar
-    iType_' i g (EqElim_ a m mr x y eq) =
+    iType_' ii g (EqElim_ a m mr x y eq) =
       do
           --Our a value should be a type
-          cType_ i g a conStar
-          --evaluate $ our a value
-          aVal <- evaluate a g
-          cType_ i g m
+          cType_ ii g a conStar
+          --evaluate ii $ our a value
+          aVal <- evaluate ii a g
+          cType_ ii g m
             (mkPiFn aVal (\ x ->
              mkPiFn aVal ( \ y ->
              mkPiFn ((  Tm.Eq aVal x y)) ( \ _ -> conStar))))
-          --evaluate $ our given m value
-          mVal <- evaluate m g
-          cType_ i g mr
+          --evaluate ii $ our given m value
+          mVal <- evaluate ii m g
+          cType_ ii g mr
             (mkPiFn aVal ( \ x ->
              ( foldl (Tm.$$) mVal $ [x, x] )))
-          cType_ i g x aVal
-          xVal <- evaluate x g
-          cType_ i g y aVal
-          yVal <- evaluate y g
+          cType_ ii g x aVal
+          xVal <- evaluate ii x g
+          cType_ ii g y aVal
+          yVal <- evaluate ii y g
           --TODO make this nicer with a fold?
           let
             eqC =
               ((Tm.Eq yVal xVal aVal))
-          cType_ i g eq eqC
-          eqVal <- evaluate eq g
+          cType_ ii g eq eqC
+          eqVal <- evaluate ii eq g
           return (foldl (Tm.$$) mVal [xVal, yVal])
 
     iType_' ii g (Bound_ vi) = error "TODO why never bound?"
@@ -226,7 +226,7 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
             do
               tyInferred <- iType_ ii g e
               --Ensure that the annotation type and our inferred type unify
-              --We have to evaluate $ our normal form
+              --We have to evaluate ii $ our normal form
               --trace ("INF " ++ show e ++ "\nunifying " ++ show [tyAnnot, tyInferred] ++ "\nenv " ++ show g) $
               unifySets reg tyAnnot tyInferred g
     {-
@@ -271,7 +271,7 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
           bVal <- freshType reg g
           unifySets reg ty (mkVec bVal Tm.Zero) g
           cType_ ii g a conStar
-          aVal <- evaluate a g
+          aVal <- evaluate ii a g
           unifySets reg aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
       do  bVal <- freshType (region a) g
@@ -281,13 +281,13 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
           unifySets reg ty (mkVec bVal kVal) g
           cType_ ii g a conStar
 
-          aVal <- evaluate a g
+          aVal <- evaluate ii a g
           unifySets reg aVal bVal g
 
           cType_ ii g n Tm.Nat
 
           --Make sure our numbers match
-          nVal <- evaluate n g
+          nVal <- evaluate ii n g
           unify reg nVal kVal Tm.Nat g
 
           --Make sure our new head has the right list type
@@ -303,7 +303,7 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
           --Check that our type argument has kind *
           cType_ ii g a conStar
           --Get evaluation constraint for our type argument
-          aVal <- evaluate a g
+          aVal <- evaluate ii a g
 
           --Check that our given type is the same as our inferred type --TODO is this right?
           unifySets reg aVal bVal g
@@ -311,8 +311,8 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
           --Check that the value we're proving on has type A
           cType_ ii g z aVal
 
-          --evaluate $ the value that we're proving equality on
-          zVal <- evaluate z g
+          --evaluate ii $ the value that we're proving equality on
+          zVal <- evaluate ii z g
 
           --Show constraint that the type parameters must match that type
           unify reg zVal xVal bVal g

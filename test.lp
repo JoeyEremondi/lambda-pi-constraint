@@ -11,7 +11,7 @@
 -- cases for 0 and 1
 let nat1Elim =
   ( \ m m0 m1 ms -> natElim m m0
-                            (\ p rec -> natElim (\ n -> m (Succ n)) m1 ms p) )
+                            (\ p rec -> natElim (\ k -> m (Succ k)) m1 ms p) )
   :: forall (m :: Nat -> *) . m 0 -> m 1 ->
-     (forall n :: Nat . m (Succ n) -> m (Succ (Succ n))) ->
+     (forall l :: Nat . m (Succ l) -> m (Succ (Succ l))) ->
      forall (n :: Nat) . m n

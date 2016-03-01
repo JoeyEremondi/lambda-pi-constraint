@@ -106,6 +106,8 @@ solveConstraintM cm =
 
 cToUnifForm0 = cToUnifForm 0
 
+evaluate ii t g = return $ cToUnifForm ii g t
+
 cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> Tm.VAL
 cToUnifForm ii env (Common.L _ tm) =
  let
@@ -151,9 +153,9 @@ listLookup l i =
 localName :: Int -> Tm.Nom
 localName ii =
   LN.string2Name $ case ii of
-      0 -> "x"
-      1 -> "y"
-      2 -> "z"
+      0 -> "xx_"
+      1 -> "yy_"
+      2 -> "zz_"
       ourIndex ->  ( "local" ++ show ourIndex ++ "_")
 
 
@@ -535,13 +537,14 @@ addConstr c = tell [c]
 
 --metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
 
-
+{-}
 evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
 evaluate term env = do
   --t <- fresh (error "TODO type in eval")
   let normalForm = cToUnifForm 0 env term
   --unify t normalForm env --cToUnifForm0 term
   return normalForm
+  -}
 
 unknownIdent :: WholeEnv -> String -> ConstraintM a
 unknownIdent env s = error $

@@ -48,7 +48,7 @@ solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es))
-    result = trace ("Initial context:\n" ++ initialContextString ) $
+    result = trace ("Initial context:\n" ++ initialContextString ++"\n\n******RAWENTRIES\n" ++ show es ++"\n***************") $
        runContextual (B0, map Right es) $ do
           initialise
           ambulando [] []

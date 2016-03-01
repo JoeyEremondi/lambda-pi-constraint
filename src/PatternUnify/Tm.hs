@@ -431,7 +431,7 @@ f $*$ _Gam = f $$$ map (var . fst) _Gam
 lam_ s f = lam (s2n s) (f $ vv s)
 pi_ s str f = PI s $ lam_ str f
 
-msType m = (pi_ Nat "l" (\ l -> (m $$ l) --> ((m $$ (Succ l)))))
+msType m = (pi_ Nat "msArg" (\ l -> (m $$ l) --> ((m $$ (Succ l)))))
 
 vmType a =(pi_ Nat "n" (\ n -> (Vec a n) --> ( SET)))
 
