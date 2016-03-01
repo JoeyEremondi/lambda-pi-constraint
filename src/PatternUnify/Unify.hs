@@ -659,11 +659,13 @@ instantiate d@(alpha, _T, f) = popL >>= \ e -> case e of
 -- parameter.
 
 solver :: ProbId -> Problem -> Contextual ()
+--solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
 solver n (Unify q) = isReflexive q >>= \ b ->
     if b  then  solved n q
           else  unify n q `catchError` failed n q
 solver n (All p b) = do
     (x, q)  <- unbind b
+    --trace ("Solver forall unbind " ++ show (x,q)) $
     case p of
         _ |  x `notElem` fvs q -> simplify n (All p b) [q]
         P _S         -> splitSig [] x _S >>= \ m -> case m of

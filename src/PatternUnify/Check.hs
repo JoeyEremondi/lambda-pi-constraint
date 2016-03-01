@@ -52,12 +52,12 @@ canTy (c, as) v = fail $ "canTy: canonical type " ++ pp (C c as) ++
 
 
 typecheck :: Type -> VAL -> Contextual Bool
-typecheck _T t = (check _T t >> return True) `catchError`
+typecheck _T t = trace ("Typecheck " ++ pp _T ++ " ||| " ++ pp t) $ (check _T t >> return True) `catchError`
                      (\ _ -> return False)
 
 check :: Type -> VAL -> Contextual ()
 
-check _T t | trace ("Checing " ++ pp _T ++ " ||| " ++ pp t) False = error "check"
+--check _T t | trace ("Checing " ++ pp _T ++ " ||| " ++ pp t) False = error "check"
 
 check (C c as)    (C v bs)  =  do
                                tel <- canTy (c, as) v
@@ -184,7 +184,7 @@ checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty
 
 
 quote :: Type -> VAL -> Contextual VAL
-quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
+--quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
 quote (PI _S _T)   f         =  do
                                 x <- fresh (s2n "xq")
                                 lam x <$> inScope x (P _S)
@@ -282,7 +282,8 @@ quoteSpine _T           u (s:_)     =  fail $ "quoteSpine: type " ++ pp _T ++
 
 
 equal :: Type -> VAL -> VAL -> Contextual Bool
-equal _T s t = trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ========= " ++ pp t) $ do
+equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ========= " ++ pp t) $
+  do
     s'   <- quote _T s
     t'   <- quote _T t
     return $ s' == t'
@@ -291,15 +292,18 @@ equal _T s t = trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ======
 _S <-> _T = equal SET _S _T
 
 isReflexive :: Equation -> Contextual Bool
-isReflexive (EQN _S s _T t) = do
+isReflexive eqn@(EQN _S s _T t) = --trace ("IsRelexive " ++ pp eqn) $
+  do
     vars <- ask
-    eq <- equal SET _S _T
+    eq <- --trace ("IsReflexive vars " ++ show vars) $ 
+      equal SET _S _T
     if eq  then  equal _S s t
            else  return False
 
 
 
 checkProb :: ProblemState -> Problem -> Contextual ()
+--checkProb st p | trace ("checkProb " ++ show st ++ " " ++ pp p) False = error "checkProb"
 checkProb st p@(Unify (EQN _S s _T t)) = do
    check SET _S
    check _S s

@@ -371,6 +371,10 @@ instance Occurs Elim where
    occurrence xs  (A a)  = occurrence xs a
    occurrence _   _      = Nothing
    frees isMeta  (A a)   = frees isMeta a
+   frees isMeta  (NatElim m mz ms) = unions (map (frees isMeta) [m, mz, ms])
+   frees isMeta  (FinElim m mz ms n) = unions (map (frees isMeta) [m, mz, ms, n])
+   frees isMeta  (VecElim a m mn mc n ) = unions (map (frees isMeta) [m, mn, mc, n, a])
+   frees isMeta  (EqElim a m mr x y) = unions (map (frees isMeta) [a, m, mr, x, y])
    frees _       _       = emptyC
 
 instance (Occurs a, Occurs b) => Occurs (a, b) where
