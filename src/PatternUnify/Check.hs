@@ -139,12 +139,12 @@ checkSpine (PI _S _T)   u  (A s:ts)  = check _S s >>
 checkSpine (SIG _S _T)  u  (Hd:ts)   = checkSpine _S (u %% Hd) ts
 checkSpine (SIG _S _T)  u  (Tl:ts)   = checkSpine (_T $$ (u %% Hd)) (u %% Tl) ts
 checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
-  check u Nat
-  check m (Nat --> SET)
-  check mz (m $$ Zero)
+  check Nat u
+  check (Nat --> SET) m
+  check (m $$ Zero) mz
   let ln = string2Name "l"
       lv = var ln
-  check ms (PI Nat $ (m $$ lv) --> m $$ (Succ lv))
+  check (msType m) ms
   checkSpine (m $$ u) (u %% elim) ts
 
 checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty

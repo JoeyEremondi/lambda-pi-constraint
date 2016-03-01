@@ -51,7 +51,7 @@ splitContext entries = helper entries [] []
 errorMsg :: [(Region, String)] -> String
 errorMsg pairs =
   List.intercalate "\n" $
-  map (\(reg, err) -> show reg ++ ": " ++ show err ) pairs
+  map (\(reg, err) -> show reg ++ ": " ++ err ) pairs
 
 checker :: (Ctx Tm.VAL, Ctx Tm.VAL) -> TypeChecker
 checker (nameEnv, context) _ term =
