@@ -355,8 +355,11 @@ instance Occurs VAL where
                     Meta v   | isMeta && isFree v      -> singleton v
                     _                                  -> emptyC
     frees isMeta (Nat) = emptyC
+    frees isMeta (Fin n) = frees isMeta n
     frees isMeta (Zero) = emptyC
     frees isMeta (Succ n) = frees isMeta n
+    frees isMeta (FZero n) = frees isMeta n
+    frees isMeta (FSucc n f) = (frees isMeta n `union` frees isMeta f)
     frees isMeta (Vec a n) = (frees isMeta a `union` frees isMeta n)
     frees isMeta (VNil a) = frees isMeta a
     frees isMeta (VCons a n h t) = unions (map (frees isMeta) [a,n,h,t])
