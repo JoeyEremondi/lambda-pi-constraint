@@ -75,6 +75,9 @@ check _T          (N u as)  =  do
                                                   " is not " ++ pp _T
 
 check (SET) (Nat) = return ()
+check (SET) (Fin n) = do
+  check Nat n
+  return ()
 check (SET) (Vec a n) = do
   check SET a
   check Nat n
