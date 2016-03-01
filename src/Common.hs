@@ -448,8 +448,8 @@ unifte =      [(Global "Zero", Tm.Nat),
              (Global "Fin", Tm.Nat Tm.--> Tm.SET),
              (Global "finElim",
                 pi_ (Tm.finmType) "m" $ \m ->
-                  (Tm.finmzType m) Tm.--> (Tm.finmzType m) Tm.-->
-                  (pi_ Tm.Nat "n" $ \n -> pi_ (Tm.Fin n) "f" $ \f -> m Tm.$$$ [n, f Tm.$$ n]))
+                  (Tm.finmzType m) Tm.--> (Tm.finmsType m) Tm.-->
+                  (Tm.finRetType m))
         ]
 
 

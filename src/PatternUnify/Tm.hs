@@ -124,6 +124,7 @@ instance Pretty VAL where
     pretty Zero = return $ text "0"
     pretty (Succ n) =  (\pn -> text "S(" <+> pn <+> text ")") <$> pretty n
 
+    pretty (Fin n) = (\pn -> text "Fin " <+> pn ) <$> pretty n
     pretty (FZero n) = (\pn -> text "FZero " <+> pn ) <$> pretty n
     pretty (FSucc n f) =  (\pn pf -> text "S(" <+> pn <+> text "," <+> pf <+> text ")") <$> pretty n <*> pretty f
 
@@ -471,9 +472,11 @@ finmType = pi_ (Nat) "n" $ \n ->
 finmzType m = pi_ (Nat) "n" $ \n ->
   m $$$ [Succ n, FZero n]
 
-finmsType m = pi_ (Nat) "n" $ \n ->
+finmsType m = --pi_ (Nat) "n" $ \n ->
   pi_ Nat "n" $ \n ->
     pi_ (Fin n) "f" $ \f ->
       (m $$$ [n, f]) --> (m $$$ [Succ n, FSucc n f])
+
+finRetType m = pi_ Nat "n" $ \n -> pi_ (Fin n) "f" $ \f -> m $$$ [n, f]
 
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])
