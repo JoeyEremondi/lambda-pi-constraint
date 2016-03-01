@@ -18,7 +18,7 @@ cabal-version:       >=1.10
 executable lambda-pi-constraint
   main-is:             Main.hs
   other-modules:
-    Original,
+--    Original,
     ConstraintBased,
     Common,
     Constraint,

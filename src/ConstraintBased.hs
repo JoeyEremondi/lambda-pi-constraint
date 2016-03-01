@@ -66,7 +66,7 @@ checker (nameEnv, context) _ term =
       Right pairs ->
         "Solved metas:\n"
         ++ (intercalate "\n" (map (\(s, v) -> s ++ " := " ++ Tm.prettyString v) pairs))
-    eitherVal = trace solvedString $ (unifToValue . fst) <$> soln
+    eitherVal = trace solvedString $ (\x -> (unifToValue $ fst x, fst x)) <$> soln
   in
     case eitherVal of
       Left pairs -> Left $ errorMsg pairs
