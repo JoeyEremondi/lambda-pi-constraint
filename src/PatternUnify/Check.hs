@@ -52,7 +52,7 @@ canTy (c, as) v = fail $ "canTy: canonical type " ++ pp (C c as) ++
 
 
 typecheck :: Type -> VAL -> Contextual Bool
-typecheck _T t = trace ("Typecheck " ++ pp _T ++ " ||| " ++ pp t) $ (check _T t >> return True) `catchError`
+typecheck _T t = (check _T t >> return True) `catchError`
                      (\ _ -> return False)
 
 check :: Type -> VAL -> Contextual ()
@@ -67,12 +67,12 @@ check (PI _S _T)  (L b)     =  do
                                (x, t) <- unbind b
                                inScope x (P _S) $ check (_T $$ var x) t
 
-check _T          (N u as)  =  trace ("Checking neutral head" ++ show u ++ " spine " ++ show as ) $ do
+check _T          (N u as)  = do
                                vars <- ask
-                               _U   <- trace ("Inferring with env " ++ show vars) $ infer u
+                               _U   <- infer u
                                _T'  <-
                                   checkSpine _U (N u []) as
-                               eq   <- trace ("Neutral eq comparing " ++ pp _T ++ " ===== " ++ pp _T') $ (_T <-> _T')
+                               eq   <- (_T <-> _T')
                                unless eq $ fail $ "Inferred type " ++ pp _T' ++
                                                   " of " ++ pp (N u as) ++
                                                   " is not " ++ pp _T
@@ -295,7 +295,7 @@ isReflexive :: Equation -> Contextual Bool
 isReflexive eqn@(EQN _S s _T t) = --trace ("IsRelexive " ++ pp eqn) $
   do
     vars <- ask
-    eq <- --trace ("IsReflexive vars " ++ show vars) $ 
+    eq <- --trace ("IsReflexive vars " ++ show vars) $
       equal SET _S _T
     if eq  then  equal _S s t
            else  return False

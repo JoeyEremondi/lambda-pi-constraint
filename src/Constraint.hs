@@ -390,12 +390,22 @@ appToSpine (Common.App it ct) =
 appToSpine e = (e, [])
 
 
+splitContext :: [(Common.Name, a)] -> ([(String, a)], [(Int, a)])
+splitContext entries = helper entries [] []
+  where
+    helper [] globals locals = (globals, locals)
+    helper ( (Common.Global s, x) : rest) globals locals =
+      helper rest ((s,x) : globals) locals
+    helper ((Common.Local i, x) : rest) globals locals =
+      helper rest globals ((i,x) : locals)
 
-constrEval :: Common.NameEnv Tm.VAL -> Common.ITerm_ -> Tm.VAL
-constrEval env it =
+constrEval :: (Common.NameEnv Tm.VAL, Common.NameEnv Tm.VAL) -> Common.ITerm_ -> Tm.VAL
+constrEval (tenv, venv) it =
   let
-    tmSubs = map (\(Common.Global nm, v) -> (LN.s2n nm, v)) env
-    wholeEnv = error "" env
+    tmSubs = map (\(Common.Global nm, v) -> (LN.s2n nm, v)) venv
+    (tglobals, tlocals ) = splitContext tenv
+    (vglobals, vlocals) = splitContext venv
+    wholeEnv = WholeEnv vlocals tlocals vglobals tglobals
   in
     Tm.eval tmSubs (iToUnifForm 0 wholeEnv it)
 

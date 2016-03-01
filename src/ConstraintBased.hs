@@ -39,14 +39,6 @@ import Debug.Trace (trace)
 
 mapSnd f (a,b) = (a, f b)
 
-splitContext :: [(Name, a)] -> ([(String, a)], [(Int, a)])
-splitContext entries = helper entries [] []
-  where
-    helper [] globals locals = (globals, locals)
-    helper ( (Global s, x) : rest) globals locals =
-      helper rest ((s,x) : globals) locals
-    helper ((Local i, x) : rest) globals locals =
-      helper rest globals ((i,x) : locals)
 
 errorMsg :: [(Region, String)] -> String
 errorMsg pairs =

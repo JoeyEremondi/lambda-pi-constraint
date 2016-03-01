@@ -34,9 +34,9 @@ let nat1Elim =
      (forall n :: Nat . m (Succ n) -> m (Succ (Succ n))) ->
      forall (n :: Nat) . m n
 
+{-
 -- an eliminator for natural numbers that has special
 -- cases for 0, 1 and 2
-{-
 let nat2Elim =
   ( \ m m0 m1 m2 ms -> nat1Elim m m0 m1
                                 (\ p rec -> natElim (\ n -> m (Succ (Succ n))) m2 ms p) )
@@ -61,6 +61,7 @@ let finNat = finElim (\ _ _ -> Nat)
 let Unit = Fin 1
 -- constructor
 let U = FZero 0
+
 -- eliminator
 let unitElim =
   ( \ m mu -> finElim ( nat1Elim (\ n -> Fin n -> *)
@@ -85,6 +86,7 @@ let unitElim =
 
 -- empty type
 let Void = Fin 0
+
 -- eliminator
 let voidElim =
   ( \ m -> finElim (natElim (\ n -> Fin n -> *)
@@ -97,9 +99,11 @@ let voidElim =
 
 -- type of booleans
 let Bool = Fin 2
+
 -- constructors
 let False = FZero 1
 let True  = FSucc 1 (FZero 0)
+
 -- eliminator
 let boolElim =
   ( \ m mf mt -> finElim ( nat2Elim (\ n -> Fin n -> *)

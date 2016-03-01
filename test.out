@@ -11,10 +11,10 @@ _1 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x2 ?? : (Set : Set) === (Set : Set) <= SOLVED
 _2 ?? : ∀ (xx_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 _3 ?? : (Set : Set) === (Set : Set) <= SOLVED
-α_33_20_4 := (\ xx_ . Nat) : (Nat -> Set) -> Set
+α_33_25_4 := (\ xx_ . Nat) : (Nat -> Set) -> Set
 x26 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x18 ?? : ∀ (xx_ : Nat -> Set)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_31_20_5 := (\ xx_ x . Set) : (Nat -> Set) -> Nat -> Set
+α_31_25_5 := (\ xx_ x . Set) : (Nat -> Set) -> Nat -> Set
 x58 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x56 ?? : ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x43 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
@@ -30,11 +30,11 @@ x64 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 _9 ?? : ∀ (xx_ : Nat -> Set)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x66 ?? : (Set : Set) === (Set : Set) <= SOLVED
 _10 ?? : ∀ (xx_ : Nat -> Set)  .  (Set : Set) === (Set : Set) <= SOLVED
-α_40_20_11 := (\ xx_ yy_ . Nat) : Pi (x : Nat -> Set) (x 0 -> Set)
+α_40_25_11 := (\ xx_ yy_ . Nat) : Pi (x : Nat -> Set) (x 0 -> Set)
 x100 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x98 ?? : ∀ (xx_ : Nat -> Set)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x85 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_38_20_12 := (\ xx_ yy_ x . Set) : Pi (x : Nat -> Set) (x 0 -> Nat -> Set)
+α_38_25_12 := (\ xx_ yy_ x . Set) : Pi (x : Nat -> Set) (x 0 -> Nat -> Set)
 x145 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x143 ?? : ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x141 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
@@ -59,12 +59,12 @@ _17 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  (Nat : Set) === (Nat :
 x175 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x173 ?? : ∀ (xx_ : Nat -> Set)  .  (Set : Set) === (Set : Set) <= SOLVED
 _18 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  (Set : Set) === (Set : Set) <= SOLVED
-α_47_20_19 := (\ xx_ yy_ zz_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Set)
+α_47_25_19 := (\ xx_ yy_ zz_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Set)
 x219 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x217 ?? : ∀ (xx_ : Nat -> Set)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x213 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x197 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_45_20_20 := (\ xx_ yy_ zz_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Nat -> Set)
+α_45_25_20 := (\ xx_ yy_ zz_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Nat -> Set)
 x277 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x275 ?? : ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x273 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
@@ -105,14 +105,14 @@ x349 ?? : ∀ (xx_ : Nat -> Set)  .  (Set : Set) === (Set : Set) <= SOLVED
 x345 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  (Set : Set) === (Set : Set) <= SOLVED
 x341 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  (Set : Set) === (Set : Set) <= SOLVED
 _28 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  (Set : Set) === (Set : Set) <= SOLVED
-α_27_21_29 := (\ xx_ yy_ zz_ local3_ local4_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Set)
+α_27_26_29 := (\ xx_ yy_ zz_ local3_ local4_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Set)
 x413 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x411 ?? : ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x409 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x405 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x401 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x379 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_25_21_30 := (\ xx_ yy_ zz_ local3_ local4_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Nat -> Set)
+α_25_26_30 := (\ xx_ yy_ zz_ local3_ local4_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Nat -> Set)
 x493 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x491 ?? : ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x489 ?? : ∀ (local4_ : Nat)  .  ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
@@ -128,14 +128,14 @@ x442 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : x
 x437 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x380 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (\ yy_1 . Set : Nat -> Set) === (\ x . Set : Nat -> Set) <= SOLVED
 _31 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
-α_33_21_32 := (\ xx_ yy_ zz_ local3_ local4_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Set)
+α_33_26_32 := (\ xx_ yy_ zz_ local3_ local4_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Set)
 x555 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x553 ?? : ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x551 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x547 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x543 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x521 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_28_21_33 := (\ xx_ yy_ zz_ local3_ local4_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Nat -> Set)
+α_28_26_33 := (\ xx_ yy_ zz_ local3_ local4_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Nat -> Set)
 x635 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x633 ?? : ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x631 ?? : ∀ (local4_ : Nat)  .  ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -151,14 +151,14 @@ x584 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : x
 x579 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x522 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (\ xp . Nat : Nat -> Set) === (\ x . Nat : Nat -> Set) <= SOLVED
 _34 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat -> Nat : Set) === (Nat -> Nat : Set) <= SOLVED
-α_39_21_35 := (\ xx_ yy_ zz_ local3_ local4_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Set)
+α_39_26_35 := (\ xx_ yy_ zz_ local3_ local4_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Set)
 x697 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x695 ?? : ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x693 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x689 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x685 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x663 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_34_21_36 := (\ xx_ yy_ zz_ local3_ local4_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Nat -> Set)
+α_34_26_36 := (\ xx_ yy_ zz_ local3_ local4_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Nat -> Nat -> Set)
 x777 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x775 ?? : ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x773 ?? : ∀ (local4_ : Nat)  .  ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -198,7 +198,7 @@ x837 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  (Set : Set) === (Se
 x833 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x829 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 _41 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
-α_48_21_42 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Set))
+α_48_26_42 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Set))
 x914 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x912 ?? : ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x910 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -206,7 +206,7 @@ x905 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ 
 x901 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x897 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x872 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_46_21_43 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Nat -> Set))
+α_46_26_43 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Nat -> Set))
 x1009 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x1007 ?? : ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x1005 ?? : ∀ (local4_ : Nat)  .  ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
@@ -224,7 +224,7 @@ x945 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : x
 x940 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x873 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (\ yy_1 . Set : Nat -> Set) === (\ x . Set : Nat -> Set) <= SOLVED
 _44 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
-α_54_21_45 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Set))
+α_54_26_45 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Set))
 x1082 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x1080 ?? : ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1078 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -232,7 +232,7 @@ x1073 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_
 x1069 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1065 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1040 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_49_21_46 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Nat -> Set))
+α_49_26_46 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Nat -> Set))
 x1177 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x1175 ?? : ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1173 ?? : ∀ (local4_ : Nat)  .  ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -250,7 +250,7 @@ x1113 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x1108 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1041 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (\ xp . Nat : Nat -> Set) === (\ x . Nat : Nat -> Set) <= SOLVED
 _47 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat -> Nat : Set) === (Nat -> Nat : Set) <= SOLVED
-α_60_21_48 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Set))
+α_60_26_48 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Set))
 x1250 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x1248 ?? : ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1246 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -258,7 +258,7 @@ x1241 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_
 x1237 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1233 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1208 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_55_21_49 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Nat -> Set))
+α_55_26_49 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Nat -> Set))
 x1345 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x1343 ?? : ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1341 ?? : ∀ (local4_ : Nat)  .  ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -276,7 +276,7 @@ x1281 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x1276 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1209 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (\ xp . Nat : Nat -> Set) === (\ x . Nat : Nat -> Set) <= SOLVED
 _50 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat -> Nat : Set) === (Nat -> Nat : Set) <= SOLVED
-α_66_21_51 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Set))
+α_66_26_51 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Set))
 x1418 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x1416 ?? : ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1414 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -284,7 +284,7 @@ x1409 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_
 x1405 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1401 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1376 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Nat)  .  ∀ (local5_ : xx_ S( S( local4_ ) ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_61_21_52 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Nat -> Set))
+α_61_26_52 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Pi (x4 : Nat) (x S( S( x4 ) ) -> Nat -> Set))
 x1513 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x1511 ?? : ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1509 ?? : ∀ (local4_ : Nat)  .  ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -354,7 +354,7 @@ x1660 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x1656 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Set : Set) === (Set : Set) <= SOLVED
 x1652 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Set : Set) === (Set : Set) <= SOLVED
 _61 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Set : Set) === (Set : Set) <= SOLVED
-α_28_22_62 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Set)
+α_28_27_62 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Set)
 x1752 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x1750 ?? : ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1748 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -362,7 +362,7 @@ x1744 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x1740 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1736 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x1707 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_26_22_63 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Nat -> Set)
+α_26_27_63 := (\ xx_ yy_ zz_ local3_ local4_ local5_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Nat -> Set)
 x1855 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x1853 ?? : ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x1851 ?? : ∀ (local5_ : Nat)  .  ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
@@ -415,30 +415,30 @@ _70 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  (Set : Set) === (Set :
 x1945 ?? : (Set : Set) === (Set : Set) <= SOLVED
 _71 ?? : ∀ (xx_ : Nat -> Set)  .  (Set : Set) === (Set : Set) <= SOLVED
 _72 ?? : (Set : Set) === (Set : Set) <= SOLVED
-α_5_18_73 := Nat -> Set : Set
+α_5_23_73 := Nat -> Set : Set
 x1977 ?? : (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
-α_5_18_74 := (\ x . x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_1 : Nat) (x S( S( local5_1 ) ) -> x S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (x local6_)) : (Nat -> Set) -> Set
+α_5_23_74 := (\ x . x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_1 : Nat) (x S( S( local5_1 ) ) -> x S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (x local6_)) : (Nat -> Set) -> Set
 x2047 ?? : ∀ (x : Nat -> Set)  .  (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_1 : Nat) (x S( S( local5_1 ) ) -> x S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (x local6_) : Set) === (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_1 : Nat) (x S( S( local5_1 ) ) -> x S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (x local6_) : Set) <= SOLVED
 x2046 ?? : (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x1978 ?? : (\ yy_ . yy_ 0 -> yy_ S( 0 ) -> yy_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (yy_ S( S( local5_1 ) ) -> yy_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (yy_ local6_) : (Nat -> Set) -> Set) === (\ x . x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_1 : Nat) (x S( S( local5_1 ) ) -> x S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (x local6_) : (Nat -> Set) -> Set) <= SOLVED
 _75 ?? : (Pi (yy_ : Nat -> Set) (yy_ 0 -> yy_ S( 0 ) -> yy_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (yy_ S( S( local5_1 ) ) -> yy_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (yy_ local6_)) : Set) === (Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_1 : Nat) (x S( S( local5_1 ) ) -> x S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (x local6_)) : Set) <= SOLVED
-α_5_18_76 := (\ xx_ . xx_ 0 -> xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : (Nat -> Set) -> Set
+α_5_23_76 := (\ xx_ . xx_ 0 -> xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : (Nat -> Set) -> Set
 _77 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ 0 -> xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ 0 -> xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
-α_5_18_78 := (\ xx_ . xx_ 0) : (Nat -> Set) -> Set
+α_5_23_78 := (\ xx_ . xx_ 0) : (Nat -> Set) -> Set
 x2514 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
-α_5_18_79 := (\ xx_ x . xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> Set)
+α_5_23_79 := (\ xx_ x . xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> Set)
 x2632 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x2557 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : xx_ 0)  .  (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x2556 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
 x2515 ?? : ∀ (xx_ : Nat -> Set)  .  (\ zz_ . xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : xx_ 0 -> Set) === (\ x . xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : xx_ 0 -> Set) <= SOLVED
 _80 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ 0 -> xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ 0 -> xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
-α_5_18_81 := (\ xx_ yy_ . xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> Set)
+α_5_23_81 := (\ xx_ yy_ . xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> Set)
 x2817 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 _82 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
-α_5_18_83 := (\ xx_ yy_ . xx_ S( 0 )) : Pi (x : Nat -> Set) (x 0 -> Set)
+α_5_23_83 := (\ xx_ yy_ . xx_ S( 0 )) : Pi (x : Nat -> Set) (x 0 -> Set)
 x2974 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
 x2961 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
-α_5_18_84 := (\ xx_ yy_ x . xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Set)
+α_5_23_84 := (\ xx_ yy_ x . xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Set)
 x3086 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x3082 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : xx_ S( 0 ))  .  (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x3010 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (x : xx_ S( 0 ))  .  (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
@@ -446,15 +446,15 @@ x3014 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) 
 x3009 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
 x2962 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  (\ local3_ . xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : xx_ S( 0 ) -> Set) === (\ x . xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : xx_ S( 0 ) -> Set) <= SOLVED
 _85 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( 0 ) -> xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
-α_5_18_86 := (\ xx_ yy_ zz_ . xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Set)
+α_5_23_86 := (\ xx_ yy_ zz_ . xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Set)
 x3251 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x3247 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 _87 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
-α_5_18_88 := (\ xx_ yy_ zz_ . xx_ S( S( 0 ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Set)
+α_5_23_88 := (\ xx_ yy_ zz_ . xx_ S( S( 0 ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> Set)
 x3397 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
 x3393 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
 x3377 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
-α_5_18_89 := (\ xx_ yy_ zz_ x . (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Set)
+α_5_23_89 := (\ xx_ yy_ zz_ x . (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Set)
 x3509 ?? : ∀ (xx_ : Nat -> Set)  .  ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x3505 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : xx_ S( S( 0 ) ))  .  ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x3501 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (x : xx_ S( S( 0 ) ))  .  ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
@@ -464,17 +464,17 @@ x3436 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  (xx_ S( S( 0 ) 
 x3431 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
 x3378 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  (\ local4_ . (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : xx_ S( S( 0 ) ) -> Set) === (\ x . (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : xx_ S( S( 0 ) ) -> Set) <= SOLVED
 _90 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === (xx_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
-α_5_18_91 := (\ xx_ yy_ zz_ local3_ . (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Set)
+α_5_23_91 := (\ xx_ yy_ zz_ local3_ . (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Set)
 x3654 ?? : ∀ (xx_ : Nat -> Set)  .  ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x3650 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x3646 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 _92 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
-α_5_18_93 := (\ xx_ yy_ zz_ local3_ . Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Set)
+α_5_23_93 := (\ xx_ yy_ zz_ local3_ . Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> Set)
 x3809 ?? : ∀ (xx_ : Nat -> Set)  .  (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) === (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) <= SOLVED
 x3805 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) === (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) <= SOLVED
 x3801 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) === (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) <= SOLVED
 x3762 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) === (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) <= SOLVED
-α_24_18_94 := (\ xx_ yy_ zz_ local3_ x . Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
+α_24_23_94 := (\ xx_ yy_ zz_ local3_ x . Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
 x3999 ?? : ∀ (xx_ : Nat -> Set)  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x3995 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x3991 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (x : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
@@ -486,20 +486,20 @@ x3893 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x3888 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) === (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )) : Set) <= SOLVED
 x3763 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  (\ local5_ . Pi (local6_ : Nat) (xx_ local6_) : (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) ))) -> Set) === (\ x . Pi (local6_ : Nat) (xx_ local6_) : (Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) ))) -> Set) <= SOLVED
 _95 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ((Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) === ((Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) ))) -> Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
-α_24_18_96 := (\ xx_ yy_ zz_ local3_ local4_ . Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
+α_24_23_96 := (\ xx_ yy_ zz_ local3_ local4_ . Pi (local6_ : Nat) (xx_ local6_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
 x4074 ?? : ∀ (xx_ : Nat -> Set)  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x4070 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x4066 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 x4062 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
 _97 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local6_ : Nat) (xx_ local6_) : Set) <= SOLVED
-α_33_18_98 := (\ xx_ yy_ zz_ local3_ local4_ . Nat -> Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
+α_33_23_98 := (\ xx_ yy_ zz_ local3_ local4_ . Nat -> Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
 x4203 ?? : (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x4201 ?? : ∀ (xx_ : Nat -> Set)  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x4197 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x4193 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x4189 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x4153 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
-α_24_18_99 := (\ xx_ yy_ zz_ local3_ local4_ x . x 0 -> x S( 0 ) -> (Pi (local4_2 : Nat) (x S( local4_2 ) -> x S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (x local5_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> (Nat -> Set) -> Set)
+α_24_23_99 := (\ xx_ yy_ zz_ local3_ local4_ x . x 0 -> x S( 0 ) -> (Pi (local4_2 : Nat) (x S( local4_2 ) -> x S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (x local5_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> (Nat -> Set) -> Set)
 x4425 ?? : ∀ (x : Nat -> Set)  .  (x 0 -> x S( 0 ) -> (Pi (local4_1 : Nat) (x S( local4_1 ) -> x S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (x local5_) : Set) === (x 0 -> x S( 0 ) -> (Pi (local4_1 : Nat) (x S( local4_1 ) -> x S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (x local5_) : Set) <= SOLVED
 x4423 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : Nat -> Set)  .  (x 0 -> x S( 0 ) -> (Pi (local4_1 : Nat) (x S( local4_1 ) -> x S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (x local5_) : Set) === (x 0 -> x S( 0 ) -> (Pi (local4_1 : Nat) (x S( local4_1 ) -> x S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (x local5_) : Set) <= SOLVED
 x4419 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (x : Nat -> Set)  .  (x 0 -> x S( 0 ) -> (Pi (local4_2 : Nat) (x S( local4_2 ) -> x S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (x local5_) : Set) === (x 0 -> x S( 0 ) -> (Pi (local4_2 : Nat) (x S( local4_2 ) -> x S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (x local5_) : Set) <= SOLVED
@@ -520,13 +520,13 @@ x4547 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x4543 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x4539 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 _101 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
-α_35_18_102 := (\ xx_ yy_ zz_ local3_ local4_ . xx_ 0) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
+α_35_23_102 := (\ xx_ yy_ zz_ local3_ local4_ . xx_ 0) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
 x4662 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
 x4658 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
 x4654 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
 x4650 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
 x4624 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
-α_24_18_103 := (\ xx_ yy_ zz_ local3_ local4_ x . xx_ S( 0 ) -> (Pi (local4_2 : Nat) (xx_ S( local4_2 ) -> xx_ S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (xx_ local5_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> x 0 -> Set)
+α_24_23_103 := (\ xx_ yy_ zz_ local3_ local4_ x . xx_ S( 0 ) -> (Pi (local4_2 : Nat) (xx_ S( local4_2 ) -> xx_ S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (xx_ local5_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> x 0 -> Set)
 x4823 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( 0 ) -> (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) === (xx_ S( 0 ) -> (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
 x4819 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : xx_ 0)  .  (xx_ S( 0 ) -> (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) === (xx_ S( 0 ) -> (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
 x4815 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (x : xx_ 0)  .  (xx_ S( 0 ) -> (Pi (local4_2 : Nat) (xx_ S( local4_2 ) -> xx_ S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) === (xx_ S( 0 ) -> (Pi (local4_2 : Nat) (xx_ S( local4_2 ) -> xx_ S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
@@ -545,13 +545,13 @@ x4927 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x4923 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
 x4919 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
 _105 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ 0 : Set) === (xx_ 0 : Set) <= SOLVED
-α_38_18_106 := (\ xx_ yy_ zz_ local3_ local4_ . xx_ S( 0 )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
+α_38_23_106 := (\ xx_ yy_ zz_ local3_ local4_ . xx_ S( 0 )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
 x5021 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
 x5017 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
 x5013 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
 x5009 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
 x4983 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
-α_24_18_107 := (\ xx_ yy_ zz_ local3_ local4_ x . (Pi (local4_2 : Nat) (xx_ S( local4_2 ) -> xx_ S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (xx_ local5_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> x S( 0 ) -> Set)
+α_24_23_107 := (\ xx_ yy_ zz_ local3_ local4_ x . (Pi (local4_2 : Nat) (xx_ S( local4_2 ) -> xx_ S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (xx_ local5_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> x S( 0 ) -> Set)
 x5169 ?? : ∀ (xx_ : Nat -> Set)  .  ((Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) === ((Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
 x5165 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : xx_ S( 0 ))  .  ((Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) === ((Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
 x5161 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (x : xx_ S( 0 ))  .  ((Pi (local4_2 : Nat) (xx_ S( local4_2 ) -> xx_ S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) === ((Pi (local4_2 : Nat) (xx_ S( local4_2 ) -> xx_ S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
@@ -570,13 +570,13 @@ x5255 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x5251 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
 x5247 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
 _109 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (xx_ S( 0 ) : Set) === (xx_ S( 0 ) : Set) <= SOLVED
-α_34_19_110 := (\ xx_ yy_ zz_ local3_ local4_ . Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
+α_34_24_110 := (\ xx_ yy_ zz_ local3_ local4_ . Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
 x5366 ?? : ∀ (xx_ : Nat -> Set)  .  (Pi (local4_ : Nat) (xx_ S( local4_ ) -> xx_ S( S( local4_ ) )) : Set) === (Pi (local4_ : Nat) (xx_ S( local4_ ) -> xx_ S( S( local4_ ) )) : Set) <= SOLVED
 x5362 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) === (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) <= SOLVED
 x5358 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) === (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) <= SOLVED
 x5354 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) === (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) <= SOLVED
 x5308 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) === (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) <= SOLVED
-α_24_18_111 := (\ xx_ yy_ zz_ local3_ local4_ x . Pi (local5_ : Nat) (xx_ local5_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> (Pi (local4_ : Nat) (x S( local4_ ) -> x S( S( local4_ ) ))) -> Set)
+α_24_23_111 := (\ xx_ yy_ zz_ local3_ local4_ x . Pi (local5_ : Nat) (xx_ local5_)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> (Pi (local4_ : Nat) (x S( local4_ ) -> x S( S( local4_ ) ))) -> Set)
 x5579 ?? : ∀ (xx_ : Nat -> Set)  .  (Pi (local5_ : Nat) (xx_ local5_) : Set) === (Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
 x5575 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : Pi (local4_ : Nat) (xx_ S( local4_ ) -> xx_ S( S( local4_ ) )))  .  (Pi (local5_ : Nat) (xx_ local5_) : Set) === (Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
 x5571 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (x : Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )))  .  (Pi (local5_ : Nat) (xx_ local5_) : Set) === (Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
@@ -590,14 +590,14 @@ x5458 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x5453 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) === (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) <= SOLVED
 x5309 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (\ local4_1 . Pi (local5_ : Nat) (xx_ local5_) : (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Set) === (\ x . Pi (local5_ : Nat) (xx_ local5_) : (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Set) <= SOLVED
 _112 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ((Pi (local4_2 : Nat) (xx_ S( local4_2 ) -> xx_ S( S( local4_2 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) === ((Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
-α_34_19_113 := (\ xx_ yy_ zz_ local3_ local4_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
+α_34_24_113 := (\ xx_ yy_ zz_ local3_ local4_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Set)
 x5680 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x5678 ?? : ∀ (xx_ : Nat -> Set)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x5674 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x5670 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x5666 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x5640 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_34_19_114 := (\ xx_ yy_ zz_ local3_ local4_ x . xx_ S( x ) -> xx_ S( S( x ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Set)
+α_34_24_114 := (\ xx_ yy_ zz_ local3_ local4_ x . xx_ S( x ) -> xx_ S( S( x ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Set)
 x5783 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : Nat)  .  (xx_ S( x ) -> xx_ S( S( x ) ) : Set) === (xx_ S( x ) -> xx_ S( S( x ) ) : Set) <= SOLVED
 x5779 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (x : Nat)  .  (xx_ S( x ) -> xx_ S( S( x ) ) : Set) === (xx_ S( x ) -> xx_ S( S( x ) ) : Set) <= SOLVED
 x5775 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (x : Nat)  .  (xx_ S( x ) -> xx_ S( S( x ) ) : Set) === (xx_ S( x ) -> xx_ S( S( x ) ) : Set) <= SOLVED
@@ -611,13 +611,13 @@ x5718 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x5713 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x5641 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (\ local4_1 . xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) ) : Nat -> Set) === (\ x . xx_ S( x ) -> xx_ S( S( x ) ) : Nat -> Set) <= SOLVED
 _115 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local4_1 : Nat) (xx_ S( local4_1 ) -> xx_ S( S( local4_1 ) )) : Set) === (Pi (x : Nat) (xx_ S( x ) -> xx_ S( S( x ) )) : Set) <= SOLVED
-α_34_19_118 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . xx_ S( local5_ )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Set)
+α_34_24_118 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . xx_ S( local5_ )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Set)
 x6201 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) : Set) === (xx_ S( local5_ ) : Set) <= SOLVED
 x6197 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) : Set) === (xx_ S( local5_ ) : Set) <= SOLVED
 x6193 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) : Set) === (xx_ S( local5_ ) : Set) <= SOLVED
 x6189 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) : Set) === (xx_ S( local5_ ) : Set) <= SOLVED
 x6160 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) : Set) === (xx_ S( local5_ ) : Set) <= SOLVED
-α_45_19_119 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . xx_ S( S( local5_ ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
+α_45_24_119 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . xx_ S( S( local5_ ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
 x9080 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (xx_ S( S( local5_ ) ) : Set) === (xx_ S( S( local5_ ) ) : Set) <= SOLVED
 x9075 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (xx_ S( S( local5_ ) ) : Set) === (xx_ S( S( local5_ ) ) : Set) <= SOLVED
 x9071 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (xx_ S( S( local5_ ) ) : Set) === (xx_ S( S( local5_ ) ) : Set) <= SOLVED
@@ -636,8 +636,8 @@ x9095 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x9091 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (x : xx_ S( local5_ ))  .  (xx_ S( S( local5_ ) ) : Set) === (xx_ S( S( x ) ) : Set) <= PENDING [ProbId x9095]
 x9087 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (x : xx_ S( local5_ ))  .  (xx_ S( S( local5_ ) ) : Set) === (xx_ S( S( x ) ) : Set) <= PENDING [ProbId x9091]
 x6237 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (x : xx_ S( local5_ ))  .  (xx_ S( S( local5_ ) ) : Set) === (xx_ S( S( x ) ) : Set) <= PENDING [ProbId x9087]
-α_34_19_116 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . xx_ S( local5_ ) -> xx_ S( S( local5_ ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Set)
-_120 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (Pi (?α_34_19_118 xx_ yy_ zz_ local3_ local4_ local5_) (?α_45_19_119 xx_ yy_ zz_ local3_ local4_ local5_) : Set) === (Pi (?α_34_19_118 xx_ yy_ zz_ local3_ local4_ local5_) (?α_45_19_119 xx_ yy_ zz_ local3_ local4_ local5_) : Set) <= SOLVED
+α_34_24_116 := (\ xx_ yy_ zz_ local3_ local4_ local5_ . xx_ S( local5_ ) -> xx_ S( S( local5_ ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Nat -> Set)
+_120 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (Pi (?α_34_24_118 xx_ yy_ zz_ local3_ local4_ local5_) (?α_45_24_119 xx_ yy_ zz_ local3_ local4_ local5_) : Set) === (Pi (?α_34_24_118 xx_ yy_ zz_ local3_ local4_ local5_) (?α_45_24_119 xx_ yy_ zz_ local3_ local4_ local5_) : Set) <= SOLVED
 x6253 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) : Set) === (xx_ S( local5_ ) : Set) <= SOLVED
 x6249 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) : Set) === (xx_ S( local5_ ) : Set) <= SOLVED
 x6245 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) : Set) === (xx_ S( local5_ ) : Set) <= SOLVED
@@ -645,9 +645,9 @@ x6241 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x6236 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) : Set) === (xx_ S( local5_ ) : Set) <= SOLVED
 x6161 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (\ local6_ . xx_ S( S( local5_ ) ) : xx_ S( local5_ ) -> Set) === (\ local5_1 . xx_ S( S( local5_1 ) ) : xx_ S( local5_ ) -> Set) <= PENDING [ProbId x6237]
 _117 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  (xx_ S( local5_ ) -> xx_ S( S( local5_ ) ) : Set) === (Pi (local5_1 : xx_ S( local5_ )) (xx_ S( S( local5_1 ) )) : Set) <= PENDING [ProbId x6161]
-α_45_19_121 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . xx_ S( S( local5_ ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
-_122 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (?α_45_19_119 xx_ yy_ zz_ local3_ local4_ local5_ local6_ : Set) === (?α_45_19_119 xx_ yy_ zz_ local3_ local4_ local5_ local6_ : Set) <= SOLVED
-α_54_19_123 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . Nat -> Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
+α_45_24_121 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . xx_ S( S( local5_ ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
+_122 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (?α_45_24_119 xx_ yy_ zz_ local3_ local4_ local5_ local6_ : Set) === (?α_45_24_119 xx_ yy_ zz_ local3_ local4_ local5_ local6_ : Set) <= SOLVED
+α_54_24_123 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . Nat -> Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
 x6543 ?? : (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x6541 ?? : ∀ (local5_ : Nat)  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x6539 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
@@ -656,7 +656,7 @@ x6530 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x6526 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x6522 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x6480 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
-α_45_19_124 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> (Nat -> Set) -> Set))
+α_45_24_124 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n)) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> (Nat -> Set) -> Set))
 x6776 ?? : ∀ (x : Nat -> Set)  .  (x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n) : Set) === (x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n) : Set) <= SOLVED
 x6774 ?? : ∀ (local5_ : Nat)  .  ∀ (x : Nat -> Set)  .  (x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n) : Set) === (x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n) : Set) <= SOLVED
 x6772 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (x : Nat -> Set)  .  (x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n) : Set) === (x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n) : Set) <= SOLVED
@@ -675,7 +675,7 @@ x6623 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x6618 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
 x6481 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (\ m . m 0 -> (Pi (msArg : Nat) (m msArg -> m S( msArg ))) -> Pi (n : Nat) (m n) : (Nat -> Set) -> Set) === (\ x . x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n) : (Nat -> Set) -> Set) <= SOLVED
 _125 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Pi (m : Nat -> Set) (m 0 -> (Pi (msArg : Nat) (m msArg -> m S( msArg ))) -> Pi (n : Nat) (m n)) : Set) === (Pi (x : Nat -> Set) (x 0 -> (Pi (msArg : Nat) (x msArg -> x S( msArg ))) -> Pi (n : Nat) (x n)) : Set) <= SOLVED
-α_54_19_126 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
+α_54_24_126 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
 x6965 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x6963 ?? : ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x6961 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -684,7 +684,7 @@ x6952 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x6948 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x6944 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x6912 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_61_19_127 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
+α_61_24_127 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
 x7083 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x7081 ?? : ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x7079 ?? : ∀ (local5_ : Nat)  .  ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
@@ -704,7 +704,7 @@ x7004 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x6999 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x6913 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (\ xp . Set : Nat -> Set) === (\ x . Set : Nat -> Set) <= SOLVED
 _128 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
-α_61_19_129 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
+α_61_24_129 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
 x7151 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x7149 ?? : ∀ (local7_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x7147 ?? : ∀ (local5_ : Nat)  .  ∀ (local7_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
@@ -714,7 +714,7 @@ x7136 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x7132 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x7128 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 _130 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
-α_63_19_131 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
+α_63_24_131 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
 x7256 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x7254 ?? : ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7252 ?? : ∀ (local5_ : Nat)  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -724,7 +724,7 @@ x7241 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x7237 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7233 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7198 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_61_19_132 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Nat -> Set))
+α_61_24_132 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ x . Set) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Nat -> Set))
 x7383 ?? : (Set : Set) === (Set : Set) <= SOLVED
 x7381 ?? : ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x7379 ?? : ∀ (local7_ : Nat)  .  ∀ (x : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
@@ -746,7 +746,7 @@ x7297 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x7292 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7199 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (\ yy_1 . Set : Nat -> Set) === (\ x . Set : Nat -> Set) <= SOLVED
 _133 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat -> Set : Set) === (Nat -> Set : Set) <= SOLVED
-α_69_19_134 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
+α_69_24_134 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
 x7488 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x7486 ?? : ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7484 ?? : ∀ (local5_ : Nat)  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -756,7 +756,7 @@ x7473 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x7469 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7465 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7430 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_64_19_135 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Nat -> Set))
+α_64_24_135 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Nat -> Set))
 x7615 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x7613 ?? : ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7611 ?? : ∀ (local7_ : Nat)  .  ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -778,7 +778,7 @@ x7529 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : 
 x7524 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7431 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (\ xp . Nat : Nat -> Set) === (\ x . Nat : Nat -> Set) <= SOLVED
 _136 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat -> Nat : Set) === (Nat -> Nat : Set) <= SOLVED
-α_75_19_137 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
+α_75_24_137 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
 x7720 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x7718 ?? : ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7716 ?? : ∀ (local5_ : Nat)  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -788,7 +788,7 @@ x7705 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x7701 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7697 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7662 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_70_19_138 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Nat -> Set))
+α_70_24_138 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ x . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Nat -> Set))
 x7847 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x7845 ?? : ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x7843 ?? : ∀ (local7_ : Nat)  .  ∀ (x : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -846,7 +846,7 @@ x7940 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x7936 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 x7932 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
 _143 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (local7_ : Nat)  .  (Set : Set) === (Set : Set) <= SOLVED
-α_80_19_144 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . xx_ S( S( 0 ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
+α_80_24_144 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . xx_ S( S( 0 ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
 x8064 ?? : ∀ (xx_ : Nat -> Set)  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
 x8060 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
 x8055 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
@@ -854,7 +854,7 @@ x8051 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x8047 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
 x8043 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
 x8011 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
-α_45_19_145 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) -> Pi (n : Nat) (xx_ S( S( n ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> x S( S( 0 ) ) -> Set))
+α_45_24_145 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) -> Pi (n : Nat) (xx_ S( S( n ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> x S( S( 0 ) ) -> Set))
 x8240 ?? : ∀ (xx_ : Nat -> Set)  .  ((Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) -> Pi (n : Nat) (xx_ S( S( n ) )) : Set) === ((Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) -> Pi (n : Nat) (xx_ S( S( n ) )) : Set) <= SOLVED
 x8236 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : xx_ S( S( 0 ) ))  .  ((Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) -> Pi (n : Nat) (xx_ S( S( n ) )) : Set) === ((Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) -> Pi (n : Nat) (xx_ S( S( n ) )) : Set) <= SOLVED
 x8232 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (x : xx_ S( S( 0 ) ))  .  ((Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) -> Pi (n : Nat) (xx_ S( S( n ) )) : Set) === ((Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) -> Pi (n : Nat) (xx_ S( S( n ) )) : Set) <= SOLVED
@@ -879,7 +879,7 @@ x8326 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x8322 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
 x8318 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
 _147 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (xx_ S( S( 0 ) ) : Set) === (xx_ S( S( 0 ) ) : Set) <= SOLVED
-α_83_19_148 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
+α_83_24_148 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
 x8467 ?? : ∀ (xx_ : Nat -> Set)  .  (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) === (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) <= SOLVED
 x8463 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) === (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) <= SOLVED
 x8458 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) === (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) <= SOLVED
@@ -887,7 +887,7 @@ x8454 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x8450 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) === (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) <= SOLVED
 x8446 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) === (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) <= SOLVED
 x8394 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) === (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) <= SOLVED
-α_45_19_149 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . Pi (n : Nat) (xx_ S( S( n ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> (Pi (msArg : Nat) (x S( S( msArg ) ) -> x S( S( S( msArg ) ) ))) -> Set))
+α_45_24_149 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . Pi (n : Nat) (xx_ S( S( n ) ))) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> (Pi (msArg : Nat) (x S( S( msArg ) ) -> x S( S( S( msArg ) ) ))) -> Set))
 x8708 ?? : ∀ (xx_ : Nat -> Set)  .  (Pi (n : Nat) (xx_ S( S( n ) )) : Set) === (Pi (n : Nat) (xx_ S( S( n ) )) : Set) <= SOLVED
 x8704 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )))  .  (Pi (n : Nat) (xx_ S( S( n ) )) : Set) === (Pi (n : Nat) (xx_ S( S( n ) )) : Set) <= SOLVED
 x8700 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (x : Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )))  .  (Pi (n : Nat) (xx_ S( S( n ) )) : Set) === (Pi (n : Nat) (xx_ S( S( n ) )) : Set) <= SOLVED
@@ -912,7 +912,7 @@ x8740 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x8736 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) === (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) )) : Set) <= SOLVED
 x8732 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) === (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) )) : Set) <= SOLVED
 _151 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Pi (msArg : Nat) (xx_ S( S( msArg ) ) -> xx_ S( S( S( msArg ) ) )) : Set) === (Pi (local5_1 : Nat) (xx_ S( S( local5_1 ) ) -> xx_ S( S( S( local5_1 ) ) )) : Set) <= SOLVED
-α_86_19_152 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
+α_86_24_152 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ . Nat) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Set))
 x8888 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
 x8886 ?? : ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x8884 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
@@ -921,60 +921,11 @@ x8875 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( 
 x8871 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x8867 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
 x8835 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-α_45_19_153 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . xx_ S( S( x ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
+α_45_24_153 := (\ xx_ yy_ zz_ local3_ local4_ local5_ local6_ x . xx_ S( S( x ) )) : Pi (x : Nat -> Set) (x 0 -> x S( 0 ) -> x S( S( 0 ) ) -> (Pi (local5_ : Nat) (x S( S( local5_ ) ) -> x S( S( S( local5_ ) ) ))) -> Pi (x5 : Nat) (x S( x5 ) -> Nat -> Set))
 x9004 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (x : Nat)  .  (xx_ S( S( x ) ) : Set) === (xx_ S( S( x ) ) : Set) <= SOLVED
 x9000 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (x : Nat)  .  (xx_ S( S( x ) ) : Set) === (xx_ S( S( x ) ) : Set) <= SOLVED
 x8995 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (x : Nat)  .  (xx_ S( S( x ) ) : Set) === (xx_ S( S( x ) ) : Set) <= SOLVED
 x8991 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (x : Nat)  .  (xx_ S( S( x ) ) : Set) === (xx_ S( S( x ) ) : Set) <= SOLVED
 x8987 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (x : Nat)  .  (xx_ S( S( x ) ) : Set) === (xx_ S( S( x ) ) : Set) <= SOLVED
 x8983 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (x : Nat)  .  (xx_ S( S( x ) ) : Set) === (xx_ S( S( x ) ) : Set) <= SOLVED
-x8923 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (LP> :load prelude.lp
-Solved metas:
-
-Solved metas:
-
-Solved metas:
-
-Solved metas:
-
-Solved metas:
-
-Solved metas:
-
-Solved metas:
-
-x : Nat)  .  (xx_ S( S( x ) ) : Set) === (xx_ S( S( x ) ) : Set) <= SOLVED
-x8948 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
-x8946 ?? : ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x8944 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x8939 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x8935 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x8931 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x8927 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x8922 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x8836 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (\ n . xx_ S( S( n ) ) : Nat -> Set) === (\ x . xx_ S( S( x ) ) : Nat -> Set) <= SOLVED
-_154 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Pi (n : Nat) (xx_ S( S( n ) )) : Set) === (Pi (x : Nat) (xx_ S( S( x ) )) : Set) <= SOLVED
-x9032 ?? : (Nat : Set) === (Nat : Set) <= SOLVED
-x9030 ?? : ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x9028 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x9023 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x9019 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x9015 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x9011 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-_155 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  (Nat : Set) === (Nat : Set) <= SOLVED
-x9162 ?? : ∀ (xx_ : Nat -> Set)  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
-x9158 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
-x9154 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
-x9150 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
-_157 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  (Pi (local6_ : Nat) (xx_ local6_) : Set) === (Pi (local5_ : Nat) (xx_ local5_) : Set) <= SOLVED
-topLevel158 := Pi (yy_ : Nat -> Set) (yy_ 0 -> yy_ S( 0 ) -> yy_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (yy_ S( S( local5_1 ) ) -> yy_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (yy_ local6_)) : Set
-_159 ?? : (Pi (yy_ : Nat -> Set) (yy_ 0 -> yy_ S( 0 ) -> yy_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (yy_ S( S( local5_1 ) ) -> yy_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (yy_ local6_)) : Set) === (Pi (yy_ : Nat -> Set) (yy_ 0 -> yy_ S( 0 ) -> yy_ S( S( 0 ) ) -> (Pi (local5_1 : Nat) (yy_ S( S( local5_1 ) ) -> yy_ S( S( S( local5_1 ) ) ))) -> Pi (local6_ : Nat) (yy_ local6_)) : Set) <= SOLVED
-*
-id :: Pi (yy_ : Set) (yy_ -> yy_)
-const :: Pi (yy_ : Set) (Pi (zz_ : Set) (yy_ -> zz_ -> yy_))
-plus :: Nat -> Nat -> Nat
-pred :: Nat -> Nat
-natFold :: Pi (yy_ : Set) (yy_ -> (yy_ -> yy_) -> Nat -> yy_)
-nat1Elim :: Pi (yy_ : Nat -> Set) (yy_ 0 -> yy_ S( 0 ) -> (Pi (local4_1 : Nat) (yy_ S( local4_1 ) -> yy_ S( S( local4_1 ) ))) -> Pi (local5_ : Nat) (yy_ local5_))
-inc :: Nat -> Nat
-lambda-pi-constraint: 
+x8923 ?? : ∀ (xx_ : Nat -> Set)  .  ∀ (yy_ : xx_ 0)  .  ∀ (zz_ : xx_ S( 0 ))  .  ∀ (local3_ : xx_ S( S( 0 ) ))  .  ∀ (local4_ : Pi (local5_ : Nat) (xx_ S( S( local5_ ) ) -> xx_ S( S( S( local5_ ) ) )))  .  ∀ (local5_ : Nat)  .  ∀ (local6_ : xx_ S( local5_ ))  .  ∀ (LP> ^C^C

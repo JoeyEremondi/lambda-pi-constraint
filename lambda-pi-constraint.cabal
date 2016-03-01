@@ -16,6 +16,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 executable lambda-pi-constraint
+  ghc-options:
+        -O0
   main-is:             Main.hs
   other-modules:
 --    Original,
