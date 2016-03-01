@@ -575,11 +575,14 @@ prune ::  [Nom] -> VAL ->
               Contextual [(Nom, Type, VAL -> VAL)]
 prune xs SET           = return []
 prune xs Nat = return []
+prune xs (Fin n) = prune xs n
 prune xs (Vec a n) = (++) <$> prune xs a <*> prune xs n
 prune xs (Eq a x y) = (\x y z -> x ++ y ++ z) <$> prune xs a <*> prune xs x <*> prune xs y
 
 prune xs Zero = return []
 prune xs (Succ n) = prune xs n
+prune xs (FZero n) = prune xs n
+prune xs (FSucc n f) = (++) <$> prune xs n <*> prune xs f
 prune xs (VNil a) = prune xs a
 prune xs (VCons a n h t) =
   (\x y z m -> x ++ y ++ z ++ m) <$> prune xs a <*> prune xs h <*> prune xs t <*> prune xs n
