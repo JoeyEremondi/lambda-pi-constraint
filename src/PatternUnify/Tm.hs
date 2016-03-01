@@ -461,6 +461,8 @@ finmzType m = pi_ (Nat) "n" $ \n ->
   m $$ Succ n $$ FZero n
 
 finmsType m = pi_ (Nat) "n" $ \n ->
-  error "TODO fin ms"
+  pi_ Nat "n" $ \n ->
+    pi_ (Fin n) "f" $ \f ->
+      (m $$ n $$ f) --> (m $$ (Succ n) $$ (FSucc n f))
 
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])
