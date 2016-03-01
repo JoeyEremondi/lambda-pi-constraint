@@ -57,8 +57,6 @@ typecheck _T t = (check _T t >> return True) `catchError`
 
 check :: Type -> VAL -> Contextual ()
 
-check t v | trace ("Checking " ++ pp t ++ " ||| " ++ pp v) False = error "imp"
-
 check (C c as)    (C v bs)  =  do
                                tel <- canTy (c, as) v
                                checkTel tel bs
@@ -69,7 +67,7 @@ check (PI _S _T)  (L b)     =  do
 
 check _T          (N u as)  =  do
                                _U   <- infer u
-                               _T'  <- trace ("Inferred _U " ++ pp _U ++ " for head " ++ pp u) $
+                               _T'  <- 
                                   checkSpine _U (N u []) as
                                eq   <- (_T <-> _T')
                                unless eq $ fail $ "Inferred type " ++ pp _T' ++
