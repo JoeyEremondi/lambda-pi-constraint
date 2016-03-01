@@ -146,6 +146,17 @@ checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
   check (msType m) ms
   checkSpine (m $$ u) (u %% elim) ts
 
+checkSpine (Fin n) u (elim@(FinElim m mz ms n') : ts) = do
+  eq <- n <-> n'
+  check (Fin n) u
+  check Nat n
+  check (finmType) m
+  check (finmzType m) mz
+  check (finmsType m) ms
+  unless eq $ fail $ "Size index of given Finite " ++ pp n ++
+                     " does not match FinElim size index of " ++ pp n'
+  checkSpine (m $$ u) (u %% elim) ts
+
 checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty
                                            ++ " does not permit " ++ pp s
 
