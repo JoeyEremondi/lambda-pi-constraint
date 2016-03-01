@@ -173,6 +173,8 @@ checkSpine (Fin n) u (elim@(FinElim m mz ms n') : ts) = do
                      " does not match FinElim size index of " ++ pp n'
   checkSpine (m $$ u) (u %% elim) ts
 
+--TODO for Vec and Eq
+
 checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty
                                            ++ " does not permit " ++ pp s
 
@@ -245,6 +247,7 @@ quoteTel (Ask _S _T)  (s:ss)  = do  s'   <- quote _S s
 quoteTel _            _       = fail "quoteTel: arity error"
 
 
+--TODO quoteSpine for custom elims
 quoteSpine :: Type -> VAL -> [Elim] -> Contextual VAL
 quoteSpine _T           u []        =  return u
 quoteSpine (PI _S _T)   u (A s:as)  =  do

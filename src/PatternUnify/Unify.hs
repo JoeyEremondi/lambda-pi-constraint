@@ -201,6 +201,11 @@ rigidRigid (EQN _S (N (Var x w) ds) _T (N (Var y w') es))
 
 rigidRigid (EQN SET Nat SET Nat) = return []
 
+rigidRigid (EQN SET (Fin n) SET (Fin n')) =
+  return
+    [ EQN Nat n Nat n'
+    ]
+
 rigidRigid (EQN SET (Vec a m) SET (Vec b n)) =
     return  [  EQN SET a SET b
             ,  EQN Nat m Nat n]
@@ -215,6 +220,20 @@ rigidRigid (EQN Nat Zero Nat Zero) = return []
 
 rigidRigid (EQN Nat (Succ m) Nat (Succ n)) =
     return  [  EQN Nat m Nat n]
+
+rigidRigid (EQN (Fin m) (FZero n) (Fin m') (FZero n')) =
+    return
+      [ EQN Nat n Nat n'
+      , EQN Nat m Nat m'
+      , EQN Nat m Nat n
+      ]
+--TODO need twins here?
+rigidRigid (EQN (Fin m) (FSucc n f) (Fin m') (FSucc n' f')) =
+    return
+      [ EQN Nat n Nat n'
+      , EQN Nat m Nat m'
+      , EQN Nat m Nat n
+      , EQN (Fin n) f (Fin n) f']
 
 --TODO need to unify type indices of vectors?
 rigidRigid (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b')) =
