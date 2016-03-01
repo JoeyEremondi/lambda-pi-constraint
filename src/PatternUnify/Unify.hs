@@ -312,6 +312,19 @@ matchSpine
       matchSpine (m $$ u) (u %% elim1) ds (m' $$ v) (v %% elim2) es
 
 matchSpine
+  (Fin ni) u (elim1@(FinElim m mz ms n) : ds)
+  (Fin ni') v (elim2@(FinElim m' mz' ms' n') : es) =
+    ([ EQN (finmType) m (finmType) m'
+     , EQN (finmzType m) mz (finmzType m') mz'
+     , EQN (finmsType m) ms (finmsType m') ms'
+     , EQN (Nat) n Nat n'
+     , EQN (Nat) ni Nat ni'
+     , EQN (Nat) n Nat ni
+     ] ++) <$>
+      matchSpine (m $$ n $$ u) (u %% elim1) ds (m' $$ n' $$ v) (v %% elim2) es
+
+
+matchSpine
   (Vec a len) u (elim1@(VecElim b motive mn mc n) : ds)
   (Vec a' len') v (elim2@(VecElim b' motive' mn' mc' n') : es) =
     ([ EQN SET a SET a'
