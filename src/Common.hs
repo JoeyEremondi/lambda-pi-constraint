@@ -557,11 +557,17 @@ unifve = -- [(Global "Nat", VNat_)]
                 lam_ "x" $ \x ->
                 lam_ "y" $ \y ->
                 lam_ "eq" $ \eq ->
-                eq Tm.%% Tm.EqElim a m mr x y)
-             --(Global "FZero", VLam_ (\ n -> VFZero_ n)),
-             --(Global "FSucc", VLam_ (\ n -> VLam_ (\ f -> VFSucc_ n f))),
-             --(Global "Fin", VLam_ (\ n -> VFin_ n)),
-             --(Global "finElim", cEval_ (lam_ (lam_ (lam_ (lam_ (lam_ (inf_ (FinElim_ (inf_ (Bound_ 4)) (inf_ (Bound_ 3)) (inf_ (Bound_ 2)) (inf_ (Bound_ 1)) (inf_ (Bound_ 0))))))))) ([],[]))
+                eq Tm.%% Tm.EqElim a m mr x y),
+             (Global "FZero", lam_ "n" (\ n -> Tm.FZero n)),
+             (Global "FSucc", lam_ "n" (\ n -> lam_ "f" (\ f -> Tm.FSucc n f))),
+             (Global "Fin", lam_ "n" (\ n -> Tm.Fin n)),
+             (Global "finElim",
+                lam_ "m" $ \m ->
+                  lam_ "mz" $ \mz ->
+                    lam_ "ms" $ \ms ->
+                      lam_ "n" $ \n ->
+                        lam_ "f" $ \f ->
+                          f Tm.%% (Tm.FinElim m mz ms n))
              ]
 
 
