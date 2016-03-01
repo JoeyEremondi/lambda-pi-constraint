@@ -171,7 +171,7 @@ checkSpine (Fin n) u (elim@(FinElim m mz ms n') : ts) = do
   check (finmsType m) ms
   unless eq $ fail $ "Size index of given Finite " ++ pp n ++
                      " does not match FinElim size index of " ++ pp n'
-  checkSpine (m $$ u) (u %% elim) ts
+  checkSpine (m $$$ [n, u]) (u %% elim) ts
 
 --TODO for Vec and Eq
 
