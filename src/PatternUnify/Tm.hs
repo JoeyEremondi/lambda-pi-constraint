@@ -124,6 +124,9 @@ instance Pretty VAL where
     pretty Zero = return $ text "0"
     pretty (Succ n) =  (\pn -> text "S(" <+> pn <+> text ")") <$> pretty n
 
+    pretty (FZero n) = (\pn -> text "FZero " <+> pn ) <$> pretty n
+    pretty (FSucc n f) =  (\pn pf -> text "S(" <+> pn <+> text "," <+> pf <+> text ")") <$> pretty n <*> pretty f
+
     pretty (VNil _) = return $ text "[]"
     pretty (VCons a n h t) = (\pa pn ph pt -> ph <+> (text "::{" <+> pa <+> pn <+> text "}") <+> pt)
       <$> pretty a <*> pretty n <*> pretty h <*> pretty t
@@ -394,11 +397,16 @@ eval g (C c as)  = C c (map (eval g) as)
 eval g Nat = Nat
 eval g (Vec a n) = Vec (eval g a) (eval g n)
 eval g (Eq a x y) = Eq (eval g a) (eval g x) (eval g y)
+eval g (Fin n) = Fin (eval g n)
 
 eval _ Zero = Zero
 eval g (Succ n) = Succ (eval g n)
 eval g (VCons a n h t) = VCons (eval g a) (eval g n) (eval g h) (eval g t)
 eval g (ERefl a x) = ERefl (eval g a) (eval g x)
+
+eval g (FZero n) = FZero $ eval g n
+eval g (FSucc n f) = FSucc (eval g n) (eval g f)
+
 
 eval g t = error $ "Missing eval case for " ++ show t
 
@@ -413,9 +421,9 @@ elim (N u as)    e      = N u $ as ++ [e]
 elim (PAIR x _)  Hd     = x
 elim (PAIR _ y)  Tl     = y
 elim Zero (NatElim m mz ms) = mz
-elim (Succ l) theElim@(NatElim m mz ms) = ms $$$ [l, (elim l theElim)]
-elim (FZero _) (FinElim m mz ms n) = mz $$ n
-elim (FSucc _ f) theElim@(FinElim m mz ms n) = ms $$$ [n, f, (elim f theElim)]
+elim (Succ l) theElim@(NatElim m mz ms) = ms $$$ [l, elim l theElim]
+elim (FZero k) (FinElim m mz _ _) = mz $$ k
+elim (FSucc k f) theElim@(FinElim m _ ms _) = ms $$$ [k, f, elim f theElim]
 --TODO elim for Vec Eq
 elim t           a      = error $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 

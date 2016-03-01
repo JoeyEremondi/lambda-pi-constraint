@@ -207,12 +207,12 @@ quote Nat (Succ k) = Succ <$> quote Nat k
 quote (Fin n) (FZero n') = do
   if (n == n')
   then FZero <$> quote Nat n
-  else error "bad Fin Zero"
+  else error $ "bad Fin Zero " ++ pp n ++ " " ++ pp n'
 
 quote (Fin (Succ n)) (FSucc n' f) = do
   if (n == n')
   then FSucc <$> quote Nat n <*> quote (Fin n) f
-  else error "bad Fin Zero"
+  else error "bad Fin Succ"
 
 --TODO why not <->
 quote (Vec a _) (VNil b) =

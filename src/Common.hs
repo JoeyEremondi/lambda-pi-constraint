@@ -444,9 +444,8 @@ unifte =      [(Global "Zero", Tm.Nat),
                               pi_ (Tm.Eq a x y) "eq" (\ eq ->
                               Tm.eqResultType m x y eq))))))),
              (Global "FZero", pi_ Tm.Nat "n" (\ n -> Tm.Fin (Tm.Succ n))),
-             (Global "FSucc", pi_ Tm.Nat "n" (\ n -> pi_ (Tm.Fin n) "f" (\ f ->
-                             Tm.Fin (Tm.Succ n)))),
-             (Global "Fin", pi_ Tm.Nat "n" (\ n -> Tm.SET)),
+             (Global "FSucc", pi_ Tm.Nat "n" (\ n -> (Tm.Fin n) Tm.--> Tm.Fin (Tm.Succ n))),
+             (Global "Fin", Tm.Nat Tm.--> Tm.SET),
              (Global "finElim",
                 pi_ (Tm.finmType) "m" $ \m ->
                   (Tm.finmzType m) Tm.--> (Tm.finmzType m) Tm.-->

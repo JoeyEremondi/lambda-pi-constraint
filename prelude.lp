@@ -50,6 +50,8 @@ let inc = natFold Nat (Succ Zero) Succ
 
 
 
+let myFinElim = finElim
+
 -- embed Fin into Nat
 let finNat = finElim (\ _ _ -> Nat)
                      (\ _ -> Zero)
