@@ -250,6 +250,7 @@ mapElim f  (A a)  = A (f a)
 mapElim _  Hd     = Hd
 mapElim _  Tl     = Tl
 mapElim f (NatElim m mz ms) = NatElim (f m) (f mz) (f ms)
+mapElim f (FinElim m mz ms n) = FinElim (f m) (f mz) (f ms) (f n)
 mapElim f (VecElim a m mn mc n) = VecElim (f a) (f m) (f mn) (f mc) (f n)
 mapElim f (EqElim a m mr x y) = EqElim (f a) (f m) (f mr) (f x) (f y)
 
@@ -344,6 +345,19 @@ instance Occurs VAL where
         | y `elem` xs  = Just (Rigid Strong)
         | otherwise    = const Flexible <$> occurrence xs as
 
+    occurrence xs (Nat) = Nothing
+    occurrence xs (Fin n) = occurrence xs n
+    occurrence xs (Vec a n) = occurrence xs [a,n]
+    occurrence xs (Eq a x y) =   occurrence xs [a,x,y]
+
+    occurrence xs (Zero) = Nothing
+    occurrence xs (Succ n) = occurrence xs n
+    occurrence xs (FZero n) = occurrence xs n
+    occurrence xs (FSucc n f) = occurrence xs [n,f]
+    occurrence xs (VNil a) = occurrence xs a
+    occurrence xs (VCons a n h t) = occurrence xs [a,n,h,t]
+    occurrence xs (ERefl a x) = occurrence xs [a,x]
+
     occurrence xs _ = Nothing --TODO occurrence cases
 
     frees isMeta (L (B _ t))  = frees isMeta t
@@ -367,8 +381,14 @@ instance Occurs VAL where
     frees isMeta (ERefl a x) = unions (map (frees isMeta) [a,x])
     frees isMeta _ = emptyC --TODO frees cases
 
+type OC = Occurrence
+
 instance Occurs Elim where
    occurrence xs  (A a)  = occurrence xs a
+   occurrence xs (NatElim m mz ms) = occurrence xs [m, mz, ms]
+   occurrence xs (FinElim m mz ms n) = occurrence xs [m, mz, ms, n]
+   occurrence xs (VecElim a m mn mc n ) = occurrence xs [m, mn, mc, n, a]
+   occurrence xs (EqElim a m mr x y) = occurrence xs [a, m, mr, x, y]
    occurrence _   _      = Nothing
    frees isMeta  (A a)   = frees isMeta a
    frees isMeta  (NatElim m mz ms) = unions (map (frees isMeta) [m, mz, ms])
