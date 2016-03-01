@@ -414,6 +414,9 @@ elim (PAIR x _)  Hd     = x
 elim (PAIR _ y)  Tl     = y
 elim Zero (NatElim m mz ms) = mz
 elim (Succ l) theElim@(NatElim m mz ms) = ms $$$ [l, (elim l theElim)]
+elim (FZero _) (FinElim m mz ms n) = mz $$ n
+elim (FSucc n f) theElim@(NatElim m mz ms) = ms $$$ [n, f, (elim f theElim)]
+--TODO elim for Vec Eq
 elim t           a      = error $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 ($$) :: VAL -> VAL -> VAL
