@@ -42,6 +42,8 @@ data VAL where
     Eq :: VAL -> VAL -> VAL -> VAL
     Zero :: VAL
     Succ :: VAL -> VAL
+    FZero :: VAL -> VAL
+    FSucc :: VAL -> VAL -> VAL
     VNil :: VAL -> VAL
     VCons :: VAL -> VAL -> VAL -> VAL -> VAL
     ERefl :: VAL -> VAL -> VAL
@@ -451,5 +453,14 @@ eqmType a = pi_ a "x" (\ x -> pi_ a "y" (\ y -> (Eq a x y) --> ( SET)))
 eqmrType a m = pi_ a "x" (\ x -> m $$ x $$ x $$ ERefl a x)
 
 eqResultType m x y eq = m $$ x $$ y $$ eq
+
+finmType = pi_ (Nat) "n" $ \n ->
+  Fin n --> SET
+
+finmzType m = pi_ (Nat) "n" $ \n ->
+  m $$ Succ n $$ FZero n
+
+finmsType m = pi_ (Nat) "n" $ \n ->
+  error "TODO fin ms"
 
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])

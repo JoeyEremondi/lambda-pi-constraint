@@ -6,7 +6,7 @@ import Prelude hiding (print)
 import Data.Char
 import Data.List
 
-import Text.PrettyPrint.HughesPJ hiding (parens)
+import Text.PrettyPrint.HughesPJ hiding (parens, ($$))
 import qualified Text.PrettyPrint.HughesPJ as PP
 
 import Text.ParserCombinators.Parsec hiding (State, parse)
@@ -161,6 +161,17 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
 
     iType_' ii g (FinElim_ m mz ms n f) = do
       error "TODO finElim"
+      mVal <- evaluate ii m g
+      --mzVal <- evaluate ii m g
+      --msVal <- evaluate ii m g
+      nVal <- evaluate ii m g
+      fVal <- evaluate ii m g
+      cType_ ii g m (Tm.finmType)
+      cType_ ii g mz (Tm.finmzType mVal)
+      cType_ ii g ms (Tm.finmsType mVal)
+      cType_ ii g n (Tm.Nat)
+      cType_ ii g f (Tm.Fin nVal)
+      return $ mVal Tm.$$ nVal Tm.$$ fVal
 
     iType_' ii g (Vec_ a n) =
       do  cType_ ii g a  conStar
