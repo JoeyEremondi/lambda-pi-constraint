@@ -182,6 +182,7 @@ quote _T           (N h as)  = do  _S <- infer h
                                    quoteSpine _S (N h []) as
 
 quote SET Nat = return Nat
+quote SET (Fin n) = Fin <$> quote Nat n
 quote SET (Vec a Zero) = Vec <$> quote SET a <*> quote Nat Zero
 quote SET (Eq a x y) = Eq <$> quote SET a <*> quote a x <*> quote a y
 
