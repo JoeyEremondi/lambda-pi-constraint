@@ -57,6 +57,8 @@ typecheck _T t = (check _T t >> return True) `catchError`
 
 check :: Type -> VAL -> Contextual ()
 
+check _T t | trace ("Checing " ++ pp _T ++ " ||| " ++ pp t) False = error "check"
+
 check (C c as)    (C v bs)  =  do
                                tel <- canTy (c, as) v
                                checkTel tel bs
@@ -89,13 +91,13 @@ check (SET) (Eq a x y) = do
 check (Nat) Zero = return ()
 check Nat (Succ k) = check Nat k
 
-check (Fin n) (FZero n') = do
+check (Fin (Succ n)) (FZero n') = do
   check Nat n
   check Nat n'
   eq <- n <-> n'
   unless eq $ fail $ "check: FZero index " ++ (pp n') ++ " does not match type index " ++ (pp n)
 
-check (Fin n) (FSucc (Succ n') k) = do
+check (Fin (Succ n)) (FSucc n' k) = do
   check (Fin n) k
   check Nat n
   check Nat n'
@@ -181,6 +183,7 @@ checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty
 
 
 quote :: Type -> VAL -> Contextual VAL
+quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
 quote (PI _S _T)   f         =  do
                                 x <- fresh (s2n "xq")
                                 lam x <$> inScope x (P _S)
@@ -217,7 +220,7 @@ quote (Fin (Succ n)) (FSucc n' f) = do
 --TODO why not <->
 quote (Vec a _) (VNil b) =
   if (a == b)
-  then VNil <$> quote a SET --TODO check equal?
+  then VNil <$> quote SET a --TODO check equal?
   else fail "Bad quote NIL "
 quote (Vec a (Succ n)) (VCons b m h t) =
   if (m /= n || a /= b)
@@ -255,6 +258,22 @@ quoteSpine (PI _S _T)   u (A s:as)  =  do
                                        quoteSpine (_T $$ s') (u $$ s') as
 quoteSpine (SIG _S _T)  u (Hd:as)   =  quoteSpine _S (u %% Hd) as
 quoteSpine (SIG _S _T)  u (Tl:as)   =  quoteSpine (_T $$ (u %% Hd)) (u %% Tl) as
+
+quoteSpine (Nat) u ((NatElim m mz ms):as) = do
+  qm <- quote (Nat --> SET) m
+  qmz <- quote (m $$ Zero) mz
+  qms <- quote (msType m) ms
+  let qElim = NatElim qm qmz qms
+  quoteSpine (qm $$ u) (u %% qElim) as
+
+quoteSpine (Fin (Succ _)) u ((FinElim m mz ms n):as) = do
+  qm <- quote finmType m
+  qmz <- quote (finmzType m) mz
+  qms <- quote (finmsType m) ms
+  qn <- quote Nat n --TODO check n' and n equal?
+  let qElim = FinElim qm qmz qms qn
+  quoteSpine (qm $$$ [qn, u]) (u %% qElim) as
+--TODO vec, eq
 quoteSpine _T           u (s:_)     =  fail $ "quoteSpine: type " ++ pp _T ++
                                                " of " ++ pp u ++
                                                " does not permit " ++ pp s
@@ -262,7 +281,7 @@ quoteSpine _T           u (s:_)     =  fail $ "quoteSpine: type " ++ pp _T ++
 
 
 equal :: Type -> VAL -> VAL -> Contextual Bool
-equal _T s t = do
+equal _T s t = trace ("Equality comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ==== " ++ pp t) $ do
     s'   <- quote _T s
     t'   <- quote _T t
     return $ s' == t'
