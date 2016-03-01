@@ -268,16 +268,16 @@ localParams f = local f
 lookupVar :: MonadReader Params m => Nom -> Twin -> m Type
 lookupVar x w = do
   vars <- ask
-  look vars
+  look vars vars
   where
-    look [] = fail $ "lookupVar: missing " ++ show x
-    look ((y, e) : _) | x == y =
+    look vars [] = fail $ "lookupVar: missing " ++ show x ++ "\nin env " ++ show vars
+    look vars  ((y, e) : _) | x == y =
       case (e, w) of
         (P _T,         Only)   -> return _T
         (Twins _S _T,  TwinL)  -> return _S
         (Twins _S _T,  TwinR)  -> return _T
         _                      -> fail $ "lookupVar: evil twin"
-    look (_ : _Gam)                      = look _Gam
+    look vars (_ : _Gam)                      = look vars _Gam
 
 lookupMeta :: MonadState Context m => Nom -> m Type
 lookupMeta x = look =<< getL

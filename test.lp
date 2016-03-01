@@ -7,4 +7,4 @@
 
 --let app = (\t1 f x -> f x) :: forall (t1 :: *) . (t1 -> Nat) ->  t1 -> Nat
 
-let myFinElim = finElim
+let U = FZero 0

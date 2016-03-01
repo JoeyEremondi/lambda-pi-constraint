@@ -57,7 +57,7 @@ typecheck _T t = (check _T t >> return True) `catchError`
 
 check :: Type -> VAL -> Contextual ()
 
---check _T t | trace ("Checing " ++ pp _T ++ " ||| " ++ pp t) False = error "check"
+check _T t | trace ("Checing " ++ pp _T ++ " ||| " ++ pp t) False = error "check"
 
 check (C c as)    (C v bs)  =  do
                                tel <- canTy (c, as) v
@@ -67,11 +67,12 @@ check (PI _S _T)  (L b)     =  do
                                (x, t) <- unbind b
                                inScope x (P _S) $ check (_T $$ var x) t
 
-check _T          (N u as)  =  do
-                               _U   <- infer u
+check _T          (N u as)  =  trace ("Checking neutral head" ++ show u ++ " spine " ++ show as ) $ do
+                               vars <- ask
+                               _U   <- trace ("Inferring with env " ++ show vars) $ infer u
                                _T'  <-
                                   checkSpine _U (N u []) as
-                               eq   <- (_T <-> _T')
+                               eq   <- trace ("Neutral eq comparing " ++ pp _T ++ " ===== " ++ pp _T') $ (_T <-> _T')
                                unless eq $ fail $ "Inferred type " ++ pp _T' ++
                                                   " of " ++ pp (N u as) ++
                                                   " is not " ++ pp _T
@@ -94,14 +95,14 @@ check Nat (Succ k) = check Nat k
 check (Fin (Succ n)) (FZero n') = do
   check Nat n
   check Nat n'
-  eq <- n <-> n'
+  eq <- equal Nat n n'
   unless eq $ fail $ "check: FZero index " ++ (pp n') ++ " does not match type index " ++ (pp n)
 
 check (Fin (Succ n)) (FSucc n' k) = do
   check (Fin n) k
   check Nat n
   check Nat n'
-  eq <- n <-> n'
+  eq <- equal Nat n n'
   unless eq $ fail $ "check: FSucc index " ++ (pp n') ++ " does not match type index " ++ (pp n)
 
 check (Vec a Zero) (VNil a') = do
@@ -111,7 +112,7 @@ check (Vec a Zero) (VNil a') = do
 
 check (Vec a (Succ n)) (VCons a' n' h t) = do
   eq1 <- a <-> a'
-  eq2 <- n <-> n'
+  eq2 <- equal Nat n n'
   check SET a
   check a h
   check (Vec a n) t
@@ -121,8 +122,8 @@ check (Vec a (Succ n)) (VCons a' n' h t) = do
 
 check (Eq a x1 x2) (ERefl a' x) = do
   eq1 <- a <-> a'
-  eq2 <- x <-> x1
-  eq3 <- x <-> x2
+  eq2 <- equal a x x1
+  eq3 <- equal a x x2
   check SET a
   check a x
   unless eq1 $ fail $ "check: Refl type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
@@ -165,7 +166,7 @@ checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
   checkSpine (m $$ u) (u %% elim) ts
 
 checkSpine (Fin n) u (elim@(FinElim m mz ms n') : ts) = do
-  eq <- n <-> n'
+  eq <- equal Nat n n'
   check (Fin n) u
   check Nat n
   check (finmType) m
@@ -183,7 +184,7 @@ checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty
 
 
 quote :: Type -> VAL -> Contextual VAL
---quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
+quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
 quote (PI _S _T)   f         =  do
                                 x <- fresh (s2n "xq")
                                 lam x <$> inScope x (P _S)
@@ -281,7 +282,7 @@ quoteSpine _T           u (s:_)     =  fail $ "quoteSpine: type " ++ pp _T ++
 
 
 equal :: Type -> VAL -> VAL -> Contextual Bool
-equal _T s t = do
+equal _T s t = trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ========= " ++ pp t) $ do
     s'   <- quote _T s
     t'   <- quote _T t
     return $ s' == t'
