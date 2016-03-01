@@ -102,8 +102,8 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
         do
           cType_  ii g tyt conStar
           ty <- evaluate ii tyt g
-          trace ("&&" ++ show ii ++ "Annotated " ++ show e ++ " as " ++ show ty)  $
-            cType_ ii g e ty
+          --trace ("&&" ++ show ii ++ "Annotated " ++ show e ++ " as " ++ show ty)  $
+          cType_ ii g e ty
           return ty
     iType_' ii g Star_
        =  return conStar
@@ -118,7 +118,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
               return conStar
     iType_' ii g (Free_ x)
       =     case typeLookup x g of
-              Just ty        ->  trace ("Looked up type " ++ show ty ++ " of " ++ show x) $ return ty
+              Just ty        ->  return ty
               Nothing        ->  unknownIdent g (render (iPrint_ 0 0 (builtin $ Free_ x)))
     iType_' ii g (e1 :$: e2)
       =     do

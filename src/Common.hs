@@ -283,8 +283,8 @@ data Stmt i tinf = Let String i           --  let x = t
   deriving (Show)
 
 --  read-eval-print loop
-readevalprint :: Interpreter i c v t tinf inf -> State v inf -> IO ()
-readevalprint int state@(inter, out, ve, te) =
+readevalprint :: Interpreter i c v t tinf inf ut -> State v inf ut -> IO ()
+readevalprint int state@(inter, out, ve, te, _) =
   let rec int state =
         do
           x <- catch
@@ -323,9 +323,9 @@ data InteractiveCommand = Cmd [String] String (String -> Command) String
 
 type NameEnv v = [(Name, v)]
 type Ctx inf = [(Name, inf)]
-type State v inf = (Bool, String, NameEnv v, Ctx inf)
+type State v inf utype = (Bool, String, NameEnv v, Ctx inf, Ctx utype)
 
-type TypeChecker = (NameEnv Value_, [(Name, Value_)]) -> ITerm_ -> Result Type_
+type TypeChecker = (NameEnv Value_, [(Name, Value_)]) -> ITerm_ -> Result (Type_, Tm.Type)
 
 commands :: [InteractiveCommand]
 commands
@@ -365,8 +365,8 @@ interpretCommand x
      else
        return (Compile (CompileInteractive x))
 
-handleCommand :: Interpreter i c v t tinf inf -> State v inf -> Command -> IO (Maybe (State v inf))
-handleCommand int state@(inter, out, ve, te) cmd
+handleCommand :: Interpreter i c v t tinf inf ut -> State v inf ut -> Command -> IO (Maybe (State v inf ut))
+handleCommand int state@(inter, out, ve, te, _) cmd
   =  case cmd of
        Quit   ->  when (not inter) (putStrLn "!@#$^&*") >> return Nothing
        Noop   ->  return (Just state)
@@ -374,7 +374,7 @@ handleCommand int state@(inter, out, ve, te) cmd
        TypeOf x ->
                   do  x <- parseIO "<interactive>" (iiparse int) x
                       t <- maybe (return Nothing) (iinfer int ve te) x
-                      maybe (return ()) (\u -> putStrLn (render (itprint int u))) t
+                      maybe (return ()) (\(u, _) -> putStrLn (render (itprint int u))) t
                       return (Just state)
        Browse ->  do  putStr (unlines [ s | Global s <- reverse (nub (map fst te)) ])
                       return (Just state)
@@ -384,23 +384,23 @@ handleCommand int state@(inter, out, ve, te) cmd
                                  CompileFile f        -> compileFile int state f
                       return (Just state)
 
-compileFile :: Interpreter i c v t tinf inf -> State v inf -> String -> IO (State v inf)
-compileFile int state@(inter, out, ve, te) f =
+compileFile :: Interpreter i c v t tinf inf ut -> State v inf ut -> String -> IO (State v inf ut)
+compileFile int state@(inter, out, ve, te, _) f =
   do
     x <- readFile f
     stmts <- parseIO f (many (isparse int)) x
     maybe (return state) (foldM (handleStmt int) state) stmts
 
-compilePhrase :: Interpreter i c v t tinf inf -> State v inf -> String -> IO (State v inf)
-compilePhrase int state@(inter, out, ve, te) x =
+compilePhrase :: Interpreter i c v t tinf inf ut -> State v inf ut -> String -> IO (State v inf ut)
+compilePhrase int state@(inter, out, ve, te, _) x =
   do
     x <- parseIO "<interactive>" (isparse int) x
     maybe (return state) (handleStmt int state) x
 
-data Interpreter i c v t tinf inf =
+data Interpreter i c v t tinf inf utype =
   I { iname    :: String,
       iprompt  :: String,
-      iitype   :: NameEnv v -> Ctx inf -> i -> Result t,
+      iitype   :: NameEnv v -> Ctx inf -> i -> Result (t, utype),
       iquote   :: v -> c,
       ieval    :: NameEnv v -> i -> v,
       ihastype :: t -> inf,
@@ -408,14 +408,14 @@ data Interpreter i c v t tinf inf =
       itprint  :: t -> Doc,
       iiparse  :: LPParser i,
       isparse  :: LPParser (Stmt i tinf),
-      iassume  :: State v inf -> (String, tinf) -> IO (State v inf) }
+      iassume  :: State v inf utype -> (String, tinf) -> IO (State v inf utype) }
 
 
 
-lp :: TypeChecker -> Interpreter ITerm_ CTerm_ Value_ Value_ CTerm_ Value_
+lp :: TypeChecker -> Interpreter ITerm_ CTerm_ Value_ Value_ CTerm_ Value_ Tm.Type
 lp checker = I { iname = "lambda-Pi",
          iprompt = "LP> ",
-         iitype = \ v c -> checker (v, c),
+         iitype = \ v c x -> checker (v, c) x,
          iquote = quote0_,
          ieval = \ e x -> iEval_ x (e, []),
          ihastype = id,
@@ -578,7 +578,7 @@ unifve = -- [(Global "Nat", VNat_)]
 
 
 repLP :: TypeChecker -> Bool -> IO ()
-repLP checker b = readevalprint (lp checker) (b, [], lpve, lpte)
+repLP checker b = readevalprint (lp checker) (b, [], lpve, lpte, unifte)
 
 
 iinfer int d g t =
@@ -586,16 +586,16 @@ iinfer int d g t =
     Left e -> putStrLn e >> return Nothing
     Right v -> return (Just v)
 
-handleStmt :: Interpreter i c v t tinf inf
-              -> State v inf -> Stmt i tinf -> IO (State v inf)
-handleStmt int state@(inter, out, ve, te) stmt =
+handleStmt :: Interpreter i c v t tinf inf ut
+              -> State v inf ut -> Stmt i tinf -> IO (State v inf ut)
+handleStmt int state@(inter, out, ve, te, ustate) stmt =
   do
     case stmt of
         Assume ass -> foldM (iassume int) state ass
         Let x e    -> checkEval x e
         Eval e     -> checkEval it e
         PutStrLn x -> putStrLn x >> return state
-        Out f      -> return (inter, f, ve, te)
+        Out f      -> return (inter, f, ve, te, ustate)
   where
     --  checkEval :: String -> i -> IO (State v inf)
     checkEval i t =
@@ -608,11 +608,11 @@ handleStmt int state@(inter, out, ve, te) stmt =
                                                 else render (text i <> text " :: " <> itprint int y)
                        putStrLn outtext
                        unless (null out) (writeFile out (process outtext)))
-        (\ (y, v) -> (inter, "", (Global i, v) : ve, (Global i, ihastype int y) : te))
+        (\ (y, v, ut) -> (inter, "", (Global i, v) : ve, (Global i, ihastype int y) : te, (Global i, ut) : ustate))
 
-check :: Interpreter i c v t tinf inf -> State v inf -> String -> i
-         -> ((t, v) -> IO ()) -> ((t, v) -> State v inf) -> IO (State v inf)
-check int state@(inter, out, ve, te) i t kp k =
+check :: Interpreter i c v t tinf inf ut -> State v inf ut -> String -> i
+         -> ((t, v) -> IO ()) -> ((t, v, ut) -> State v inf ut) -> IO (State v inf ut)
+check int state@(inter, out, ve, te, _) i t kp k =
                 do
                   --  typecheck and evaluate
                   x <- iinfer int ve te t
@@ -621,17 +621,17 @@ check int state@(inter, out, ve, te) i t kp k =
                       do
                         --  putStrLn "type error"
                         return state
-                    Just y   ->
+                    Just (y,ut)   ->
                       do
                         let v = ieval int ve t
                         kp (y, v)
-                        return (k (y, v))
+                        return (k (y, v, ut))
 
 stassume state@(inter, out, ve, te) x t = return (inter, out, ve, (Global x, t) : te)
-lpassume checker state@(inter, out, ve, te) x t =
+lpassume checker state@(inter, out, ve, te, ustate) x t =
   check (lp checker) state x (builtin $ Ann_ t (builtin $ Inf_ $ builtin $ Star_))
         (\ (y, v) -> return ()) --  putStrLn (render (text x <> text " :: " <> cPrint_ 0 0 (quote0_ v))))
-        (\ (y, v) -> (inter, out, ve, (Global x, v) : te))
+        (\ (y, v, ut) -> (inter, out, ve, (Global x, v) : te, (Global x, ut) : ustate))
 
 
 it = "it"
