@@ -442,16 +442,15 @@ unifte =      [(Global "Zero", Tm.Nat),
                               (Tm.eqmrType a m) Tm.--> (
                               pi_ a "x" (\ x -> pi_ a "y" (\ y ->
                               pi_ (Tm.Eq a x y) "eq" (\ eq ->
-                              Tm.eqResultType m x y eq)))))))
---             (Global "FZero", Tm.PI Tm.Nat (\ n -> VFin_ (Tm.Succ n))),
---             (Global "FSucc", Tm.PI Tm.Nat (\ n -> Tm.PI (VFin_ n) (\ f ->
---                             VFin_ (Tm.Succ n)))),
---             (Global "Fin", Tm.PI Tm.Nat (\ n -> Tm.SET)),
---             (Global "finElim", Tm.PI (Tm.PI Tm.Nat (\ n -> Tm.PI (VFin_ n) (\ _ -> Tm.SET))) (\ m ->
---                               Tm.PI (Tm.PI Tm.Nat (\ n -> m Tm.$$ (Tm.Succ n) Tm.$$ (VFZero_ n))) (\ _ ->
---                               Tm.PI (Tm.PI Tm.Nat (\ n -> Tm.PI (VFin_ n) (\ f -> Tm.PI (m Tm.$$ n Tm.$$ f) (\ _ -> m Tm.$$ (Tm.Succ n) Tm.$$ (VFSucc_ n f))))) (\ _ ->
---                               Tm.PI Tm.Nat (\ n -> Tm.PI (VFin_ n) (\ f ->
---                               m Tm.$$ n Tm.$$ f))))))
+                              Tm.eqResultType m x y eq))))))),
+             (Global "FZero", pi_ Tm.Nat "n" (\ n -> Tm.Fin (Tm.Succ n))),
+             (Global "FSucc", pi_ Tm.Nat "n" (\ n -> pi_ (Tm.Fin n) "f" (\ f ->
+                             Tm.Fin (Tm.Succ n)))),
+             (Global "Fin", pi_ Tm.Nat "n" (\ n -> Tm.SET)),
+             (Global "finElim",
+                pi_ (Tm.finmType) "m" $ \m ->
+                  (Tm.finmzType m) Tm.--> (Tm.finmzType m) Tm.-->
+                  (pi_ Tm.Nat "n" $ \n -> pi_ (Tm.Fin n) "f" $ \f -> m Tm.$$ n Tm.$$ (f Tm.$$ n)))
         ]
 
 
