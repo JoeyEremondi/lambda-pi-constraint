@@ -450,7 +450,7 @@ unifte =      [(Global "Zero", Tm.Nat),
              (Global "finElim",
                 pi_ (Tm.finmType) "m" $ \m ->
                   (Tm.finmzType m) Tm.--> (Tm.finmzType m) Tm.-->
-                  (pi_ Tm.Nat "n" $ \n -> pi_ (Tm.Fin n) "f" $ \f -> m Tm.$$ n Tm.$$ (f Tm.$$ n)))
+                  (pi_ Tm.Nat "n" $ \n -> pi_ (Tm.Fin n) "f" $ \f -> m Tm.$$$ [n, f Tm.$$ n]))
         ]
 
 

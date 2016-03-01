@@ -415,7 +415,7 @@ elim (PAIR _ y)  Tl     = y
 elim Zero (NatElim m mz ms) = mz
 elim (Succ l) theElim@(NatElim m mz ms) = ms $$$ [l, (elim l theElim)]
 elim (FZero _) (FinElim m mz ms n) = mz $$ n
-elim (FSucc n f) theElim@(NatElim m mz ms) = ms $$$ [n, f, (elim f theElim)]
+elim (FSucc _ f) theElim@(FinElim m mz ms n) = ms $$$ [n, f, (elim f theElim)]
 --TODO elim for Vec Eq
 elim t           a      = error $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
@@ -453,19 +453,19 @@ vResultType m n xs = m $$ n $$ xs
 
 eqmType a = pi_ a "x" (\ x -> pi_ a "y" (\ y -> (Eq a x y) --> ( SET)))
 
-eqmrType a m = pi_ a "x" (\ x -> m $$ x $$ x $$ ERefl a x)
+eqmrType a m = pi_ a "x" (\ x -> m $$$ [x, x, ERefl a x] )
 
-eqResultType m x y eq = m $$ x $$ y $$ eq
+eqResultType m x y eq = m $$$ [x, y, eq]
 
 finmType = pi_ (Nat) "n" $ \n ->
   Fin n --> SET
 
 finmzType m = pi_ (Nat) "n" $ \n ->
-  m $$ Succ n $$ FZero n
+  m $$$ [Succ n, FZero n]
 
 finmsType m = pi_ (Nat) "n" $ \n ->
   pi_ Nat "n" $ \n ->
     pi_ (Fin n) "f" $ \f ->
-      (m $$ n $$ f) --> (m $$ (Succ n) $$ (FSucc n f))
+      (m $$$ [n, f]) --> (m $$$ [Succ n, FSucc n f])
 
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])

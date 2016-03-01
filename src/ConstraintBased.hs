@@ -171,7 +171,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
       cType_ ii g ms (Tm.finmsType mVal)
       cType_ ii g n (Tm.Nat)
       cType_ ii g f (Tm.Fin nVal)
-      return $ mVal Tm.$$ nVal Tm.$$ (fVal Tm.$$ n)
+      return $  mVal Tm.$$$ [nVal, (fVal Tm.$$ nVal)]
 
     iType_' ii g (Vec_ a n) =
       do  cType_ ii g a  conStar

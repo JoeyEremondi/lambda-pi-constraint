@@ -321,7 +321,7 @@ matchSpine
      , EQN (Nat) ni Nat ni'
      , EQN (Nat) n Nat ni
      ] ++) <$>
-      matchSpine (m $$ n $$ u) (u %% elim1) ds (m' $$ n' $$ v) (v %% elim2) es
+      matchSpine (m $$$ [n, u]) (u %% elim1) ds (m' $$$ [n', v]) (v %% elim2) es
 
 
 matchSpine
