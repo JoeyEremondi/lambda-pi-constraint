@@ -204,7 +204,7 @@ quote SET (Eq a x y) = Eq <$> quote SET a <*> quote a x <*> quote a y
 quote Nat Zero = return Zero
 quote Nat (Succ k) = Succ <$> quote Nat k
 
-quote (Fin n) (FZero n') = do
+quote (Fin (Succ n)) (FZero n') = do
   if (n == n')
   then FZero <$> quote Nat n
   else error $ "bad Fin Zero " ++ pp n ++ " " ++ pp n'
