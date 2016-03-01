@@ -155,6 +155,13 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
           nVal <- evaluate ii n g
           return $ mVal Tm.$$ nVal
 
+    iType_' ii g (Fin_ n) = do
+      cType_ ii g n Tm.Nat
+      return Tm.SET
+
+    iType_' ii g (FinElim_ m mz ms n f) = do
+      error "TODO finElim"
+
     iType_' ii g (Vec_ a n) =
       do  cType_ ii g a  conStar
           cType_ ii g n  Tm.Nat
@@ -264,6 +271,16 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
     cType_' ii g Zero_      ty  =  unifySets reg ty Tm.Nat g
     cType_' ii g (Succ_ k)  ty  = do
       unifySets reg ty Tm.Nat g
+      cType_ ii g k Tm.Nat
+
+    cType_' ii g (FZero_ f)      ty  =  do
+      cType_ ii g f Tm.Nat
+      fVal <- evaluate ii f g
+      unifySets reg ty (Tm.Fin fVal) g
+    cType_' ii g (FSucc_ k f)  ty  = do
+      cType_ ii g f Tm.Nat
+      fVal <- evaluate ii f g
+      unifySets reg ty (Tm.Fin fVal) g
       cType_ ii g k Tm.Nat
 
     cType_' ii g (Nil_ a) ty =

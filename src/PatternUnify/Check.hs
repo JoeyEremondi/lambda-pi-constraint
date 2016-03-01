@@ -67,7 +67,7 @@ check (PI _S _T)  (L b)     =  do
 
 check _T          (N u as)  =  do
                                _U   <- infer u
-                               _T'  <- 
+                               _T'  <-
                                   checkSpine _U (N u []) as
                                eq   <- (_T <-> _T')
                                unless eq $ fail $ "Inferred type " ++ pp _T' ++

@@ -36,14 +36,19 @@ let nat1Elim =
 
 -- an eliminator for natural numbers that has special
 -- cases for 0, 1 and 2
+{-
 let nat2Elim =
   ( \ m m0 m1 m2 ms -> nat1Elim m m0 m1
                                 (\ p rec -> natElim (\ n -> m (Succ (Succ n))) m2 ms p) )
   :: forall (m :: Nat -> *) . m 0 -> m 1 -> m 2 ->
      (forall n :: Nat . m (Succ (Succ n)) -> m (Succ (Succ (Succ n)))) ->
      forall (n :: Nat) . m n
+-}
+
 -- increment by one
 let inc = natFold Nat (Succ Zero) Succ
+
+
 
 -- embed Fin into Nat
 let finNat = finElim (\ _ _ -> Nat)

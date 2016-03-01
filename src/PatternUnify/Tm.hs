@@ -37,6 +37,7 @@ data VAL where
     N  :: Head -> [Elim] -> VAL --Neutral term
     C  :: Can -> [VAL] -> VAL --Constructor values
     Nat :: VAL
+    Fin :: VAL -> VAL
     Vec :: VAL -> VAL -> VAL
     Eq :: VAL -> VAL -> VAL -> VAL
     Zero :: VAL
