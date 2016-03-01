@@ -89,6 +89,19 @@ check (SET) (Eq a x y) = do
 check (Nat) Zero = return ()
 check Nat (Succ k) = check Nat k
 
+check (Fin n) (FZero n') = do
+  check Nat n
+  check Nat n'
+  eq <- n <-> n'
+  unless eq $ fail $ "check: FZero index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+
+check (Fin n) (FSucc (Succ n') k) = do
+  check (Fin n) k
+  check Nat n
+  check Nat n'
+  eq <- n <-> n'
+  unless eq $ fail $ "check: FSucc index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+
 check (Vec a Zero) (VNil a') = do
   eq <- a <-> a'
   check SET a
@@ -188,6 +201,17 @@ quote SET (Eq a x y) = Eq <$> quote SET a <*> quote a x <*> quote a y
 
 quote Nat Zero = return Zero
 quote Nat (Succ k) = Succ <$> quote Nat k
+
+quote (Fin n) (FZero n') = do
+  if (n == n')
+  then FZero <$> quote Nat n
+  else error "bad Fin Zero"
+
+quote (Fin (Succ n)) (FSucc n' f) = do
+  if (n == n')
+  then FSucc <$> quote Nat n <*> quote (Fin n) f
+  else error "bad Fin Zero"
+
 --TODO why not <->
 quote (Vec a _) (VNil b) =
   if (a == b)
