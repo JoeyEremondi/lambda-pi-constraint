@@ -39,7 +39,7 @@ prettySource s = "builtin:"
 
 regionName BuiltinRegion = "builtin"
 regionName (SourceRegion pos) = --TODO multiFile
-  "β_" ++ (show (sourceColumn pos))
+  (show (sourceColumn pos))
   ++ "_" ++ show (sourceLine pos)
 
 data Located a = L {region :: Region, contents :: a}
@@ -183,7 +183,7 @@ parseITerm_ 3 e = getRegion >>= \pos ->
         return $ L pos Star_
   <|> do
         reserved lambdaPi "_"
-        return $ L pos $ Meta_ (regionName pos)
+        return $ L pos $ Meta_ ("β_" ++ regionName pos)
   <|> do
         n <- natural lambdaPi
         return (toNat_ pos n)

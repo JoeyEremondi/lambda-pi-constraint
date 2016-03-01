@@ -420,9 +420,9 @@ maybeHead (h:_) = Just h
 
 --We abstract over the environment
 --And return a value which applies the local variables to it
-fresh :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
-fresh env tp = do
-    ourNom <- freshNom "α_"
+fresh :: Common.Region -> WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
+fresh reg env tp = do
+    ourNom <- freshNom $ "α_" ++ Common.regionName reg ++ "_"
     let currentQuants = reverse $ typeEnv env
     let lambdaType =
           foldr (\(i, t) arrowSoFar -> Tm._Pi (localName i) t arrowSoFar)
@@ -493,7 +493,7 @@ forAllUnify quantVar quantType v1 v2 tp env = do
 -}
 
 
-freshType env = fresh env Tm.SET
+freshType reg env = fresh reg env Tm.SET
 
 type ConType = Tm.VAL
 

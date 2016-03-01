@@ -263,7 +263,7 @@ inScope :: MonadReader Params m => Nom -> Param -> m a -> m a
 inScope x p = local (++ [(x, p)])
 
 localParams :: (Params -> Params) -> Contextual a -> Contextual a
-localParams = local
+localParams f = trace ("Doing localParams, adding " ++ show (f []) ) $ local f
 
 lookupVar :: MonadReader Params m => Nom -> Twin -> m Type
 lookupVar x w = do
