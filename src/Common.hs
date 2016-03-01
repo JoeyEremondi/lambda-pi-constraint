@@ -283,8 +283,8 @@ data Stmt i tinf = Let String i           --  let x = t
   deriving (Show)
 
 --  read-eval-print loop
-readevalprint :: Interpreter i c v t tinf inf ut -> State v inf ut -> IO ()
-readevalprint int state@(inter, out, ve, te, _) =
+readevalprint :: Interpreter i c v t tinf inf -> State v inf -> IO ()
+readevalprint int state@(inter, out, ve, te) =
   let rec int state =
         do
           x <- catch
@@ -323,9 +323,9 @@ data InteractiveCommand = Cmd [String] String (String -> Command) String
 
 type NameEnv v = [(Name, v)]
 type Ctx inf = [(Name, inf)]
-type State v inf utype = (Bool, String, NameEnv v, Ctx inf, Ctx utype)
+type State v inf = (Bool, String, NameEnv v, Ctx inf)
 
-type TypeChecker = (NameEnv Value_, [(Name, Value_)]) -> ITerm_ -> Result (Type_, Tm.Type)
+type TypeChecker = (NameEnv Tm.VAL, [(Name, Tm.VAL)]) -> ITerm_ -> Result Type_
 
 commands :: [InteractiveCommand]
 commands
@@ -365,8 +365,8 @@ interpretCommand x
      else
        return (Compile (CompileInteractive x))
 
-handleCommand :: Interpreter i c v t tinf inf ut -> State v inf ut -> Command -> IO (Maybe (State v inf ut))
-handleCommand int state@(inter, out, ve, te, _) cmd
+handleCommand :: Interpreter i c v t tinf inf -> State v inf -> Command -> IO (Maybe (State v inf))
+handleCommand int state@(inter, out, ve, te) cmd
   =  case cmd of
        Quit   ->  when (not inter) (putStrLn "!@#$^&*") >> return Nothing
        Noop   ->  return (Just state)
@@ -374,7 +374,7 @@ handleCommand int state@(inter, out, ve, te, _) cmd
        TypeOf x ->
                   do  x <- parseIO "<interactive>" (iiparse int) x
                       t <- maybe (return Nothing) (iinfer int ve te) x
-                      maybe (return ()) (\(u, _) -> putStrLn (render (itprint int u))) t
+                      maybe (return ()) (\u -> putStrLn (render (itprint int u))) t
                       return (Just state)
        Browse ->  do  putStr (unlines [ s | Global s <- reverse (nub (map fst te)) ])
                       return (Just state)
@@ -384,23 +384,23 @@ handleCommand int state@(inter, out, ve, te, _) cmd
                                  CompileFile f        -> compileFile int state f
                       return (Just state)
 
-compileFile :: Interpreter i c v t tinf inf ut -> State v inf ut -> String -> IO (State v inf ut)
-compileFile int state@(inter, out, ve, te, _) f =
+compileFile :: Interpreter i c v t tinf inf -> State v inf -> String -> IO (State v inf)
+compileFile int state@(inter, out, ve, te) f =
   do
     x <- readFile f
     stmts <- parseIO f (many (isparse int)) x
     maybe (return state) (foldM (handleStmt int) state) stmts
 
-compilePhrase :: Interpreter i c v t tinf inf ut -> State v inf ut -> String -> IO (State v inf ut)
-compilePhrase int state@(inter, out, ve, te, _) x =
+compilePhrase :: Interpreter i c v t tinf inf -> State v inf -> String -> IO (State v inf)
+compilePhrase int state@(inter, out, ve, te) x =
   do
     x <- parseIO "<interactive>" (isparse int) x
     maybe (return state) (handleStmt int state) x
 
-data Interpreter i c v t tinf inf utype =
+data Interpreter i c v t tinf inf =
   I { iname    :: String,
       iprompt  :: String,
-      iitype   :: NameEnv v -> Ctx inf -> i -> Result (t, utype),
+      iitype   :: NameEnv v -> Ctx inf -> i -> Result t,
       iquote   :: v -> c,
       ieval    :: NameEnv v -> i -> v,
       ihastype :: t -> inf,
@@ -408,22 +408,10 @@ data Interpreter i c v t tinf inf utype =
       itprint  :: t -> Doc,
       iiparse  :: LPParser i,
       isparse  :: LPParser (Stmt i tinf),
-      iassume  :: State v inf utype -> (String, tinf) -> IO (State v inf utype) }
+      iassume  :: State v inf -> (String, tinf) -> IO (State v inf) }
 
 
 
-lp :: TypeChecker -> Interpreter ITerm_ CTerm_ Value_ Value_ CTerm_ Value_ Tm.Type
-lp checker = I { iname = "lambda-Pi",
-         iprompt = "LP> ",
-         iitype = \ v c x -> checker (v, c) x,
-         iquote = quote0_,
-         ieval = \ e x -> iEval_ x (e, []),
-         ihastype = id,
-         icprint = cPrint_ 0 0,
-         itprint = cPrint_ 0 0 . quote0_,
-         iiparse = parseITerm_ 0 [],
-         isparse = parseStmt_ [],
-         iassume = \ s (x, t) -> lpassume checker s x t }
 
 --TODO put this back
 unifte :: Ctx Tm.VAL
@@ -472,8 +460,9 @@ lam_ s f = Tm.lam (s2n s) (f $ Tm.vv s)
 pi_ s str f = Tm.PI s $ lam_ str f
 --inf_ = error "TODO inf_"
 
-lpte :: Ctx Value_
-lpte =      [(Global "Zero", VNat_),
+
+lpte :: Ctx Tm.VAL
+lpte = unifte {-      [(Global "Zero", VNat_),
              (Global "Succ", VPi_ VNat_ (\ _ -> VNat_)),
              (Global "Nat", VStar_),
              (Global "natElim", VPi_ (VPi_ VNat_ (\ _ -> VStar_)) (\ m ->
@@ -513,9 +502,9 @@ lpte =      [(Global "Zero", VNat_),
                                VPi_ (VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f -> VPi_ (m `vapp_` n `vapp_` f) (\ _ -> m `vapp_` (VSucc_ n) `vapp_` (VFSucc_ n f))))) (\ _ ->
                                VPi_ VNat_ (\ n -> VPi_ (VFin_ n) (\ f ->
                                m `vapp_` n `vapp_` f))))))]
-
-lpve :: Ctx Value_
-lpve =      [(Global "Zero", VZero_),
+-}
+lpve :: Ctx Tm.VAL
+lpve =   unifve {-   [(Global "Zero", VZero_),
              (Global "Succ", VLam_ (\ n -> VSucc_ n)),
              (Global "Nat", VNat_),
              (Global "natElim", cEval_ (blam_ (blam_ (blam_ (blam_ (inf_ (builtin $ NatElim_ (inf_ (bbound_ 3)) (inf_ (bbound_ 2)) (inf_ (bbound_ 1)) (inf_ (bbound_ 0)))))))) ([], [])),
@@ -530,7 +519,7 @@ lpve =      [(Global "Zero", VZero_),
              (Global "FZero", VLam_ (\ n -> VFZero_ n)),
              (Global "FSucc", VLam_ (\ n -> VLam_ (\ f -> VFSucc_ n f))),
              (Global "Fin", VLam_ (\ n -> VFin_ n)),
-             (Global "finElim", cEval_ (blam_ (blam_ (blam_ (blam_ (blam_ (inf_ (builtin $ FinElim_ (inf_ (bbound_ 4)) (inf_ (bbound_ 3)) (inf_ (bbound_ 2)) (inf_ (bbound_ 1)) (inf_ (bbound_ 0))))))))) ([],[]))]
+             (Global "finElim", cEval_ (blam_ (blam_ (blam_ (blam_ (blam_ (inf_ (builtin $ FinElim_ (inf_ (bbound_ 4)) (inf_ (bbound_ 3)) (inf_ (bbound_ 2)) (inf_ (bbound_ 1)) (inf_ (bbound_ 0))))))))) ([],[]))] -}
 
 blam_ = builtin . Lam_
 inf_ = builtin . Inf_
@@ -577,8 +566,7 @@ unifve = -- [(Global "Nat", VNat_)]
              ]
 
 
-repLP :: TypeChecker -> Bool -> IO ()
-repLP checker b = readevalprint (lp checker) (b, [], lpve, lpte, unifte)
+
 
 
 iinfer int d g t =
@@ -586,16 +574,16 @@ iinfer int d g t =
     Left e -> putStrLn e >> return Nothing
     Right v -> return (Just v)
 
-handleStmt :: Interpreter i c v t tinf inf ut
-              -> State v inf ut -> Stmt i tinf -> IO (State v inf ut)
-handleStmt int state@(inter, out, ve, te, ustate) stmt =
+handleStmt :: Interpreter i c v t tinf inf
+              -> State v inf -> Stmt i tinf -> IO (State v inf)
+handleStmt int state@(inter, out, ve, te) stmt =
   do
     case stmt of
         Assume ass -> foldM (iassume int) state ass
         Let x e    -> checkEval x e
         Eval e     -> checkEval it e
         PutStrLn x -> putStrLn x >> return state
-        Out f      -> return (inter, f, ve, te, ustate)
+        Out f      -> return (inter, f, ve, te)
   where
     --  checkEval :: String -> i -> IO (State v inf)
     checkEval i t =
@@ -608,11 +596,11 @@ handleStmt int state@(inter, out, ve, te, ustate) stmt =
                                                 else render (text i <> text " :: " <> itprint int y)
                        putStrLn outtext
                        unless (null out) (writeFile out (process outtext)))
-        (\ (y, v, ut) -> (inter, "", (Global i, v) : ve, (Global i, ihastype int y) : te, (Global i, ut) : ustate))
+        (\ (y, v) -> (inter, "", (Global i, v) : ve, (Global i, ihastype int y) : te))
 
-check :: Interpreter i c v t tinf inf ut -> State v inf ut -> String -> i
-         -> ((t, v) -> IO ()) -> ((t, v, ut) -> State v inf ut) -> IO (State v inf ut)
-check int state@(inter, out, ve, te, _) i t kp k =
+check :: Interpreter i c v t tinf inf -> State v inf -> String -> i
+         -> ((t, v) -> IO ()) -> ((t, v) -> State v inf) -> IO (State v inf)
+check int state@(inter, out, ve, te) i t kp k =
                 do
                   --  typecheck and evaluate
                   x <- iinfer int ve te t
@@ -621,17 +609,14 @@ check int state@(inter, out, ve, te, _) i t kp k =
                       do
                         --  putStrLn "type error"
                         return state
-                    Just (y,ut)   ->
+                    Just y   ->
                       do
                         let v = ieval int ve t
                         kp (y, v)
-                        return (k (y, v, ut))
+                        return (k (y, v))
 
 stassume state@(inter, out, ve, te) x t = return (inter, out, ve, (Global x, t) : te)
-lpassume checker state@(inter, out, ve, te, ustate) x t =
-  check (lp checker) state x (builtin $ Ann_ t (builtin $ Inf_ $ builtin $ Star_))
-        (\ (y, v) -> return ()) --  putStrLn (render (text x <> text " :: " <> cPrint_ 0 0 (quote0_ v))))
-        (\ (y, v, ut) -> (inter, out, ve, (Global x, v) : te, (Global x, ut) : ustate))
+
 
 
 it = "it"
@@ -709,54 +694,58 @@ pattern Bound i <- L _ (Bound_ i)
 pattern Free nm <- L _ (Free_ nm)
 pattern App it ct <- L _ (it :$: ct)
 
-data Value_
-   =  VLam_  (Value_ -> Value_)
+{-
+data Tm.VAL
+   =  VLam_  (Tm.VAL -> Tm.VAL)
    |  VStar_
-   |  VPi_ Value_ (Value_ -> Value_)
+   |  VPi_ Tm.VAL (Tm.VAL -> Tm.VAL)
    |  VNeutral_ Neutral_
 
   |  VNat_
   |  VZero_
-  |  VSucc_ Value_
+  |  VSucc_ Tm.VAL
 
-  |  VNil_ Value_
-  |  VCons_ Value_ Value_ Value_ Value_
-  |  VVec_ Value_ Value_
+  |  VNil_ Tm.VAL
+  |  VCons_ Tm.VAL Tm.VAL Tm.VAL Tm.VAL
+  |  VVec_ Tm.VAL Tm.VAL
 
-  |  VEq_ Value_ Value_ Value_
-  |  VRefl_ Value_ Value_
+  |  VEq_ Tm.VAL Tm.VAL Tm.VAL
+  |  VRefl_ Tm.VAL Tm.VAL
 
-  |  VFZero_ Value_
-  |  VFSucc_ Value_ Value_
-  |  VFin_ Value_
+  |  VFZero_ Tm.VAL
+  |  VFSucc_ Tm.VAL Tm.VAL
+  |  VFin_ Tm.VAL
   deriving (Show)
+-}
 
 data Neutral_
    =  NFree_  Name
-   |  NApp_  Neutral_ Value_
+   |  NApp_  Neutral_ Tm.VAL
 
-  |  NNatElim_ Value_ Value_ Value_ Neutral_
+  |  NNatElim_ Tm.VAL Tm.VAL Tm.VAL Neutral_
 
-  |  NVecElim_ Value_ Value_ Value_ Value_ Value_ Neutral_
+  |  NVecElim_ Tm.VAL Tm.VAL Tm.VAL Tm.VAL Tm.VAL Neutral_
 
-  |  NEqElim_ Value_ Value_ Value_ Value_ Value_ Neutral_
+  |  NEqElim_ Tm.VAL Tm.VAL Tm.VAL Tm.VAL Tm.VAL Neutral_
 
-  |  NFinElim_ Value_ Value_ Value_ Value_ Neutral_
+  |  NFinElim_ Tm.VAL Tm.VAL Tm.VAL Tm.VAL Neutral_
   deriving (Show)
 
-type Env_ = [Value_]
+type Env_ = [Tm.VAL]
 
-vapp_ :: Value_ -> Value_ -> Value_
-vapp_ (VLam_ f)      v  =  f v
-vapp_ (VNeutral_ n)  v  =  VNeutral_ (NApp_ n v)
-vapp_ x y = badVappError x y
+vapp_ = (Tm.$$)
+--vapp_ :: Tm.VAL -> Tm.VAL -> Tm.VAL
+--vapp_ (VLam_ f)      v  =  f v
+--vapp_ (VNeutral_ n)  v  =  VNeutral_ (NApp_ n v)
+--vapp_ x y = badVappError x y
 
 badVappError x y = error $ "Cannot apply value " ++ show x ++ " to value " ++ show y
 
-vfree_ :: Name -> Value_
-vfree_ n = VNeutral_ (NFree_ n)
+vfree_ :: Name -> Tm.VAL
+vfree_ n = error "TODO vFree" --VNeutral_ (NFree_ n)
 
-cEval_ :: CTerm_ -> (NameEnv Value_,Env_) -> Value_
+{-
+cEval_ :: CTerm_ -> (NameEnv Tm.VAL,Env_) -> Tm.VAL
 cEval_ (L _ ct) d = cEval_' ct d
   where
     cEval_' (Inf_  ii)    d  =  iEval_ ii d
@@ -774,7 +763,7 @@ cEval_ (L _ ct) d = cEval_' ct d
     cEval_' (FZero_ n)    d  =  VFZero_ (cEval_ n d)
     cEval_' (FSucc_ n f)  d  =  VFSucc_ (cEval_ n d) (cEval_ f d)
 
-iEval_ :: ITerm_ -> (NameEnv Value_,Env_) -> Value_
+iEval_ :: ITerm_ -> (NameEnv Tm.VAL,Env_) -> Tm.VAL
 iEval_ (L _ it) d = iEval_' it d
   where
     iEval_' (Ann_  c _)       d  =  cEval_ c d
@@ -839,6 +828,7 @@ iEval_ (L _ it) d = iEval_' it d
                                                 (cEval_ ms d) (cEval_ n d) n')
                _                ->  error "internal: eval finElim"
       in   rec (cEval_ f d)
+-}
 
 iSubst_ :: Int -> ITerm_ -> ITerm_ -> ITerm_
 iSubst_ ii i' (L reg it) = L reg $ iSubst_' ii i' it
@@ -898,7 +888,8 @@ cSubst_ ii i' (L reg ct) = L reg $ cSubst_' ii i' ct
     cSubst_' ii r  (FZero_ n)    =  FZero_ (cSubst_ ii r n)
     cSubst_' ii r  (FSucc_ n k)  =  FSucc_ (cSubst_ ii r n) (cSubst_ ii r k)
 
-quote_ :: Int -> Value_ -> CTerm_
+{-
+quote_ :: Int -> Tm.VAL -> CTerm_
 quote_ ii v = builtin $ quote_' ii v
   where
     pos = startRegion
@@ -952,26 +943,30 @@ neutralQuote_ ii (NFinElim_ m mz ms n f)
    =  builtin $ FinElim_ (quote_ ii m)
                (quote_ ii mz) (quote_ ii ms)
                (quote_ ii n) (builtin $ Inf_ (neutralQuote_ ii f))
+-}
 
 boundfree_ :: Int -> Name -> ITerm_
 boundfree_ ii (Quote k)     =  builtin $ Bound_ ((ii - k - 1) `max` 0)
 boundfree_ ii x             =  builtin $ Free_ x
 
-instance Show (Value_ -> Value_) where
-  show f = "<<" ++ (show $ quote0_ $ VLam_ f) ++ ">>"
+instance Show (Tm.VAL -> Tm.VAL) where
+  show f = error "TODO show fn" -- "<<" ++ (show $ quote0_ $ VLam_ f) ++ ">>"
 
---instance Show Value_ where
+--instance Show Tm.VAL where
 --  show = show . quote0_
 
-type Type_     =  Value_
+type Type_     =  Tm.VAL
 
 
-quote0_ :: Value_ -> CTerm_
-quote0_ = quote_ 0
+--quote0_ :: Tm.VAL -> CTerm_
+--quote0_ = quote_ 0
 
+{-
 
 data Nat = Zero | Succ Nat
 
 plus :: Nat -> Nat -> Nat
 plus Zero n      = n
 plus (Succ k) n  = Succ (plus k n)
+
+-}

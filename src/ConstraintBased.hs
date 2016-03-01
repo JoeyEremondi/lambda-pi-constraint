@@ -53,8 +53,8 @@ errorMsg pairs =
   List.intercalate "\n" $
   map (\(reg, err) -> show reg ++ ": " ++ err ) pairs
 
-checker :: (Ctx Tm.VAL, Ctx Tm.VAL) -> TypeChecker
-checker (nameEnv, context) _ term =
+checker :: TypeChecker
+checker (nameEnv, context) term =
   let
     (typeGlobals, typeLocals) = splitContext context
     (valGlobals, valLocals) = splitContext  nameEnv
@@ -66,7 +66,7 @@ checker (nameEnv, context) _ term =
       Right pairs ->
         "Solved metas:\n"
         ++ (intercalate "\n" (map (\(s, v) -> s ++ " := " ++ Tm.prettyString v) pairs))
-    eitherVal = trace solvedString $ (\x -> (unifToValue $ fst x, fst x)) <$> soln
+    eitherVal = trace solvedString $ fst <$> soln
   in
     case eitherVal of
       Left pairs -> Left $ errorMsg pairs

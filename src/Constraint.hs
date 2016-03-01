@@ -237,6 +237,7 @@ type ConTyFn = Tm.VAL
 
 
 
+{-
 vToUnifForm :: Int -> Common.Value_ -> Tm.VAL
 vToUnifForm ii val = case val of
   Common.VLam_ f ->
@@ -280,9 +281,9 @@ vToUnifForm ii val = case val of
 
   Common.VEq_ t1 t2 t3 ->
     Tm.Eq (vToUnifForm ii t1) (vToUnifForm ii t2) (vToUnifForm ii t3)
+-}
 
-
-
+{-
 neutralToHead :: Int -> Common.Neutral_ -> Tm.Head
 neutralToHead ii neut = case neut of
   Common.NFree_ nm -> case nm of
@@ -369,9 +370,13 @@ unifToValue val = case val of
     Common.VSucc_ $ unifToValue k
 
   _ -> error $ "TODO twins, etc. should never happen\n" ++ Tm.prettyString val
+-}
+
+--elimToValue (Tm.A v) = unifToValue v
 
 
-elimToValue (Tm.A v) = unifToValue v
+
+
 
 --TODO make tail recursive?
 appToSpine :: Common.ITerm_ -> (Common.ITerm_, [Common.CTerm_])
@@ -386,7 +391,13 @@ appToSpine e = (e, [])
 
 
 
-
+constrEval :: Common.NameEnv Tm.VAL -> Common.ITerm_ -> Tm.VAL
+constrEval env it =
+  let
+    tmSubs = map (\(Common.Global nm, v) -> (LN.s2n nm, v)) env
+    wholeEnv = error "" env
+  in
+    Tm.eval tmSubs (iToUnifForm 0 wholeEnv it)
 
 
 
