@@ -57,7 +57,7 @@ typecheck _T t = (check _T t >> return True) `catchError`
 
 check :: Type -> VAL -> Contextual ()
 
-check _T t | trace ("Checing " ++ pp _T ++ " ||| " ++ pp t) False = error "check"
+--check _T t | trace ("Checing " ++ pp _T ++ " ||| " ++ pp t) False = error "check"
 
 check (C c as)    (C v bs)  =  do
                                tel <- canTy (c, as) v
@@ -183,7 +183,7 @@ checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty
 
 
 quote :: Type -> VAL -> Contextual VAL
-quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
+--quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
 quote (PI _S _T)   f         =  do
                                 x <- fresh (s2n "xq")
                                 lam x <$> inScope x (P _S)
@@ -281,7 +281,7 @@ quoteSpine _T           u (s:_)     =  fail $ "quoteSpine: type " ++ pp _T ++
 
 
 equal :: Type -> VAL -> VAL -> Contextual Bool
-equal _T s t = trace ("Equality comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ==== " ++ pp t) $ do
+equal _T s t = do
     s'   <- quote _T s
     t'   <- quote _T t
     return $ s' == t'
