@@ -185,7 +185,7 @@ checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty
 
 
 quote :: Type -> VAL -> Contextual VAL
---quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
+quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
 quote (PI _S _T)   f         =  do
                                 x <- fresh (s2n "xq")
                                 lam x <$> inScope x (P _S)

@@ -68,7 +68,7 @@ checker (nameEnv, context) term =
 conStar = Tm.SET
 
 getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
-getConstraints env term = --trace ("\nChecking, converted to " ++ Tm.prettyString (iToUnifForm 0 env term ) ++ "\n\n") $
+getConstraints env term = trace ("\nChecking, converted to " ++ Tm.prettyString (iToUnifForm 0 env term ) ++ "\n\n") $
   do
     finalType <- iType0_ env term
     finalVar <- freshTopLevel Tm.SET

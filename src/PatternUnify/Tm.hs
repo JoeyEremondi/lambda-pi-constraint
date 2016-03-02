@@ -124,16 +124,16 @@ instance Pretty VAL where
     pretty Zero = return $ text "0"
     pretty (Succ n) =  (\pn -> text "S(" <+> pn <+> text ")") <$> pretty n
 
-    pretty (Fin n) = (\pn -> text "Fin " <+> pn ) <$> pretty n
-    pretty (FZero n) = (\pn -> text "FZero " <+> pn ) <$> pretty n
-    pretty (FSucc n f) =  (\pn pf -> text "S(" <+> pn <+> text "," <+> pf <+> text ")") <$> pretty n <*> pretty f
+    pretty (Fin n) = parens <$> (\pn -> text "Fin " <+> pn ) <$> pretty n
+    pretty (FZero n) = parens <$> (\pn -> text "FZero " <+> pn ) <$> pretty n
+    pretty (FSucc n f) =  parens <$> ((\pn pf -> text "S(" <+> pn <+> text "," <+> pf <+> text ")") <$> pretty n <*> pretty f)
 
     pretty (VNil _) = return $ text "[]"
     pretty (VCons a n h t) = (\pa pn ph pt -> ph <+> (text "::{" <+> pa <+> pn <+> text "}") <+> pt)
       <$> pretty a <*> pretty n <*> pretty h <*> pretty t
 
-    pretty (ERefl a x) = (\pa px -> text "Refl" <+> pa <+> px)
-      <$> pretty a <*> pretty x
+    pretty (ERefl a x) = parens <$> ((\pa px -> text "Refl" <+> pa <+> px)
+      <$> pretty a <*> pretty x)
 
 
     pretty _ = return $ text "prettyTODO"
@@ -157,35 +157,33 @@ instance Pretty Elim where
     pretty (A a)  = pretty a
     pretty Hd     = return $ text "!"
     pretty Tl     = return $ text "-"
-    pretty (VecElim a m mn mc n)  =
-      (\a' m' mn' mc' n' -> text "VecElim" <+> a' <+> m' <+> mn' <+> mc' <+> n')
+    pretty (VecElim a m mn mc n)  = parens <$>
+      ((\a' m' mn' mc' n' -> text "VecElim" <+> a' <+> m' <+> mn' <+> mc' <+> n')
       <$> pretty a
       <*> pretty m
       <*> pretty mn
       <*> pretty mc
-      <*> pretty n
+      <*> pretty n)
 
-    pretty (NatElim m mz ms)  =
-      (\m' mz' ms' -> text "NatElim" <+> m' <+> mz' <+> ms')
+    pretty (NatElim m mz ms)  = parens <$>
+      ((\m' mz' ms' -> text "NatElim" <+> m' <+> mz' <+> ms')
+      <$> pretty m
+      <*> pretty mz
+      <*> pretty ms)
+
+    pretty (FinElim m mz ms n)  = parens <$>
+      ((\m' mz' ms' n' -> text "FinElim" <+> m' <+> mz' <+> ms' <+> n')
       <$> pretty m
       <*> pretty mz
       <*> pretty ms
-
-    pretty (FinElim m mz ms n)  =
-      (\m' mz' ms' n' -> text "NatElim" <+> m' <+> mz' <+> ms' <+> n')
-      <$> pretty m
-      <*> pretty mz
-      <*> pretty ms
-      <*> pretty n
-
-    pretty (EqElim a m mr x y)  =
-      (\a' m' mr' x' y' -> text "VecElim" <+> a' <+> m' <+> mr' <+> x' <+> y')
+      <*> pretty n)
+    pretty (EqElim a m mr x y)  = parens <$>
+      ((\a' m' mr' x' y' -> text "EqElim" <+> a' <+> m' <+> mr' <+> x' <+> y')
       <$> pretty a
       <*> pretty m
       <*> pretty mr
       <*> pretty x
-      <*> pretty y
-
+      <*> pretty y)
 {-
 mapElim f (EqElim a m mr x y) = EqElim (f a) (f m) (f mr) (f x) (f y)
 -}

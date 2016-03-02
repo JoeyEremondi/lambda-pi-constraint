@@ -1,35 +1,3 @@
--- addition of natural numbers
---let id    = (\ x y -> y) :: forall (x :: *) .  x -> x
-
---let intId = (\x -> x) :: Nat -> Nat
-
---let x = (id _ 0) :: Nat
-
---let app = (\t1 f x -> f x) :: forall (t1 :: *) . (t1 -> Nat) ->  t1 -> Nat
-
-
-
-
-
-let n2type = (
-  (forall
-    (x :: Nat -> *) .
-    (x 0 ->
-    x (Succ( 0 )) ->
-    x (Succ( Succ( 0 ) )) ->
-    (forall
-      (local5_ :: Nat) .
-      ( x (Succ( Succ( local5_ )) ) ->
-        x (Succ( Succ( Succ( local5_ ) ) )))) ->
-    forall
-      (x5 :: Nat) .
-      (x (Succ( x5 ))))) :: *)
-
-
-
-
--- an eliminator for natural numbers that has special
--- cases for 0 and 1
 let nat1Elim =
   ( \ m m0 m1 ms -> natElim m m0
                             (\ p rec -> natElim (\ n -> m (Succ n)) m1 ms p) )
@@ -37,10 +5,29 @@ let nat1Elim =
      (forall n :: Nat . m (Succ n) -> m (Succ (Succ n))) ->
      forall (n :: Nat) . m n
 
+-- unit type
+let Unit = Fin 1
+-- constructor
+let U = FZero 0
 
--- an eliminator for natural numbers that has special
--- cases for 0, 1 and 2
-let nat2Elim =
-  ( \ m m0 m1 m2 ms -> nat1Elim m m0 m1
-                                (\ p rec -> natElim (\ n -> m (Succ (Succ n))) m2 ms p) )
-  :: n2type
+-- eliminator
+let unitElim =
+  ( \ m mu -> finElim ( nat1Elim (\ n -> Fin n -> *)
+                                 (\ _ -> Unit)
+                                 (\ x -> m x)
+                                 (\ _ _ _ -> Unit) )
+                      ( natElim (\ n -> natElim (\ n -> Fin (Succ n) -> *)
+                                                (\ x -> m x)
+                                                (\ _ _ _ -> Unit)
+                                                n (FZero n))
+                                mu
+                                (\ _ _ -> U) )
+                      ( \ n f _ -> finElim (\ n f -> natElim (\ n -> Fin (Succ n) -> *)
+                                                             (\ x -> m x)
+                                                             (\ _ _ _ -> Unit)
+                                                             n (FSucc n f))
+                                           (\ _ -> U)
+                                           (\ _ _ _ -> U)
+                                           n f )
+                      1 )
+  :: forall (m :: Unit -> *) . m U -> forall (u :: Unit) . m u
