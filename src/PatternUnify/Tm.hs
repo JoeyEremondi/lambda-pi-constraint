@@ -171,6 +171,13 @@ instance Pretty Elim where
       <*> pretty mz
       <*> pretty ms
 
+    pretty (FinElim m mz ms n)  =
+      (\m' mz' ms' n' -> text "NatElim" <+> m' <+> mz' <+> ms' <+> n')
+      <$> pretty m
+      <*> pretty mz
+      <*> pretty ms
+      <*> pretty n
+
     pretty (EqElim a m mr x y)  =
       (\a' m' mr' x' y' -> text "VecElim" <+> a' <+> m' <+> mr' <+> x' <+> y')
       <$> pretty a

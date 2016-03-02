@@ -47,7 +47,7 @@ initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
-    !initialContextString = render (runPretty (prettyEntries es)) ++ "\nRAW:\n" ++ show es
+    !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
     result = --trace ("Initial context:\n" ++ initialContextString ) $
        runContextual (B0, map Right es) $ do
           initialise
