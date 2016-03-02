@@ -47,18 +47,19 @@ initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
-    !initialContextString = render (runPretty (prettyEntries es))
+    !initialContextString = render (runPretty (prettyEntries es)) ++ "\nRAW:\n" ++ show es
     result = --trace ("Initial context:\n" ++ initialContextString ) $
        runContextual (B0, map Right es) $ do
           initialise
           ambulando [] []
           validate (const True)
+    errString err = ">>>>>>>>>>>>>>\nERROR " ++ err ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     resultString = case result of
-      Left s -> "ERROR " ++ s
+      Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
       Right (_, ctx) -> render $ runPretty $ pretty ctx
   in --trace ("\n\n=============\nFinal\n" ++ resultString) $
     case result of
-      Left err -> Left [(ProbId $ LN.string2Name "builtinLoc", err)]
+      Left err -> Left [(ProbId $ LN.string2Name "builtinLoc", errString err)]
       Right ((), ctx) -> getContextErrors es ctx
 
 

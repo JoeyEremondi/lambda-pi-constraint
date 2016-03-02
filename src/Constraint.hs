@@ -117,7 +117,7 @@ cToUnifForm ii env (Common.L _ tm) =
         iToUnifForm ii env itm
       Common.Lam_ ctm ->
         let
-          newNom = localName (ii+1) --LN.s2n ("lamVar" ++ show ii)
+          newNom = localName (ii) --LN.s2n ("lamVar" ++ show ii)
           --(globals, boundVars) = env
           newEnv = addType (ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
           retBody = cToUnifForm (ii + 1) newEnv ctm
@@ -176,7 +176,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       Common.Pi_ s t@(Common.L tReg _) ->
         let
            --(fst env, (Common.Local ii, x) : snd env)
-          freeNom =  localName (ii+1)
+          freeNom =  localName ii
           localVal = Tm.var freeNom
           sVal = (cToUnifForm ii env s)
           --Our argument in t function has type S
@@ -188,7 +188,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
 
       Common.Bound_ i -> --trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
         --snd $ (typeEnv env `listLookup` (ii - i ) )
-        Tm.var $ localName (ii - i) --Local name, just get the corresponding Nom
+        Tm.var $ localName (ii - i - 1) --Local name, just get the corresponding Nom
         --Tm.var $ deBrToNom ii i
 
       --If we reach this point, then our neutral term isn't embedded in an application

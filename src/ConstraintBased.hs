@@ -68,11 +68,12 @@ checker (nameEnv, context) term =
 conStar = Tm.SET
 
 getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
-getConstraints env term = do
-  finalType <- iType0_ env term
-  finalVar <- freshTopLevel Tm.SET
-  unifySets startRegion finalType (Tm.meta finalVar) env
-  return finalVar
+getConstraints env term = --trace ("\nChecking, converted to " ++ Tm.prettyString (iToUnifForm 0 env term ) ++ "\n\n") $
+  do
+    finalType <- iType0_ env term
+    finalVar <- freshTopLevel Tm.SET
+    unifySets startRegion finalType (Tm.meta finalVar) env
+    return finalVar
 
 iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
@@ -101,7 +102,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
-              let argNom = localName (ii+1)
+              let argNom = localName (ii)
               ty <- evaluate ii tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               let newEnv = (addType (ii, ty)  g)
