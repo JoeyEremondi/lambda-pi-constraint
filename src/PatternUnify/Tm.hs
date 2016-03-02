@@ -24,6 +24,8 @@ import Unbound.Util (unions)
 
 import PatternUnify.Kit
 
+import Debug.Trace (trace)
+
 prettyString t = render $ runPretty $ pretty t
 
 type Nom = Name VAL
@@ -422,6 +424,7 @@ compSubs :: Subs -> Subs -> Subs
 compSubs new old = unionBy ((==) `on` fst) new (substs new old)
 
 eval :: Subs -> VAL -> VAL
+--eval g t | trace ("Eval " ++ pp t) False = error "Eval"
 eval g (L b)   = L (bind x (eval g t))
                      where (x, t) = unsafeUnbind b
 eval g (N u as)  = evalHead g u %%% map (mapElim (eval g)) as
@@ -445,11 +448,16 @@ eval g t = error $ "Missing eval case for " ++ show t
 
 evalHead :: Subs -> Head -> VAL
 evalHead g hv = case lookup (headVar hv) g of
-                       Just u   -> u
+                       Just u   -> trace ("EvalHead " ++ pp hv ++ " lookup to " ++ pp u) $ u
                        Nothing  -> N hv []
 
 elim :: VAL -> Elim -> VAL
-elim (L b)       (A a)  = eval [(x, a)] t where (x, t) = unsafeUnbind b
+--elim h s | trace ("Elim " ++ pp h ++ " %%% " ++ pp s) False = error "Eval"
+elim (L b)       (A a)  =
+  let
+    (x, t) = unsafeUnbind b
+  in
+    trace ("Unbound " ++ pp (L b) ++ "  into  " ++ show (pp x, pp t)) $ eval [(x, a)] t 
 elim (N u as)    e      = N u $ as ++ [e]
 elim (PAIR x _)  Hd     = x
 elim (PAIR _ y)  Tl     = y

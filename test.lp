@@ -1,3 +1,5 @@
+
+
 let nat1Elim =
   ( \ m m0 m1 ms -> natElim m m0
                             (\ p rec -> natElim (\ n -> m (Succ n)) m1 ms p) )
@@ -9,6 +11,8 @@ let nat1Elim =
 let Unit = Fin 1
 -- constructor
 let U = FZero 0
+
+
 
 -- eliminator
 let unitElim =

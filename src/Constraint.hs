@@ -156,9 +156,9 @@ listLookup l i =
   else l List.!! i
 
 --The name for a local variable i at depth ii
-localName :: Int -> Tm.Nom
-localName ii =
-  LN.string2Name $ case ii of
+localName :: Int -> ConstraintM Tm.Nom
+localName ii = --TODO get fresh properly
+  return $ LN.string2Name $ case ii of
       0 -> "xx_"
       1 -> "yy_"
       2 -> "zz_"
@@ -200,19 +200,27 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       --If we reach this point, then our neutral term isn't embedded in an application
       Common.Free_ fv ->
         case valueLookup fv env of
-        Just x -> x
+        Just x -> trace ("Getting value " ++ (Tm.prettyString x) ++ " for " ++ show fv) x
         Nothing ->
             case fv of
               Common.Global nm -> trace ("Giving " ++ show nm ++ " global Nom " ++ Tm.prettyString (Tm.vv nm)) $
                 Tm.vv nm
               Common.Local i ->
-                Tm.var $ localName i --Take our current depth, minus deBruijn index
+                Tm.var $ localName i
               Common.Quote i ->
                 error "Shouldn't come across quoted during checking"
 
 
       (f Common.:$: x) ->
-        (iToUnifForm ii env f) Tm.$$ (cToUnifForm ii env x)
+        let
+          f1 =(iToUnifForm ii env f)
+          a =(cToUnifForm ii env x)
+          result = f1 Tm.$$ a
+        in trace (
+            "APP  " ++ Tm.prettyString f1 ++ " <--- " ++ show f ++ "  \n  "
+            ++ Tm.prettyString a ++ " <--- " ++ show x ++ "  \n  "
+            ++ Tm.prettyString result)
+            $ result
 
       Common.Nat_ ->
         Tm.Nat
@@ -221,29 +229,29 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
         Tm.Fin $ cToUnifForm ii env n
 
       Common.NatElim_ m mz ms n ->
-        (cToUnifForm ii env n) Tm.%%%
-          [Tm.NatElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms)]
+        (cToUnifForm ii env n) Tm.%%
+          Tm.NatElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms)
 
       Common.FinElim_ m mz ms n f ->
-        (cToUnifForm ii env f) Tm.%%%
-          [Tm.FinElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms) (cToUnifForm ii env n)]
+        (cToUnifForm ii env f) Tm.%%
+          Tm.FinElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms) (cToUnifForm ii env n)
 
       Common.Vec_ a n ->
         Tm.Vec (cToUnifForm ii env a) (cToUnifForm ii env n)
 
       Common.VecElim_ a m mn mc n xs ->
-        (cToUnifForm ii env xs) Tm.%%%
-          [Tm.VecElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mn)
-              (cToUnifForm ii env mc) (cToUnifForm ii env n)]
+        (cToUnifForm ii env xs) Tm.%%
+          Tm.VecElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mn)
+              (cToUnifForm ii env mc) (cToUnifForm ii env n)
 
       Common.Eq_ a x y ->
         Tm.Eq (cToUnifForm ii env a) (cToUnifForm ii env x) (cToUnifForm ii env y)
 
 
       Common.EqElim_ a m mr x y eq  ->
-        (cToUnifForm ii env eq) Tm.%%%
-          [Tm.EqElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mr)
-              (cToUnifForm ii env x) (cToUnifForm ii env y)]
+        (cToUnifForm ii env eq) Tm.%%
+          Tm.EqElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mr)
+              (cToUnifForm ii env x) (cToUnifForm ii env y)
   in result --trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
 
 type ConTyFn = Tm.VAL

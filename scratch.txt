@@ -1,0 +1,39 @@
+to \ xx_ yy_ fin .
+  (FinElim
+    (\ k . (NatElim
+      (\ zz_ . (Fin  (\ zz_1 . xx_ zz_1)) -> Set)
+      (\ zz_ . (Fin  S( 0 )))
+      (\ local4_ local5_ . local4_ (NatElim (\ local6_ . (Fin  S( local6_ )) -> Set) (\ zz_ . xx_ zz_) (\ zz_ local3_ local4_1 . (Fin  S( 0 ))))))  k)
+    (\ k . k (NatElim (\ zz_ . zz_ (NatElim (\ local3_ . (Fin  S( local3_ )) -> Set) (\ local3_ . xx_ local3_) (\ local3_ local4_ local5_ . (Fin  S( 0 )))) (FZero  zz_)) yy_ (\ zz_ local3_ . (FZero  0))))
+    (\ zz_ local3_ local4_ . local3_ (FinElim (\ local5_ local6_ . local5_ (NatElim (\ local7_ . (Fin  S( local7_ )) -> Set) (\ local7_ . xx_ local7_) (\ local7_ local8_ local9_ . (Fin  S( 0 )))) (S( local5_ , local6_ ))) (\ local5_ . (FZero  0)) (\ local5_ local6_ local7_ . (FZero  0)) zz_))
+    S( 0 )) fin
+
+
+to \ xx_ yy_ .
+  finElim
+    (nat1Elim (\ zz_ . Fin zz_ -> Set) (\ zz_ . Unit) (\ zz_ . xx_ zz_) (\ zz_ local3_ local4_ . Unit))
+    (natElim (\ zz_ . natElim (\ local3_ . Fin (Succ local3_) -> Set) (\ local3_ . xx_ local3_) (\ local3_ local4_ local5_ . Unit) zz_ (FZero zz_)) yy_ (\ zz_ local3_ . U))
+    (\ zz_ local3_ local4_ . finElim (\ local5_ local6_ . natElim (\ local7_ . Fin (Succ local7_) -> Set) (\ local7_ . xx_ local7_) (\ local7_ local8_ local9_ . Unit) local5_ (FSucc local5_ local6_)) (\ local5_ . U) (\ local5_ local6_ local7_ . U) zz_ local3_)
+    S( 0 )
+
+
+
+("\\ zz_ local3_ k . k (NatElim (\\ zz_1 . (Fin  zz_1) -> Set) (\\ zz_1 . (Fin  S( 0 ))) (\\ local4_ local5_ . local4_ (NatElim (\\ local6_ . (Fin  S( local6_ )) -> Set) zz_ local3_)))",
+"\\ zz_ . xx_ zz_",
+"\\ local3_ k . k (NatElim (\\ zz_ . (Fin  (\\ zz_1 . xx_ zz_1)) -> Set) (\\ zz_ . (Fin  S( 0 ))) (\\ local4_ local5_ . local4_ (NatElim (\\ local6_ . (Fin  S( local6_ )) -> Set) (\\ zz_ . xx_ zz_) local3_)))")
+
+
+
+
+
+
+
+zz and zz_1 are confused!!!!!!!!!!!!!!
+
+APP  \ zz_ local3_ k . k (NatElim (\ zz_1 . (Fin  zz_1) -> Set) (\ zz_1 . (Fin  S( 0 ))) (\ local4_ local5_ . local4_ (NatElim (\ local6_ . (Fin  S( local6_ )) -> Set) zz_ local3_)))
+<--- L {region = SourceRegion "test.lp" (line 19, column 25), contents = L {region = SourceRegion "test.lp" (line 19, column 25), contents = L {region = SourceRegion "test.lp" (line 19, column 25), contents = Free_ (Global "nat1Elim")} :$: L {region = SourceRegion "test.lp" (line 19, column 35), contents = Lam_ (L {region = SourceRegion "test.lp" (line 19, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 19, column 48), contents = Pi_ (L {region = SourceRegion "test.lp" (line 19, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 19, column 42), contents = L {region = SourceRegion "test.lp" (line 19, column 42), contents = Free_ (Global "Fin")} :$: L {region = SourceRegion "test.lp" (line 19, column 46), contents = Inf_ (L {region = SourceRegion "test.lp" (line 19, column 46), contents = Bound_ 0})}})}) (L {region = SourceRegion "test.lp" (line 19, column 51), contents = Inf_ (L {region = SourceRegion "test.lp" (line 19, column 51), contents = Star_})})})})}} :$: L {region = SourceRegion "test.lp" (line 20, column 35), contents = Lam_ (L {region = SourceRegion "test.lp" (line 20, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 20, column 42), contents = Free_ (Global "Unit")})})}}
+
+  \ zz_ . xx_ zz_
+  <--- L {region = SourceRegion "test.lp" (line 21, column 35), contents = Lam_ (L {region = SourceRegion "test.lp" (line 21, column 42), contents = Inf_ (L {region = SourceRegion "test.lp" (line 21, column 42), contents = L {region = SourceRegion "test.lp" (line 21, column 42), contents = Bound_ 2} :$: L {region = SourceRegion "test.lp" (line 21, column 44), contents = Inf_ (L {region = SourceRegion "test.lp" (line 21, column 44), contents = Bound_ 0})}})})}
+
+  \ local3_ k . k (NatElim (\ zz_ . (Fin  (\ zz_1 . xx_ zz_1)) -> Set) (\ zz_ . (Fin  S( 0 ))) (\ local4_ local5_ . local4_ (NatElim (\ local6_ . (Fin  S( local6_ )) -> Set) (\ zz_ . xx_ zz_) local3_)))

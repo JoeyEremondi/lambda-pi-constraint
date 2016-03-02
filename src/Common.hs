@@ -565,8 +565,8 @@ unifve = -- [(Global "Nat", VNat_)]
                   lam_ "mz" $ \mz ->
                     lam_ "ms" $ \ms ->
                       lam_ "n" $ \n ->
-                        lam_ "f" $ \f ->
-                          f Tm.%% (Tm.FinElim m mz ms n))
+                        lam_ "fin" $ \fin ->
+                          fin Tm.%% (Tm.FinElim m mz ms n))
              ]
 
 
