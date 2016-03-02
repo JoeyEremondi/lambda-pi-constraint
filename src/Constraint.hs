@@ -130,6 +130,12 @@ cToUnifForm ii env (Common.L _ tm) =
       Common.Succ_ n ->
         Tm.Succ $ cToUnifForm ii env n
 
+      Common.FZero_ n ->
+        Tm.FZero $ cToUnifForm ii env n
+
+      Common.FSucc_ n f ->
+        Tm.FSucc (cToUnifForm ii env n) (cToUnifForm ii env f)
+
       Common.Nil_ tp ->
         Tm.VNil $ cToUnifForm ii env tp
 
@@ -197,7 +203,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
         Just x -> x
         Nothing ->
             case fv of
-              Common.Global nm ->
+              Common.Global nm -> trace ("Giving " ++ show nm ++ " global Nom " ++ Tm.prettyString (Tm.vv nm)) $
                 Tm.vv nm
               Common.Local i ->
                 Tm.var $ localName i --Take our current depth, minus deBruijn index
@@ -211,9 +217,16 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       Common.Nat_ ->
         Tm.Nat
 
+      Common.Fin_ n ->
+        Tm.Fin $ cToUnifForm ii env n
+
       Common.NatElim_ m mz ms n ->
         (cToUnifForm ii env n) Tm.%%%
           [Tm.NatElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms)]
+
+      Common.FinElim_ m mz ms n f ->
+        (cToUnifForm ii env f) Tm.%%%
+          [Tm.FinElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms) (cToUnifForm ii env n)]
 
       Common.Vec_ a n ->
         Tm.Vec (cToUnifForm ii env a) (cToUnifForm ii env n)
