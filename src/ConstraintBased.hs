@@ -26,7 +26,7 @@ import Control.Applicative
 
 import Common
 
-import Constraint
+import Constraint hiding (cToUnifForm, iToUnifForm)
 
 import qualified Data.List as List
 
@@ -68,7 +68,7 @@ checker (nameEnv, context) term =
 conStar = Tm.SET
 
 getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
-getConstraints env term = trace ("\nChecking, converted " ++ show (iPrint_ 0 0 term) ++ "\nto " ++ Tm.prettyString (iToUnifForm 0 env term ) ++ "\n\n") $
+getConstraints env term = --trace ("\nChecking, converted " ++ show (iPrint_ 0 0 term) ++ "\nto " ++ Tm.prettyString (iToUnifForm 0 env term ) ++ "\n\n") $
   do
     finalType <- iType0_ env term
     finalVar <- freshTopLevel Tm.SET
@@ -102,10 +102,10 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
-              let argNom = localName (ii)
+              argNom <- LN.fresh $ localName (ii)
               ty <- evaluate ii tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
-              let newEnv = (addType (ii, ty)  g)
+              let newEnv = addType (ii, ty) $ addValue (ii, Tm.var argNom)  g
               cType_  (ii + 1) newEnv
                         (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
               return conStar
@@ -254,13 +254,14 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
     --Special case when we have metavariable in type
     cType_' ii g (Lam_ body) fnTy = do
         argTy <- freshType reg g
+        argName <- LN.fresh $ localName (ii) --TODO ii or 0?
         --Our return type should be a function, from input type to set
         let newEnv = -- trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $
-              addType (ii, argTy ) g
+              addValue (ii, Tm.var argName) $ addType (ii, argTy ) g
         returnTyFn <- fresh (region body) g (argTy Tm.--> conStar)
         let arg = -- trace ("Lambda giving arg " ++ show ii) $
               builtin $ Free_ (Local ii)
-        let argName = localName (ii) --TODO ii or 0?
+
         let argVal = Tm.var argName --iToUnifForm ii newEnv arg
         unifySets reg fnTy (Tm.PI argTy returnTyFn)  g
         returnTy <- freshType (region body) newEnv

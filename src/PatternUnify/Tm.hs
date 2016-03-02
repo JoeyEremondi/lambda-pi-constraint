@@ -457,7 +457,8 @@ elim (L b)       (A a)  =
   let
     (x, t) = unsafeUnbind b
   in
-    trace ("Unbound " ++ pp (L b) ++ "  into  " ++ show (pp x, pp t)) $ eval [(x, a)] t 
+    subst x a t
+    --eval [(x, a)] t
 elim (N u as)    e      = N u $ as ++ [e]
 elim (PAIR x _)  Hd     = x
 elim (PAIR _ y)  Tl     = y

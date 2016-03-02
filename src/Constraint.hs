@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, PatternSynonyms #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, PatternSynonyms #-}
 module Constraint
 {-
   ( ConType
@@ -89,7 +89,7 @@ recordSourceMeta nm = lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas 
 solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] (Tm.VAL, [(String, Tm.VAL)])
 solveConstraintM cm =
   let
-    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT cm) (ConstrainState [1..] [] )
+    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] )
     regionDict = getRegionDict constraints
     ret = do
       (_, context) <- PUtest.solveEntries $ map conEntry constraints
@@ -106,7 +106,10 @@ solveConstraintM cm =
 
 cToUnifForm0 = cToUnifForm 0
 
-evaluate ii t g = return $ cToUnifForm ii g t
+evaluate :: Int -> Common.CTerm_ -> WholeEnv -> ConstraintM Tm.VAL
+evaluate ii t g = do
+  let result = cToUnifForm ii g t
+  fst <$> LN.freshen result
 
 cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> Tm.VAL
 cToUnifForm ii env (Common.L _ tm) =
@@ -119,7 +122,7 @@ cToUnifForm ii env (Common.L _ tm) =
         let
           newNom = localName (ii) --LN.s2n ("lamVar" ++ show ii)
           --(globals, boundVars) = env
-          newEnv = addType (ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
+          newEnv = addValue (ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
           retBody = cToUnifForm (ii + 1) newEnv ctm
         in
           Tm.L $ LN.bind newNom retBody
@@ -156,9 +159,9 @@ listLookup l i =
   else l List.!! i
 
 --The name for a local variable i at depth ii
-localName :: Int -> ConstraintM Tm.Nom
+localName :: Int -> Tm.Nom
 localName ii = --TODO get fresh properly
-  return $ LN.string2Name $ case ii of
+  LN.string2Name $ case ii of
       0 -> "xx_"
       1 -> "yy_"
       2 -> "zz_"
@@ -186,15 +189,19 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
           localVal = Tm.var freeNom
           sVal = (cToUnifForm ii env s)
           --Our argument in t function has type S
-          newEnv = addType (ii, sVal) env
+          newEnv = addValue (ii, sVal) env
           translatedFn = (cToUnifForm (ii + 1) newEnv t)
           --tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
         in Tm.PI sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
           --mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
-      Common.Bound_ i -> --trace ("Lookup ii" ++ show ii ++ " i " ++ show i) $
-        --snd $ (typeEnv env `listLookup` (ii - i ) )
-        Tm.var $ localName (ii - i - 1) --Local name, just get the corresponding Nom
+      Common.Bound_ i ->
+        let
+          result = snd $ (valueEnv env `listLookup` (ii - i -1) )
+        in trace ("Lookup ii" ++ show ii ++ " i " ++ show i ++ " as " ++ Tm.prettyString result ++ "\n  env: " ++ show (valueEnv env)) $
+          result
+
+        --Tm.var $ localName (ii - i - 1) --Local name, just get the corresponding Nom
         --Tm.var $ deBrToNom ii i
 
       --If we reach this point, then our neutral term isn't embedded in an application
@@ -542,7 +549,8 @@ freshType reg env = fresh reg env Tm.SET
 type ConType = Tm.VAL
 
 
-type ConstraintM a = WriterT [Constraint] (StateT ConstrainState Identity) a
+type ConstraintM = LN.FreshMT (WriterT [Constraint] (StateT ConstrainState Identity))
+
 
 --Operations in our monad:
 
