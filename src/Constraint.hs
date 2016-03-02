@@ -61,8 +61,8 @@ valueLookup (Common.Local i) env =
 
 data ConstrainState =
   ConstrainState
-  { intStore :: [Int]
-  , sourceMetas :: [String]
+  { -- intStore :: [Int]
+  sourceMetas :: [String]
   --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }
 
@@ -89,7 +89,7 @@ recordSourceMeta nm = lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas 
 solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] (Tm.VAL, [(String, Tm.VAL)])
 solveConstraintM cm =
   let
-    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] )
+    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [] )
     regionDict = getRegionDict constraints
     ret = do
       (_, context) <- PUtest.solveEntries $ map conEntry constraints
@@ -512,7 +512,7 @@ freshTopLevel tp = do
 
 unify :: Common.Region -> Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
 unify reg v1 v2 tp env = do
-    probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
+    probId <- UC.ProbId <$> freshNom "??"
     --TODO right to reverse?
     let currentQuants = reverse $ typeEnv env
     let newCon = wrapProblemForalls currentQuants
@@ -565,18 +565,20 @@ forallVar nm tp cm = do
   return result
 -}
 
+{-
 freshInt :: ConstraintM Int
 freshInt = do
   (h:t) <- lift $ intStore <$> get
   modify (\st -> st {intStore = t})
   return h
-
+-}
 
 freshNom :: String -> ConstraintM Tm.Nom
-freshNom hint = do
-  (h:t) <- lift $ intStore <$> get
-  modify (\st -> st {intStore = t})
-  return $ LN.string2Name $ hint ++ (show h)
+freshNom hint = LN.fresh $ LN.s2n hint
+--freshNom hint = do
+--  (h:t) <- lift $ intStore <$> get
+--  modify (\st -> st {intStore = t})
+--  return $ LN.string2Name $ hint ++ (show h)
 
 
 --Helpful utility function
