@@ -526,17 +526,22 @@ unify reg v1 v2 tp env = do
     probId <- UC.ProbId <$> freshNom "??"
     --TODO right to reverse?
     let (tcurrentQuants, vcurrentQuants) = (reverse $ typeEnv env, reverse $ valueEnv env)
-    let newCon = wrapProblemForalls tcurrentQuants vcurrentQuants
+    let newCon = wrapProblemForalls tcurrentQuants env
           $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
     addConstr $ Constraint reg  ourEntry
 
 unifySets reg v1 v2 env = unify reg v1 v2 Tm.SET env
 
-wrapProblemForalls :: [(Int, Tm.Type)] -> [(Int, Tm.Type)] -> UC.Problem -> UC.Problem
-wrapProblemForalls [] [] prob = prob
-wrapProblemForalls ((i, tp) : trest) ((i', Tm.N h _) : vrest) prob | (i == i') =
-    UC.All (UC.P tp) $ LN.bind (Tm.headVar h) $ wrapProblemForalls trest vrest prob
+wrapProblemForalls :: [(Int, Tm.Type)] -> WholeEnv -> UC.Problem -> UC.Problem
+wrapProblemForalls [] env prob = prob
+wrapProblemForalls ((i, tp) : trest) env prob =
+  let
+    subVal = wrapProblemForalls trest env prob
+    Just (Tm.N ourVar _) = valueLookup (Common.Local i) env
+    ourNom = Tm.headVar ourVar
+  in
+    UC.All (UC.P tp) $ LN.bind ourNom subVal
 
 
 freshType reg env = fresh reg env Tm.SET

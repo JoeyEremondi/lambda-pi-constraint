@@ -1,45 +1,40 @@
 LP> :load test.lp
-Getting value Nat for Global "Nat"
-Getting value Nat for Global "Nat"
-Getting value xx_4 for Local 0
-Getting value xx_4 for Local 0
-Getting value Nat for Global "Nat"
-Getting value local3_26 for Local 3
-Getting value \ n . S( n ) for Global "Succ"
-Getting value local3_26 for Local 3
-EvalHead n lookup to local3_26
-Getting value xx_4 for Local 0
-Getting value \ n . S( n ) for Global "Succ"
-Getting value local3_26 for Local 3
-EvalHead n lookup to local3_26
-Getting value local3_26 for Local 3
-Getting value \ n . S( n ) for Global "Succ"
-Getting value local3_26 for Local 3
-EvalHead n lookup to local3_26
-Getting value \ n . S( n ) for Global "Succ"
-Getting value \ n . S( n ) for Global "Succ"
-Getting value local3_26 for Local 3
-EvalHead n lookup to local3_26
-EvalHead n lookup to S( local3_26 )
-Getting value xx_4 for Local 0
-Getting value \ n . S( n ) for Global "Succ"
-Getting value \ n . S( n ) for Global "Succ"
-Lookup ii5 i 1 as yy_13
-  env: [(4,N (Var local4_ Only) []),(3,N (Var local3_ Only) []),(2,N (Var zz_23 Only) []),(1,N (Var yy_13 Only) []),(0,N (Var xx_4 Only) [])]
-EvalHead n lookup to yy_13
-EvalHead n lookup to S( yy_13 )
-Getting value xx_4 for Local 0
-Getting value \ n . S( n ) for Global "Succ"
 Lookup ii4 i 0 as xx_4
-  env: [(3,N (Var local3_ Only) []),(2,N (Var zz_23 Only) []),(1,N (Var yy_13 Only) []),(0,N (Var xx_4 Only) [])]
-EvalHead n lookup to xx_4
+  env: [(3,N (Var local3_103 Only) []),(2,N (Var zz_28 Only) []),(1,N (Var yy_15 Only) []),(0,N (Var xx_4 Only) [])]
+Lookup ii5 i 1 as yy_15
+  env: [(4,N (Var local4_104 Only) []),(3,N (Var local3_103 Only) []),(2,N (Var zz_28 Only) []),(1,N (Var yy_15 Only) []),(0,N (Var xx_4 Only) [])]
+Lookup ii1 i 0 as xx_127
+  env: [(0,N (Var xx_127 Only) [])]
+Lookup ii2 i 1 as yy_129
+  env: [(1,N (Var yy_129 Only) []),(0,N (Var xx_127 Only) [])]
+Lookup ii4 i 3 as local3_132
+  env: [(3,N (Var local3_132 Only) []),(2,N (Var zz_130 Only) []),(1,N (Var yy_129 Only) []),(0,N (Var xx_127 Only) [])]
+Lookup ii4 i 0 as xx_127
+  env: [(3,N (Var local3_132 Only) []),(2,N (Var zz_130 Only) []),(1,N (Var yy_129 Only) []),(0,N (Var xx_127 Only) [])]
+Lookup ii5 i 4 as local4_133
+  env: [(4,N (Var local4_133 Only) []),(3,N (Var local3_132 Only) []),(2,N (Var zz_130 Only) []),(1,N (Var yy_129 Only) []),(0,N (Var xx_127 Only) [])]
+Lookup ii5 i 1 as yy_129
+  env: [(4,N (Var local4_133 Only) []),(3,N (Var local3_132 Only) []),(2,N (Var zz_130 Only) []),(1,N (Var yy_129 Only) []),(0,N (Var xx_127 Only) [])]
+Lookup ii5 i 4 as local4_134
+  env: [(4,N (Var local4_134 Only) []),(3,N (Var local3_131 Only) []),(2,N (Var zz_130 Only) []),(1,N (Var yy_129 Only) []),(0,N (Var xx_127 Only) [])]
+Lookup ii5 i 0 as xx_127
+  env: [(4,N (Var local4_134 Only) []),(3,N (Var local3_131 Only) []),(2,N (Var zz_130 Only) []),(1,N (Var yy_129 Only) []),(0,N (Var xx_127 Only) [])]
+Lookup ii7 i 0 as xx_136
+  env: [(6,N (Var local6_334 Only) []),(5,N (Var local5_241 Only) []),(4,N (Var local4_221 Only) []),(3,N (Var local3_169 Only) []),(2,N (Var zz_155 Only) []),(1,N (Var yy_144 Only) []),(0,N (Var xx_136 Only) [])]
+Lookup ii7 i 0 as xx_136
+  env: [(6,N (Var local6_386 Only) []),(5,N (Var local5_385 Only) []),(4,N (Var local4_384 Only) []),(3,N (Var local3_169 Only) []),(2,N (Var zz_155 Only) []),(1,N (Var yy_144 Only) []),(0,N (Var xx_136 Only) [])]
+Lookup ii6 i 1 as yy_144
+  env: [(5,N (Var local5_385 Only) []),(4,N (Var local4_384 Only) []),(3,N (Var local3_169 Only) []),(2,N (Var zz_155 Only) []),(1,N (Var yy_144 Only) []),(0,N (Var xx_136 Only) [])]
+Getting value Nat for Global "Nat"
+Getting value \ n . S( n ) for Global "Succ"
+EvalHead n lookup to xx_127
+Getting value \ n . S( n ) for Global "Succ"
+Getting value \ n . S( n ) for Global "Succ"
+EvalHead n lookup to yy_129
+EvalHead n lookup to S( yy_129 )
 Getting value Nat for Global "Nat"
 Getting value Nat for Global "Nat"
-Getting value local4_67 for Local 4
-Lookup ii5 i 4 as local4_
-  env: [(4,N (Var local4_ Only) []),(3,N (Var local3_ Only) []),(2,N (Var zz_ Only) []),(1,N (Var yy_ Only) []),(0,N (Var xx_ Only) [])]
-Lookup ii5 i 0 as xx_
-  env: [(4,N (Var local4_ Only) []),(3,N (Var local3_ Only) []),(2,N (Var zz_ Only) []),(1,N (Var yy_ Only) []),(0,N (Var xx_ Only) [])]
+Getting value Nat for Global "Nat"
 Interpreter for lambda-Pi.
 Type :? for help.
-lambda-pi-constraint: fresh encountered bound name! Please report this as a bug.
+lambda-pi-constraint: bad elimination of Nat -> Set by xq13
