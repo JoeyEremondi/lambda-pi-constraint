@@ -21,6 +21,8 @@ import Control.Monad.Writer
 import Data.Data
 import Data.Typeable
 
+import qualified Data.Foldable as Foldable
+
 import qualified Data.Maybe as Maybe
 
 import Control.Applicative
@@ -125,10 +127,10 @@ cToUnifForm ii env (Common.L _ tm) =
       Common.Inf_ itm -> --Here we bind a new variable, so increase our counter
         iToUnifForm ii env itm
       Common.Lam_ ctm -> do
-        let
-          newNom = localName (ii) --LN.s2n ("lamVar" ++ show ii)
+
+        newNom <- freshNom $ localName (ii) --LN.s2n ("lamVar" ++ show ii)
           --(globals, boundVars) = env
-          newEnv = addValue (ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
+        let newEnv = addValue (ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
         retBody <- cToUnifForm (ii + 1) newEnv ctm
         return $ Tm.L $ LN.bind newNom retBody
 
@@ -162,9 +164,10 @@ listLookup l i =
   else l List.!! i
 
 --The name for a local variable i at depth ii
-localName :: Int -> Tm.Nom
+localName :: Int -> String
 localName ii = --TODO get fresh properly
-  LN.string2Name $ case ii of
+  --LN.string2Name $
+    case ii of
       0 -> "xx_"
       1 -> "yy_"
       2 -> "zz_"
@@ -184,10 +187,8 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
         return Tm.SET
 
       Common.Pi_ s t@(Common.L tReg _) -> do
-        let
-           --(fst env, (Common.Local ii, x) : snd env)
-          freeNom =  localName ii
-          localVal = Tm.var freeNom
+        freeNom <- freshNom $ localName ii
+        let localVal = Tm.var freeNom
         sVal <- (cToUnifForm ii env s)
           --Our argument in t function has type S
         let
@@ -479,17 +480,21 @@ maybeHead (h:_) = Just h
 fresh :: Common.Region -> WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh reg env tp = do
     ourNom <- freshNom $ "α_" ++ Common.regionName reg ++ "__"
+    let
+      extendArrow (i,t) arrowSoFar =
+        do
+          lNom <- freshNom $ localName i
+          return $ Tm._Pi lNom t arrowSoFar
     let currentQuants = reverse $ typeEnv env
         unsafeLook i = Maybe.fromJust $ valueLookup i env
-    let lambdaType =
-          foldr (\(i, t) arrowSoFar -> Tm._Pi (localName i) t arrowSoFar)
-            tp (currentQuants) --TODO right order?
+    lambdaType <-
+          Foldable.foldrM extendArrow tp (currentQuants) --TODO right order?
     --let ii = trace ("Made fresh lambda type " ++ PUtest.prettyString lambdaType)
     --      $ length (typeEnv env)
     let ourHead =
           --trace ("Lambda type " ++ PUtest.prettyString lambdaType ++ " with env " ++ show currentQuants) $
             Tm.Meta ourNom
-    let ourElims = map (\(i,_) -> Tm.A $ Tm.var $ localName i) currentQuants
+    let ourElims = map (\(_,freeVal) -> Tm.A freeVal) currentQuants
     let ourNeutral = Tm.N ourHead ourElims
     let ourEntry = --trace ("Made fresh meta app " ++ PUtest.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
           UC.E ourNom lambdaType UC.HOLE
@@ -520,18 +525,18 @@ unify :: Common.Region -> Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM 
 unify reg v1 v2 tp env = do
     probId <- UC.ProbId <$> freshNom "??"
     --TODO right to reverse?
-    let currentQuants = reverse $ typeEnv env
-    let newCon = wrapProblemForalls currentQuants
+    let (tcurrentQuants, vcurrentQuants) = (reverse $ typeEnv env, reverse $ valueEnv env)
+    let newCon = wrapProblemForalls tcurrentQuants vcurrentQuants
           $ UC.Unify $ UC.EQN tp v1 tp v2
     let ourEntry = UC.Prob probId newCon UC.Active
     addConstr $ Constraint reg  ourEntry
 
 unifySets reg v1 v2 env = unify reg v1 v2 Tm.SET env
 
-wrapProblemForalls :: [(Int, Tm.VAL)] -> UC.Problem -> UC.Problem
-wrapProblemForalls [] prob = prob
-wrapProblemForalls ((i, tp) : rest) prob =
-  UC.All (UC.P tp) $ LN.bind (localName i) $ wrapProblemForalls rest prob
+wrapProblemForalls :: [(Int, Tm.Type)] -> [(Int, Tm.Type)] -> UC.Problem -> UC.Problem
+wrapProblemForalls [] [] prob = prob
+wrapProblemForalls ((i, tp) : trest) ((i', Tm.N h _) : vrest) prob | (i == i') =
+    UC.All (UC.P tp) $ LN.bind (Tm.headVar h) $ wrapProblemForalls trest vrest prob
 
 
 freshType reg env = fresh reg env Tm.SET
