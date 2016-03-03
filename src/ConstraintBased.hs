@@ -102,7 +102,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
        =  return conStar
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
-              argNom <- LN.fresh $ localName (ii)
+              argNom <- freshNom $ localName (ii)
               ty <- evaluate ii tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               let newEnv = addType (ii, ty) $ addValue (ii, Tm.var argNom)  g
@@ -254,7 +254,7 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
     --Special case when we have metavariable in type
     cType_' ii g (Lam_ body) fnTy = do
         argTy <- freshType reg g
-        argName <- LN.fresh $ localName (ii) --TODO ii or 0?
+        argName <- freshNom $ localName (ii) --TODO ii or 0?
         --Our return type should be a function, from input type to set
         let newEnv = -- trace ("Lambda newEnv " ++ show ii ++ " old " ++ show g) $
               addValue (ii, Tm.var argName) $ addType (ii, argTy ) g
