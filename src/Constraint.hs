@@ -201,7 +201,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       Common.Bound_ i ->
         let
           result = snd $ (valueEnv env `listLookup` i )
-        in trace ("Lookup ii" ++ show ii ++ " i " ++ show i ++ " as " ++ Tm.prettyString result ++ "\n  env: " ++ show (valueEnv env)) $
+        in --trace ("Lookup ii" ++ show ii ++ " i " ++ show i ++ " as " ++ Tm.prettyString result ++ "\n  env: " ++ show (valueEnv env)) $
           return result
 
         --Tm.var $ localName (ii - i - 1) --Local name, just get the corresponding Nom
@@ -210,7 +210,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       --If we reach this point, then our neutral term isn't embedded in an application
       Common.Free_ fv ->
         case valueLookup fv env of
-          Just x -> return $ trace ("Getting value " ++ (Tm.prettyString x) ++ " for " ++ show fv) x
+          Just x -> return  x
           Nothing ->
             return $ case fv of
               Common.Global nm -> trace ("Giving " ++ show nm ++ " global Nom " ++ Tm.prettyString (Tm.vv nm)) $
@@ -485,7 +485,9 @@ fresh reg env tp = do
     let
       extendArrow (i,t) arrowSoFar =
         do
-          lNom <- freshNom $ localName i
+          --lNom <- freshNom $ localName i
+          let Just (Tm.N ourVar _) = valueLookup (Common.Local i) env
+              lNom = Tm.headVar ourVar
           return $ Tm._Pi lNom t arrowSoFar
     let currentQuants = reverse $ typeEnv env
         currentVals = reverse $ valueEnv env
@@ -528,9 +530,10 @@ unify :: Common.Region -> Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM 
 unify reg v1 v2 tp env = do
     probId <- UC.ProbId <$> freshNom "??"
     --TODO right to reverse?
-    let (tcurrentQuants, vcurrentQuants) = (reverse $ typeEnv env, reverse $ valueEnv env)
-    let newCon = wrapProblemForalls tcurrentQuants env
-          $ UC.Unify $ UC.EQN tp v1 tp v2
+    let currentQuants = reverse $ typeEnv env
+        prob = UC.Unify $ UC.EQN tp v1 tp v2
+    let newCon = --trace ("**WRAP " ++ Tm.prettyString prob ++ " QUANTS " ++ show currentQuants ) $
+          wrapProblemForalls currentQuants env prob
     let ourEntry = UC.Prob probId newCon UC.Active
     addConstr $ Constraint reg  ourEntry
 

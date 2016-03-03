@@ -58,7 +58,7 @@ typecheck _T t = (check _T t >> return True) `catchError`
 check :: Type -> VAL -> Contextual ()
 check (SET) (SET) = return ()
 check (SET) (Nat) = return ()
-check _T t | trace ("Checking " ++ pp _T ++ " ||| " ++ pp t ++ "\n** " ++ show (_T, t)) False = error "check"
+--check _T t | trace ("Checking " ++ pp _T ++ " ||| " ++ pp t ++ "\n** " ++ show (_T, t)) False = error "check"
 
 check (C c as)    (C v bs)  =  do
                                tel <- canTy (c, as) v

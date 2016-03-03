@@ -448,7 +448,7 @@ eval g t = error $ "Missing eval case for " ++ show t
 
 evalHead :: Subs -> Head -> VAL
 evalHead g hv = case lookup (headVar hv) g of
-                       Just u   -> trace ("EvalHead " ++ pp hv ++ " lookup to " ++ pp u) $ u
+                       Just u   -> u
                        Nothing  -> N hv []
 
 elim :: VAL -> Elim -> VAL
@@ -457,8 +457,8 @@ elim (L b)       (A a)  =
   let
     (x, t) = unsafeUnbind b
   in
-    subst x a t
-    --eval [(x, a)] t
+    --subst x a t
+    eval [(x, a)] t
 elim (N u as)    e      = N u $ as ++ [e]
 elim (PAIR x _)  Hd     = x
 elim (PAIR _ y)  Tl     = y
