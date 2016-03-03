@@ -88,6 +88,9 @@ addType x env = env {typeEnv = x : typeEnv env }
 recordSourceMeta :: String -> ConstraintM ()
 recordSourceMeta nm = lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas x)} )
 
+runConstraintM :: ConstraintM a -> a
+runConstraintM cm = fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [] )
+
 solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] (Tm.VAL, [(String, Tm.VAL)])
 solveConstraintM cm =
   let
@@ -110,47 +113,46 @@ cToUnifForm0 = cToUnifForm 0
 
 evaluate :: Int -> Common.CTerm_ -> WholeEnv -> ConstraintM Tm.VAL
 evaluate ii t g = do
-  let result = cToUnifForm ii g t
+  result <- cToUnifForm ii g t
   return result
-  fst <$> LN.freshen result
+  --fst <$> LN.freshen result
 
-cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> Tm.VAL
+cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> ConstraintM Tm.VAL
 cToUnifForm ii env (Common.L _ tm) =
  let
   result =
     case tm of
       Common.Inf_ itm -> --Here we bind a new variable, so increase our counter
         iToUnifForm ii env itm
-      Common.Lam_ ctm ->
+      Common.Lam_ ctm -> do
         let
           newNom = localName (ii) --LN.s2n ("lamVar" ++ show ii)
           --(globals, boundVars) = env
           newEnv = addValue (ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
-          retBody = cToUnifForm (ii + 1) newEnv ctm
-        in
-          Tm.L $ LN.bind newNom retBody
+        retBody <- cToUnifForm (ii + 1) newEnv ctm
+        return $ Tm.L $ LN.bind newNom retBody
 
       Common.Zero_ ->
-        Tm.Zero
+        return $ Tm.Zero
 
       Common.Succ_ n ->
-        Tm.Succ $ cToUnifForm ii env n
+        Tm.Succ <$> cToUnifForm ii env n
 
       Common.FZero_ n ->
-        Tm.FZero $ cToUnifForm ii env n
+        Tm.FZero <$> cToUnifForm ii env n
 
       Common.FSucc_ n f ->
-        Tm.FSucc (cToUnifForm ii env n) (cToUnifForm ii env f)
+        Tm.FSucc <$> (cToUnifForm ii env n) <*> (cToUnifForm ii env f)
 
       Common.Nil_ tp ->
-        Tm.VNil $ cToUnifForm ii env tp
+        Tm.VNil <$> cToUnifForm ii env tp
 
       Common.Cons_ a n x xs ->
-        Tm.VCons (cToUnifForm ii env a) (cToUnifForm ii env n)
-            (cToUnifForm ii env x) (cToUnifForm ii env xs)
+        Tm.VCons <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env n)
+            <*> (cToUnifForm ii env x) <*> (cToUnifForm ii env xs)
 
       Common.Refl_ a x ->
-        Tm.ERefl (cToUnifForm ii env a) (cToUnifForm ii env x)
+        Tm.ERefl <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env x)
   in result -- trace ("\n**CToUnif" ++ show ii ++ " " ++ show tm ++ "\nResult:" ++ show result) result
 
 
@@ -169,38 +171,37 @@ localName ii = --TODO get fresh properly
       ourIndex ->  ( "local" ++ show ourIndex ++ "_")
 
 
-iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> Tm.VAL
+iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> ConstraintM Tm.VAL
 iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
-  let
-   result =
     case tm of
       --TODO look at type during eval?
       Common.Meta_ nm ->
-        Tm.meta $ LN.string2Name nm
-      Common.Ann_ val tp ->
+        return $ Tm.meta $ LN.string2Name nm
+      Common.Ann_ val _ ->
         cToUnifForm ii env val
 
       Common.Star_ ->
-        Tm.SET
+        return Tm.SET
 
-      Common.Pi_ s t@(Common.L tReg _) ->
+      Common.Pi_ s t@(Common.L tReg _) -> do
         let
            --(fst env, (Common.Local ii, x) : snd env)
           freeNom =  localName ii
           localVal = Tm.var freeNom
-          sVal = (cToUnifForm ii env s)
+        sVal <- (cToUnifForm ii env s)
           --Our argument in t function has type S
+        let
           newEnv = addValue (ii, Tm.var freeNom) $ addType (ii, sVal) env
-          translatedFn = (cToUnifForm (ii + 1) newEnv t)
+        translatedFn <- (cToUnifForm (ii + 1) newEnv t)
           --tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
-        in Tm.PI sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
+        return $ Tm.PI sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
           --mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
       Common.Bound_ i ->
         let
           result = snd $ (valueEnv env `listLookup` (ii - i -1) )
         in trace ("Lookup ii" ++ show ii ++ " i " ++ show i ++ " as " ++ Tm.prettyString result ++ "\n  env: " ++ show (valueEnv env)) $
-          result
+          return result
 
         --Tm.var $ localName (ii - i - 1) --Local name, just get the corresponding Nom
         --Tm.var $ deBrToNom ii i
@@ -208,9 +209,9 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       --If we reach this point, then our neutral term isn't embedded in an application
       Common.Free_ fv ->
         case valueLookup fv env of
-        Just x -> trace ("Getting value " ++ (Tm.prettyString x) ++ " for " ++ show fv) x
+        Just x -> return $ trace ("Getting value " ++ (Tm.prettyString x) ++ " for " ++ show fv) x
         Nothing ->
-            case fv of
+            return $ case fv of
               Common.Global nm -> trace ("Giving " ++ show nm ++ " global Nom " ++ Tm.prettyString (Tm.vv nm)) $
                 Tm.vv nm
               Common.Local i ->
@@ -220,48 +221,50 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
                 error "Shouldn't come across quoted during checking"
 
 
-      (f Common.:$: x) ->
-        let
-          f1 =(iToUnifForm ii env f)
-          a =(cToUnifForm ii env x)
-          result = f1 Tm.$$ a
-        in --trace (
+      (f Common.:$: x) -> do
+
+        f1 <- (iToUnifForm ii env f)
+        a <- (cToUnifForm ii env x)
+        let result = f1 Tm.$$ a
+        --trace (
             --"APP  " ++ Tm.prettyString f1 ++ " <--- " ++ show f ++ "  \n  "
             -- ++ Tm.prettyString a ++ " <--- " ++ show x ++ "  \n  "
             -- ++ Tm.prettyString result) $
-            result
+        return result
 
       Common.Nat_ ->
-        Tm.Nat
+        return Tm.Nat
 
       Common.Fin_ n ->
-        Tm.Fin $ cToUnifForm ii env n
+        Tm.Fin <$> cToUnifForm ii env n
 
-      Common.NatElim_ m mz ms n ->
-        (cToUnifForm ii env n) Tm.%%
-          Tm.NatElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms)
+      Common.NatElim_ m mz ms n -> do
+        spine <- Tm.NatElim <$> (cToUnifForm ii env m) <*> (cToUnifForm ii env mz) <*> (cToUnifForm ii env ms)
+        hd <- (cToUnifForm ii env n)
+        return $ hd Tm.%% spine
 
-      Common.FinElim_ m mz ms n f ->
-        (cToUnifForm ii env f) Tm.%%
-          Tm.FinElim (cToUnifForm ii env m) (cToUnifForm ii env mz) (cToUnifForm ii env ms) (cToUnifForm ii env n)
+
+      Common.FinElim_ m mz ms n f -> do
+        hd <- (cToUnifForm ii env f)
+        spine <- Tm.FinElim <$> (cToUnifForm ii env m) <*> (cToUnifForm ii env mz) <*> (cToUnifForm ii env ms) <*> (cToUnifForm ii env n)
+        return $ hd Tm.%% spine
 
       Common.Vec_ a n ->
-        Tm.Vec (cToUnifForm ii env a) (cToUnifForm ii env n)
+        Tm.Vec <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env n)
 
-      Common.VecElim_ a m mn mc n xs ->
-        (cToUnifForm ii env xs) Tm.%%
-          Tm.VecElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mn)
-              (cToUnifForm ii env mc) (cToUnifForm ii env n)
+      Common.VecElim_ a m mn mc n xs -> do
+        hd <- (cToUnifForm ii env xs)
+        spine <- Tm.VecElim <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env m) <*> (cToUnifForm ii env mn) <*> (cToUnifForm ii env mc) <*> (cToUnifForm ii env n)
+        return $ hd Tm.%% spine
 
       Common.Eq_ a x y ->
-        Tm.Eq (cToUnifForm ii env a) (cToUnifForm ii env x) (cToUnifForm ii env y)
+        Tm.Eq <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env x) <*> (cToUnifForm ii env y)
 
-
-      Common.EqElim_ a m mr x y eq  ->
-        (cToUnifForm ii env eq) Tm.%%
-          Tm.EqElim (cToUnifForm ii env a) (cToUnifForm ii env m) (cToUnifForm ii env mr)
-              (cToUnifForm ii env x) (cToUnifForm ii env y)
-  in result --trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
+      Common.EqElim_ a m mr x y eq  -> do
+        hd <- (cToUnifForm ii env eq)
+        spine <- Tm.EqElim <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env m) <*> (cToUnifForm ii env mr) <*> (cToUnifForm ii env x) <*> (cToUnifForm ii env y)
+        return $ hd Tm.%% spine
+--  in result --trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
 
 type ConTyFn = Tm.VAL
 
@@ -437,7 +440,7 @@ constrEval (tenv, venv) it =
     (vglobals, vlocals) = splitContext venv
     wholeEnv = WholeEnv vlocals tlocals vglobals tglobals
   in
-    Tm.eval tmSubs (iToUnifForm 0 wholeEnv it)
+    Tm.eval tmSubs $ runConstraintM (iToUnifForm 0 wholeEnv it)
 
 
 
