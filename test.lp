@@ -8,11 +8,11 @@ let nat1Elim =
      forall (n :: Nat) . m n
 
 -- unit type
-let Unit = Fin 1
+--let Unit = Fin 1
 -- constructor
-let U = FZero 0
+--let U = FZero 0
 
-
+{-
 
 -- eliminator
 let unitElim =
@@ -35,3 +35,4 @@ let unitElim =
                                            n f )
                       1 )
   :: forall (m :: Unit -> *) . m U -> forall (u :: Unit) . m u
+-}

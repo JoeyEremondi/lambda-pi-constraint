@@ -112,7 +112,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
     iType_' ii g (Free_ x)
       =     case typeLookup x g of
               Just ty        ->  return ty
-              Nothing        ->  unknownIdent g (render (iPrint_ 0 0 (builtin $ Free_ x)))
+              Nothing        ->  unknownIdent reg g (render (iPrint_ 0 0 (builtin $ Free_ x)))
     iType_' ii g (e1 :$: e2)
       =     do
                 fnType <- iType_ ii g e1

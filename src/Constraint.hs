@@ -21,6 +21,8 @@ import Control.Monad.Writer
 import Data.Data
 import Data.Typeable
 
+import qualified Data.Maybe as Maybe
+
 import Control.Applicative
 
 import qualified Data.List as List
@@ -109,6 +111,7 @@ cToUnifForm0 = cToUnifForm 0
 evaluate :: Int -> Common.CTerm_ -> WholeEnv -> ConstraintM Tm.VAL
 evaluate ii t g = do
   let result = cToUnifForm ii g t
+  return result
   fst <$> LN.freshen result
 
 cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> Tm.VAL
@@ -150,8 +153,6 @@ cToUnifForm ii env (Common.L _ tm) =
         Tm.ERefl (cToUnifForm ii env a) (cToUnifForm ii env x)
   in result -- trace ("\n**CToUnif" ++ show ii ++ " " ++ show tm ++ "\nResult:" ++ show result) result
 
---deBrToNom :: Int -> Int -> Tm.Nom
---deBrToNom ii i = LN.integer2Name $ toInteger $ ii - i
 
 listLookup l i =
   if (i >= length l)
@@ -189,7 +190,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
           localVal = Tm.var freeNom
           sVal = (cToUnifForm ii env s)
           --Our argument in t function has type S
-          newEnv = addValue (ii, sVal) env
+          newEnv = addValue (ii, Tm.var freeNom) $ addType (ii, sVal) env
           translatedFn = (cToUnifForm (ii + 1) newEnv t)
           --tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
         in Tm.PI sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
@@ -213,7 +214,8 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
               Common.Global nm -> trace ("Giving " ++ show nm ++ " global Nom " ++ Tm.prettyString (Tm.vv nm)) $
                 Tm.vv nm
               Common.Local i ->
-                Tm.var $ localName i
+                error "LocalName should always be in env, Free_"
+                --Tm.var $ localName i
               Common.Quote i ->
                 error "Shouldn't come across quoted during checking"
 
@@ -223,11 +225,11 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
           f1 =(iToUnifForm ii env f)
           a =(cToUnifForm ii env x)
           result = f1 Tm.$$ a
-        in trace (
-            "APP  " ++ Tm.prettyString f1 ++ " <--- " ++ show f ++ "  \n  "
-            ++ Tm.prettyString a ++ " <--- " ++ show x ++ "  \n  "
-            ++ Tm.prettyString result)
-            $ result
+        in --trace (
+            --"APP  " ++ Tm.prettyString f1 ++ " <--- " ++ show f ++ "  \n  "
+            -- ++ Tm.prettyString a ++ " <--- " ++ show x ++ "  \n  "
+            -- ++ Tm.prettyString result) $
+            result
 
       Common.Nat_ ->
         Tm.Nat
@@ -473,8 +475,9 @@ maybeHead (h:_) = Just h
 --And return a value which applies the local variables to it
 fresh :: Common.Region -> WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh reg env tp = do
-    ourNom <- freshNom $ "α_" ++ Common.regionName reg ++ "_"
+    ourNom <- freshNom $ "α_" ++ Common.regionName reg ++ "__"
     let currentQuants = reverse $ typeEnv env
+        unsafeLook i = Maybe.fromJust $ valueLookup i env
     let lambdaType =
           foldr (\(i, t) arrowSoFar -> Tm._Pi (localName i) t arrowSoFar)
             tp (currentQuants) --TODO right order?
@@ -526,22 +529,6 @@ wrapProblemForalls :: [(Int, Tm.VAL)] -> UC.Problem -> UC.Problem
 wrapProblemForalls [] prob = prob
 wrapProblemForalls ((i, tp) : rest) prob =
   UC.All (UC.P tp) $ LN.bind (localName i) $ wrapProblemForalls rest prob
-
-{-
-forAllUnify
-  :: LN.Name Tm.VAL
-  -> Tm.VAL
-  -> Tm.VAL
-  -> Tm.VAL
-  -> Tm.VAL
-  -> WholeEnv
-  -> ConstraintM ()
-forAllUnify quantVar quantType v1 v2 tp env = do
-    probId <- (UC.ProbId . LN.integer2Name . toInteger) <$> freshInt
-    let newCon = UC.All (UC.P quantType) $ LN.bind quantVar $ UC.Unify $ UC.EQN tp v1 tp v2
-    let ourEntry = UC.Prob probId newCon UC.Active
-    addConstr $ Constraint (Common.startRegion) ourEntry
--}
 
 
 freshType reg env = fresh reg env Tm.SET
@@ -598,9 +585,9 @@ evaluate term env = do
   return normalForm
   -}
 
-unknownIdent :: WholeEnv -> String -> ConstraintM a
-unknownIdent env s = error $
-  "Unknown IIdentifier: " ++ show s
+unknownIdent :: Common.Region -> WholeEnv -> String -> ConstraintM a
+unknownIdent reg env s = error $
+  show reg ++ "Unknown IIdentifier: " ++ show s
   ++ " in env " ++ show env
 
 
