@@ -34,7 +34,7 @@ let nat1Elim =
      (forall n :: Nat . m (Succ n) -> m (Succ (Succ n))) ->
      forall (n :: Nat) . m n
 
-{-
+
 -- an eliminator for natural numbers that has special
 -- cases for 0, 1 and 2
 let nat2Elim =
@@ -43,7 +43,7 @@ let nat2Elim =
   :: forall (m :: Nat -> *) . m 0 -> m 1 -> m 2 ->
      (forall n :: Nat . m (Succ (Succ n)) -> m (Succ (Succ (Succ n)))) ->
      forall (n :: Nat) . m n
--}
+
 
 -- increment by one
 let inc = natFold Nat (Succ Zero) Succ

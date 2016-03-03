@@ -69,7 +69,7 @@ checker (nameEnv, context) term =
 conStar = Tm.SET
 
 getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
-getConstraints env term = trace ("\nChecking, converted " ++ show term ++ "\nto " ++ Tm.prettyString (constrEval (map (mapFst Global) $ globalTypes env, map (mapFst Global) $ globalValues env) term ) ++ "\n\n") $
+getConstraints env term = --trace ("\nChecking, converted " ++ show term ++ "\nto " ++ Tm.prettyString (constrEval (map (mapFst Global) $ globalTypes env, map (mapFst Global) $ globalValues env) term ) ++ "\n\n") $
   do
     finalType <- iType0_ env term
     finalVar <- freshTopLevel Tm.SET
