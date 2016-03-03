@@ -38,6 +38,7 @@ import Debug.Trace (trace)
 --import qualified Solver
 
 mapSnd f (a,b) = (a, f b)
+mapFst f (a,b) = (f a, b)
 
 
 errorMsg :: [(Region, String)] -> String
@@ -68,7 +69,7 @@ checker (nameEnv, context) term =
 conStar = Tm.SET
 
 getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
-getConstraints env term = --trace ("\nChecking, converted " ++ show (iPrint_ 0 0 term) ++ "\nto " ++ Tm.prettyString (iToUnifForm 0 env term ) ++ "\n\n") $
+getConstraints env term = trace ("\nChecking, converted " ++ show term ++ "\nto " ++ Tm.prettyString (constrEval (map (mapFst Global) $ globalTypes env, map (mapFst Global) $ globalValues env) term ) ++ "\n\n") $
   do
     finalType <- iType0_ env term
     finalVar <- freshTopLevel Tm.SET

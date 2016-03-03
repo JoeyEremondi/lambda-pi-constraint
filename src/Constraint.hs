@@ -200,7 +200,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
 
       Common.Bound_ i ->
         let
-          result = snd $ (valueEnv env `listLookup` (ii - i -1) )
+          result = snd $ (valueEnv env `listLookup` i )
         in trace ("Lookup ii" ++ show ii ++ " i " ++ show i ++ " as " ++ Tm.prettyString result ++ "\n  env: " ++ show (valueEnv env)) $
           return result
 
@@ -210,8 +210,8 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       --If we reach this point, then our neutral term isn't embedded in an application
       Common.Free_ fv ->
         case valueLookup fv env of
-        Just x -> return $ trace ("Getting value " ++ (Tm.prettyString x) ++ " for " ++ show fv) x
-        Nothing ->
+          Just x -> return $ trace ("Getting value " ++ (Tm.prettyString x) ++ " for " ++ show fv) x
+          Nothing ->
             return $ case fv of
               Common.Global nm -> trace ("Giving " ++ show nm ++ " global Nom " ++ Tm.prettyString (Tm.vv nm)) $
                 Tm.vv nm
@@ -433,6 +433,8 @@ splitContext entries = helper entries [] []
     helper ((Common.Local i, x) : rest) globals locals =
       helper rest globals ((i,x) : locals)
 
+
+
 constrEval :: (Common.NameEnv Tm.VAL, Common.NameEnv Tm.VAL) -> Common.ITerm_ -> Tm.VAL
 constrEval (tenv, venv) it =
   let
@@ -486,6 +488,7 @@ fresh reg env tp = do
           lNom <- freshNom $ localName i
           return $ Tm._Pi lNom t arrowSoFar
     let currentQuants = reverse $ typeEnv env
+        currentVals = reverse $ valueEnv env
         unsafeLook i = Maybe.fromJust $ valueLookup i env
     lambdaType <-
           Foldable.foldrM extendArrow tp (currentQuants) --TODO right order?
@@ -494,7 +497,7 @@ fresh reg env tp = do
     let ourHead =
           --trace ("Lambda type " ++ PUtest.prettyString lambdaType ++ " with env " ++ show currentQuants) $
             Tm.Meta ourNom
-    let ourElims = map (\(_,freeVal) -> Tm.A freeVal) currentQuants
+    let ourElims = map (\(_,freeVal) -> Tm.A freeVal) currentVals
     let ourNeutral = Tm.N ourHead ourElims
     let ourEntry = --trace ("Made fresh meta app " ++ PUtest.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
           UC.E ourNom lambdaType UC.HOLE
