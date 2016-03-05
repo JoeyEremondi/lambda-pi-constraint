@@ -43,6 +43,9 @@ import Debug.Trace (trace)
 
 import qualified Data.Map as Map
 
+import Text.PrettyPrint.HughesPJ hiding (parens, ($$))
+
+
 type ConstrContext = [(Common.Name, Tm.VAL)]
 
 data WholeEnv =
@@ -79,6 +82,12 @@ getRegionDict = foldr foldFun $ Map.singleton (LN.string2Name "builtinLoc") (Com
           Map.insert ident (conRegion cstr) dictSoFar
         _ ->
           dictSoFar
+
+
+evalInEnv :: WholeEnv -> Tm.VAL -> Tm.VAL
+evalInEnv env val = error "TODO eval in env"
+
+evalElimInEnv env val = error "TODO eval elim in env"
 
 
 addValue :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
@@ -120,7 +129,7 @@ evaluate ii t g = do
   --fst <$> LN.freshen result
 
 cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> ConstraintM Tm.VAL
-cToUnifForm ii env (Common.L _ tm) =
+cToUnifForm ii env tm'@(Common.L _ tm) = --trace ("CTO " ++ render (Common.cPrint_ 0 ii tm') ) $
  let
   result =
     case tm of
@@ -175,7 +184,7 @@ localName ii = --TODO get fresh properly
 
 
 iToUnifForm :: Int -> WholeEnv -> Common.ITerm_ -> ConstraintM Tm.VAL
-iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
+iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrint_ 0 ii ltm)) $
     case tm of
       --TODO look at type during eval?
       Common.Meta_ nm ->
@@ -207,6 +216,9 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
         --Tm.var $ localName (ii - i - 1) --Local name, just get the corresponding Nom
         --Tm.var $ deBrToNom ii i
 
+
+      Common.Free_ (Common.Global nm) ->
+        return $ Tm.vv nm --Keep things simple by not expanding globals
       --If we reach this point, then our neutral term isn't embedded in an application
       Common.Free_ fv ->
         case valueLookup fv env of
@@ -222,11 +234,13 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
                 error "Shouldn't come across quoted during checking"
 
 
-      (f Common.:$: x) -> do
+      (f Common.:$: x) -> trace "$1" $ do
 
         f1 <- (iToUnifForm ii env f)
         a <- (cToUnifForm ii env x)
-        let result = f1 Tm.$$ a
+        let fVal = evalInEnv env f1
+            aVal = evalInEnv env a
+        let result = fVal Tm.$$ aVal
         --trace (
             --"APP  " ++ Tm.prettyString f1 ++ " <--- " ++ show f ++ "  \n  "
             -- ++ Tm.prettyString a ++ " <--- " ++ show x ++ "  \n  "
@@ -239,32 +253,39 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ito " ++ show ltm) $
       Common.Fin_ n ->
         Tm.Fin <$> cToUnifForm ii env n
 
-      Common.NatElim_ m mz ms n -> do
+      Common.NatElim_ m mz ms n -> trace "%1" $ do
         spine <- Tm.NatElim <$> (cToUnifForm ii env m) <*> (cToUnifForm ii env mz) <*> (cToUnifForm ii env ms)
         hd <- (cToUnifForm ii env n)
-        return $ hd Tm.%% spine
+        let hdVal = evalInEnv env hd
+            spineVal = evalElimInEnv env spine
+        return $ hdVal Tm.%% spineVal
 
 
-      Common.FinElim_ m mz ms n f -> do
+      Common.FinElim_ m mz ms n f -> trace "%2" $  do
         hd <- (cToUnifForm ii env f)
         spine <- Tm.FinElim <$> (cToUnifForm ii env m) <*> (cToUnifForm ii env mz) <*> (cToUnifForm ii env ms) <*> (cToUnifForm ii env n)
-        return $ hd Tm.%% spine
+        let hdVal = evalInEnv env hd
+            spineVal = evalElimInEnv env spine
+        return $ hdVal Tm.%% spineVal
 
       Common.Vec_ a n ->
         Tm.Vec <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env n)
 
-      Common.VecElim_ a m mn mc n xs -> do
+      Common.VecElim_ a m mn mc n xs -> trace "%3" $  do
         hd <- (cToUnifForm ii env xs)
         spine <- Tm.VecElim <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env m) <*> (cToUnifForm ii env mn) <*> (cToUnifForm ii env mc) <*> (cToUnifForm ii env n)
-        return $ hd Tm.%% spine
-
+        let hdVal = evalInEnv env hd
+            spineVal = evalElimInEnv env spine
+        return $ hdVal Tm.%% spineVal
       Common.Eq_ a x y ->
         Tm.Eq <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env x) <*> (cToUnifForm ii env y)
 
-      Common.EqElim_ a m mr x y eq  -> do
+      Common.EqElim_ a m mr x y eq  -> trace "%4" $ do
         hd <- (cToUnifForm ii env eq)
         spine <- Tm.EqElim <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env m) <*> (cToUnifForm ii env mr) <*> (cToUnifForm ii env x) <*> (cToUnifForm ii env y)
-        return $ hd Tm.%% spine
+        let hdVal = evalInEnv env hd
+            spineVal = evalElimInEnv env spine
+        return $ hdVal Tm.%% spineVal
 --  in result --trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
 
 type ConTyFn = Tm.VAL
