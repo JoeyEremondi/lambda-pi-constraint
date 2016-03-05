@@ -85,9 +85,13 @@ getRegionDict = foldr foldFun $ Map.singleton (LN.string2Name "builtinLoc") (Com
 
 
 evalInEnv :: WholeEnv -> Tm.VAL -> Tm.VAL
-evalInEnv env val = error "TODO eval in env"
+evalInEnv env =
+  Tm.eval $ map (\(s,val) -> (LN.s2n s, val)) $ globalValues env
 
-evalElimInEnv env val = error "TODO eval elim in env"
+
+evalElimInEnv :: WholeEnv -> Tm.Elim -> Tm.Elim
+evalElimInEnv env =
+  Tm.mapElim $ Tm.eval $ map (\(s,val) -> (LN.s2n s, val)) $ globalValues env
 
 
 addValue :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
