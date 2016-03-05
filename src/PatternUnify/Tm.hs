@@ -424,7 +424,7 @@ compSubs :: Subs -> Subs -> Subs
 compSubs new old = unionBy ((==) `on` fst) new (substs new old)
 
 eval :: Subs -> VAL -> VAL
---eval g t | trace ("Eval " ++ pp t) False = error "Eval"
+--eval g t | trace ("Eval " ++ pp t ++ "\n  Subs: " ++ show g) False = error "Eval"
 eval g (L b)   = L (bind x (eval g t))
                      where (x, t) = unsafeUnbind b
 eval g (N u as)  = evalHead g u %%% map (mapElim (eval g)) as

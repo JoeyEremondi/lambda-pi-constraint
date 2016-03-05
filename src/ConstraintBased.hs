@@ -263,8 +263,8 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
         returnTyFn <- fresh (region body) g (argTy Tm.--> conStar)
         let arg = -- trace ("Lambda giving arg " ++ show ii) $
               builtin $ Free_ (Local ii)
-
-        let argVal = Tm.var argName --iToUnifForm ii newEnv arg
+            --TODO g or newEnv?
+        let argVal = evalInEnv g $ Tm.var argName --iToUnifForm ii newEnv arg
         unifySets reg fnTy (Tm.PI argTy returnTyFn)  g
         returnTy <- freshType (region body) newEnv
         unifySets reg returnTy (returnTyFn Tm.$$ argVal) newEnv

@@ -129,7 +129,7 @@ cToUnifForm0 = cToUnifForm 0
 evaluate :: Int -> Common.CTerm_ -> WholeEnv -> ConstraintM Tm.VAL
 evaluate ii t g = do
   result <- cToUnifForm ii g t
-  return result
+  return $ evalInEnv g result
   --fst <$> LN.freshen result
 
 cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> ConstraintM Tm.VAL
@@ -199,7 +199,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
       Common.Star_ ->
         return Tm.SET
 
-      Common.Pi_ s t@(Common.L tReg _) -> do
+      Common.Pi_ s t@(Common.L tReg _) -> trace ("PI " ++ show (s,t)) $ do
         freeNom <- freshNom $ localName ii
         let localVal = Tm.var freeNom
         sVal <- (cToUnifForm ii env s)
@@ -238,8 +238,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
                 error "Shouldn't come across quoted during checking"
 
 
-      (f Common.:$: x) -> trace "$1" $ do
-
+      (f Common.:$: x) -> do
         f1 <- (iToUnifForm ii env f)
         a <- (cToUnifForm ii env x)
         let fVal = evalInEnv env f1

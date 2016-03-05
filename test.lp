@@ -1,5 +1,5 @@
 -- unit type
-let Unit = Fin 1
+--let Unit = Fin 1
 -- constructor
 let U = FZero 0
 
