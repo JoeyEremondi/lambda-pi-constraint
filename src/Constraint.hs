@@ -199,7 +199,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
       Common.Star_ ->
         return Tm.SET
 
-      Common.Pi_ s t@(Common.L tReg _) -> trace ("PI " ++ show (s,t)) $ do
+      Common.Pi_ s t@(Common.L tReg _) -> do
         freeNom <- freshNom $ localName ii
         let localVal = Tm.var freeNom
         sVal <- (cToUnifForm ii env s)
