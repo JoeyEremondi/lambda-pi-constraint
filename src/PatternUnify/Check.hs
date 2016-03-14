@@ -166,19 +166,19 @@ checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
   check Nat u
   check (Nat --> SET) m
   bind2 check (m $$ Zero) $ return mz
-  check (msType m) ms
-  checkSpine (m $$ u) (u %% elim) ts
+  bind2 check (msVType m) $ return ms
+  bind3 checkSpine (m $$ u) (u %% elim) $ return ts
 
 checkSpine (Fin n) u (elim@(FinElim m mz ms n') : ts) = do
   eq <- equal Nat n n'
   check (Fin n) u
   check Nat n
   check (finmType) m
-  check (finmzType m) mz
-  check (finmsType m) ms
+  bind2 check (finmzVType m) (return mz)
+  bind2 check (finmsVType m) (return ms)
   unless eq $ fail $ "Size index of given Finite " ++ pp n ++
                      " does not match FinElim size index of " ++ pp n'
-  checkSpine (m $$$ [n, u]) (u %% elim) ts
+  bind3 checkSpine (m $$$ [n, u]) (u %% elim) (return ts)
 
 --TODO for Vec and Eq
 
