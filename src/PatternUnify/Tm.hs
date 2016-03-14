@@ -26,6 +26,8 @@ import PatternUnify.Kit
 
 import Debug.Trace (trace)
 
+import GHC.Stack (errorWithStackTrace)
+
 prettyString t = render $ runPretty $ pretty t
 
 type Nom = Name VAL
@@ -86,6 +88,7 @@ instance Subst VAL Twin
 instance Subst VAL Head
 instance Subst VAL Elim
 
+
 instance Pretty VAL where
     pretty (PI _S (L b)) =
       lunbind b $ \ (x, _T) ->
@@ -128,7 +131,7 @@ instance Pretty VAL where
 
     pretty (Fin n) = parens <$> (\pn -> text "Fin " <+> pn ) <$> pretty n
     pretty (FZero n) = parens <$> (\pn -> text "FZero " <+> pn ) <$> pretty n
-    pretty (FSucc n f) =  parens <$> ((\pn pf -> text "S(" <+> pn <+> text "," <+> pf <+> text ")") <$> pretty n <*> pretty f)
+    pretty (FSucc n f) =  parens <$> ((\pn pf -> text "FS(" <+> pn <+> text "," <+> pf <+> text ")") <$> pretty n <*> pretty f)
 
     pretty (VNil _) = return $ text "[]"
     pretty (VCons a n h t) = (\pa pn ph pt -> ph <+> (text "::{" <+> pa <+> pn <+> text "}") <+> pt)
@@ -168,19 +171,20 @@ instance Pretty Elim where
       <*> pretty n)
 
     pretty (NatElim m mz ms)  = parens <$>
-      ((\m' mz' ms' -> text "NatElim" <+> m' <+> mz' <+> ms')
+      ((\m' mz' ms' -> text "NatElim" <+> parens m' <+> parens mz' <+> parens ms')
       <$> pretty m
       <*> pretty mz
       <*> pretty ms)
 
     pretty (FinElim m mz ms n)  = parens <$>
-      ((\m' mz' ms' n' -> text "FinElim" <+> m' <+> mz' <+> ms' <+> n')
+      ((\m' mz' ms' n' -> text "FinElim" <+> parens m' <+> parens mz' <+> parens ms' <+> parens n')
       <$> pretty m
       <*> pretty mz
       <*> pretty ms
       <*> pretty n)
     pretty (EqElim a m mr x y)  = parens <$>
-      ((\a' m' mr' x' y' -> text "EqElim" <+> a' <+> m' <+> mr' <+> x' <+> y')
+      ((\a' m' mr' x' y' ->
+        text "EqElim" <+> parens a' <+> parens m' <+> parens mr' <+> parens x' <+> parens y')
       <$> pretty a
       <*> pretty m
       <*> pretty mr
@@ -446,9 +450,18 @@ eval g (FSucc n f) = FSucc (eval g n) (eval g f)
 
 eval g t = error $ "Missing eval case for " ++ show t
 
+subLookup :: Nom -> Subs -> Maybe VAL
+subLookup _ [] = Nothing
+subLookup nm ((sn, sv) : rest) =
+  if (name2String nm == name2String sn && name2Integer nm == name2Integer sn)
+  then Just sv
+  else subLookup nm rest
+
+
 evalHead :: Subs -> Head -> VAL
-evalHead g hv = case lookup (headVar hv) g of
-                       Just u   -> u
+evalHead g hv = case subLookup (headVar hv) g of
+                       Just u   -> --trace ("HEAD found " ++ show (pp hv, show g)) $
+                          u
                        Nothing  -> N hv []
 
 elim :: VAL -> Elim -> VAL
@@ -458,7 +471,8 @@ elim (L b)       (A a)  =
     (x, t) = unsafeUnbind b
   in
     --subst x a t
-    eval [(x, a)] t
+    --trace ("ELIM_SUBST " ++ show (pp t, pp x)) $ 
+      eval [(x, a)] t
 elim (N u as)    e      = N u $ as ++ [e]
 elim (PAIR x _)  Hd     = x
 elim (PAIR _ y)  Tl     = y
@@ -467,7 +481,9 @@ elim (Succ l) theElim@(NatElim m mz ms) = ms $$$ [l, elim l theElim]
 elim (FZero k) (FinElim m mz _ _) = mz $$ k
 elim (FSucc k f) theElim@(FinElim m _ ms _) = ms $$$ [k, f, elim f theElim]
 --TODO elim for Vec Eq
-elim t           a      = error $ "bad elimination of " ++ pp t ++ " by " ++ pp a
+elim t           a      = badElim $ "bad elimination of " ++ pp t ++ " by " ++ pp a
+
+badElim s = errorWithStackTrace s
 
 ($$) :: VAL -> VAL -> VAL
 f $$ a = elim f (A a)
@@ -489,35 +505,35 @@ pi_ s str f = PI s $ lam_ str f
 
 msType m = (pi_ Nat "msArg" (\ l -> (m $$ l) --> ((m $$ (Succ l)))))
 
-vmType a =(pi_ Nat "n" (\ n -> (Vec a n) --> ( SET)))
+vmType a =(pi_ Nat "vec_n" (\ n -> (Vec a n) --> ( SET)))
 
 mnType a m = (m $$ Zero $$ (VNil a))
 
-mcType a m = (pi_ Nat "n" (\ n ->
-      pi_ a "x" (\ x ->
-      pi_ (Vec a n) "xs" (\ xs ->
+mcType a m = (pi_ Nat "vec_n" (\ n ->
+      pi_ a "vec_x" (\ x ->
+      pi_ (Vec a n) "vec_xs" (\ xs ->
       (m $$ n $$ xs) --> (
       m $$ Succ n $$ VCons a n x xs)))))
 
 vResultType m n xs = m $$ n $$ xs
 
-eqmType a = pi_ a "x" (\ x -> pi_ a "y" (\ y -> (Eq a x y) --> ( SET)))
+eqmType a = pi_ a "eq_x" (\ x -> pi_ a "eq_y" (\ y -> (Eq a x y) --> ( SET)))
 
-eqmrType a m = pi_ a "x" (\ x -> m $$$ [x, x, ERefl a x] )
+eqmrType a m = pi_ a "eq_xmr" (\ x -> m $$$ [x, x, ERefl a x] )
 
 eqResultType m x y eq = m $$$ [x, y, eq]
 
-finmType = pi_ (Nat) "n" $ \n ->
+finmType = pi_ (Nat) "finm_n" $ \n ->
   Fin n --> SET
 
-finmzType m = pi_ (Nat) "n" $ \n ->
+finmzType m = pi_ (Nat) "finmz_n" $ \n ->
   m $$$ [Succ n, FZero n]
 
 finmsType m = --pi_ (Nat) "n" $ \n ->
-  pi_ Nat "n" $ \n ->
-    pi_ (Fin n) "f" $ \f ->
+  pi_ Nat "finms_n" $ \n ->
+    pi_ (Fin n) "finms_f" $ \f ->
       (m $$$ [n, f]) --> (m $$$ [Succ n, FSucc n f])
 
-finRetType m = pi_ Nat "n" $ \n -> pi_ (Fin n) "f" $ \f -> m $$$ [n, f]
+finRetType m = pi_ Nat "finRet_n" $ \n -> pi_ (Fin n) "finRet_f" $ \f -> m $$$ [n, f]
 
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])

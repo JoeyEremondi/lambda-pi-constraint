@@ -89,7 +89,7 @@ class Pretty a where
     pretty :: (Applicative m, LFresh m, MonadReader Size m) => a -> m Doc
 
 instance Pretty (Name x) where
-    pretty n = return $ text $ show n
+    pretty n = return $ text $ show n --return $ text $ show (name2String n, name2Integer n)
 
 instance (Pretty a, Pretty b) => Pretty (Either a b) where
     pretty (Left x)   = (text "Left" <+>) <$> pretty x

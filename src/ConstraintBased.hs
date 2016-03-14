@@ -69,7 +69,8 @@ checker (nameEnv, context) term =
 conStar = Tm.SET
 
 getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
-getConstraints env term | trace ("\nChecking, converted " ++ show term) $ trace ("\n  into " ++ Tm.prettyString (constrEval (map (mapFst Global) $ globalTypes env, map (mapFst Global) $ globalValues env) term ) ++ "\n\n") False = error "genConstraints"
+getConstraints env term | trace ("\n\n**************************************\nChecking, converted " ++ show (iPrint_ 0 0 term))  $ trace ("\n  into " ++ Tm.prettyString (constrEval (map (mapFst Global) $ globalTypes env, map (mapFst Global) $ globalValues env) term ) ++ "\n\n") False
+  = error "genConstraints"
 getConstraints env term =
   do
     finalType <- iType0_ env term
@@ -81,7 +82,7 @@ iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
-iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show g) $
+iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
   iType_' iiGlobal g it
   where
     iType_' ii g m@(Meta_ s) = do
@@ -96,7 +97,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
       =
         do
           cType_  ii g tyt conStar
-          ty <- evaluate ii tyt g
+          ty <- evaluate4 ii tyt g
           --trace ("&&" ++ show ii ++ "Annotated " ++ show e ++ " as " ++ show ty)  $
           cType_ ii g e ty
           return ty
@@ -105,7 +106,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
               argNom <- freshNom $ localName (ii)
-              ty <- evaluate ii tyt g --Ensure LHS has type Set
+              ty <- evaluate5 ii tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               let newEnv = addType (ii, ty) $ addValue (ii, Tm.var argNom)  g
               cType_  (ii + 1) newEnv
@@ -115,18 +116,18 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
       =     case typeLookup x g of
               Just ty        ->  return ty
               Nothing        ->  unknownIdent reg g (render (iPrint_ 0 0 (builtin $ Free_ x)))
-    iType_' ii g (e1 :$: e2)
+    iType_' ii g (funExp :$: argExp)
       =     do
-                fnType <- iType_ ii g e1
-                piArg <- freshType (region e2) g
-                piBodyFn <- fresh (region e1) g (piArg Tm.--> Tm.SET) --TODO star to star?
+                fnType <- iType_ ii g funExp
+                piArg <- freshType (region argExp) g
+                piBodyFn <- fresh (region funExp) g (piArg Tm.--> Tm.SET) --TODO star to star?
                 unifySets reg (fnType) (Tm.PI piArg piBodyFn) g
 
                 --Ensure that the argument has the proper type
-                cType_ ii g e2 piArg
+                cType_ ii g argExp piArg
 
                 --Get a type for the evaluation of the argument
-                argVal <- evaluate ii e2 g
+                argVal <- evaluate6 ii argExp g
 
                 --Our resulting type is the application of our arg type into the
                 --body of the pi type
@@ -136,7 +137,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
     iType_' ii g (NatElim_ m mz ms n)  =
       do  cType_ ii g m (Tm.Nat Tm.--> Tm.SET)
           --evaluate ii $ our param m
-          mVal <- evaluate ii m g
+          mVal <- evaluate7 ii m g
           --Check that mz has type (m 0)
           cType_ ii g mz (mVal Tm.$$ Tm.Zero)
           --Check that ms has type ( (k: N) -> m k -> m (S k) )
@@ -147,7 +148,7 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
           cType_ ii g n Tm.Nat
 
           --We infer that our final expression has type (m n)
-          nVal <- evaluate ii n g
+          nVal <- evaluate8 ii n g
           return $ mVal Tm.$$ nVal
 
     iType_' ii g (Fin_ n) = do
@@ -155,12 +156,11 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
       return Tm.SET
 
     iType_' ii g (FinElim_ m mz ms n f) = do
-      error "TODO finElim"
-      mVal <- evaluate ii m g
+      mVal <- evaluate3 ii m g
       --mzVal <- evaluate ii m g
       --msVal <- evaluate ii m g
-      nVal <- evaluate ii m g
-      fVal <- evaluate ii m g
+      nVal <- evaluate1 ii n g
+      fVal <- evaluate2 ii f g
       cType_ ii g m (Tm.finmType)
       cType_ ii g mz (Tm.finmzType mVal)
       cType_ ii g ms (Tm.finmsType mVal)
@@ -231,8 +231,8 @@ iType_ iiGlobal g (L reg it) = --trace ("ITYPE" ++ show it ++ "\nenv: " ++ show 
 
 
 cType_ :: Int -> WholeEnv -> CTerm_ -> ConType -> ConstraintM ()
-cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
-  cType_' iiGlobal g ct
+cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0 0 lct) ++ " :: " ++ Tm.prettyString globalTy) $
+  cType_' iiGlobal g ct globalTy
   where
     cType_' ii g (Inf_ e) tyAnnot
           =
@@ -282,11 +282,11 @@ cType_ iiGlobal g (L reg ct) = --trace ("CTYPE" ++ show ct) $
 
     cType_' ii g (FZero_ f)      ty  =  do
       cType_ ii g f Tm.Nat
-      fVal <- evaluate ii f g
+      fVal <- evaluate9 ii f g
       unifySets reg ty (Tm.Fin fVal) g
     cType_' ii g (FSucc_ k f)  ty  = do
       cType_ ii g f Tm.Nat
-      fVal <- evaluate ii f g
+      fVal <- evaluate10 ii f g
       unifySets reg ty (Tm.Fin fVal) g
       cType_ ii g k Tm.Nat
 

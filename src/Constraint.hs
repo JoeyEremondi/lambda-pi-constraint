@@ -21,6 +21,8 @@ import Control.Monad.Writer
 import Data.Data
 import Data.Typeable
 
+import System.IO.Unsafe (unsafePerformIO)
+
 import qualified Data.Foldable as Foldable
 
 import qualified Data.Maybe as Maybe
@@ -45,6 +47,7 @@ import qualified Data.Map as Map
 
 import Text.PrettyPrint.HughesPJ hiding (parens, ($$))
 
+import qualified System.Random as Random
 
 type ConstrContext = [(Common.Name, Tm.VAL)]
 
@@ -68,8 +71,9 @@ valueLookup (Common.Local i) env =
 
 data ConstrainState =
   ConstrainState
-  { -- intStore :: [Int]
-  sourceMetas :: [String]
+  { intStore :: [Int]
+  , sourceMetas :: [String]
+  , randomStartNum :: Int
   --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }
 
@@ -104,12 +108,17 @@ recordSourceMeta :: String -> ConstraintM ()
 recordSourceMeta nm = lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas x)} )
 
 runConstraintM :: ConstraintM a -> a
-runConstraintM cm = fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [] )
+runConstraintM cm =
+  let
+    startNum = unsafePerformIO $ Random.randomIO
+  in
+    fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] startNum )
 
 solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] (Tm.VAL, [(String, Tm.VAL)])
 solveConstraintM cm =
   let
-    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [] )
+    startNum = unsafePerformIO $ Random.randomIO
+    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] startNum)
     regionDict = getRegionDict constraints
     ret = do
       (_, context) <- PUtest.solveEntries $ map conEntry constraints
@@ -126,7 +135,24 @@ solveConstraintM cm =
 
 cToUnifForm0 = cToUnifForm 0
 
+evaluate1 ii t g = evalInEnv g <$> cToUnifForm ii g t
+evaluate2 ii t g  = evalInEnv g <$> cToUnifForm ii g t
+evaluate3 ii t g  = evalInEnv g <$> cToUnifForm ii g t
+evaluate4 ii t g  = evalInEnv g <$> cToUnifForm ii g t
+evaluate5 ii t g  = evalInEnv g <$> cToUnifForm ii g t
+
+--evaluate6 ii t _ | trace ("EVAL6!! " ++ show (ii, Common.cPrint_ 0 0 t)) False = error "eval"
+evaluate6 ii t g  = evalInEnv g <$> cToUnifForm ii g t
+
+
+evaluate7 ii t g  = evalInEnv g <$> cToUnifForm ii g t
+evaluate8 ii t g  = evalInEnv g <$> cToUnifForm ii g t
+evaluate9 ii t g  = evalInEnv g <$> cToUnifForm ii g t
+evaluate10 ii t g  = evalInEnv g <$> cToUnifForm ii g t
+
+
 evaluate :: Int -> Common.CTerm_ -> WholeEnv -> ConstraintM Tm.VAL
+--evaluate ii t _ | trace ("EVAL!! " ++ show (ii, Common.cPrint_ 0 0 t)) False = error "eval"
 evaluate ii t g = do
   result <- cToUnifForm ii g t
   return $ evalInEnv g result
@@ -238,17 +264,20 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
                 error "Shouldn't come across quoted during checking"
 
 
-      (f Common.:$: x) -> do
-        f1 <- (iToUnifForm ii env f)
-        a <- (cToUnifForm ii env x)
-        let fVal = evalInEnv env f1
-            aVal = evalInEnv env a
-        let result = fVal Tm.$$ aVal
-        --trace (
-            --"APP  " ++ Tm.prettyString f1 ++ " <--- " ++ show f ++ "  \n  "
-            -- ++ Tm.prettyString a ++ " <--- " ++ show x ++ "  \n  "
-            -- ++ Tm.prettyString result) $
-        return result
+      (f Common.:$: x) -> --trace ("APP " ++ show (Common.iPrint_ 0 ii f, Common.cPrint_ 0 ii x) ) $
+        do
+          f1 <- (iToUnifForm ii env f)
+          a <- (cToUnifForm ii env x)
+          let fVal = evalInEnv env f1
+              aVal = evalInEnv env a
+          let result = --trace ("$ APP2 " ++ show (Tm.prettyString fVal, Tm.prettyString aVal))  $
+                fVal Tm.$$ aVal
+          --trace (
+              --"APP  " ++ Tm.prettyString f1 ++ " <--- " ++ show f ++ "  \n  "
+              -- ++ Tm.prettyString a ++ " <--- " ++ show x ++ "  \n  "
+              -- ++ Tm.prettyString result) $
+          --trace ("APP RESULT " ++ Tm.prettyString result) $
+          return result
 
       Common.Nat_ ->
         return Tm.Nat
@@ -256,7 +285,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
       Common.Fin_ n ->
         Tm.Fin <$> cToUnifForm ii env n
 
-      Common.NatElim_ m mz ms n -> trace "%1" $ do
+      Common.NatElim_ m mz ms n -> trace ("**NATELIM: " ++ show n) $ do
         spine <- Tm.NatElim <$> (cToUnifForm ii env m) <*> (cToUnifForm ii env mz) <*> (cToUnifForm ii env ms)
         hd <- (cToUnifForm ii env n)
         let hdVal = evalInEnv env hd
@@ -295,158 +324,6 @@ type ConTyFn = Tm.VAL
 
 
 
-{-
-vToUnifForm :: Int -> Common.Value_ -> Tm.VAL
-vToUnifForm ii val = case val of
-  Common.VLam_ f ->
-    let
-      freeVar = Common.vfree_ $ Common.Quote ii
-      funBody = f freeVar
-      boundNom = localName ii--LN.string2Name $ "local" ++ show ii
-    in
-      Tm.lam boundNom $ vToUnifForm (ii + 1) funBody
-  Common.VStar_ ->
-    Tm.SET
-  Common.VPi_ s f ->
-    let
-      tyFnVal = (vToUnifForm (ii + 1)) . f . unifToValue
-      varName = localName ii
-      tyFn = Tm.lam varName $ tyFnVal (Tm.var varName)
-    in
-      Tm.PI (vToUnifForm ii s) tyFn
-  Common.VNeutral_ neut ->
-    let
-      (headVar, args) = neutralToSpine ii neut
-    in
-      Tm.N headVar args
-
-  Common.VNat_ ->
-    Tm.Nat
-
-  Common.VZero_ ->
-    Tm.Zero
-
-  Common.VSucc_ n ->
-    Tm.Succ (vToUnifForm ii n)
-
-  Common.VVec_ t1 t2 ->
-    Tm.Vec (vToUnifForm ii t1) (vToUnifForm ii t2)
-
-  Common.VNil_ tp ->
-    Tm.VNil (vToUnifForm ii tp)
-
-  --TODO other cases
-
-  Common.VEq_ t1 t2 t3 ->
-    Tm.Eq (vToUnifForm ii t1) (vToUnifForm ii t2) (vToUnifForm ii t3)
--}
-
-{-
-neutralToHead :: Int -> Common.Neutral_ -> Tm.Head
-neutralToHead ii neut = case neut of
-  Common.NFree_ nm -> case nm of
-    Common.Global s ->
-      Tm.Var (LN.string2Name s) Tm.Only
-    Common.Local i ->
-      error "Local should not occur in Neutrals"
-    Common.Quote i ->
-      Tm.Var (localName (ii-i)) Tm.Only
-
-neutralToSpine ii neut = case neut of
-  Common.NApp_ f x ->
-    let
-      (nhead, args) = neutralToSpine ii f
-    in
-      (nhead, args ++ [valToElim ii x])
-
-  Common.NNatElim_ m mz ms n ->
-    let
-      (nhead, elims) = neutralToSpine ii n
-      newElim = Tm.NatElim (vToUnifForm ii m) (vToUnifForm ii mz) (vToUnifForm ii ms)
-    in
-      (nhead, [newElim] ++ elims) --TODO which side of list?
-
-  Common.NVecElim_ a m mn mc n xs ->
-    let
-      (nhead, elims) = neutralToSpine ii xs
-      newElim = Tm.VecElim (vToUnifForm ii a) (vToUnifForm ii m) (vToUnifForm ii mn)
-        (vToUnifForm ii mc) (vToUnifForm ii n)
-    in
-      (nhead, [newElim] ++ elims)
-
-  Common.NEqElim_ a m mr x y eq ->
-    let
-      (nhead, elims) = neutralToSpine ii eq
-      newElim = Tm.EqElim (vToUnifForm ii a) (vToUnifForm ii m) (vToUnifForm ii mr)
-        (vToUnifForm ii x) (vToUnifForm ii y)
-    in
-      (nhead, [newElim] ++ elims)
-
-  _ -> (neutralToHead ii neut, [])
-
-valToElim :: Int -> Common.Value_ -> Tm.Elim
-valToElim ii val =
-  Tm.A $ vToUnifForm ii val
-
-unifToValue :: Tm.VAL -> Common.Value_
-unifToValue val = case val of
-  Tm.L _ ->
-    Common.VLam_ $ \v ->
-      unifToValue $ val Tm.$$ (vToUnifForm 0 v)
-
-  Tm.SET ->
-    Common.VStar_
-
-  Tm.PI s t ->
-    Common.VPi_ (unifToValue s) $ \x ->
-      unifToValue $ t Tm.$$ (vToUnifForm 0 x)
-
-  Tm.SIG s t -> error "TODO sigma"
-
-  Tm.PAIR s t -> error "TODO sigma pair"
-
-  Tm.N (Tm.Var nm Tm.Only) elims ->
-    let
-      subArgs = map elimToValue elims
-      newHead = Common.NFree_ (Common.Global $ LN.name2String nm)
-    in
-      Common.VNeutral_ $ foldl Common.NApp_ newHead subArgs
-
-  Tm.Nat ->
-    Common.VNat_
-
-  Tm.Vec t1 t2 ->
-    Common.VVec_ (unifToValue t1) (unifToValue t2)
-
-  Tm.Eq t1 t2 t3  ->
-    Common.VEq_ (unifToValue t1) (unifToValue t2) (unifToValue t3)
-
-  Tm.Zero ->
-    Common.VZero_
-
-  Tm.Succ k ->
-    Common.VSucc_ $ unifToValue k
-
-  _ -> error $ "TODO twins, etc. should never happen\n" ++ Tm.prettyString val
--}
-
---elimToValue (Tm.A v) = unifToValue v
-
-
-
-
-
---TODO make tail recursive?
-appToSpine :: Common.ITerm_ -> (Common.ITerm_, [Common.CTerm_])
---Application: look into function to find head
-appToSpine (Common.App it ct) =
-  let
-    (subHead, subSpine) = appToSpine it
-  in
-    (subHead, subSpine ++ [ct])
---Other expression:
-appToSpine e = (e, [])
-
 
 splitContext :: [(Common.Name, a)] -> ([(String, a)], [(Int, a)])
 splitContext entries = helper entries [] []
@@ -483,23 +360,12 @@ maybeHead [] = Nothing
 maybeHead (h:_) = Just h
 
 
-
-
---class Unifyable a where
---  unify :: a -> a -> WholeEnv -> ConstraintM ()
---  fresh :: Tm.VAL -> ConstraintM a
-
-
-
-  --Define a "Constrain" monad, which lets us generate
-  --new variables and store constraints in our state
-
-
-{-data ConstraintState =
-  ConstraintState
-  { pointSupply :: UF.PointSupply TypeRepr
-  , constraintsSoFar :: [Constraint]
-  }-}
+freshInt :: ConstraintM Int
+freshInt = do
+  oldState <- get
+  let (i:newInts) = intStore oldState
+  put $ oldState {intStore = newInts}
+  return i
 
 --We abstract over the environment
 --And return a value which applies the local variables to it
@@ -604,7 +470,11 @@ freshInt = do
 -}
 
 freshNom :: String -> ConstraintM Tm.Nom
-freshNom hint = LN.fresh $ LN.s2n hint
+freshNom hint = do
+  localId <- freshInt
+  startNum <- randomStartNum <$> get
+  let newHint = hint ++ show startNum ++ "_" ++ show localId ++ "_"
+  LN.fresh $ LN.s2n newHint
 --freshNom hint = do
 --  (h:t) <- lift $ intStore <$> get
 --  modify (\st -> st {intStore = t})
@@ -617,16 +487,6 @@ addConstr c = tell [c]
   --trace ("Adding constraint " ++ show c)$ tell [c]
 
 
---metaFromInt ti = Tm.mv $ "--metaVar" ++ show ti
-
-{-}
-evaluate :: Common.CTerm_ -> WholeEnv -> ConstraintM ConType
-evaluate term env = do
-  --t <- fresh (error "TODO type in eval")
-  let normalForm = cToUnifForm 0 env term
-  --unify t normalForm env --cToUnifForm0 term
-  return normalForm
-  -}
 
 unknownIdent :: Common.Region -> WholeEnv -> String -> ConstraintM a
 unknownIdent reg env s = error $

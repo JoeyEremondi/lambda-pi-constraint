@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 executable lambda-pi-constraint
   ghc-options:
-        -O0
+        -O0 -prof -fprof-auto -fprof-auto -fprof-cafs
   main-is:             Main.hs
   other-modules:
 --    Original,
@@ -37,6 +37,7 @@ executable lambda-pi-constraint
                        , parsec
                        , pretty
                        , readline
+                       , random
                        , containers
                        , union-find
                        , RepLib

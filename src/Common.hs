@@ -419,10 +419,10 @@ unifte :: Ctx Tm.VAL
 unifte =      [(Global "Zero", Tm.Nat),
              (Global "Succ", Tm.Nat Tm.--> Tm.Nat),
              (Global "Nat", Tm.SET),
-             (Global "natElim", pi_ (Tm.Nat Tm.--> Tm.SET) "m" (\ m ->
+             (Global "natElim", pi_ (Tm.Nat Tm.--> Tm.SET) "natT_m" (\ m ->
                                (m Tm.$$ Tm.Zero) Tm.--> (
                                (Tm.msType m) Tm.--> (
-                               pi_ Tm.Nat "n" (\ n -> m Tm.$$ n))))),
+                               pi_ Tm.Nat "natT_n" (\ n -> m Tm.$$ n))))),
              (Global "Nil", pi_ Tm.SET "a" (\ a -> Tm.Vec a Tm.Zero)),
              (Global "Cons", pi_ Tm.SET "a" (\ a ->
                             pi_ Tm.Nat "n" (\ n ->
@@ -447,7 +447,7 @@ unifte =      [(Global "Zero", Tm.Nat),
              (Global "FSucc", pi_ Tm.Nat "n" (\ n -> (Tm.Fin n) Tm.--> Tm.Fin (Tm.Succ n))),
              (Global "Fin", Tm.Nat Tm.--> Tm.SET),
              (Global "finElim",
-                pi_ (Tm.finmType) "m" $ \m ->
+                pi_ (Tm.finmType) "finT_m" $ \m ->
                   (Tm.finmzType m) Tm.--> (Tm.finmsType m) Tm.-->
                   (Tm.finRetType m))
         ]
@@ -529,44 +529,44 @@ unifve = -- [(Global "Nat", VNat_)]
              (Global "Succ", lam_ "n" (\ n -> Tm.Succ n)),
              (Global "Nat", Tm.Nat),
              (Global "natElim",
-                lam_ "m" $ \m ->
-                lam_ "mz" $ \mz ->
-                lam_ "ms" $ \ms ->
-                lam_ "k" $ \k ->
-                  k Tm.%% (Tm.NatElim m mz ms)
+                lam_ "nat_m" $ \m ->
+                lam_ "nat_mz" $ \mz ->
+                lam_ "nat_ms" $ \ms ->
+                Tm.lam (s2n "nat_k") $
+                  Tm.N (Tm.Var (s2n "nat_k") Tm.Only) [Tm.NatElim m mz ms]
                   ),
              (Global "Nil", lam_ "a" (\ a -> Tm.VNil a)),
              (Global "Cons", lam_ "a" (\ a -> lam_ "n" (\ n -> lam_ "x" (\ x -> lam_ "xs" (\ xs ->
                             Tm.VCons a n x xs))))),
              (Global "Vec", lam_ "a" (\ a -> lam_ "n" (\ n -> Tm.Vec a n))),
              (Global "vecElim",
-                lam_ "a" $ \a ->
-                lam_ "m" $ \m ->
-                lam_ "mn" $ \mn ->
-                lam_ "mc" $ \mc ->
-                lam_ "k" $ \mk ->
-                lam_ "xs" $ \xs ->
+                lam_ "vec_a" $ \a ->
+                lam_ "vec_m" $ \m ->
+                lam_ "vec_mn" $ \mn ->
+                lam_ "vec_mc" $ \mc ->
+                lam_ "vec_k" $ \mk ->
+                lam_ "vec_xs" $ \xs ->
                   xs Tm.%% Tm.VecElim a m mn mc mk),
              (Global "Refl", lam_ "a" (\ a -> lam_ "x" (\ x -> Tm.ERefl a x))),
              (Global "Eq", lam_ "a" (\ a -> lam_ "x" (\ x -> lam_ "y" (\ y -> Tm.Eq a x y)))),
              (Global "eqElim",
-                lam_ "a" $ \a ->
-                lam_ "m" $ \m ->
-                lam_ "mr" $ \mr ->
-                lam_ "x" $ \x ->
-                lam_ "y" $ \y ->
-                lam_ "eq" $ \eq ->
+                lam_ "eq_a" $ \a ->
+                lam_ "eq_m" $ \m ->
+                lam_ "eq_mr" $ \mr ->
+                lam_ "eq_x" $ \x ->
+                lam_ "eq_y" $ \y ->
+                lam_ "eq_eq" $ \eq ->
                 eq Tm.%% Tm.EqElim a m mr x y),
              (Global "FZero", lam_ "n" (\ n -> Tm.FZero n)),
              (Global "FSucc", lam_ "n" (\ n -> lam_ "f" (\ f -> Tm.FSucc n f))),
              (Global "Fin", lam_ "n" (\ n -> Tm.Fin n)),
              (Global "finElim",
-                lam_ "m" $ \m ->
-                  lam_ "mz" $ \mz ->
-                    lam_ "ms" $ \ms ->
-                      lam_ "n" $ \n ->
-                        lam_ "fin" $ \fin ->
-                          fin Tm.%% (Tm.FinElim m mz ms n))
+                lam_ "fin_m" $ \m ->
+                  lam_ "fin_mz" $ \mz ->
+                    lam_ "fin_ms" $ \ms ->
+                      lam_ "fin_n" $ \n ->
+                        Tm.lam (s2n "fin_fin") $
+                          Tm.N (Tm.Var (s2n "fin_fin") Tm.Only) [Tm.FinElim m mz ms n])
              ]
 
 

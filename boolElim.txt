@@ -1,0 +1,118 @@
+\ xx_ yy_ zz_ fin_fin .
+
+  (FinElim
+    ((nat2Elim
+      (\ local3_ . (Fin  local3_) -> Set)
+
+      (\ local3_ . Unit)
+
+      (\ local3_ . Unit)
+
+      (\ local3_ . xx_ local3_)
+
+      (\ local3_ local4_ local5_ . Unit)
+    ))
+
+    ((nat1Elim
+      (\ local3_ . nat1Elim (\ local4_ . (Fin  S( local4_ )) -> Set) (\ local4_ . Unit) (\ local4_ . xx_ local4_) (\ local4_ local5_ local6_ . Unit) local3_ (FZero  local3_))
+
+      U
+
+      yy_
+
+      (\ local3_ local4_ . U)
+    ))
+
+    ((\ local3_ local4_ local5_ .
+
+      (FinElim
+
+        ((\ local6_ local7_ .
+          nat1Elim
+            (\ local8_ . (Fin  S( local8_ )) -> Set)
+            (\ local8_ . Unit)
+            (\ local8_ . xx_ local8_)
+            (\ local8_ local9_ local10_ . Unit)
+            local6_
+            (FS( local6_ , local7_ ))
+        ))
+
+        ((\ nat_k .
+
+          (NatElim
+            ((\ local6_ .
+              local6_
+              (NatElim
+                ((\ local7_ . (Fin  S( S( local7_ ) )) -> Set))
+                ((\ local7_ . xx_ local7_))
+                ((\ local7_ local8_ local9_ . Unit)))
+                
+              (FS( S( local6_ ) , (FZero  local6_) ))
+            ))
+            (zz_)
+            ((\ local6_ local7_ . U))
+          )
+          nat_k
+        ))
+
+        ((\ local6_ local7_ local8_ . local7_ (FinElim ((\ local9_ local10_ . local9_ (NatElim ((\ local11_ . (Fin  S( S( local11_ ) )) -> Set)) ((\ local11_ . xx_ local11_)) ((\ local11_ local12_ local13_ . Unit))) (FS( S( local9_ ) , (FS( local9_ , local10_ )) )))) ((\ local9_ . U)) ((\ local9_ local10_ local11_ . U)) (local6_))))
+
+        (local3_)
+      )
+
+      local4_
+    ))
+
+    (S( S( 0 ) )))
+
+    fin_fin
+
+
+*******************************
+
+(nat2Elim
+  (\ local3_ . (Fin  local3_) -> Set)
+  (\ local3_ . Unit)
+  (\ local3_ . Unit)
+  (\ local3_ . xx_ local3_)
+  (\ local3_ local4_ local5_ . Unit))
+
+===============
+
+(nat2Elim
+  (\ local3_ . (Fin  local3_) -> Set)
+  (\ local3_ . Unit)
+  (\ local3_ . Unit)
+  (\ local3_ . xx_ local3_)
+  (\ local3_ local4_ local5_ . Unit))
+
+
+nat1Elim
+    (\ local3_ . (Fin  local3_) -> Set)
+    (\ local3_ . Unit)
+    (\ local3_ . Unit)
+    (\ p rec ->
+        natElim
+          (\ n -> (\ local3_ . (Fin  local3_) -> Set)  2)
+          (\ local3_ . xx_ local3_)
+          (\ local3_ local4_ local5_ . Unit)
+          p
+    )
+
+
+  natElim
+    (\ local3_ . (Fin  local3_) -> Set)
+    (\ local3_ . Unit)
+    (\ p1 rec ->
+      natElim
+        (\ n -> (Fin  1) -> Set )
+        (\ local3_ . Unit)
+        (\ p rec ->
+            natElim
+              (\ n ->  (Fin 2) -> Set)
+              (\ local3_ . xx_ local3_)
+              (\ local3_ local4_ local5_ . Unit)
+              p
+        )
+        p1
+    )

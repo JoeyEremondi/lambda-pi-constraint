@@ -253,6 +253,7 @@ quoteTel _            _       = fail "quoteTel: arity error"
 
 
 --TODO quoteSpine for custom elims
+--TODO what happens if given metavar?
 quoteSpine :: Type -> VAL -> [Elim] -> Contextual VAL
 quoteSpine _T           u []        =  return u
 quoteSpine (PI _S _T)   u (A s:as)  =  do

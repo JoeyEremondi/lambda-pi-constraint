@@ -296,6 +296,8 @@ metaValue x = look =<< getL
     look (cx  :< E y _ (DEFN val))  | x == y     = return val
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx
+    look (cx  :< E y _ HOLE)  | x == y     = return $ meta x
+                           | otherwise  = look cx
 
 
 
