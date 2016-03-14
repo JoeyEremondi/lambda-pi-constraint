@@ -12,7 +12,7 @@ module PatternUnify.Check where
 import Prelude hiding (any, elem, notElem)
 
 import Control.Applicative
-import Control.Monad 
+import Control.Monad
 import Control.Monad.Error
 import Control.Monad.Reader
 import Data.Foldable (any)
@@ -46,7 +46,9 @@ canTy :: (Can, [VAL]) -> Can -> Contextual Tel
 canTy (Set, []) Set  =  return Stop
 canTy (Set, []) c | c `elem` [Pi, Sig] = return $ askTel "S" SET $
                                              askTel "T" (mv "S" --> SET) $ Stop
-canTy (Sig, [_S, _T]) Pair  = return $ askTel "s" _S $ askTel "t" (_T $$ mv "s") $ Stop
+canTy (Sig, [_S, _T]) Pair  = do
+  appResult <- (_T $$ mv "s")
+  return $ askTel "s" _S $ askTel "t" appResult $ Stop
 canTy (c, as) v = fail $ "canTy: canonical type " ++ pp (C c as) ++
                              " does not accept " ++ pp v
 
@@ -66,7 +68,8 @@ check (C c as)    (C v bs)  =  do
 
 check (PI _S _T)  (L b)     =  do
                                (x, t) <- unbind b
-                               inScope x (P _S) $ check (_T $$ var x) t
+                               appRes <- (_T $$ var x)
+                               inScope x (P _S) $ check appRes t
 
 check _T          (N u as)  = do
                                vars <- ask
@@ -156,13 +159,13 @@ checkTel (Ask _ _)    []      = fail "Underapplied canonical constructor"
 checkSpine :: Type -> VAL -> [Elim] -> Contextual Type
 checkSpine _T           _  []        = return _T
 checkSpine (PI _S _T)   u  (A s:ts)  = check _S s >>
-                                       checkSpine (_T $$ s) (u $$ s) ts
-checkSpine (SIG _S _T)  u  (Hd:ts)   = checkSpine _S (u %% Hd) ts
-checkSpine (SIG _S _T)  u  (Tl:ts)   = checkSpine (_T $$ (u %% Hd)) (u %% Tl) ts
+                                       bind3 checkSpine (_T $$ s) (u $$ s) (return ts)
+checkSpine (SIG _S _T)  u  (Hd:ts)   = bind3 checkSpine (return _S) (u %% Hd) (return ts)
+checkSpine (SIG _S _T)  u  (Tl:ts)   = bind3 checkSpine ((_T $$) =<< (u %% Hd)) (u %% Tl) (return ts)
 checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
   check Nat u
   check (Nat --> SET) m
-  check (m $$ Zero) mz
+  bind2 check (m $$ Zero) $ return mz
   check (msType m) ms
   checkSpine (m $$ u) (u %% elim) ts
 

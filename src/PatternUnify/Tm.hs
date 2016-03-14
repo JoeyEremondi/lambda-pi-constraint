@@ -562,4 +562,63 @@ finmsType m = --pi_ (Nat) "n" $ \n ->
 
 finRetType m = pi_ Nat "finRet_n" $ \n -> pi_ (Fin $ var n) "finRet_f" $ \f -> m `apps` [var n, var f]
 
+
+--Same, but in a fresh monad
+lamv_ :: (Fresh m) => String -> (VAL -> m VAL) -> m VAL
+lamv_ s f = do
+  body <- f $ vv s
+  return $ lam (s2n s) body
+
+piv_ :: (Fresh m) => VAL -> String -> (VAL -> m VAL) -> m VAL
+piv_ s str f = PI s <$> lamv_ str f
+
+arrowv_ :: (Fresh m) => m VAL -> m VAL -> m VAL
+arrowv_ ms mt = do
+  s <- ms
+  t <- mt
+  return $ s --> t
+
+ret_ :: (Fresh m) => a -> m a
+ret_ = return
+
+msVType m = (piv_ Nat "msArg" (\ l -> (m $$ l) `arrowv_` (m $$ (Succ $ l) )))
+
+vmVType a =(piv_ Nat "vec_n" (\ n -> (ret_ $ Vec (a) (n)) `arrowv_` ( ret_ SET)))
+
+mnVType a m = (m $$$ [Zero, (VNil $ a)])
+
+mcVType a m = (piv_ Nat "vec_n" (\ n ->
+      piv_ (a) "vec_x" (\ x ->
+      piv_ (Vec (a)  (n)) "vec_xs" (\ xs ->
+      (m $$$ [n, xs]) `arrowv_` (
+      m $$$ [Succ $ n, VCons (a) (n) (x) (xs)])))))
+
+vResultVType m n xs = m $$$ [n, xs]
+
+eqmVType :: (Fresh m) => VAL -> m VAL
+eqmVType a = piv_ a "eq_x" (\ x -> piv_ a "eq_y" (\ y -> (ret_ $ Eq a (x) (y)) `arrowv_` ( ret_ SET)))
+
+eqmrVType a m = piv_ (a) "eq_xmr" (\ x -> m $$$ [x, x, ERefl (a) (x)] )
+
+eqResultVType m x y eq = m $$$ [x, y, eq]
+
+finmVType :: (Fresh m) => m VAL
+finmVType = piv_ (Nat) "finm_n" $ \n ->
+  ret_ $ Fin (n) --> SET
+
+finmzVType m = piv_ (Nat) "finmz_n" $ \n ->
+  m $$$ [Succ $ n, FZero $ n]
+
+finmsVType m = --piv_ (Nat) "n" $ \n ->
+  piv_ Nat "finms_n" $ \n ->
+    piv_ (Fin $ n) "finms_f" $ \f ->
+      (m $$$ [n, f]) `arrowv_` (m $$$ [Succ $ n, FSucc (n) (f)])
+
+finRetVType m = piv_ Nat "finRet_n" $ \n -> piv_ (Fin $ n) "finRet_f" $ \f -> m $$$ [n, f]
+
+
+
+
+
+
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])

@@ -24,6 +24,8 @@ module PatternUnify.Kit  (  bool
             ,  module PP
             ,  PatternUnify.Kit.elem
             ,  PatternUnify.Kit.notElem
+            , bind2
+            , bind3
             ) where
 
 
@@ -32,7 +34,7 @@ import Control.Monad.Reader
 import Data.Foldable
 
 import Text.PrettyPrint.HughesPJ as PP hiding (($$))
-import Unbound.LocallyNameless
+import Unbound.LocallyNameless hiding (join)
 
 elem :: Eq a => a -> [a] -> Bool
 elem x y = x `Prelude.elem` y
@@ -103,3 +105,13 @@ between d x y = x <+> d <+> y
 
 commaSep :: [Doc] -> Doc
 commaSep = hsep . punctuate comma
+
+--from http://hackage.haskell.org/package/definitive-base-2.3/docs/src/Algebra-Monad-Base.html#bind3
+bind2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
+bind2 f a b = join (f<$>a<*>b)
+(>>>=) :: Monad m => (m a,m b) -> (a -> b -> m c) -> m c
+(a,b) >>>= f = bind2 f a b
+bind3 :: Monad m => (a -> b -> c -> m d) -> m a -> m b -> m c -> m d
+bind3 f a b c = join (f<$>a<*>b<*>c)
+(>>>>=) :: Monad m => (m a,m b,m c) -> (a -> b -> c -> m d) -> m d
+(a,b,c) >>>>= f = bind3 f a b c
