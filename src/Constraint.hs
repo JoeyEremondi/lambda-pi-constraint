@@ -47,8 +47,6 @@ import qualified Data.Map as Map
 
 import Text.PrettyPrint.HughesPJ hiding (parens, ($$))
 
-import qualified System.Random as Random
-
 type ConstrContext = [(Common.Name, Tm.VAL)]
 
 data WholeEnv =
@@ -73,7 +71,6 @@ data ConstrainState =
   ConstrainState
   { intStore :: [Int]
   , sourceMetas :: [String]
-  , randomStartNum :: Int
   --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }
 
@@ -109,16 +106,12 @@ recordSourceMeta nm = lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas 
 
 runConstraintM :: ConstraintM a -> a
 runConstraintM cm =
-  let
-    startNum = unsafePerformIO $ Random.randomIO
-  in
-    fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] startNum )
+  fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] []  )
 
 solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] (Tm.VAL, [(String, Tm.VAL)])
 solveConstraintM cm =
   let
-    startNum = unsafePerformIO $ Random.randomIO
-    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] startNum)
+    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] )
     regionDict = getRegionDict constraints
     ret = do
       (_, context) <- PUtest.solveEntries $ map conEntry constraints
@@ -458,9 +451,8 @@ freshInt = do
 freshNom :: String -> ConstraintM Tm.Nom
 freshNom hint = do
   localId <- freshInt
-  startNum <- randomStartNum <$> get
-  let newHint = hint ++ show startNum ++ "_" ++ show localId ++ "_"
-  LN.fresh $ LN.s2n newHint
+  --let newHint = hint ++ show startNum ++ "_" ++ show localId ++ "_"
+  LN.fresh $ LN.s2n hint
 --freshNom hint = do
 --  (h:t) <- lift $ intStore <$> get
 --  modify (\st -> st {intStore = t})

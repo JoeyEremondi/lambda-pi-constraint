@@ -19,7 +19,6 @@ import Data.Foldable (foldlM)
 
 import Unbound.LocallyNameless hiding (empty)
 import Unbound.LocallyNameless.Name (isFree)
-import Unbound.LocallyNameless.Ops (unsafeUnbind)
 import Unbound.LocallyNameless.Types (GenBind(..))
 import Unbound.Util (unions)
 
