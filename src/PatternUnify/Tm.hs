@@ -80,9 +80,9 @@ instance Alpha Twin
 instance Alpha Head
 instance Alpha Elim
 
-instance Subst VAL VAL where
-    substs     = eval
-    subst n u  = substs [(n, u)]
+--instance Subst VAL VAL where
+--    substs     = eval
+--    subst n u  = substs [(n, u)]
 
 instance Subst VAL Can
 instance Subst VAL Twin
@@ -255,7 +255,14 @@ _PI x = _Pi (s2n x)
 _SIG :: String -> VAL -> VAL -> VAL
 _SIG x = _Sig (s2n x)
 
-
+mapElimM :: (Monad m) => (VAL -> m VAL) -> Elim -> m Elim
+mapElimM f  (A a)  = A <$> (f a)
+mapElimM _  Hd     = return Hd
+mapElimM _  Tl     = return Tl
+mapElimM f (NatElim m mz ms) = NatElim <$> (f m) <*> (f mz) <*> (f ms)
+mapElimM f (FinElim m mz ms n) = FinElim <$> (f m) <*> (f mz) <*> (f ms) <*> (f n)
+mapElimM f (VecElim a m mn mc n) = VecElim <$> (f a) <*> (f m) <*> (f mn) <*> (f mc) <*> (f n)
+mapElimM f (EqElim a m mr x y) = EqElim <$> (f a) <*> (f m) <*> (f mr) <*> (f x) <*> (f y)
 
 mapElim :: (VAL -> VAL) -> Elim -> Elim
 mapElim f  (A a)  = A (f a)
@@ -430,23 +437,28 @@ compSubs new old = unionBy ((==) `on` fst) new (substs new old)
 
 eval :: (Fresh m) => Subs -> VAL -> m VAL
 --eval g t | trace ("Eval " ++ pp t ++ "\n  Subs: " ++ show g) False = error "Eval"
-eval g (L b)   = L (bind x (eval g t))
-                     where (x, t) = unsafeUnbind b
-eval g (N u as)  = evalHead g u %%% map (mapElim (eval g)) as
-eval g (C c as)  = C c (map (eval g) as)
+eval g (L b)   = do
+  (x, t) <- unbind b
+  sub <- eval g t
+  return $ L (bind x sub)
 
-eval g Nat = Nat
-eval g (Vec a n) = Vec (eval g a) (eval g n)
-eval g (Eq a x y) = Eq (eval g a) (eval g x) (eval g y)
-eval g (Fin n) = Fin (eval g n)
+eval g (N u as)  = do
+  elims <- mapM (mapElimM (eval g)) as
+  evalHead g u %%% elims
+eval g (C c as)  = C c <$> (mapM (eval g) as)
 
-eval _ Zero = Zero
-eval g (Succ n) = Succ (eval g n)
-eval g (VCons a n h t) = VCons (eval g a) (eval g n) (eval g h) (eval g t)
-eval g (ERefl a x) = ERefl (eval g a) (eval g x)
+eval g Nat = return Nat
+eval g (Vec a n) = Vec <$> (eval g a) <*> (eval g n)
+eval g (Eq a x y) = Eq <$> (eval g a) <*> (eval g x) <*> (eval g y)
+eval g (Fin n) = Fin <$> (eval g n)
 
-eval g (FZero n) = FZero $ eval g n
-eval g (FSucc n f) = FSucc (eval g n) (eval g f)
+eval _ Zero = return Zero
+eval g (Succ n) = Succ <$> (eval g n)
+eval g (VCons a n h t) = VCons <$> (eval g a) <*> (eval g n) <*> (eval g h) <*> (eval g t)
+eval g (ERefl a x) = ERefl <$> (eval g a) <*> (eval g x)
+
+eval g (FZero n) = FZero <$> eval g n
+eval g (FSucc n f) = FSucc <$> (eval g n) <*> (eval g f)
 
 
 eval g t = error $ "Missing eval case for " ++ show t
