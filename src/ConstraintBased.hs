@@ -69,8 +69,8 @@ checker (nameEnv, context) term =
 conStar = Tm.SET
 
 getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
-getConstraints env term | trace ("\n\n**************************************\nChecking, converted " ++ show (iPrint_ 0 0 term))  $ trace ("\n  into " ++ Tm.prettyString (constrEval (map (mapFst Global) $ globalTypes env, map (mapFst Global) $ globalValues env) term ) ++ "\n\n") False
-  = error "genConstraints"
+--getConstraints env term | trace ("\n\n**************************************\nChecking, converted " ++ show (iPrint_ 0 0 term))  $ trace ("\n  into " ++ Tm.prettyString (constrEval (map (mapFst Global) $ globalTypes env, map (mapFst Global) $ globalValues env) term ) ++ "\n\n") False
+--  = error "genConstraints"
 getConstraints env term =
   do
     finalType <- iType0_ env term

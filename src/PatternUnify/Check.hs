@@ -12,7 +12,7 @@ module PatternUnify.Check where
 import Prelude hiding (any, elem, notElem)
 
 import Control.Applicative
-import Control.Monad
+import Control.Monad 
 import Control.Monad.Error
 import Control.Monad.Reader
 import Data.Foldable (any)

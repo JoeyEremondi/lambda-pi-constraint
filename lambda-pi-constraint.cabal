@@ -16,8 +16,9 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 executable lambda-pi-constraint
+  -- -prof -fprof-auto -fprof-auto -fprof-cafs
   ghc-options:
-        -O0 -prof -fprof-auto -fprof-auto -fprof-cafs
+        -O2
   main-is:             Main.hs
   other-modules:
 --    Original,

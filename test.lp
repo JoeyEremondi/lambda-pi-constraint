@@ -10,7 +10,7 @@ let nat1Elim =
 -- unit type
 let Unit = Fin 1
 -- constructor
---let U = FZero 0
+let U = FZero 0
 
 -- an eliminator for natural numbers that has special
 -- cases for 0 and 1
@@ -28,25 +28,16 @@ let nat2Elim =
 
 
 -- type of booleans
---let Bool = Fin 2
+let Bool = Fin 2
 
 -- constructors
---let False = FZero 1
---let True  = FSucc 1 (FZero 0)
+let False = FZero 1
+let True  = FSucc 1 (FZero 0)
 
 
-let boolElim =
-( \ m mf mt -> _ ( nat2Elim _
-                                 _ _
-                                 _
-                                 (\ _ _ _ -> Unit) )
-                      _
-                      _
-                      _ )
-:: _ -- forall (m :: Bool -> *) . m False -> m True -> forall (b :: Bool) . m b
 
-{-
--- eliminator
+
+
 let boolElim =
 ( \ m mf mt -> finElim ( nat2Elim (\ n -> Fin n -> *)
                                  (\ _ -> Unit) (\ _ -> Unit)
@@ -82,4 +73,3 @@ let boolElim =
                                            n f )
                       2 )
 :: forall (m :: Bool -> *) . m False -> m True -> forall (b :: Bool) . m b
--}
