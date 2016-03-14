@@ -26,6 +26,9 @@ module PatternUnify.Kit  (  bool
             ,  PatternUnify.Kit.notElem
             , bind2
             , bind3
+            , bind4
+            , bind5
+            , bind6
             ) where
 
 
@@ -115,3 +118,27 @@ bind3 :: Monad m => (a -> b -> c -> m d) -> m a -> m b -> m c -> m d
 bind3 f a b c = join (f<$>a<*>b<*>c)
 (>>>>=) :: Monad m => (m a,m b,m c) -> (a -> b -> c -> m d) -> m d
 (a,b,c) >>>>= f = bind3 f a b c
+
+bind4 f ma mb mc md = do
+  a <- ma
+  b <- mb
+  c <- mc
+  d <- md
+  f a b c d
+
+bind5 f ma mb mc md me = do
+  a <- ma
+  b <- mb
+  c <- mc
+  d <- md
+  e <- me
+  f a b c d e
+
+bind6 f ma mb mc md me mf = do
+  a <- ma
+  b <- mb
+  c <- mc
+  d <- md
+  e <- me
+  ff <- mf
+  f a b c d e ff

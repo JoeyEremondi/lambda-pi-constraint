@@ -345,32 +345,32 @@ matchSpine
 
 matchSpine
   (Vec a len) u (elim1@(VecElim b motive mn mc n) : ds)
-  (Vec a' len') v (elim2@(VecElim b' motive' mn' mc' n') : es) =
-    ([ EQN SET a SET a'
-     , EQN SET b SET b'
-     , EQN SET a' SET b'
-     , EQN Nat len Nat len'
-     , EQN Nat len Nat n
-     , EQN Nat len' Nat n'
-     , EQN (vmType b) motive (vmType b') motive'
-     , EQN (mnType b motive) mn (mnType b' motive') (mn')
-     , EQN (mcType b motive) mc (mcType b' motive') (mc')
-     , EQN Nat n Nat n'
-     ] ++) <$>
-      matchSpine (vResultType motive n u) (u %% elim1) ds (vResultType motive' n' v) (v %% elim2) es
+  (Vec a' len') v (elim2@(VecElim b' motive' mn' mc' n') : es) = do
+    let eq1 = EQN SET a SET a'
+    let eq2 = EQN SET b SET b'
+    let eq3 = EQN SET a' SET b'
+    let eq4 = EQN Nat len Nat len'
+    let eq5 = EQN Nat len Nat n
+    let eq6 = EQN Nat len' Nat n'
+    eq7 <- eqn (vmVType b) (return motive) (vmVType b') (return motive')
+    eq8 <- eqn (mnVType b motive) (return mn) (mnVType b' motive') (return mn')
+    eq9 <- eqn (mcVType b motive) (return mc) (mcVType b' motive') (return mc')
+    let eq10 = EQN Nat n Nat n'
+    rest <- bind6 matchSpine (vResultVType motive n u) (u %% elim1) (return ds) (vResultVType motive' n' v) (v %% elim2) (return es)
+    return $ [eq1, eq2, eq3, eq4, eq5, eq6, eq7, eq8, eq9, eq10] ++ rest
 
 matchSpine
   (Eq a w x) u (elim1@(EqElim b m mr y z) : ds)
-  (Eq a' w' x') v (elim2@(EqElim b' m' mr' y' z') : es) =
-    ([ EQN SET a SET a'
-     , EQN SET b SET b'
-     , EQN SET a' SET b'
-     , EQN (eqmType b) m (eqmType b') m'
-     , EQN (eqmrType b m) mr (eqmrType b' m') (mr')
-     , EQN b y b' y'
-     , EQN b z b' z'
-     ] ++) <$>
-      matchSpine (eqResultType m y z u) (u %% elim1) ds (eqResultType m' y' z' v) (v %% elim2) es
+  (Eq a' w' x') v (elim2@(EqElim b' m' mr' y' z') : es) = do
+    let eq1 = EQN SET a SET a'
+    let eq2 = EQN SET b SET b'
+    let eq3 = EQN SET a' SET b'
+    eq4 <- eqn (eqmVType b) (return m) (eqmVType b') (return m')
+    eq5 <- eqn (eqmrVType b m) (return mr) (eqmrVType b' m') (return mr')
+    let eq6 = EQN b y b' y'
+    let eq7 = EQN b z b' z'
+    rest <- bind6 matchSpine (eqResultVType m y z u) (u %% elim1) (return ds) (eqResultVType m' y' z' v) (v %% elim2) (return es)
+    return $ [eq1, eq2, eq3, eq4, eq5, eq6, eq7] ++ rest
 
 matchSpine _ _ []  _ _ []  = return []
 matchSpine _ _ _   _ _ _   = throwError "spine mismatch"
