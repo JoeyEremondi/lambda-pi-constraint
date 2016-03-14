@@ -80,9 +80,9 @@ instance Alpha Twin
 instance Alpha Head
 instance Alpha Elim
 
---instance Subst VAL VAL where
---    substs     = eval
---    subst n u  = substs [(n, u)]
+instance Subst VAL VAL where
+    substs subList expr   = runFreshM $ eval subList expr
+    subst n u  = substs [(n, u)]
 
 instance Subst VAL Can
 instance Subst VAL Twin
