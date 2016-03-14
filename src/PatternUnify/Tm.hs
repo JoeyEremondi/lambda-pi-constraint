@@ -278,12 +278,12 @@ headVar (Var x _)  = x
 headVar (Meta x)   = x
 
 isVar :: VAL -> Bool
-isVar v = case etaContract v of
+isVar v = case runFreshM (etaContract v) of
             N (Var _ _) []  -> True
             _               -> False
 
 toVars :: [Elim] -> Maybe [Nom]
-toVars = traverse (toVar . mapElim etaContract)
+toVars = traverse (toVar . mapElim (runFreshM . etaContract))
   where
     toVar :: Elim -> Maybe Nom
     toVar (A (N (Var x _) []))  = Just x
@@ -297,24 +297,29 @@ initLast :: [x] -> Maybe ([x], x)
 initLast []  = Nothing
 initLast xs  = Just (init xs, last xs)
 --
-etaContract :: VAL -> VAL
-etaContract (L b) = case etaContract t of
+etaContract :: (Fresh m) => VAL -> m VAL
+etaContract (L b) = do
+  (y, t) <- unbind b
+  sub <- etaContract t
+  case sub of
     N x as | Just (bs, A (N (Var y' _) [])) <- initLast as, y == y',
-                 not (y `occursIn` bs) -> N x bs
-    t' -> lam y t'
-   where
-     (y, t) = unsafeUnbind b
-etaContract (N x as) = N x (map (mapElim etaContract) as)
-etaContract (PAIR s t) = case (etaContract s, etaContract t) of
+                 not (y `occursIn` bs) -> return $ N x bs
+    t' -> return $ lam y t'
+
+etaContract (N x as) = N x <$> (mapM (mapElimM etaContract) as)
+etaContract (PAIR s t) = do
+  sub1 <- etaContract s
+  sub2 <-  etaContract t
+  case (sub1, sub2) of
     (N x as, N y bs) | Just (as', Hd) <- initLast as,
                        Just (bs', Tl) <- initLast bs,
                        x == y,
-                       as' == bs'  -> N x as'
-    (s', t') -> PAIR s' t'
-etaContract (C c as) = C c (map etaContract as)
-etaContract Nat = Nat
-etaContract Zero = Zero
-etaContract (Succ k) = Succ (etaContract k)
+                       as' == bs'  -> return $ N x as'
+    (s', t') -> return $ PAIR s' t'
+etaContract (C c as) = C c <$> (mapM etaContract as)
+etaContract Nat = return Nat
+etaContract Zero = return Zero
+etaContract (Succ k) = Succ <$> (etaContract k)
 
 occursIn :: (Alpha t, Rep a) => Name a -> t -> Bool
 x `occursIn` t = x `elem` fv t
