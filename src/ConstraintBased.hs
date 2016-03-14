@@ -32,6 +32,8 @@ import qualified Data.List as List
 
 import qualified PatternUnify.Tm as Tm
 
+import Data.Foldable (foldlM, foldrM)
+
 
 import Debug.Trace (trace)
 
@@ -97,7 +99,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
       =
         do
           cType_  ii g tyt conStar
-          ty <- evaluate4 ii tyt g
+          ty <- evaluate ii tyt g
           --trace ("&&" ++ show ii ++ "Annotated " ++ show e ++ " as " ++ show ty)  $
           cType_ ii g e ty
           return ty
@@ -106,7 +108,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
     iType_' ii g (Pi_ tyt tyt')
        =  do  cType_ ii g tyt conStar
               argNom <- freshNom $ localName (ii)
-              ty <- evaluate5 ii tyt g --Ensure LHS has type Set
+              ty <- evaluate ii tyt g --Ensure LHS has type Set
               --Ensure, when we apply free var to RHS, we get a set
               let newEnv = addType (ii, ty) $ addValue (ii, Tm.var argNom)  g
               cType_  (ii + 1) newEnv
@@ -127,46 +129,48 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                 cType_ ii g argExp piArg
 
                 --Get a type for the evaluation of the argument
-                argVal <- evaluate6 ii argExp g
+                argVal <- evaluate ii argExp g
 
                 --Our resulting type is the application of our arg type into the
                 --body of the pi type
-                return $ piBodyFn Tm.$$ argVal
+                piBodyFn Tm.$$ argVal
 
     iType_' ii g Nat_                  =  return conStar
     iType_' ii g (NatElim_ m mz ms n)  =
       do  cType_ ii g m (Tm.Nat Tm.--> Tm.SET)
           --evaluate ii $ our param m
-          mVal <- evaluate7 ii m g
+          mVal <- evaluate ii m g
           --Check that mz has type (m 0)
-          cType_ ii g mz (mVal Tm.$$ Tm.Zero)
+          ourApp1 <- (mVal Tm.$$ Tm.Zero)
+          cType_ ii g mz ourApp1
           --Check that ms has type ( (k: N) -> m k -> m (S k) )
           let ln = LN.s2n "l"
           let lv = Tm.var ln
-          cType_ ii g ms (Tm.msType mVal)
+          ourApp2 <- (Tm.msVType mVal)
+          cType_ ii g ms ourApp2
           --Make sure the number param is a nat
           cType_ ii g n Tm.Nat
 
           --We infer that our final expression has type (m n)
-          nVal <- evaluate8 ii n g
-          return $ mVal Tm.$$ nVal
+          nVal <- evaluate ii n g
+          mVal Tm.$$ nVal
 
     iType_' ii g (Fin_ n) = do
       cType_ ii g n Tm.Nat
       return Tm.SET
 
     iType_' ii g (FinElim_ m mz ms n f) = do
-      mVal <- evaluate3 ii m g
+      mVal <- evaluate ii m g
       --mzVal <- evaluate ii m g
       --msVal <- evaluate ii m g
-      nVal <- evaluate1 ii n g
-      fVal <- evaluate2 ii f g
+      nVal <- evaluate ii n g
+      fVal <- evaluate ii f g
       cType_ ii g m (Tm.finmType)
-      cType_ ii g mz (Tm.finmzType mVal)
-      cType_ ii g ms (Tm.finmsType mVal)
+      cType_ ii g mz =<< (Tm.finmzVType mVal)
+      cType_ ii g ms =<< (Tm.finmsVType mVal)
       cType_ ii g n (Tm.Nat)
       cType_ ii g f (Tm.Fin nVal)
-      return $  mVal Tm.$$$ [nVal, fVal]
+      mVal Tm.$$$ [nVal, fVal]
 
     iType_' ii g (Vec_ a n) =
       do  cType_ ii g a  conStar
@@ -179,18 +183,19 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
           cType_ ii g m
             (  mkPiFn Tm.Nat ( \n -> mkPiFn  (Tm.Vec aVal n) ( \ _ -> conStar)))
           mVal <- evaluate ii m g
-          cType_ ii g mn (foldl (Tm.$$) mVal [ Tm.Zero, Tm.VNil aVal ])
-          cType_ ii g mc
-            (  mkPiFn Tm.Nat ( \ n ->
-               mkPiFn aVal ( \ y ->
-               mkPiFn ( Tm.Vec aVal n) ( \ ys ->
-               mkPiFn (foldl (Tm.$$) mVal  [n, ys]) ( \ _ ->
-               (foldl (Tm.$$) mVal [(Tm.Succ n), Tm.VCons aVal n y ys]))))))
+          cType_ ii g mn =<< (foldlM (Tm.$$) mVal [ Tm.Zero, Tm.VNil aVal ])
+          cType_ ii g mc =<<
+            (  mkPiFnM Tm.Nat ( \ n ->
+               mkPiFnM aVal ( \ y ->
+               mkPiFnM ( Tm.Vec aVal n) ( \ ys -> do
+                 mnys <- (mVal Tm.$$$  [n, ys])
+                 mkPiFnM mnys  ( \ _ ->
+                  (mVal Tm.$$$ [(Tm.Succ n), Tm.VCons aVal n y ys]))))))
           cType_ ii g n $ Tm.Nat
           nVal <- evaluate ii n g
           cType_ ii g vs ((Tm.Vec aVal nVal ))
           vsVal <- evaluate ii vs g
-          return (foldl (Tm.$$) mVal [nVal, vsVal])
+          (mVal Tm.$$$ [nVal, vsVal])
 
 
     iType_' ii g (Eq_ a x y) =
@@ -211,9 +216,9 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
              mkPiFn ((  Tm.Eq aVal x y)) ( \ _ -> conStar))))
           --evaluate ii $ our given m value
           mVal <- evaluate ii m g
-          cType_ ii g mr
-            (mkPiFn aVal ( \ x ->
-             ( foldl (Tm.$$) mVal $ [x, x] )))
+          cType_ ii g mr =<<
+            (mkPiFnM aVal ( \ x ->
+             (  mVal Tm.$$$ [x, x] )))
           cType_ ii g x aVal
           xVal <- evaluate ii x g
           cType_ ii g y aVal
@@ -224,7 +229,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
               ((Tm.Eq yVal xVal aVal))
           cType_ ii g eq eqC
           eqVal <- evaluate ii eq g
-          return (foldl (Tm.$$) mVal [xVal, yVal])
+          (mVal Tm.$$$ [xVal, yVal])
 
     iType_' ii g (Bound_ vi) = error "TODO why never bound?"
       --return $ (snd $ snd g `listLookup` (ii - (vi+1) ) ) --TODO is this right?
@@ -264,10 +269,11 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
         let arg = -- trace ("Lambda giving arg " ++ show ii) $
               builtin $ Free_ (Local ii)
             --TODO g or newEnv?
-        let argVal = evalInEnv g $ Tm.var argName --iToUnifForm ii newEnv arg
+        argVal <-evalInEnv g $ Tm.var argName --iToUnifForm ii newEnv arg
         unifySets reg fnTy (Tm.PI argTy returnTyFn)  g
         returnTy <- freshType (region body) newEnv
-        unifySets reg returnTy (returnTyFn Tm.$$ argVal) newEnv
+        appedTy <- (returnTyFn Tm.$$ argVal)
+        unifySets reg returnTy appedTy newEnv
         --unify  returnTyFn (Tm.lam argName returnTy) (argTy Tm.--> conStar) g --TODO is argVal good?
         --Convert bound instances of our variable into free ones
         let subbedBody = cSubst_ 0 arg body
@@ -282,11 +288,11 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
 
     cType_' ii g (FZero_ f)      ty  =  do
       cType_ ii g f Tm.Nat
-      fVal <- evaluate9 ii f g
+      fVal <- evaluate ii f g
       unifySets reg ty (Tm.Fin fVal) g
     cType_' ii g (FSucc_ k f)  ty  = do
       cType_ ii g f Tm.Nat
-      fVal <- evaluate10 ii f g
+      fVal <- evaluate ii f g
       unifySets reg ty (Tm.Fin fVal) g
       cType_ ii g k Tm.Nat
 
