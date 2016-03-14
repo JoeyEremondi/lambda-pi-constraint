@@ -15,7 +15,7 @@ import Data.List ((\\))
 import Data.Maybe (isNothing)
 import Data.Set (Set, isSubsetOf)
 
-import Unbound.LocallyNameless (unbind, subst, substs, Fresh)
+import Unbound.LocallyNameless (unbind, subst, substs, Fresh, runFreshM)
 import Unbound.Util (Collection, fromList)
 
 import PatternUnify.Kit (pp, elem, notElem, bind2, bind3, bind4, bind5, bind6)
@@ -533,12 +533,13 @@ intersect ::  Fresh m =>  [(Nom, Type)] -> [(Nom, Type)] ->
                               m (Maybe (Type, VAL -> VAL))
 intersect _Phi _Psi _S [] []
     | fvs _S `isSubsetOf` vars _Psi  =  return $ Just
-                                             (_Pis _Psi _S, \ beta -> lams' _Phi (beta $*$ _Psi))
+                                             (_Pis _Psi _S, \ beta -> lams' _Phi (runFreshM $ beta $*$ _Psi))
     | otherwise                      =  return Nothing
 intersect _Phi _Psi (PI _A _B) (x:xs) (y:ys) = do
     z <- freshNom
     let _Psi' = _Psi ++ if x == y then [(z, _A)] else []
-    intersect (_Phi ++ [(z, _A)]) _Psi' (_B $$ var z) xs ys
+    ourApp <- (_B $$ var z)
+    intersect (_Phi ++ [(z, _A)]) _Psi' ourApp xs ys
 
 -- %if False
 
@@ -643,7 +644,8 @@ pruneSpine _Phi _Psi xs (PI _A _B) (A a:es)
     |  not stuck = do
            z <- freshNom
            let _Psi' = _Psi ++ if pruned then [] else [(z, _A)]
-           pruneSpine (_Phi ++ [(z, _A)]) _Psi' xs (_B $$ var z) es
+           ourApp <- (_B $$ var z)
+           pruneSpine (_Phi ++ [(z, _A)]) _Psi' xs ourApp es
     |  otherwise = return Nothing
  where
     o       =  occurrence xs a
@@ -652,7 +654,7 @@ pruneSpine _Phi _Psi xs (PI _A _B) (A a:es)
     stuck   =  isFlexible o || (isNothing o && isFlexible o')
                    || (not pruned && not (isVar a))
 pruneSpine _Phi _Psi _ _T [] | fvs _T `isSubsetOf` vars _Psi && _Phi /= _Psi =
-    return $ Just (_Pis _Psi _T, \ v -> lams' _Phi (v $*$ _Psi))
+    return $ Just (_Pis _Psi _T, \ v -> lams' _Phi (runFreshM $ v $*$ _Psi))
 pruneSpine _ _ _ _ _  = return Nothing
 
 -- After pruning, we can |instantiate| a pruned metavariable by moving
@@ -706,16 +708,19 @@ solver n (All p b) = do
 
 lower :: [(Nom, Type)] -> Nom -> Type -> Contextual ()
 lower _Phi alpha (SIG _S _T) =  hole _Phi _S $ \ s ->
-                                hole _Phi (_T $$ s) $ \ t ->
+                                bind3 hole (return _Phi) (_T $$ s) $ return $ \ t ->
                                 define _Phi alpha (SIG _S _T) (PAIR s t)
 -- >
 lower _Phi alpha (PI _S _T) = do
     x <- freshNom
+    ourApp1 <- (_T $$ var x)
     splitSig [] x _S >>= maybe
-        (lower (_Phi ++ [(x, _S)]) alpha (_T $$ var x))
-        (\ (y, _A, z, _B, s, (u, v)) ->
-            hole _Phi (_Pi y _A  (_Pi z _B (_T $$ s))) $ \ w ->
-                define _Phi alpha (PI _S _T) (lam x (w $$ u $$ v)))
+        (lower (_Phi ++ [(x, _S)]) alpha ourApp1)
+        (\ (y, _A, z, _B, s, (u, v)) -> do
+            ourApp2 <- (_T $$ s)
+            hole _Phi (_Pi y _A  (_Pi z _B ourApp2)) $ \ w -> do
+                ourApp3 <- (w $$$ [u, v])
+                define _Phi alpha (PI _S _T) (lam x ourApp3))
 
 lower _Phi alpha _T = pushL (E alpha (_Pis _Phi _T) HOLE)
 
