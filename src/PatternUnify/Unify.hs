@@ -18,7 +18,7 @@ import Data.Set (Set, isSubsetOf)
 import Unbound.LocallyNameless (unbind, subst, substs, Fresh)
 import Unbound.Util (Collection, fromList)
 
-import PatternUnify.Kit (pp, elem, notElem)
+import PatternUnify.Kit (pp, elem, notElem, bind2, bind3, bind4, bind5, bind6)
 import PatternUnify.Tm
 {- (Can(..), VAL(..), Elim(..), Head(..), Twin(..),
            Nom, Type, Subs,
@@ -310,34 +310,37 @@ matchSpine ::  Type -> VAL -> [Elim] ->
 matchSpine  (PI _A _B)  u  (A a:ds)
             (PI _S _T)  v  (A s:es) =
     (EQN _A a _S s :) <$>
-        matchSpine (_B $$ a) (u $$ a) ds (_T $$ s) (v $$ s) es
+        bind6 matchSpine (_B $$ a) (u $$ a) (return ds) (_T $$ s) (v $$ s) (return es)
 matchSpine (SIG _A _B) u (Hd:ds)  (SIG _S _T) v (Hd:es) =
-    matchSpine _A (u %% Hd) ds _S (v %% Hd) es
-matchSpine (SIG _A _B) u (Tl:ds)  (SIG _S _T) v (Tl:es) =
-    matchSpine (_B $$ a) b ds (_T $$ s) t es
-  where   (a, b)  = (u %% Hd, u %% Tl)
-          (s, t)  = (v %% Hd, v %% Tl)
+    bind6 matchSpine (return _A) (u %% Hd) (return ds) (return _S) (v %% Hd) (return es)
+matchSpine (SIG _A _B) u (Tl:ds)  (SIG _S _T) v (Tl:es) = do
+    a <- u %% Hd
+    b <- u %% Tl
+    s <- v %% Hd
+    t <- v %% Tl
+    bind6 matchSpine (_B $$ a) (return b) (return ds) (_T $$ s) (return t) (return es)
+
 --Match datatype eliminators
 matchSpine
   Nat u (elim1@(NatElim m mz ms) : ds)
-  Nat v (elim2@(NatElim m' mz' ms') : es) =
-    ([ EQN (Nat --> SET) m (Nat --> SET) m'
-     , EQN (m $$ Zero) mz (m' $$ Zero) mz'
-     , EQN (msType m) ms (msType m') ms'
-     ] ++) <$>
-      matchSpine (m $$ u) (u %% elim1) ds (m' $$ v) (v %% elim2) es
+  Nat v (elim2@(NatElim m' mz' ms') : es) = do
+    let eq1 = EQN  (Nat --> SET) m (Nat --> SET) m'
+    eq2 <- eqn (m $$ Zero) (return mz) (m' $$ Zero) (return mz')
+    eq3 <- eqn (msVType m) (return ms) (msVType m') (return ms')
+    rest <- bind6 matchSpine (m $$ u) (u %% elim1) (return ds) (m' $$ v) (v %% elim2) (return es)
+    return $ [eq1, eq2, eq3] ++ rest
 
 matchSpine
   (Fin ni) u (elim1@(FinElim m mz ms n) : ds)
-  (Fin ni') v (elim2@(FinElim m' mz' ms' n') : es) =
-    ([ EQN (finmType) m (finmType) m'
-     , EQN (finmzType m) mz (finmzType m') mz'
-     , EQN (finmsType m) ms (finmsType m') ms'
-     , EQN (Nat) n Nat n'
-     , EQN (Nat) ni Nat ni'
-     , EQN (Nat) n Nat ni
-     ] ++) <$>
-      matchSpine (m $$$ [n, u]) (u %% elim1) ds (m' $$$ [n', v]) (v %% elim2) es
+  (Fin ni') v (elim2@(FinElim m' mz' ms' n') : es) = do
+    let eq1 = EQN (finmType) m (finmType) m'
+    eq2 <- eqn (finmzVType m) (return mz) (finmzVType m') (return mz')
+    eq3 <- eqn (finmsVType m) (return ms) (finmsVType m') (return ms')
+    let eq4 = EQN (Nat) n Nat n'
+    let eq5 = EQN (Nat) ni Nat ni'
+    let eq6 = EQN (Nat) n Nat ni
+    rest <- bind6 matchSpine (m $$$ [n, u]) (u %% elim1) (return ds) (m' $$$ [n', v]) (v %% elim2) (return es)
+    return $ [eq1, eq2, eq3, eq4, eq5, eq6] ++ rest
 
 
 matchSpine
