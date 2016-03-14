@@ -135,20 +135,6 @@ solveConstraintM cm =
 
 cToUnifForm0 = cToUnifForm 0
 
-evaluate1 ii t g = evalInEnv g <$> cToUnifForm ii g t
-evaluate2 ii t g  = evalInEnv g <$> cToUnifForm ii g t
-evaluate3 ii t g  = evalInEnv g <$> cToUnifForm ii g t
-evaluate4 ii t g  = evalInEnv g <$> cToUnifForm ii g t
-evaluate5 ii t g  = evalInEnv g <$> cToUnifForm ii g t
-
---evaluate6 ii t _ | trace ("EVAL6!! " ++ show (ii, Common.cPrint_ 0 0 t)) False = error "eval"
-evaluate6 ii t g  = evalInEnv g <$> cToUnifForm ii g t
-
-
-evaluate7 ii t g  = evalInEnv g <$> cToUnifForm ii g t
-evaluate8 ii t g  = evalInEnv g <$> cToUnifForm ii g t
-evaluate9 ii t g  = evalInEnv g <$> cToUnifForm ii g t
-evaluate10 ii t g  = evalInEnv g <$> cToUnifForm ii g t
 
 
 evaluate :: Int -> Common.CTerm_ -> WholeEnv -> ConstraintM Tm.VAL
@@ -521,6 +507,19 @@ mkPiFn s f =
     newFreeVar = head $ filter (not . (`elem` freeVars)) allVars
   in
     Tm.PI s  $ Tm.lam newFreeVar (f $ Tm.var newFreeVar)
+
+mkPiFnM :: (LN.Fresh m) => ConType -> (ConType -> m ConType) -> m ConType
+mkPiFnM s fm = do
+  let
+    allVars :: [Tm.Nom]
+    allVars = map (\i -> LN.string2Name $ "tyPiFn" ++ show i ) [1..]
+  dummyBody <-  fm (Tm.vv "dummy")
+  let
+    freeVars :: [Tm.Nom]
+    freeVars = Tm.fvs dummyBody
+    newFreeVar = head $ filter (not . (`elem` freeVars)) allVars
+  arg <- (fm $ Tm.var newFreeVar)
+  return $ Tm.PI s  $ Tm.lam newFreeVar  arg
 
 
 --conType :: Common.Type_ -> ConType
