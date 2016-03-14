@@ -88,14 +88,14 @@ getRegionDict = foldr foldFun $ Map.singleton (LN.string2Name "builtinLoc") (Com
           dictSoFar
 
 
-evalInEnv :: WholeEnv -> Tm.VAL -> Tm.VAL
+evalInEnv :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 evalInEnv env =
   Tm.eval $ map (\(s,val) -> (LN.s2n s, val)) $ globalValues env
 
 
-evalElimInEnv :: WholeEnv -> Tm.Elim -> Tm.Elim
+evalElimInEnv :: WholeEnv -> Tm.Elim -> ConstraintM Tm.Elim
 evalElimInEnv env =
-  Tm.mapElim $ Tm.eval $ map (\(s,val) -> (LN.s2n s, val)) $ globalValues env
+  Tm.mapElimM $ Tm.eval $ map (\(s,val) -> (LN.s2n s, val)) $ globalValues env
 
 
 addValue :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
@@ -155,7 +155,7 @@ evaluate :: Int -> Common.CTerm_ -> WholeEnv -> ConstraintM Tm.VAL
 --evaluate ii t _ | trace ("EVAL!! " ++ show (ii, Common.cPrint_ 0 0 t)) False = error "eval"
 evaluate ii t g = do
   result <- cToUnifForm ii g t
-  return $ evalInEnv g result
+  evalInEnv g result
   --fst <$> LN.freshen result
 
 cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> ConstraintM Tm.VAL
@@ -268,9 +268,9 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
         do
           f1 <- (iToUnifForm ii env f)
           a <- (cToUnifForm ii env x)
-          let fVal = evalInEnv env f1
-              aVal = evalInEnv env a
-          let result = --trace ("$ APP2 " ++ show (Tm.prettyString fVal, Tm.prettyString aVal))  $
+          fVal <- evalInEnv env f1
+          aVal <- evalInEnv env a
+          result <- --trace ("$ APP2 " ++ show (Tm.prettyString fVal, Tm.prettyString aVal))  $
                 fVal Tm.$$ aVal
           --trace (
               --"APP  " ++ Tm.prettyString f1 ++ " <--- " ++ show f ++ "  \n  "
@@ -288,17 +288,17 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
       Common.NatElim_ m mz ms n -> trace ("**NATELIM: " ++ show n) $ do
         spine <- Tm.NatElim <$> (cToUnifForm ii env m) <*> (cToUnifForm ii env mz) <*> (cToUnifForm ii env ms)
         hd <- (cToUnifForm ii env n)
-        let hdVal = evalInEnv env hd
-            spineVal = evalElimInEnv env spine
-        return $ hdVal Tm.%% spineVal
+        hdVal <- evalInEnv env hd
+        spineVal <- evalElimInEnv env spine
+        hdVal Tm.%% spineVal
 
 
       Common.FinElim_ m mz ms n f -> trace "%2" $  do
         hd <- (cToUnifForm ii env f)
         spine <- Tm.FinElim <$> (cToUnifForm ii env m) <*> (cToUnifForm ii env mz) <*> (cToUnifForm ii env ms) <*> (cToUnifForm ii env n)
-        let hdVal = evalInEnv env hd
-            spineVal = evalElimInEnv env spine
-        return $ hdVal Tm.%% spineVal
+        hdVal <- evalInEnv env hd
+        spineVal <- evalElimInEnv env spine
+        hdVal Tm.%% spineVal
 
       Common.Vec_ a n ->
         Tm.Vec <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env n)
@@ -306,18 +306,18 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
       Common.VecElim_ a m mn mc n xs -> trace "%3" $  do
         hd <- (cToUnifForm ii env xs)
         spine <- Tm.VecElim <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env m) <*> (cToUnifForm ii env mn) <*> (cToUnifForm ii env mc) <*> (cToUnifForm ii env n)
-        let hdVal = evalInEnv env hd
-            spineVal = evalElimInEnv env spine
-        return $ hdVal Tm.%% spineVal
+        hdVal <- evalInEnv env hd
+        spineVal <- evalElimInEnv env spine
+        hdVal Tm.%% spineVal
       Common.Eq_ a x y ->
         Tm.Eq <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env x) <*> (cToUnifForm ii env y)
 
       Common.EqElim_ a m mr x y eq  -> trace "%4" $ do
         hd <- (cToUnifForm ii env eq)
         spine <- Tm.EqElim <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env m) <*> (cToUnifForm ii env mr) <*> (cToUnifForm ii env x) <*> (cToUnifForm ii env y)
-        let hdVal = evalInEnv env hd
-            spineVal = evalElimInEnv env spine
-        return $ hdVal Tm.%% spineVal
+        hdVal <- evalInEnv env hd
+        spineVal <- evalElimInEnv env spine
+        hdVal Tm.%% spineVal
 --  in result --trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
 
 type ConTyFn = Tm.VAL
@@ -344,7 +344,7 @@ constrEval (tenv, venv) it =
     (vglobals, vlocals) = splitContext venv
     wholeEnv = WholeEnv vlocals tlocals vglobals tglobals
   in
-    Tm.eval tmSubs $ runConstraintM (iToUnifForm 0 wholeEnv it)
+    LN.runFreshM $ Tm.eval tmSubs $ runConstraintM (iToUnifForm 0 wholeEnv it)
 
 
 
