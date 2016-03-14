@@ -494,13 +494,19 @@ elim t           a      = badElim $ "bad elimination of " ++ pp t ++ " by " ++ p
 
 badElim s = errorWithStackTrace s
 
+app :: (Nom) -> VAL -> VAL
+app n x = N (Var n Only) [A x]
+
+apps :: (Nom) -> [VAL] -> VAL
+apps n xs = N (Var n Only) $ map A xs
+
 ($$) :: (Fresh m) => VAL -> VAL -> m VAL
 f $$ a = elim f (A a)
 
-($$$) :: VAL -> [VAL] -> VAL
-($$$) = foldl ($$)
+($$$) :: (Fresh m) => VAL -> [VAL] -> m VAL
+($$$) = foldlM ($$)
 
-($*$) :: VAL -> [(Nom, a)] -> VAL
+($*$) :: (Fresh m) => VAL -> [(Nom, a)] -> m VAL
 f $*$ _Gam = f $$$ map (var . fst) _Gam
 
 (%%) :: (Fresh m) => VAL -> Elim -> m VAL
@@ -509,40 +515,42 @@ f $*$ _Gam = f $$$ map (var . fst) _Gam
 (%%%) :: (Fresh m) => VAL -> [Elim] -> m VAL
 (%%%) = foldlM (%%)
 
-lam_ s f = lam (s2n s) (f $ vv s)
+lam_ :: String -> (Nom -> VAL) -> VAL
+lam_ s f = lam (s2n s) (f $ s2n s)
 pi_ s str f = PI s $ lam_ str f
 
-msType m = (pi_ Nat "msArg" (\ l -> (m $$ l) --> ((m $$ (Succ l)))))
+msType :: Nom -> VAL
+msType m = (pi_ Nat "msArg" (\ l -> (m `app` (var l)) --> ((m `app` (Succ $ var l)))))
 
-vmType a =(pi_ Nat "vec_n" (\ n -> (Vec a n) --> ( SET)))
+vmType a =(pi_ Nat "vec_n" (\ n -> (Vec a (var n)) --> ( SET)))
 
-mnType a m = (m $$ Zero $$ (VNil a))
+mnType a m = (m `apps` [Zero, (VNil $ var a)])
 
 mcType a m = (pi_ Nat "vec_n" (\ n ->
       pi_ a "vec_x" (\ x ->
-      pi_ (Vec a n) "vec_xs" (\ xs ->
-      (m $$ n $$ xs) --> (
-      m $$ Succ n $$ VCons a n x xs)))))
+      pi_ (Vec a $ var n) "vec_xs" (\ xs ->
+      (m `apps` [var n, var xs]) --> (
+      m `apps` [Succ $ var n, VCons a (var n) (var x) (var xs)])))))
 
-vResultType m n xs = m $$ n $$ xs
+vResultType m n xs = m `apps` [var n, var xs]
 
-eqmType a = pi_ a "eq_x" (\ x -> pi_ a "eq_y" (\ y -> (Eq a x y) --> ( SET)))
+eqmType a = pi_ a "eq_x" (\ x -> pi_ a "eq_y" (\ y -> (Eq a (var x) (var y)) --> ( SET)))
 
-eqmrType a m = pi_ a "eq_xmr" (\ x -> m $$$ [x, x, ERefl a x] )
+eqmrType a m = pi_ a "eq_xmr" (\ x -> m `apps` [var x, var x, ERefl a (var x)] )
 
 eqResultType m x y eq = m $$$ [x, y, eq]
 
 finmType = pi_ (Nat) "finm_n" $ \n ->
-  Fin n --> SET
+  Fin (var n) --> SET
 
 finmzType m = pi_ (Nat) "finmz_n" $ \n ->
-  m $$$ [Succ n, FZero n]
+  m `apps` [Succ $ var n, FZero $ var n]
 
 finmsType m = --pi_ (Nat) "n" $ \n ->
   pi_ Nat "finms_n" $ \n ->
-    pi_ (Fin n) "finms_f" $ \f ->
-      (m $$$ [n, f]) --> (m $$$ [Succ n, FSucc n f])
+    pi_ (Fin $ var n) "finms_f" $ \f ->
+      (m `apps` [var n, var f]) --> (m `apps` [Succ $ var n, FSucc (var n) (var f)])
 
-finRetType m = pi_ Nat "finRet_n" $ \n -> pi_ (Fin n) "finRet_f" $ \f -> m $$$ [n, f]
+finRetType m = pi_ Nat "finRet_n" $ \n -> pi_ (Fin $ var n) "finRet_f" $ \f -> m `apps` [var n, var f]
 
 $(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])
