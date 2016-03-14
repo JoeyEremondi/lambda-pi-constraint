@@ -486,9 +486,13 @@ elim (N u as)    e      = return $ N u $ as ++ [e]
 elim (PAIR x _)  Hd     = return x
 elim (PAIR _ y)  Tl     = return y
 elim Zero (NatElim m mz ms) = return mz
-elim (Succ l) theElim@(NatElim m mz ms) = (\sub -> ms $$$ [l, sub]) <$> elim l theElim
+elim (Succ l) theElim@(NatElim m mz ms) = do
+  sub <- elim l theElim
+  ms $$$ [l, sub]
 elim (FZero k) (FinElim m mz _ _) = mz $$ k
-elim (FSucc k f) theElim@(FinElim m _ ms _) = (\sub -> ms $$$ [k, f, sub]) <$> elim f theElim
+elim (FSucc k f) theElim@(FinElim m _ ms _) = do
+  sub <- elim f theElim
+  ms $$$ [k, f, sub]
 --TODO elim for Vec Eq
 elim t           a      = badElim $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
