@@ -15,6 +15,7 @@ import Control.Applicative (pure, (<*>), (<$>))
 import Data.List (unionBy)
 import Data.Function (on)
 import Data.Traversable (traverse)
+import Data.Foldable (foldlM)
 
 import Unbound.LocallyNameless hiding (empty)
 import Unbound.LocallyNameless.Name (isFree)
@@ -427,7 +428,7 @@ type Subs = [(Nom, VAL)]
 compSubs :: Subs -> Subs -> Subs
 compSubs new old = unionBy ((==) `on` fst) new (substs new old)
 
-eval :: Subs -> VAL -> VAL
+eval :: (Fresh m) => Subs -> VAL -> m VAL
 --eval g t | trace ("Eval " ++ pp t ++ "\n  Subs: " ++ show g) False = error "Eval"
 eval g (L b)   = L (bind x (eval g t))
                      where (x, t) = unsafeUnbind b
@@ -464,28 +465,24 @@ evalHead g hv = case subLookup (headVar hv) g of
                           u
                        Nothing  -> N hv []
 
-elim :: VAL -> Elim -> VAL
+elim :: (Fresh m) => VAL -> Elim -> m VAL
 --elim h s | trace ("Elim " ++ pp h ++ " %%% " ++ pp s) False = error "Eval"
-elim (L b)       (A a)  =
-  let
-    (x, t) = unsafeUnbind b
-  in
-    --subst x a t
-    --trace ("ELIM_SUBST " ++ show (pp t, pp x)) $ 
-      eval [(x, a)] t
-elim (N u as)    e      = N u $ as ++ [e]
-elim (PAIR x _)  Hd     = x
-elim (PAIR _ y)  Tl     = y
-elim Zero (NatElim m mz ms) = mz
-elim (Succ l) theElim@(NatElim m mz ms) = ms $$$ [l, elim l theElim]
+elim (L b)       (A a)  = do
+    (x, t) <- unbind b
+    eval [(x, a)] t
+elim (N u as)    e      = return $ N u $ as ++ [e]
+elim (PAIR x _)  Hd     = return x
+elim (PAIR _ y)  Tl     = return y
+elim Zero (NatElim m mz ms) = return mz
+elim (Succ l) theElim@(NatElim m mz ms) = (\sub -> ms $$$ [l, sub]) <$> elim l theElim
 elim (FZero k) (FinElim m mz _ _) = mz $$ k
-elim (FSucc k f) theElim@(FinElim m _ ms _) = ms $$$ [k, f, elim f theElim]
+elim (FSucc k f) theElim@(FinElim m _ ms _) = (\sub -> ms $$$ [k, f, sub]) <$> elim f theElim
 --TODO elim for Vec Eq
 elim t           a      = badElim $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 badElim s = errorWithStackTrace s
 
-($$) :: VAL -> VAL -> VAL
+($$) :: (Fresh m) => VAL -> VAL -> m VAL
 f $$ a = elim f (A a)
 
 ($$$) :: VAL -> [VAL] -> VAL
@@ -494,11 +491,11 @@ f $$ a = elim f (A a)
 ($*$) :: VAL -> [(Nom, a)] -> VAL
 f $*$ _Gam = f $$$ map (var . fst) _Gam
 
-(%%) :: VAL -> Elim -> VAL
+(%%) :: (Fresh m) => VAL -> Elim -> m VAL
 (%%) = elim
 
-(%%%) :: VAL -> [Elim] -> VAL
-(%%%) = foldl (%%)
+(%%%) :: (Fresh m) => VAL -> [Elim] -> m VAL
+(%%%) = foldlM (%%)
 
 lam_ s f = lam (s2n s) (f $ vv s)
 pi_ s str f = PI s $ lam_ str f
