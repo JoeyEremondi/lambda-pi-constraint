@@ -95,7 +95,7 @@ hole _Gam _T f = do  check SET (_Pis _Gam _T) `catchError`
                                        pp (_Pis _Gam _T)))
                      x <- freshNom
                      pushL $ E x (_Pis _Gam _T) HOLE
-                     a <- f (N (Meta x) [] $*$ _Gam)
+                     a <- f =<< (N (Meta x) [] $*$ _Gam)
                      goLeft
                      return a
 
@@ -136,18 +136,34 @@ define _Gam x _T v =
 -- while sans-serif letters (e.g.\ |A|) will continue to stand for data
 -- constructors.
 
+eqn :: (Fresh m) => m Type -> m VAL -> m Type -> m VAL -> m Equation
+eqn ma mx mb my = do
+  a <- ma
+  b <- mb
+  x <- mx
+  y <- my
+  return $ EQN a x b y
+
+munify :: (Fresh m) => m Equation -> m Problem
+munify = fmap Unify
+
 unify :: ProbId -> Equation -> Contextual ()
 -- >
 unify n q@(EQN (PI _A _B) f (PI _S _T) g) = do
     x <- freshNom
     let (xL, xR) = (N (Var x TwinL) [], N (Var x TwinR) [])
+    eq1 <- (munify (eqn (_B $$ xL) (f $$ xL) (_T $$ xR) (g $$ xR)))
     simplify n (Unify q) [ Unify (EQN SET _A SET _S),
-        allTwinsProb x _A _S (Unify (EQN (_B $$ xL) (f $$ xL) (_T $$ xR) (g $$ xR)))]
-unify n q@(EQN (SIG _A _B) t (SIG _C _D) w) =
+        allTwinsProb x _A _S eq1 ]
+unify n q@(EQN (SIG _A _B) t (SIG _C _D) w) = do
+    a <- t %% Hd
+    b <- t %% Tl
+    c <- w %% Hd
+    d <- w %% Tl
+    eq1 <- munify (eqn (_B $$ a) (return b) (_D $$ c) (return d))
     simplify n (Unify q)  [  Unify (EQN _A a _C c)
-                          ,  Unify (EQN (_B $$ a) b (_D $$ c) d)]
-  where  (a, b)  = (t %% Hd, t %% Tl)
-         (c, d)  = (w %% Hd, w %% Tl)
+                          ,  eq1]
+  where
 -- >
 unify n q@(EQN _ (N (Meta _) _) _ (N (Meta _) _)) =
     tryPrune n q $ tryPrune n (sym q) $ flexFlex n q
