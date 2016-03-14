@@ -192,10 +192,10 @@ quote :: Type -> VAL -> Contextual VAL
 quote (PI _S _T)   f         =  do
                                 x <- fresh (s2n "xq")
                                 lam x <$> inScope x (P _S)
-                                    (quote (_T $$ var x) (f $$ var x))
+                                    (bind2 quote (_T $$ var x) (f $$ var x))
 
-quote (SIG _S _T)  v         =  PAIR <$> quote _S (v %% Hd) <*>
-                                    quote (_T $$ (v %% Hd)) (v %% Tl)
+quote (SIG _S _T)  v         =  PAIR <$> bind2 quote (return _S) (v %% Hd) <*>
+                                    bind2 quote ((_T $$) =<< (v %% Hd)) (v %% Tl)
 
 quote (C c as)     (C v bs)  = do  tel <- canTy (c, as) v
                                    bs' <- quoteTel tel bs
@@ -261,24 +261,24 @@ quoteSpine :: Type -> VAL -> [Elim] -> Contextual VAL
 quoteSpine _T           u []        =  return u
 quoteSpine (PI _S _T)   u (A s:as)  =  do
                                        s' <- quote _S s
-                                       quoteSpine (_T $$ s') (u $$ s') as
-quoteSpine (SIG _S _T)  u (Hd:as)   =  quoteSpine _S (u %% Hd) as
-quoteSpine (SIG _S _T)  u (Tl:as)   =  quoteSpine (_T $$ (u %% Hd)) (u %% Tl) as
+                                       bind3 quoteSpine (_T $$ s') (u $$ s') (return as)
+quoteSpine (SIG _S _T)  u (Hd:as)   =  bind3 quoteSpine (return _S) (u %% Hd) (return as)
+quoteSpine (SIG _S _T)  u (Tl:as)   =  bind3 quoteSpine ((_T $$) =<< (u %% Hd)) (u %% Tl) (return as)
 
 quoteSpine (Nat) u ((NatElim m mz ms):as) = do
   qm <- quote (Nat --> SET) m
-  qmz <- quote (m $$ Zero) mz
-  qms <- quote (msType m) ms
+  qmz <- bind2 quote (m $$ Zero) (return mz)
+  qms <- bind2 quote (msVType m) (return ms)
   let qElim = NatElim qm qmz qms
-  quoteSpine (qm $$ u) (u %% qElim) as
+  bind3 quoteSpine (qm $$ u) (u %% qElim) (return as)
 
 quoteSpine (Fin (Succ _)) u ((FinElim m mz ms n):as) = do
   qm <- quote finmType m
-  qmz <- quote (finmzType m) mz
-  qms <- quote (finmsType m) ms
+  qmz <- bind2 quote (finmzVType m) (return mz)
+  qms <- bind2 quote (finmsVType m) (return ms)
   qn <- quote Nat n --TODO check n' and n equal?
   let qElim = FinElim qm qmz qms qn
-  quoteSpine (qm $$$ [qn, u]) (u %% qElim) as
+  bind3 quoteSpine (qm $$$ [qn, u]) (u %% qElim) (return as)
 --TODO vec, eq
 quoteSpine _T           u (s:_)     =  fail $ "quoteSpine: type " ++ pp _T ++
                                                " of " ++ pp u ++
