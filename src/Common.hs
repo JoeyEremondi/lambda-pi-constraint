@@ -420,31 +420,31 @@ unifte =      [(Global "Zero", Tm.Nat),
              (Global "Succ", Tm.Nat Tm.--> Tm.Nat),
              (Global "Nat", Tm.SET),
              (Global "natElim", pi_ (Tm.Nat Tm.--> Tm.SET) "natT_m" (\ m ->
-                               (m Tm.$$ Tm.Zero) Tm.--> (
+                               (m `Tm.app` Tm.Zero) Tm.--> (
                                (Tm.msType m) Tm.--> (
-                               pi_ Tm.Nat "natT_n" (\ n -> m Tm.$$ n))))),
-             (Global "Nil", pi_ Tm.SET "a" (\ a -> Tm.Vec a Tm.Zero)),
+                               pi_ Tm.Nat "natT_n" (\ n -> m `Tm.app` (var n)))))),
+             (Global "Nil", pi_ Tm.SET "a" (\ a -> Tm.Vec (var a) Tm.Zero)),
              (Global "Cons", pi_ Tm.SET "a" (\ a ->
                             pi_ Tm.Nat "n" (\ n ->
-                            a Tm.--> ((Tm.Vec a n) Tm.--> (Tm.Vec a (Tm.Succ n)))))),
+                            (var a) Tm.--> ((Tm.Vec (var a) (var n)) Tm.--> (Tm.Vec (var a) (Tm.Succ $ var n)))))),
              (Global "Vec", Tm.SET Tm.--> (Tm.Nat Tm.--> ( Tm.SET))),
              (Global "vecElim", pi_ Tm.SET "a" (\ a ->
                                pi_ (Tm.vmType a) "m" (\ m ->
                                (Tm.mnType a m) Tm.--> (
                                (Tm.mcType a m ) Tm.--> (
                                pi_ Tm.Nat "n" (\ n ->
-                               pi_ (Tm.Vec a n) "xs" (\ xs -> Tm.vResultType m n xs))))))),
-             (Global "Refl", pi_ Tm.SET "a" (\ a -> pi_ a "x" (\ x ->
-                            Tm.Eq a x x))),
-             (Global "Eq", pi_ Tm.SET "a" (\ a -> pi_ a "x" (\ x -> pi_ a "y" (\ y -> Tm.SET)))),
+                               pi_ (Tm.Vec (var a) (var n)) "xs" (\ xs -> Tm.vResultType m n xs))))))),
+             (Global "Refl", pi_ Tm.SET "a" (\ a -> pi_ (var a) "x" (\ x ->
+                            Tm.Eq (var a) (var x) (var x)))),
+             (Global "Eq", pi_ Tm.SET "a" (\ a -> pi_ (var a) "x" (\ x -> pi_ (var a) "y" (\ y -> Tm.SET)))),
              (Global "eqElim", pi_ Tm.SET "a" (\ a ->
-                              pi_ (Tm.eqmType a) "m" (\ m ->
-                              (Tm.eqmrType a m) Tm.--> (
-                              pi_ a "x" (\ x -> pi_ a "y" (\ y ->
-                              pi_ (Tm.Eq a x y) "eq" (\ eq ->
+                              pi_ (Tm.eqmType $ var a) "m" (\ m ->
+                              (Tm.eqmrType (a) m) Tm.--> (
+                              pi_ (var a) "x" (\ x -> pi_ (var a) "y" (\ y ->
+                              pi_ (Tm.Eq (var a) (var x) (var y)) "eq" (\ eq ->
                               Tm.eqResultType m x y eq))))))),
-             (Global "FZero", pi_ Tm.Nat "n" (\ n -> Tm.Fin (Tm.Succ n))),
-             (Global "FSucc", pi_ Tm.Nat "n" (\ n -> (Tm.Fin n) Tm.--> Tm.Fin (Tm.Succ n))),
+             (Global "FZero", pi_ Tm.Nat "n" (\ n -> Tm.Fin (Tm.Succ $ var n))),
+             (Global "FSucc", pi_ Tm.Nat "n" (\ n -> (Tm.Fin $ var n) Tm.--> Tm.Fin (Tm.Succ $ var n))),
              (Global "Fin", Tm.Nat Tm.--> Tm.SET),
              (Global "finElim",
                 pi_ (Tm.finmType) "finT_m" $ \m ->
@@ -454,8 +454,9 @@ unifte =      [(Global "Zero", Tm.Nat),
 
 
 
-lam_ s f = Tm.lam (s2n s) (f $ Tm.vv s)
-pi_ s str f = Tm.PI s $ lam_ str f
+lam_ = Tm.lam_
+pi_ = Tm.pi_
+var = Tm.var
 --inf_ = error "TODO inf_"
 
 
@@ -526,19 +527,19 @@ bbound_ = builtin . Bound_
 unifve :: Ctx Tm.VAL
 unifve = -- [(Global "Nat", VNat_)]
      [(Global "Zero", Tm.Zero),
-             (Global "Succ", lam_ "n" (\ n -> Tm.Succ n)),
+             (Global "Succ", lam_ "n" (\ n -> Tm.Succ $ var n)),
              (Global "Nat", Tm.Nat),
              (Global "natElim",
                 lam_ "nat_m" $ \m ->
                 lam_ "nat_mz" $ \mz ->
                 lam_ "nat_ms" $ \ms ->
-                Tm.lam (s2n "nat_k") $
-                  Tm.N (Tm.Var (s2n "nat_k") Tm.Only) [Tm.NatElim m mz ms]
+                lam_ "nat_k" $ \k ->
+                  Tm.N (Tm.Var k Tm.Only) [Tm.NatElim (var m) (var mz) (var ms)]
                   ),
-             (Global "Nil", lam_ "a" (\ a -> Tm.VNil a)),
+             (Global "Nil", lam_ "a" (\ a -> Tm.VNil $ var a)),
              (Global "Cons", lam_ "a" (\ a -> lam_ "n" (\ n -> lam_ "x" (\ x -> lam_ "xs" (\ xs ->
-                            Tm.VCons a n x xs))))),
-             (Global "Vec", lam_ "a" (\ a -> lam_ "n" (\ n -> Tm.Vec a n))),
+                            Tm.VCons (var a) (var n) (var x) (var xs)))))),
+             (Global "Vec", lam_ "a" (\ a -> lam_ "n" (\ n -> Tm.Vec (var a) (var n)))),
              (Global "vecElim",
                 lam_ "vec_a" $ \a ->
                 lam_ "vec_m" $ \m ->
@@ -546,9 +547,9 @@ unifve = -- [(Global "Nat", VNat_)]
                 lam_ "vec_mc" $ \mc ->
                 lam_ "vec_k" $ \mk ->
                 lam_ "vec_xs" $ \xs ->
-                  xs Tm.%% Tm.VecElim a m mn mc mk),
-             (Global "Refl", lam_ "a" (\ a -> lam_ "x" (\ x -> Tm.ERefl a x))),
-             (Global "Eq", lam_ "a" (\ a -> lam_ "x" (\ x -> lam_ "y" (\ y -> Tm.Eq a x y)))),
+                  Tm.N (Tm.Var xs Tm.Only) [Tm.VecElim (var a) (var m) (var mn) (var mc) (var mk)]),
+             (Global "Refl", lam_ "a" (\ a -> lam_ "x" (\ x -> Tm.ERefl (var a) (var x)))),
+             (Global "Eq", lam_ "a" (\ a -> lam_ "x" (\ x -> lam_ "y" (\ y -> Tm.Eq(var a) (var x) (var y))))),
              (Global "eqElim",
                 lam_ "eq_a" $ \a ->
                 lam_ "eq_m" $ \m ->
@@ -556,17 +557,17 @@ unifve = -- [(Global "Nat", VNat_)]
                 lam_ "eq_x" $ \x ->
                 lam_ "eq_y" $ \y ->
                 lam_ "eq_eq" $ \eq ->
-                eq Tm.%% Tm.EqElim a m mr x y),
-             (Global "FZero", lam_ "n" (\ n -> Tm.FZero n)),
-             (Global "FSucc", lam_ "n" (\ n -> lam_ "f" (\ f -> Tm.FSucc n f))),
-             (Global "Fin", lam_ "n" (\ n -> Tm.Fin n)),
+                Tm.N (Tm.Var eq Tm.Only) [Tm.VecElim (var a) (var m) (var mr) (var x) (var y)]),
+             (Global "FZero", lam_ "n" (\ n -> Tm.FZero $ var n)),
+             (Global "FSucc", lam_ "n" (\ n -> lam_ "f" (\ f -> Tm.FSucc (var n) (var f)))),
+             (Global "Fin", lam_ "n" (\ n -> Tm.Fin $ var n)),
              (Global "finElim",
                 lam_ "fin_m" $ \m ->
                   lam_ "fin_mz" $ \mz ->
                     lam_ "fin_ms" $ \ms ->
                       lam_ "fin_n" $ \n ->
-                        Tm.lam (s2n "fin_fin") $
-                          Tm.N (Tm.Var (s2n "fin_fin") Tm.Only) [Tm.FinElim m mz ms n])
+                        Tm.lam_ "fin_fin" $ \fin ->
+                          Tm.N (Tm.Var fin Tm.Only) [Tm.FinElim (var m) (var mz) (var ms) (var n)])
              ]
 
 
@@ -737,7 +738,7 @@ data Neutral_
 
 type Env_ = [Tm.VAL]
 
-vapp_ = (Tm.$$)
+--vapp_ = (Tm.$$)
 --vapp_ :: Tm.VAL -> Tm.VAL -> Tm.VAL
 --vapp_ (VLam_ f)      v  =  f v
 --vapp_ (VNeutral_ n)  v  =  VNeutral_ (NApp_ n v)

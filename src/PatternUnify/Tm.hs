@@ -531,23 +531,23 @@ pi_ s str f = PI s $ lam_ str f
 msType :: Nom -> VAL
 msType m = (pi_ Nat "msArg" (\ l -> (m `app` (var l)) --> ((m `app` (Succ $ var l)))))
 
-vmType a =(pi_ Nat "vec_n" (\ n -> (Vec a (var n)) --> ( SET)))
+vmType a =(pi_ Nat "vec_n" (\ n -> (Vec (var a) (var n)) --> ( SET)))
 
 mnType a m = (m `apps` [Zero, (VNil $ var a)])
 
 mcType a m = (pi_ Nat "vec_n" (\ n ->
-      pi_ a "vec_x" (\ x ->
-      pi_ (Vec a $ var n) "vec_xs" (\ xs ->
+      pi_ (var a) "vec_x" (\ x ->
+      pi_ (Vec (var a)  (var n)) "vec_xs" (\ xs ->
       (m `apps` [var n, var xs]) --> (
-      m `apps` [Succ $ var n, VCons a (var n) (var x) (var xs)])))))
+      m `apps` [Succ $ var n, VCons (var a) (var n) (var x) (var xs)])))))
 
 vResultType m n xs = m `apps` [var n, var xs]
 
 eqmType a = pi_ a "eq_x" (\ x -> pi_ a "eq_y" (\ y -> (Eq a (var x) (var y)) --> ( SET)))
 
-eqmrType a m = pi_ a "eq_xmr" (\ x -> m `apps` [var x, var x, ERefl a (var x)] )
+eqmrType a m = pi_ (var a) "eq_xmr" (\ x -> m `apps` [var x, var x, ERefl (var a) (var x)] )
 
-eqResultType m x y eq = m $$$ [x, y, eq]
+eqResultType m x y eq = m `apps` [var x, var y, var eq]
 
 finmType = pi_ (Nat) "finm_n" $ \n ->
   Fin (var n) --> SET
