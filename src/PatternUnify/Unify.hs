@@ -740,13 +740,19 @@ splitSig ::  Fresh m => [(Nom, Type)] -> Nom -> Type ->
 splitSig _Phi x (SIG _S _T)  = do
     y  <- freshNom
     z  <- freshNom
-    return $ Just  (y, _Pis _Phi _S, z, _Pis _Phi (_T $$ var y),
-                       lams' _Phi (PAIR (var y $*$ _Phi) (var z $*$ _Phi)),
-                       (lams' _Phi (var x $*$ _Phi %% Hd),
-                        lams' _Phi (var x $*$ _Phi %% Tl)))
+    ourApp1 <- (_T $$ var y)
+    ourApp2 <- (var z $*$ _Phi)
+    ourApp3 <- (var y $*$ _Phi)
+    ourApp4 <- ((%% Hd) =<< var x $*$ _Phi)
+    ourApp5 <- ((%% Tl) =<< var x $*$ _Phi)
+    return $ Just  (y, _Pis _Phi _S, z, _Pis _Phi ourApp1,
+                       lams' _Phi (PAIR ourApp3 ourApp2),
+                       (lams' _Phi ourApp4,
+                        lams' _Phi ourApp5))
 splitSig _Phi x (PI _A _B)   = do
     a <- freshNom
-    splitSig (_Phi ++ [(a, _A)]) x (_B $$ var a)
+    ourApp <- (_B $$ var a)
+    splitSig (_Phi ++ [(a, _A)]) x ourApp
 splitSig _ _ _ = return Nothing
 
 
