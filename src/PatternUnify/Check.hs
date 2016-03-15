@@ -311,6 +311,26 @@ quoteSpine (Fin nf) u ((FinElim m mz ms n):as) = do
   qn <- quote Nat n --TODO check n' and n equal?
   let qElim = FinElim qm qmz qms qn
   bind3 quoteSpine (qm $$$ [qn, u]) (u %% qElim) (return as)
+
+quoteSpine (Vec a' n') u ((VecElim a m mn mc n):as) = do
+  qa <- quote SET a
+  qm <- bind2 quote (vmVType a) (return m)
+  qmn <- bind2 quote (mnVType a m) (return mn)
+  qmc <- bind2 quote (mcVType a m) (return mc)
+  qn <- quote Nat n --TODO check n' and n equal?
+  let qElim = VecElim qa qm qmn qmc qn
+  bind3 quoteSpine (vResultVType m n u) (u %% qElim) (return as)
+
+quoteSpine (Eq a' x' y') u ((EqElim a m mr x y):as) = do
+  qa <- quote SET a
+  qm <- bind2 quote (eqmVType a) (return m)
+  qmr <- bind2 quote (eqmrVType a m) (return mr)
+  qx <- quote a x
+  qy <- quote a y
+  let qElim = EqElim qa qm qmr qx qy
+  bind3 quoteSpine (eqResultVType m x y u) (u %% qElim) (return as)
+
+
 --TODO vec, eq
 quoteSpine _T           u (s:_)     =  fail $ "quoteSpine: type " ++ pp _T ++
                                                " of " ++ pp u ++
