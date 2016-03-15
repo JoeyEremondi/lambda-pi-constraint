@@ -162,6 +162,7 @@ checkSpine (PI _S _T)   u  (A s:ts)  = check _S s >>
                                        bind3 checkSpine (_T $$ s) (u $$ s) (return ts)
 checkSpine (SIG _S _T)  u  (Hd:ts)   = bind3 checkSpine (return _S) (u %% Hd) (return ts)
 checkSpine (SIG _S _T)  u  (Tl:ts)   = bind3 checkSpine ((_T $$) =<< (u %% Hd)) (u %% Tl) (return ts)
+
 checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
   check Nat u
   check (Nat --> SET) m
@@ -180,7 +181,38 @@ checkSpine (Fin n) u (elim@(FinElim m mz ms n') : ts) = do
                      " does not match FinElim size index of " ++ pp n'
   bind3 checkSpine (m $$$ [n, u]) (u %% elim) (return ts)
 
---TODO for Vec and Eq
+checkSpine (Vec a' n') u (elim@(VecElim a m mn mc n) : ts) = do
+  check Nat n
+  check SET a
+  eq1 <- equal Nat n n'
+  eq2 <- equal SET a a'
+  check (Vec a n) u
+  bind2 check (vmVType a) (return m)
+  bind2 check (mnVType a m) (return mn)
+  bind2 check (mcVType a m) (return mc)
+  unless eq1 $ fail $ "Size index of given Vec " ++ pp n' ++
+                     " does not match VecElim size index of " ++ pp n
+  unless eq2 $ fail $ "Element type of given Vec " ++ pp a' ++
+                     " does not match VecElim element type of " ++ pp a
+  bind3 checkSpine (vResultVType m n u) (u %% elim) (return ts)
+
+checkSpine (Eq a' x' y') u (elim@(VecElim a m mr x y) : ts) = do
+  check SET a
+  eq1 <- equal SET a a'
+  check a x
+  check a y
+  eq2 <- equal a x x'
+  eq3 <- equal a y y'
+  check (Eq a x y) u
+  bind2 check (eqmVType a) (return m)
+  bind2 check (eqmrVType a m) (return mr)
+  unless eq1 $ fail $ "Type index of given Eq " ++ pp a' ++
+                     " does not match EqElim type index of " ++ pp a
+  unless eq2 $ fail $ "First value index of given Eq " ++ pp x' ++
+                     " does not match EqElim value index of " ++ pp x
+  unless eq3 $ fail $ "Second value index of given Eq " ++ pp y' ++
+                     " does not match EqElim value index of " ++ pp y
+  bind3 checkSpine (eqResultVType m x y u) (u %% elim) (return ts)
 
 checkSpine ty           _  (s:_)     = fail $ "checkSpine: type " ++ pp ty
                                            ++ " does not permit " ++ pp s
