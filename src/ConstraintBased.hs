@@ -180,22 +180,24 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
 
       do  cType_ ii g a conStar
           aVal <- evaluate ii a g
-          cType_ ii g m
-            (  mkPiFn Tm.Nat ( \n -> mkPiFn  (Tm.Vec aVal n) ( \ _ -> conStar)))
           mVal <- evaluate ii m g
-          cType_ ii g mn =<< (foldlM (Tm.$$) mVal [ Tm.Zero, Tm.VNil aVal ])
-          cType_ ii g mc =<<
-            (  mkPiFnM Tm.Nat ( \ n ->
-               mkPiFnM aVal ( \ y ->
-               mkPiFnM ( Tm.Vec aVal n) ( \ ys -> do
-                 mnys <- (mVal Tm.$$$  [n, ys])
-                 mkPiFnM mnys  ( \ _ ->
-                  (mVal Tm.$$$ [(Tm.Succ n), Tm.VCons aVal n y ys]))))))
-          cType_ ii g n $ Tm.Nat
           nVal <- evaluate ii n g
+
+          mType <- Tm.vmVType aVal
+          cType_ ii g m mType
+
+          mnType <- Tm.mnVType aVal mVal
+          cType_ ii g mn mnType
+
+          mcType <- Tm.mcVType aVal mVal
+          cType_ ii g mc mcType
+
+          cType_ ii g n $ Tm.Nat
+
           cType_ ii g vs ((Tm.Vec aVal nVal ))
           vsVal <- evaluate ii vs g
-          (mVal Tm.$$$ [nVal, vsVal])
+
+          Tm.vResultVType mVal nVal vsVal
 
 
     iType_' ii g (Eq_ a x y) =
