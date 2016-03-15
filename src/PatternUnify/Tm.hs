@@ -36,6 +36,8 @@ import GHC.Stack (errorWithStackTrace)
 
 import Data.List (union)
 
+import qualified Data.Map as Map
+
 prettyString t = render $ runPretty $ pretty t
 
 type Nom = Name VAL
@@ -88,8 +90,11 @@ instance Alpha Head
 instance Alpha Elim
 
 instance Subst VAL VAL where
-    substs subList expr   = runFreshM $ eval subList expr
+    substs subList expr   = runFreshM $ eval (Map.fromList subList) expr
     subst n u  = substs [(n, u)]
+
+dictSubsts subDict expr   = runFreshM $ eval (subDict) expr
+dictSubst n u  = dictSubsts $ Map.singleton n u
 
 instance Subst VAL Can
 instance Subst VAL Twin
@@ -459,10 +464,10 @@ instance Occurs a => Occurs [a] where
     frees isMeta = unions . map (frees isMeta)
 
 
-type Subs = [(Nom, VAL)]
+type Subs = Map.Map Nom VAL
 
 compSubs :: Subs -> Subs -> Subs
-compSubs new old = unionBy ((==) `on` fst) new (substs new old)
+compSubs new old = Map.union new (Map.map (dictSubsts new) old)
 
 eval :: (Fresh m) => Subs -> VAL -> m VAL
 --eval g t | trace ("Eval " ++ pp t ++ "\n  Subs: " ++ show g) False = error "Eval"
@@ -495,7 +500,7 @@ eval g t = error $ "Missing eval case for " ++ show t
 
 
 evalHead :: Subs -> Head -> VAL
-evalHead g hv = case lookup (headVar hv) g of
+evalHead g hv = case Map.lookup (headVar hv) g of
                        Just u   -> --trace ("HEAD found " ++ show (pp hv, show g)) $
                           u
                        Nothing  -> N hv []
@@ -504,7 +509,7 @@ elim :: (Fresh m) => VAL -> Elim -> m VAL
 --elim h s | trace ("Elim " ++ pp h ++ " %%% " ++ pp s) False = error "Eval"
 elim (L b)       (A a)  = do
     (x, t) <- unbind b
-    eval [(x, a)] t
+    eval (Map.singleton x a) t
 elim (N u as)    e      = return $ N u $ as ++ [e]
 elim (PAIR x _)  Hd     = return x
 elim (PAIR _ y)  Tl     = return y

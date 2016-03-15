@@ -395,7 +395,8 @@ validate q = local (const []) $ do
   where
     help :: ContextL -> Contextual ()
     help B0 = return ()
-    help (_Del :< E x _ _) | any (x `occursIn`) _Del = throwError "validate: dependency error"
+    --TODO why is this so slow?
+    --help (_Del :< E x _ _) | any (x `occursIn`) _Del = throwError "validate: dependency error"
     help (_Del :< E _ _T HOLE)      = do  putL _Del
                                           check SET _T
                                           help _Del

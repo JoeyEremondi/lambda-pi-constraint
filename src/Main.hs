@@ -15,7 +15,7 @@ import Constraint as Constraint
 import PatternUnify.Kit
 
 main :: IO ()
-main = do 
+main = do
   args <- getArgs
   case args of
     [] ->

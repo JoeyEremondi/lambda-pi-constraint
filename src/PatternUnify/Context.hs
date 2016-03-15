@@ -16,6 +16,10 @@ import Control.Monad.Error
 import Control.Monad.Reader
 import Control.Monad.State
 
+import qualified Data.Map as Map
+
+import qualified Data.Traversable as Traversable
+
 import Debug.Trace
 import GHC.Generics
 
@@ -180,11 +184,11 @@ prettyEntries :: (Applicative m, LFresh m, MonadReader Size m) => [Entry] -> m D
 prettyEntries xs =  vcat <$> (mapM pretty xs)
 
 prettySubs :: (Applicative m, LFresh m, MonadReader Size m) => Subs -> m Doc
-prettySubs ns = (brackets . commaSep) <$> flip mapM ns
+prettySubs ns = (brackets . commaSep) <$> flip mapM (Map.toList ns)
                     (\ (x, v) -> ( (between (text "|->")) <$> (pretty x) <*> (pretty v) ))
 
 prettyDeps :: (Applicative m, LFresh m, MonadReader Size m) => [(Nom, Type)] -> m Doc
-prettyDeps ns = (brackets . commaSep) <$> flip mapM ns
+prettyDeps ns = (brackets . commaSep) <$> flip mapM (ns)
                     (\ (x, _T) -> ( (between (text ":")) <$> (pretty x) <*> (pretty _T) ))
 
 prettyDefns :: (Applicative m, LFresh m, MonadReader Size m) => [(Nom, Type, VAL)] -> m Doc
@@ -233,8 +237,11 @@ pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
  modifyR (Right e :)
 
 pushSubs :: Subs -> Contextual ()
-pushSubs []  = return ()
-pushSubs n   = modifyR (\ cr -> if null cr then [] else Left n : cr)
+pushSubs n   =
+  if Map.null n then
+    return ()
+  else
+    modifyR (\ cr -> if null cr then [] else Left n : cr)
 
 popL :: Contextual Entry
 popL = do
