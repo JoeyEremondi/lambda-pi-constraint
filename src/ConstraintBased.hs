@@ -17,7 +17,6 @@ import Text.ParserCombinators.Parsec.Token
 import qualified Unbound.Generics.LocallyNameless as LN
 
 
-import System.Console.Readline
 import System.IO hiding (print)
 
 import System.IO.Error
