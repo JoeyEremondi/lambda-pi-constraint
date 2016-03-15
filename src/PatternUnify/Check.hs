@@ -14,7 +14,7 @@ import Prelude hiding (any, elem, notElem)
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Foldable (any)
 

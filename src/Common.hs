@@ -3,7 +3,7 @@ module Common where
 
 import           Prelude                                hiding (print)
 
-import           Control.Monad.Error
+import           Control.Monad.Except
 import           Data.Char
 import           Data.List
 

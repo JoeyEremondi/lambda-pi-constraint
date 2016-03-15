@@ -8,7 +8,7 @@ module PatternUnify.Unify where
 import Prelude hiding (elem, notElem)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Monad.Error (catchError, throwError, when)
+import Control.Monad.Except (catchError, throwError, when)
 import Control.Monad.Reader (ask)
 
 import Data.List ((\\))

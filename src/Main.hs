@@ -1,7 +1,7 @@
 module Main where
 
 --import qualified Original as O
-import qualified ConstraintBased as CB 
+import qualified ConstraintBased as CB
 import Common
 
 import System.Environment (getArgs)
