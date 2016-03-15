@@ -23,6 +23,8 @@ import PatternUnify.Check
 import qualified Data.Either as Either
 import qualified Data.Maybe as Maybe
 
+import qualified Data.Map as Map
+
 import Debug.Trace (trace)
 
 import Data.List (intercalate)
@@ -53,7 +55,7 @@ solveEntries !es  =
     result = --trace ("Initial context:\n" ++ initialContextString ) $
        runContextual (B0, map Right es) $ do
           initialise
-          ambulando [] []
+          ambulando [] Map.empty
           validate (const True)
     errString err = ">>>>>>>>>>>>>>\nERROR " ++ err ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     resultString = case result of
@@ -111,7 +113,7 @@ runTest q es = do
                                 render (runPretty (prettyEntries es))
 
                    let r = runContextual (B0, map Right es)
-                                       (initialise >> ambulando [] [] >> validate q)
+                                       (initialise >> ambulando [] Map.empty >> validate q)
                    case r of
                        Left err  -> putStrLn $ "Error: " ++ err
                        Right ((), cx)  -> putStrLn $ "Final context:\n" ++ pp cx ++ "\n"
@@ -125,7 +127,7 @@ isFailed _           = False
 lifted :: Nom -> Type -> [Entry] -> [Entry]
 lifted x _T es = lift [] es
    where
-     lift :: Subs -> [Entry] -> [Entry]
+     lift :: SubsList -> [Entry] -> [Entry]
      lift g (E a _A d : as) = E a (_Pi x _T (substs g _A)) d :
                                   lift ((a, runFreshM $ meta a $$ var x) : g) as
      lift g (Prob a p s : as) = Prob a (allProb x _T (substs g p)) s : lift g as

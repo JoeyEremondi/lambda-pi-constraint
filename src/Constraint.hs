@@ -87,12 +87,12 @@ getRegionDict = foldr foldFun $ Map.singleton (LN.string2Name "builtinLoc") (Com
 
 evalInEnv :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 evalInEnv env =
-  Tm.eval $ map (\(s,val) -> (LN.s2n s, val)) $ globalValues env
+  Tm.eval $ Map.fromList $ map (\(s,val) -> (LN.s2n s, val)) $ globalValues env
 
 
 evalElimInEnv :: WholeEnv -> Tm.Elim -> ConstraintM Tm.Elim
 evalElimInEnv env =
-  Tm.mapElimM $ Tm.eval $ map (\(s,val) -> (LN.s2n s, val)) $ globalValues env
+  Tm.mapElimM $ Tm.eval $ Map.fromList $ map (\(s,val) -> (LN.s2n s, val)) $ globalValues env
 
 
 addValue :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
@@ -323,7 +323,7 @@ constrEval (tenv, venv) it =
     (vglobals, vlocals) = splitContext venv
     wholeEnv = WholeEnv vlocals tlocals vglobals tglobals
   in
-    LN.runFreshM $ Tm.eval tmSubs $ runConstraintM (iToUnifForm 0 wholeEnv it)
+    LN.runFreshM $ Tm.eval (Map.fromList tmSubs) $ runConstraintM (iToUnifForm 0 wholeEnv it)
 
 
 

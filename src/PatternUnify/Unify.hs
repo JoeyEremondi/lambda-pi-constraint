@@ -15,6 +15,8 @@ import Data.List ((\\))
 import Data.Maybe (isNothing)
 import Data.Set (Set, isSubsetOf)
 
+import qualified Data.Map as Map
+
 import Unbound.Generics.LocallyNameless (unbind, subst, substs, Fresh, runFreshM)
 
 import PatternUnify.Kit (pp, elem, notElem, bind2, bind3, bind4, bind5, bind6)
@@ -107,7 +109,7 @@ defineGlobal x _T v m = do   check _T v `catchError`
                                             pp x ++ " : " ++ pp _T ++
                                             " to be " ++ pp v))
                              pushL $ E x _T (DEFN v)
-                             pushR (Left [(x, v)])
+                             pushR (Left (Map.singleton x v))
                              a <- m
                              goLeft
                              return a
@@ -804,7 +806,7 @@ ambulando ns theta = popR >>= \ x -> case x of
  Just (Right e)      -> case update ns theta e of
     Prob n p Active        ->  pushR (Left theta)  >>
                                solver n p          >>
-                               ambulando ns []
+                               ambulando ns Map.empty
     Prob n p Solved        ->  pushL (Prob n p Solved) >>
                                ambulando (n:ns) theta
     E alpha _T HOLE        ->  lower [] alpha _T >>
@@ -818,13 +820,13 @@ ambulando ns theta = popR >>= \ x -> case x of
 
 update :: [ProbId] -> Subs -> Entry -> Entry
 update _ theta (Prob n p Blocked) = Prob n p' k
-      where  p'  = substs theta p
+      where  p'  = substs (Map.toList theta) p
              k   = if p == p' then Blocked else Active
 update ns theta (Prob n p (Pending ys))
         | null rs    = Prob n p' Solved
         | otherwise  = Prob n p' (Pending rs)
       where  rs  = ys \\ ns
-             p'  = substs theta p
+             p'  = substs (Map.toList theta) p
 update _  _      e'@(Prob _ _ Solved)      = e'
 update _  _      e'@(Prob _ _ (Failed _))  = e'
-update _  theta  e'                        = substs theta e'
+update _  theta  e'                        = substs (Map.toList theta) e'

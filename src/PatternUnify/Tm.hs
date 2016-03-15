@@ -94,6 +94,7 @@ instance Subst VAL VAL where
     subst n u  = substs [(n, u)]
 
 dictSubsts subDict expr   = runFreshM $ eval (subDict) expr
+
 dictSubst n u  = dictSubsts $ Map.singleton n u
 
 instance Subst VAL Can
@@ -465,6 +466,8 @@ instance Occurs a => Occurs [a] where
 
 
 type Subs = Map.Map Nom VAL
+
+type SubsList = [(Nom, VAL)]
 
 compSubs :: Subs -> Subs -> Subs
 compSubs new old = Map.union new (Map.map (dictSubsts new) old)
