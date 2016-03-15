@@ -16,7 +16,6 @@ import           Text.Parsec.Token
 import           Text.ParserCombinators.Parsec          hiding (State, parse)
 import           Text.ParserCombinators.Parsec.Language
 
-import           System.Console.Readline
 import           System.IO                              hiding (print)
 
 import           System.IO.Error
@@ -289,7 +288,7 @@ readevalprint int state@(inter, out, ve, te) =
         do
           x <- catch
                  (if inter
-                  then readline (iprompt int)
+                  then putStrLn (iprompt int) >> (Just <$> getLine)
                   else fmap Just getLine)
                  (\_ -> return Nothing)
           case x of
@@ -297,7 +296,7 @@ readevalprint int state@(inter, out, ve, te) =
             Just ""   ->  rec int state
             Just x    ->
               do
-                when inter (addHistory x)
+                --when inter (addHistory x)
                 c  <- interpretCommand x
                 state' <- handleCommand int state c
                 maybe (return ()) (rec int) state'

@@ -37,7 +37,7 @@ executable lambda-pi-constraint
                        , mtl
                        , parsec
                        , pretty
-                       , readline
+                       --, readline
                        --, random
                        , containers
                        --, union-find
