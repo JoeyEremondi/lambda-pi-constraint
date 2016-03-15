@@ -6,7 +6,9 @@
 
 
 module PatternUnify.Kit  (  bool
-            ,  Bwd(..)
+            ,  Bwd
+            , pattern B0
+            , pattern (:<)
             ,  (<><)
             ,  (<>>)
             ,  trail
@@ -48,8 +50,12 @@ bool :: a -> a -> Bool -> a
 bool no yes b = if b then yes else no
 
 
-data Bwd a = B0 | Bwd a :< a
-  deriving (Eq, Show, Functor, Foldable)
+--data Bwd a = B0 | Bwd a :< a
+--  deriving (Eq, Show, Functor, Foldable)
+
+type Bwd a = [a]
+pattern B0 = []
+pattern x :< y = y : x
 
 (<><) :: Bwd a -> [a] -> Bwd a
 xs <>< []       = xs
