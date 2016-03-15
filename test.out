@@ -1,9 +1,94 @@
 LP> :load test.lp
-*** Exception (reporting due to +RTS -xc): (THUNK_STATIC), stack trace: 
-  MAIN.MAIN
+Initial context:
+?? ?? : (Set : Set) === (Set : Set) <= ACTIVE
+??2 ?? : ∀ (xx_ : Set)  .  (Set : Set) === (Set : Set) <= ACTIVE
+α_43_7__4 ? : Set -> Nat -> Set
+α_39_7__5 ? : Pi (xx_ : Set) (Pi (yy_ : Nat) (?α_43_7__4 xx_ yy_ -> Set))
+??6 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : Nat)  .  (Set -> Nat -> Set : Set) === (Pi (?α_43_7__4 xx_ yy_) (?α_39_7__5 xx_ yy_) : Set) <= ACTIVE
+??7 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : Nat)  .  (?α_43_7__4 xx_ yy_ : Set) === (Set : Set) <= ACTIVE
+α_45_7__8 ? : Set -> Nat -> Set
+α_39_7__9 ? : Pi (xx_ : Set) (Pi (yy_ : Nat) (?α_45_7__8 xx_ yy_ -> Set))
+??10 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : Nat)  .  (?α_39_7__5 xx_ yy_ xx_ : Set) === (Pi (?α_45_7__8 xx_ yy_) (?α_39_7__9 xx_ yy_) : Set) <= ACTIVE
+??11 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : Nat)  .  (?α_45_7__8 xx_ yy_ : Set) === (Nat : Set) <= ACTIVE
+??12 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : Nat)  .  (Set : Set) === (?α_39_7__9 xx_ yy_ yy_ : Set) <= ACTIVE
+??18 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : Nat)  .  ∀ (zz_ : Vec xx_ yy_)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??19 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : Nat)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??20 ?? : ∀ (xx_ : Set)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??21 ?? : (Set : Set) === (Set : Set) <= ACTIVE
+α_4_2__32 ? : Set
+α_4_2__34 ? : ?α_4_2__32 -> Set
+??35 ?? : (Pi (xx_ : Set) (Pi (yy_ : Nat) (Vec xx_ yy_ -> Nat)) : Set) === (Pi ?α_4_2__32 ?α_4_2__34 : Set) <= ACTIVE
+α_4_2__36 ? : ?α_4_2__32 -> Set
+??37 ?? : ∀ (xx_ : ?α_4_2__32)  .  (?α_4_2__36 xx_ : Set) === (?α_4_2__34 xx_ : Set) <= ACTIVE
+α_4_2__38 ? : ?α_4_2__32 -> Set
+α_4_2__40 ? : Pi (xx_ : ?α_4_2__32) (?α_4_2__38 xx_ -> Set)
+??41 ?? : ∀ (xx_ : ?α_4_2__32)  .  (?α_4_2__36 xx_ : Set) === (Pi (?α_4_2__38 xx_) (?α_4_2__40 xx_) : Set) <= ACTIVE
+α_4_2__42 ? : Pi (xx_ : ?α_4_2__32) (?α_4_2__38 xx_ -> Set)
+??43 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  (?α_4_2__42 xx_ yy_ : Set) === (?α_4_2__40 xx_ yy_ : Set) <= ACTIVE
+α_4_2__44 ? : Pi (xx_ : ?α_4_2__32) (?α_4_2__38 xx_ -> Set)
+α_5_3__46 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (?α_4_2__44 xx_ yy_ -> Set))
+??47 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  (?α_4_2__42 xx_ yy_ : Set) === (Pi (?α_4_2__44 xx_ yy_) (?α_5_3__46 xx_ yy_) : Set) <= ACTIVE
+α_5_3__48 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (?α_4_2__44 xx_ yy_ -> Set))
+??49 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (?α_5_3__48 xx_ yy_ zz_ : Set) === (?α_5_3__46 xx_ yy_ zz_ : Set) <= ACTIVE
+α_13_3__50 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (?α_4_2__44 xx_ yy_ -> Set))
+α_5_3__51 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_13_3__50 xx_ yy_ zz_ -> Set)))
+??52 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (Pi (a : Set) (Pi (m : Pi (vec_n : Nat) (Vec a vec_n -> Set)) (m 0 [] -> (Pi (vec_k : Nat) (Pi (vec_x : a) (Pi (vec_xs : Vec a vec_k) (m vec_k vec_xs -> m S( vec_k ) vec_x ::{ a vec_k } vec_xs)))) -> Pi (n : Nat) (Pi (xs : Vec a n) (m n xs)))) : Set) === (Pi (?α_13_3__50 xx_ yy_ zz_) (?α_5_3__51 xx_ yy_ zz_) : Set) <= ACTIVE
+??53 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (?α_13_3__50 xx_ yy_ zz_ : Set) === (?α_4_2__32 : Set) <= ACTIVE
+α_6_4__54 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (?α_4_2__44 xx_ yy_ -> Set))
+α_5_3__55 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_6_4__54 xx_ yy_ zz_ -> Set)))
+??56 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (?α_5_3__51 xx_ yy_ zz_ xx_ : Set) === (Pi (?α_6_4__54 xx_ yy_ zz_) (?α_5_3__55 xx_ yy_ zz_) : Set) <= ACTIVE
+α_6_4__57 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (?α_4_2__44 xx_ yy_ -> Set))
+α_6_4__59 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_6_4__57 xx_ yy_ zz_ -> Set)))
+??60 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (?α_6_4__54 xx_ yy_ zz_ : Set) === (Pi (?α_6_4__57 xx_ yy_ zz_) (?α_6_4__59 xx_ yy_ zz_) : Set) <= ACTIVE
+α_6_4__61 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_6_4__57 xx_ yy_ zz_ -> Set)))
+??62 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_4__57 xx_ yy_ zz_)  .  (?α_6_4__61 xx_ yy_ zz_ local3_ : Set) === (?α_6_4__59 xx_ yy_ zz_ local3_ : Set) <= ACTIVE
+α_6_4__63 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_6_4__57 xx_ yy_ zz_ -> Set)))
+α_14_4__65 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_4__57 xx_ yy_ zz_) (?α_6_4__63 xx_ yy_ zz_ local3_ -> Set))))
+??66 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_4__57 xx_ yy_ zz_)  .  (?α_6_4__61 xx_ yy_ zz_ local3_ : Set) === (Pi (?α_6_4__63 xx_ yy_ zz_ local3_) (?α_14_4__65 xx_ yy_ zz_ local3_) : Set) <= ACTIVE
+α_14_4__67 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_4__57 xx_ yy_ zz_) (?α_6_4__63 xx_ yy_ zz_ local3_ -> Set))))
+??68 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_4__57 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_4__63 xx_ yy_ zz_ local3_)  .  (?α_14_4__67 xx_ yy_ zz_ local3_ local4_ : Set) === (?α_14_4__65 xx_ yy_ zz_ local3_ local4_ : Set) <= ACTIVE
+??69 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_4__57 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_4__63 xx_ yy_ zz_ local3_)  .  (?α_14_4__67 xx_ yy_ zz_ local3_ local4_ : Set) === (Set : Set) <= ACTIVE
+α_5_5__74 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (?α_4_2__44 xx_ yy_ -> Set))
+α_5_3__75 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_5_5__74 xx_ yy_ zz_ -> Set)))
+??76 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (?α_5_3__55 xx_ yy_ zz_ (\ local3_ local4_ . Nat) : Set) === (Pi (?α_5_5__74 xx_ yy_ zz_) (?α_5_3__75 xx_ yy_ zz_) : Set) <= ACTIVE
+??77 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??78 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (Nat : Set) === (Nat : Set) <= ACTIVE
+??79 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (?α_5_5__74 xx_ yy_ zz_ : Set) === (Nat : Set) <= ACTIVE
+α_6_6__80 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (?α_4_2__44 xx_ yy_ -> Set))
+α_5_3__81 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_6_6__80 xx_ yy_ zz_ -> Set)))
+??82 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (?α_5_3__75 xx_ yy_ zz_ 0 : Set) === (Pi (?α_6_6__80 xx_ yy_ zz_) (?α_5_3__81 xx_ yy_ zz_) : Set) <= ACTIVE
+α_6_6__83 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (?α_4_2__44 xx_ yy_ -> Set))
+α_6_6__85 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_6_6__83 xx_ yy_ zz_ -> Set)))
+??86 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (?α_6_6__80 xx_ yy_ zz_ : Set) === (Pi (?α_6_6__83 xx_ yy_ zz_) (?α_6_6__85 xx_ yy_ zz_) : Set) <= ACTIVE
+α_6_6__87 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_6_6__83 xx_ yy_ zz_ -> Set)))
+??88 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  (?α_6_6__87 xx_ yy_ zz_ local3_ : Set) === (?α_6_6__85 xx_ yy_ zz_ local3_ : Set) <= ACTIVE
+α_6_6__89 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (?α_6_6__83 xx_ yy_ zz_ -> Set)))
+α_6_6__91 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (?α_6_6__89 xx_ yy_ zz_ local3_ -> Set))))
+??92 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  (?α_6_6__87 xx_ yy_ zz_ local3_ : Set) === (Pi (?α_6_6__89 xx_ yy_ zz_ local3_) (?α_6_6__91 xx_ yy_ zz_ local3_) : Set) <= ACTIVE
+α_6_6__93 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (?α_6_6__89 xx_ yy_ zz_ local3_ -> Set))))
+??94 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  (?α_6_6__93 xx_ yy_ zz_ local3_ local4_ : Set) === (?α_6_6__91 xx_ yy_ zz_ local3_ local4_ : Set) <= ACTIVE
+α_6_6__95 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (?α_6_6__89 xx_ yy_ zz_ local3_ -> Set))))
+α_6_6__97 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (Pi (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_) (?α_6_6__95 xx_ yy_ zz_ local3_ local4_ -> Set)))))
+??98 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  (?α_6_6__93 xx_ yy_ zz_ local3_ local4_ : Set) === (Pi (?α_6_6__95 xx_ yy_ zz_ local3_ local4_) (?α_6_6__97 xx_ yy_ zz_ local3_ local4_) : Set) <= ACTIVE
+α_6_6__99 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (Pi (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_) (?α_6_6__95 xx_ yy_ zz_ local3_ local4_ -> Set)))))
+??100 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  ∀ (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_)  .  (?α_6_6__99 xx_ yy_ zz_ local3_ local4_ local5_ : Set) === (?α_6_6__97 xx_ yy_ zz_ local3_ local4_ local5_ : Set) <= ACTIVE
+α_6_6__101 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (Pi (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_) (?α_6_6__95 xx_ yy_ zz_ local3_ local4_ -> Set)))))
+α_6_6__103 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (Pi (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_) (Pi (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_) (?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_ -> Set))))))
+??104 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  ∀ (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_)  .  (?α_6_6__99 xx_ yy_ zz_ local3_ local4_ local5_ : Set) === (Pi (?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_) (?α_6_6__103 xx_ yy_ zz_ local3_ local4_ local5_) : Set) <= ACTIVE
+α_6_6__105 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (Pi (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_) (Pi (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_) (?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_ -> Set))))))
+??106 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  ∀ (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_)  .  ∀ (local6_ : ?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_)  .  (?α_6_6__105 xx_ yy_ zz_ local3_ local4_ local5_ local6_ : Set) === (?α_6_6__103 xx_ yy_ zz_ local3_ local4_ local5_ local6_ : Set) <= ACTIVE
+α_6_6__107 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (Pi (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_) (Pi (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_) (?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_ -> Set))))))
+α_23_6__109 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (Pi (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_) (Pi (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_) (Pi (local6_ : ?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_) (?α_6_6__107 xx_ yy_ zz_ local3_ local4_ local5_ local6_ -> Set)))))))
+??110 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  ∀ (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_)  .  ∀ (local6_ : ?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_)  .  (?α_6_6__105 xx_ yy_ zz_ local3_ local4_ local5_ local6_ : Set) === (Pi (?α_6_6__107 xx_ yy_ zz_ local3_ local4_ local5_ local6_) (?α_23_6__109 xx_ yy_ zz_ local3_ local4_ local5_ local6_) : Set) <= ACTIVE
+α_23_6__111 ? : Pi (xx_ : ?α_4_2__32) (Pi (yy_ : ?α_4_2__38 xx_) (Pi (zz_ : ?α_4_2__44 xx_ yy_) (Pi (local3_ : ?α_6_6__83 xx_ yy_ zz_) (Pi (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_) (Pi (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_) (Pi (local6_ : ?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_) (?α_6_6__107 xx_ yy_ zz_ local3_ local4_ local5_ local6_ -> Set)))))))
+??112 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  ∀ (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_)  .  ∀ (local6_ : ?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_)  .  ∀ (local7_ : ?α_6_6__107 xx_ yy_ zz_ local3_ local4_ local5_ local6_)  .  (?α_23_6__111 xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ : Set) === (?α_23_6__109 xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ : Set) <= ACTIVE
+??113 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  ∀ (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_)  .  ∀ (local6_ : ?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_)  .  ∀ (local7_ : ?α_6_6__107 xx_ yy_ zz_ local3_ local4_ local5_ local6_)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??114 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  ∀ (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_)  .  ∀ (local6_ : ?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_)  .  ∀ (local7_ : ?α_6_6__107 xx_ yy_ zz_ local3_ local4_ local5_ local6_)  .  (Nat : Set) === (Nat : Set) <= ACTIVE
+??115 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  ∀ (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_)  .  ∀ (local6_ : ?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_)  .  ∀ (local7_ : ?α_6_6__107 xx_ yy_ zz_ local3_ local4_ local5_ local6_)  .  (Nat : Set) === (Nat : Set) <= ACTIVE
+??116 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  ∀ (local3_ : ?α_6_6__83 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_6__89 xx_ yy_ zz_ local3_)  .  ∀ (local5_ : ?α_6_6__95 xx_ yy_ zz_ local3_ local4_)  .  ∀ (local6_ : ?α_6_6__101 xx_ yy_ zz_ local3_ local4_ local5_)  .  ∀ (local7_ : ?α_6_6__107 xx_ yy_ zz_ local3_ local4_ local5_ local6_)  .  (?α_23_6__111 xx_ yy_ zz_ local3_ local4_ local5_ local6_ local7_ : Set) === (Nat : Set) <= ACTIVE
+??127 ?? : ∀ (xx_ : ?α_4_2__32)  .  ∀ (yy_ : ?α_4_2__38 xx_)  .  ∀ (zz_ : ?α_4_2__44 xx_ yy_)  .  (?α_5_3__48 xx_ yy_ zz_ : Set) === (?α_5_3__81 xx_ yy_ zz_ (\ local3_ local4_ local5_ local6_ local7_ . S( 0 )) : Set) <= ACTIVE
+topLevel128 ? : Set
+??129 ?? : (Pi (xx_ : Set) (Pi (yy_ : Nat) (Vec xx_ yy_ -> Nat)) : Set) === (?topLevel128 : Set) <= ACTIVE
 
-LP> :load test.lp
-*** Exception (reporting due to +RTS -xc): (IND_STATIC), stack trace: 
-  MAIN.MAIN
 
-LP> ^C^C
+SourceRegion "test.lp" (line 6, column 6): Cannot rigidly match (Nat : Set)  with (Pi (?α_6_6__107 xx_8011 yy_8012 zz_8013 local3_8014 local4_8015 local5_8016 local6_8017) (?α_23_6__109 xx_8011 yy_8012 zz_8013 local3_8014 local4_8015 local5_8016 local6_8017) : Set)

@@ -289,11 +289,13 @@ rigidRigid (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z')) =
       , EQN a' z b' z']
 
 -- >
-rigidRigid (EQN t1 v1 t2 v2) =
+rigidRigid eq@(EQN t1 v1 t2 v2) = badRigidRigid eq
+
+badRigidRigid :: Equation -> Contextual [Equation]
+badRigidRigid (EQN t1 v1 t2 v2) =
   throwError $ "Cannot rigidly match ("
   ++ prettyString v1 ++ " : " ++ prettyString t1 ++ ")  with ("
   ++ prettyString v2 ++ " : " ++ prettyString t2 ++ ")"
-
 
 -- When we have the same rigid variable (or twins) at the head on both
 -- sides, we proceed down the spine, demanding that projections are
