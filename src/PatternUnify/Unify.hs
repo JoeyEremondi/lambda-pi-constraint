@@ -15,8 +15,7 @@ import Data.List ((\\))
 import Data.Maybe (isNothing)
 import Data.Set (Set, isSubsetOf)
 
-import Unbound.LocallyNameless (unbind, subst, substs, Fresh, runFreshM)
-import Unbound.Util (Collection, fromList)
+import Unbound.Generics.LocallyNameless (unbind, subst, substs, Fresh, runFreshM)
 
 import PatternUnify.Kit (pp, elem, notElem, bind2, bind3, bind4, bind5, bind6)
 import PatternUnify.Tm
@@ -33,13 +32,15 @@ import PatternUnify.Context (Entry(..), ProblemState(..), Problem(..), Equation(
                 pushL, popL, pushR, popR,
                 lookupVar, localParams, lookupMeta)
 
+import qualified Data.Set as Set
+
 import Debug.Trace (trace)
 
 notSubsetOf :: Ord a => Set a -> Set a -> Bool
 a `notSubsetOf` b = not (a `isSubsetOf` b)
 
-vars :: (Ord a, Collection c) => [(a, b)] -> c a
-vars = fromList . map fst
+vars :: (Ord a) => [(a, b)] -> [a]
+vars x = map fst x
 
 active     ::  ProbId -> Equation -> Contextual ()
 block      ::  ProbId -> Equation -> Contextual ()
@@ -534,7 +535,7 @@ intersect ::  Fresh m =>  [(Nom, Type)] -> [(Nom, Type)] ->
                               Type -> [Nom] -> [Nom] ->
                               m (Maybe (Type, VAL -> VAL))
 intersect _Phi _Psi _S [] []
-    | fvs _S `isSubsetOf` vars _Psi  =  return $ Just
+    | (Set.fromList $ fvs _S) `isSubsetOf` (Set.fromList $ vars _Psi)  =  return $ Just
                                              (_Pis _Psi _S, \ beta -> lams' _Phi (runFreshM $ beta $*$ _Psi))
     | otherwise                      =  return Nothing
 intersect _Phi _Psi (PI _A _B) (x:xs) (y:ys) = do
@@ -655,7 +656,7 @@ pruneSpine _Phi _Psi xs (PI _A _B) (A a:es)
     pruned  =  isRigid o || isRigid o'
     stuck   =  isFlexible o || (isNothing o && isFlexible o')
                    || (not pruned && not (isVar a))
-pruneSpine _Phi _Psi _ _T [] | fvs _T `isSubsetOf` vars _Psi && _Phi /= _Psi =
+pruneSpine _Phi _Psi _ _T [] | (Set.fromList $ fvs _T) `isSubsetOf` (Set.fromList $ vars _Psi) && _Phi /= _Psi =
     return $ Just (_Pis _Psi _T, \ v -> lams' _Phi (runFreshM $ v $*$ _Psi))
 pruneSpine _ _ _ _ _  = return Nothing
 

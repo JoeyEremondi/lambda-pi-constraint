@@ -24,7 +24,7 @@ import           System.IO.Error
 import           Control.Monad.Identity                 (Identity, runIdentity)
 import qualified Control.Monad.State                    as State
 
-import Unbound.LocallyNameless (s2n)
+import Unbound.Generics.LocallyNameless (s2n)
 import qualified PatternUnify.Tm as Tm
 
 data Region =

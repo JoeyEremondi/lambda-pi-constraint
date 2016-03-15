@@ -35,14 +35,15 @@ executable lambda-pi-constraint
   -- other-extensions:
   build-depends:       base >=4.7 && <4.9
                        , mtl
+                       , lens
                        , parsec
                        , pretty
                        , readline
                        , random
                        , containers
                        , union-find
-                       , RepLib
-                       , unbound
+                       --, RepLib
+                       , unbound-generics
                        --, signed-multiset
                        , pretty
                        -- , she

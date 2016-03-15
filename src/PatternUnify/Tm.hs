@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs, KindSignatures, TemplateHaskell,
       FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
       UndecidableInstances, TypeSynonymInstances, ScopedTypeVariables
-      , PatternSynonyms #-}
+      , PatternSynonyms, DeriveGeneric #-}
 
 -- This module defines terms and machinery for working with them
 -- (including evaluation and occurrence checking).
@@ -17,16 +17,24 @@ import Data.Function (on)
 import Data.Traversable (traverse)
 import Data.Foldable (foldlM)
 
-import Unbound.LocallyNameless hiding (empty)
-import Unbound.LocallyNameless.Name (isFree)
-import Unbound.LocallyNameless.Types (GenBind(..))
-import Unbound.Util (unions)
+import GHC.Generics
+import Data.Typeable
+
+import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
+
+import Unbound.Generics.LocallyNameless.Bind
+import Unbound.Generics.LocallyNameless hiding (empty)
+import Unbound.Generics.LocallyNameless.Name (isFreeName)
+--import Unbound.Generics.LocallyNameless.Types (GenBind(..))
+--import Unbound.Util (unions)
 
 import PatternUnify.Kit
 
 import Debug.Trace (trace)
 
 import GHC.Stack (errorWithStackTrace)
+
+import Data.List (union)
 
 prettyString t = render $ runPretty $ pretty t
 
@@ -52,22 +60,22 @@ data VAL where
     VCons :: VAL -> VAL -> VAL -> VAL -> VAL
     ERefl :: VAL -> VAL -> VAL
     AnnVal  :: VAL -> VAL -> VAL --Annotated Values --TODO need this?
-  deriving Show
+  deriving (Show, Generic)
 
 type Type = VAL
 
 data Can = Set | Pi | Sig | Pair
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 data Twin = Only | TwinL | TwinR
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 data Head = Var Nom Twin | Meta Nom
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 data Elim = A VAL | Hd | Tl
   | NatElim VAL VAL VAL | VecElim VAL VAL VAL VAL VAL | EqElim VAL VAL VAL VAL VAL | FinElim VAL VAL VAL VAL
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 
 instance Eq VAL where
@@ -335,8 +343,8 @@ etaContract (ERefl a x) = ERefl <$> etaContract a <*> etaContract x
 
 
 
-occursIn :: (Alpha t, Rep a) => Name a -> t -> Bool
-x `occursIn` t = x `elem` fv t
+occursIn :: (Alpha t, Typeable a) => Name a -> t -> Bool
+x `occursIn` t = x `elem` toListOf fv t
 
 
 data Strength   = Weak | Strong
@@ -357,19 +365,21 @@ isFlexible :: Maybe Occurrence -> Bool
 isFlexible (Just Flexible)  = True
 isFlexible _                = False
 
-fvs :: (Collection c, Occurs t) => t -> c Nom
+fvs :: (Occurs t) => t -> [Nom]
 fvs = frees False
 
-fmvs :: (Collection c, Occurs t) => t -> c Nom
+fmvs :: (Occurs t) => t -> [Nom]
 fmvs = frees True
 
 class Occurs t where
     occurrence  :: [Nom] -> t -> Maybe Occurrence
-    frees       :: Collection c => Bool -> t -> c Nom
+    frees       :: Bool -> t -> [Nom]
 
 instance Occurs Nom where
     occurrence _ _ = Nothing
-    frees _ _ = emptyC
+    frees _ _ = []
+
+unions = error "TODO unions"
 
 instance Occurs VAL where
     occurrence xs (L (B _ b))  = occurrence xs b
@@ -403,12 +413,12 @@ instance Occurs VAL where
     frees isMeta (N h es)     = unions (map (frees isMeta) es)
                                   `union` x
       where x = case h of
-                    Var v _  | not isMeta && isFree v  -> singleton v
-                    Meta v   | isMeta && isFree v      -> singleton v
-                    _                                  -> emptyC
-    frees isMeta (Nat) = emptyC
+                    Var v _  | not isMeta && isFreeName v  -> [v]
+                    Meta v   | isMeta && isFreeName v      -> [v]
+                    _                                  -> []
+    frees isMeta (Nat) = []
     frees isMeta (Fin n) = frees isMeta n
-    frees isMeta (Zero) = emptyC
+    frees isMeta (Zero) = []
     frees isMeta (Succ n) = frees isMeta n
     frees isMeta (FZero n) = frees isMeta n
     frees isMeta (FSucc n f) = (frees isMeta n `union` frees isMeta f)
@@ -417,7 +427,7 @@ instance Occurs VAL where
     frees isMeta (VCons a n h t) = unions (map (frees isMeta) [a,n,h,t])
     frees isMeta (Eq a x y) = unions (map (frees isMeta) [a,x,y])
     frees isMeta (ERefl a x) = unions (map (frees isMeta) [a,x])
-    frees isMeta _ = emptyC --TODO frees cases
+    frees isMeta _ = [] --TODO frees cases
 
 type OC = Occurrence
 
@@ -433,7 +443,7 @@ instance Occurs Elim where
    frees isMeta  (FinElim m mz ms n) = unions (map (frees isMeta) [m, mz, ms, n])
    frees isMeta  (VecElim a m mn mc n ) = unions (map (frees isMeta) [m, mn, mc, n, a])
    frees isMeta  (EqElim a m mr x y) = unions (map (frees isMeta) [a, m, mr, x, y])
-   frees _       _       = emptyC
+   frees _       _       = []
 
 instance (Occurs a, Occurs b) => Occurs (a, b) where
     occurrence xs (s, t) = max (occurrence xs s) (occurrence xs t)
@@ -631,10 +641,3 @@ finmsVType m = --piv_ (Nat) "n" $ \n ->
       (m $$$ [n, f]) `arrowv_` (m $$$ [Succ $ n, FSucc (n) (f)])
 
 finRetVType m = piv_ Nat "finRet_n" $ \n -> piv_ (Fin $ n) "finRet_f" $ \f -> m $$$ [n, f]
-
-
-
-
-
-
-$(derive[''VAL, ''Can, ''Elim, ''Head, ''Twin])

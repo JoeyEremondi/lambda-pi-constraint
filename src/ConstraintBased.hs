@@ -14,7 +14,7 @@ import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec.Language
 import Text.ParserCombinators.Parsec.Token
 
-import qualified Unbound.LocallyNameless as LN
+import qualified Unbound.Generics.LocallyNameless as LN
 
 
 import System.Console.Readline

@@ -10,7 +10,9 @@
 
 module PatternUnify.Test where
 
-import Unbound.LocallyNameless
+import Unbound.Generics.LocallyNameless
+
+import GHC.Generics
 
 import PatternUnify.Kit
 import PatternUnify.Tm
@@ -25,7 +27,7 @@ import Debug.Trace (trace)
 
 import Data.List (intercalate)
 
-import qualified Unbound.LocallyNameless as LN
+import qualified Unbound.Generics.LocallyNameless as LN
 
 
 

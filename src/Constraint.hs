@@ -31,7 +31,7 @@ import Control.Applicative
 
 import qualified Data.List as List
 
-import qualified Unbound.LocallyNameless as LN
+import qualified Unbound.Generics.LocallyNameless as LN
 
 import qualified PatternUnify.Tm as Tm
 

@@ -2,7 +2,8 @@
 {-# LANGUAGE GADTs, KindSignatures, TemplateHaskell,
       FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
       UndecidableInstances, GeneralizedNewtypeDeriving,
-      TypeSynonymInstances, ScopedTypeVariables, PatternSynonyms #-}
+      TypeSynonymInstances, ScopedTypeVariables, PatternSynonyms,
+      DeriveGeneric #-}
 
 -- This module defines a typechecker and definitional equality test for a
 -- simple Set-in-Set type theory.
@@ -17,7 +18,9 @@ import Control.Monad.Error
 import Control.Monad.Reader
 import Data.Foldable (any)
 
-import Unbound.LocallyNameless
+import Unbound.Generics.LocallyNameless
+
+import GHC.Generics
 
 import PatternUnify.Kit
 import PatternUnify.Tm
@@ -29,7 +32,7 @@ import Debug.Trace (trace)
 data Tel where
     Stop  :: Tel
     Ask   :: Type -> Bind Nom Tel -> Tel
-  deriving Show
+  deriving (Show, Generic)
 
 instance Alpha Tel
 instance Subst VAL Tel
@@ -403,7 +406,3 @@ validate q = local (const []) $ do
     help (_Del :< Prob _ p st)      = do  checkProb st p
                                           unless (q st) $ throwError "validate: bad state"
                                           help _Del
-
-
-
-$(derive [''Tel])

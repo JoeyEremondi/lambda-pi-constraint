@@ -37,7 +37,7 @@ import Control.Monad.Reader
 import Data.Foldable
 
 import Text.PrettyPrint.HughesPJ as PP hiding (($$))
-import Unbound.LocallyNameless hiding (join)
+import Unbound.Generics.LocallyNameless hiding (join)
 
 elem :: Eq a => a -> [a] -> Bool
 elem x y = x `Prelude.elem` y

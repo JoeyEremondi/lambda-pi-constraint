@@ -2,7 +2,8 @@
 {-# LANGUAGE GADTs, KindSignatures, TemplateHaskell, BangPatterns,
       FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
       UndecidableInstances, GeneralizedNewtypeDeriving,
-      TypeSynonymInstances, ScopedTypeVariables, StandaloneDeriving, PatternSynonyms #-}
+      TypeSynonymInstances, ScopedTypeVariables, StandaloneDeriving, PatternSynonyms,
+      DeriveGeneric #-}
 
 -- This module defines unification problems, metacontexts and operations
 -- for working on them in the |Contextual| monad.
@@ -16,17 +17,20 @@ import Control.Monad.Reader
 import Control.Monad.State
 
 import Debug.Trace
+import GHC.Generics
 
-import Unbound.LocallyNameless hiding (restrict, join)
-import Unbound.LocallyNameless.Ops (unsafeUnbind)
-import Unbound.LocallyNameless.Types (GenBind(..))
+import Unbound.Generics.LocallyNameless.Bind
+import Unbound.Generics.LocallyNameless hiding (restrict, join)
+import Unbound.Generics.LocallyNameless.Unsafe (unsafeUnbind)
+--import Unbound.LocallyNameless.Types (GenBind(..))
 
 import PatternUnify.Kit
 import PatternUnify.Tm
 
+import Data.List (union)
 
 data Dec = HOLE | DEFN VAL
-  deriving Show
+  deriving (Show, Generic)
 
 instance Alpha Dec
 instance Subst VAL Dec
@@ -34,11 +38,11 @@ instance Subst VAL Dec
 instance Occurs Dec where
     occurrence _  HOLE      = Nothing
     occurrence xs (DEFN t)  = occurrence xs t
-    frees _       HOLE      = emptyC
+    frees _       HOLE      = []
     frees isMeta  (DEFN t)  = frees isMeta t
 
 data Equation = EQN Type VAL Type VAL
-  deriving Show
+  deriving (Show, Generic)
 
 instance Alpha Equation
 instance Subst VAL Equation
@@ -56,7 +60,7 @@ instance Pretty Equation where
 
 data Problem  =  Unify Equation
               |  All Param (Bind Nom Problem)
-  deriving Show
+  deriving (Show, Generic)
 
 instance Alpha Problem
 instance Eq Problem where
@@ -95,7 +99,7 @@ wrapProb ((x, e) : _Gam)  p = All e (bind x (wrapProb _Gam p))
 
 
 newtype ProbId = ProbId Nom
-  deriving (Eq, Show, Pretty)
+  deriving (Eq, Show, Pretty, Generic)
 
 instance Alpha ProbId
 instance Subst VAL ProbId
@@ -103,7 +107,7 @@ instance Subst VAL ProbId
 
 
 data ProblemState = Blocked | Active | Pending [ProbId] | Solved | Failed Err
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 instance Alpha ProblemState
 instance Subst VAL ProblemState
@@ -118,7 +122,7 @@ instance Pretty ProblemState where
 
 data Entry  =  E Nom Type Dec
             |  Prob ProbId Problem ProblemState
-  deriving Show
+  deriving (Show, Generic)
 
 instance Alpha Entry
 instance Subst VAL Entry
@@ -145,7 +149,7 @@ type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
 
 data Param = P Type | Twins Type Type
-   deriving Show
+   deriving (Show, Generic)
 
 instance Alpha Param
 
@@ -298,8 +302,3 @@ metaValue x = look =<< getL
     look (cx  :< Prob _ _ _) = look cx
     look (cx  :< E y _ HOLE)  | x == y     = return $ meta x
                            | otherwise  = look cx
-
-
-
-
-$(derive[''Problem, ''ProblemState, ''Dec, ''Entry, ''Equation, ''Param, ''ProbId])
