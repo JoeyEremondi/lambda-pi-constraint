@@ -288,7 +288,7 @@ readevalprint int state@(inter, out, ve, te) =
         do
           x <- catch
                  (if inter
-                  then putStrLn (iprompt int) >> (Just <$> getLine)
+                  then putStr (iprompt int ++ " ") >> (Just <$> getLine)
                   else fmap Just getLine)
                  (\_ -> return Nothing)
           case x of
