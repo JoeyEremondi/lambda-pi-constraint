@@ -12,7 +12,7 @@ module PatternUnify.Context where
 
 import Control.Applicative
 import Control.Monad.Identity
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
 
@@ -205,7 +205,7 @@ prettyParams xs = vcat <$> flip mapM xs
 type Err = String
 
 newtype Contextual a = Contextual { unContextual ::
-    ReaderT Params (StateT Context (FreshMT (ErrorT Err Identity))) a }
+    ReaderT Params (StateT Context (FreshMT (ExceptT Err Identity))) a }
   deriving (Functor, Applicative, Monad,
                 Fresh, MonadError Err,
                 MonadState Context, MonadReader Params,
@@ -219,7 +219,7 @@ ctrace s = do
           (return ()) >>= \ () -> return ()
 
 runContextual :: Context -> Contextual a -> Either Err (a, Context)
-runContextual cx = runIdentity . runErrorT . runFreshMT . flip runStateT cx . flip runReaderT [] . unContextual
+runContextual cx = runIdentity . runExceptT . runFreshMT . flip runStateT cx . flip runReaderT [] . unContextual
 
 modifyL :: (ContextL -> ContextL) -> Contextual ()
 modifyL f = modify (\ (x, y) -> (f x, y))
