@@ -196,7 +196,7 @@ checkSpine (Vec a' n') u (elim@(VecElim a m mn mc n) : ts) = do
                      " does not match VecElim element type of " ++ pp a
   bind3 checkSpine (vResultVType m n u) (u %% elim) (return ts)
 
-checkSpine (Eq a' x' y') u (elim@(VecElim a m mr x y) : ts) = do
+checkSpine (Eq a' x' y') u (elim@(EqElim a m mr x y) : ts) = do
   check SET a
   eq1 <- equal SET a a'
   check a x
