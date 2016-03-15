@@ -483,16 +483,9 @@ eval g (FSucc n f) = FSucc <$> (eval g n) <*> (eval g f)
 
 eval g t = error $ "Missing eval case for " ++ show t
 
-subLookup :: Nom -> Subs -> Maybe VAL
-subLookup _ [] = Nothing
-subLookup nm ((sn, sv) : rest) =
-  if (name2String nm == name2String sn && name2Integer nm == name2Integer sn)
-  then Just sv
-  else subLookup nm rest
-
 
 evalHead :: Subs -> Head -> VAL
-evalHead g hv = case subLookup (headVar hv) g of
+evalHead g hv = case lookup (headVar hv) g of
                        Just u   -> --trace ("HEAD found " ++ show (pp hv, show g)) $
                           u
                        Nothing  -> N hv []

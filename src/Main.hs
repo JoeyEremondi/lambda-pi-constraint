@@ -4,6 +4,8 @@ module Main where
 import qualified ConstraintBased as CB
 import Common
 
+import System.Environment (getArgs)
+
 import PatternUnify.Test
 import PatternUnify.Tm as Tm
 
@@ -13,8 +15,14 @@ import Constraint as Constraint
 import PatternUnify.Kit
 
 main :: IO ()
-main = repLP CB.checker True
-
+main = do
+  args <- getArgs
+  case args of
+    [] ->
+      repLP CB.checker True
+    (fileName:_) -> do
+      compileFile (lp CB.checker) (True, [], lpve, lpte) fileName
+      return ()
 
 
 lp :: TypeChecker -> Interpreter ITerm_ CTerm_ Tm.VAL Tm.VAL CTerm_ Tm.VAL
