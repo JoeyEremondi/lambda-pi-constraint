@@ -581,8 +581,9 @@ finRetType m = pi_ Nat "finRet_n" $ \n -> pi_ (Fin $ var n) "finRet_f" $ \f -> m
 --Same, but in a fresh monad
 lamv_ :: (Fresh m) => String -> (VAL -> m VAL) -> m VAL
 lamv_ s f = do
-  body <- f $ vv s
-  return $ lam (s2n s) body
+  ourNom <- freshNom
+  body <- f $ var ourNom
+  return $ lam ourNom body
 
 piv_ :: (Fresh m) => VAL -> String -> (VAL -> m VAL) -> m VAL
 piv_ s str f = PI s <$> lamv_ str f
