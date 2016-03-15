@@ -103,7 +103,7 @@ let Bool = Fin 2
 -- constructors
 let False = FZero 1
 let True  = FSucc 1 (FZero 0)
-{-
+
 -- eliminator
 let boolElim =
   ( \ m mf mt -> finElim ( nat2Elim (\ n -> Fin n -> *)
@@ -154,7 +154,7 @@ let odd     = natFold Bool False not
 let isZero  = natFold Bool True (\ _ -> False)
 let isSucc  = natFold Bool False (\ _ -> True)
 
--}
+
 
 -- equality on natural numbers
 let natEq =

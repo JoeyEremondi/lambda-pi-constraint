@@ -139,7 +139,7 @@ check _T          (C c as)  =  fail $ "check: canonical inhabitant " ++ pp (C c 
 
 check _T          (L _)     =  fail $ "check: lambda cannot inhabit " ++ pp _T
 
-
+check _T          t     =  fail $ "check: " ++ pp t ++ " cannot inhabit " ++ pp _T
 
 infer :: Head -> Contextual Type
 infer (Var x w)  = lookupVar x w
@@ -206,7 +206,7 @@ quote _T           (N h as)  = do  _S <- infer h
 
 quote SET Nat = return Nat
 quote SET (Fin n) = Fin <$> quote Nat n
-quote SET (Vec a Zero) = Vec <$> quote SET a <*> quote Nat Zero
+quote SET (Vec a n) = Vec <$> quote SET a <*> quote Nat n
 quote SET (Eq a x y) = Eq <$> quote SET a <*> quote a x <*> quote a y
 
 quote Nat Zero = return Zero
@@ -272,7 +272,7 @@ quoteSpine (Nat) u ((NatElim m mz ms):as) = do
   let qElim = NatElim qm qmz qms
   bind3 quoteSpine (qm $$ u) (u %% qElim) (return as)
 
-quoteSpine (Fin (Succ _)) u ((FinElim m mz ms n):as) = do
+quoteSpine (Fin nf) u ((FinElim m mz ms n):as) = do
   qm <- quote finmType m
   qmz <- bind2 quote (finmzVType m) (return mz)
   qms <- bind2 quote (finmsVType m) (return ms)

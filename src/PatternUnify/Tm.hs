@@ -296,6 +296,7 @@ initLast :: [x] -> Maybe ([x], x)
 initLast []  = Nothing
 initLast xs  = Just (init xs, last xs)
 --
+--TODO etaContract for custom elims?
 etaContract :: (Fresh m) => VAL -> m VAL
 etaContract (L b) = do
   (y, t) <- unbind b
@@ -316,9 +317,23 @@ etaContract (PAIR s t) = do
                        as' == bs'  -> return $ N x as'
     (s', t') -> return $ PAIR s' t'
 etaContract (C c as) = C c <$> (mapM etaContract as)
+
 etaContract Nat = return Nat
 etaContract Zero = return Zero
 etaContract (Succ k) = Succ <$> (etaContract k)
+
+etaContract (Fin n ) = Fin <$> etaContract n
+etaContract (FZero n) = FZero <$> etaContract n
+etaContract (FSucc n f) = FSucc <$> (etaContract n) <*> etaContract f
+
+etaContract (Vec a n) = Vec <$> etaContract a <*> etaContract n
+etaContract (VNil a) = VNil <$> etaContract a
+etaContract (VCons a n h t ) = VCons <$> etaContract a <*> etaContract n <*> etaContract h <*> etaContract t
+
+etaContract (Eq a x y) = Eq <$> etaContract a <*> etaContract x <*> etaContract y
+etaContract (ERefl a x) = ERefl <$> etaContract a <*> etaContract x
+
+
 
 occursIn :: (Alpha t, Rep a) => Name a -> t -> Bool
 x `occursIn` t = x `elem` fv t
@@ -458,6 +473,7 @@ eval g (Fin n) = Fin <$> (eval g n)
 
 eval _ Zero = return Zero
 eval g (Succ n) = Succ <$> (eval g n)
+eval g (VNil a) = VNil <$> (eval g a)
 eval g (VCons a n h t) = VCons <$> (eval g a) <*> (eval g n) <*> (eval g h) <*> (eval g t)
 eval g (ERefl a x) = ERefl <$> (eval g a) <*> (eval g x)
 
