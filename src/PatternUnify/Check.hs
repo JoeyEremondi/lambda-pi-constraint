@@ -120,7 +120,7 @@ check (Vec a (Succ n)) (VCons a' n' h t) = do
   check SET a
   check a h
   check (Vec a n) t
-  check n Nat
+  check Nat n
   unless eq1 $ fail $ "check: Cons type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
   unless eq2 $ fail $ "check: Cons length index " ++ (pp n') ++ " does not match type index " ++ (pp n)
 

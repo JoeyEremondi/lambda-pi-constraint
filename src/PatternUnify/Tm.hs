@@ -557,11 +557,11 @@ vmType a =(pi_ Nat "vec_n" (\ n -> (Vec (var a) (var n)) --> ( SET)))
 
 mnType a m = (m `apps` [Zero, (VNil $ var a)])
 
-mcType a m = (pi_ Nat "vec_n" (\ n ->
+mcType a m = (pi_ Nat "vec_k" (\ n ->
       pi_ (var a) "vec_x" (\ x ->
       pi_ (Vec (var a)  (var n)) "vec_xs" (\ xs ->
       (m `apps` [var n, var xs]) --> (
-      m `apps` [Succ $ var n, VCons (var a) (var n) (var x) (var xs)])))))
+      m `apps` [Succ (var n), VCons (var a) (var n) (var x) (var xs)])))))
 
 vResultType m n xs = m `apps` [var n, var xs]
 
@@ -610,11 +610,11 @@ vmVType a =(piv_ Nat "vec_n" (\ n -> (ret_ $ Vec (a) (n)) `arrowv_` ( ret_ SET))
 
 mnVType a m = (m $$$ [Zero, (VNil $ a)])
 
-mcVType a m = (piv_ Nat "vec_n" (\ n ->
+mcVType a m = (piv_ Nat "vec_k" (\ n ->
       piv_ (a) "vec_x" (\ x ->
       piv_ (Vec (a)  (n)) "vec_xs" (\ xs ->
       (m $$$ [n, xs]) `arrowv_` (
-      m $$$ [Succ $ n, VCons (a) (n) (x) (xs)])))))
+      m $$$ [Succ n, VCons (a) (n) (x) (xs)])))))
 
 vResultVType m n xs = m $$$ [n, xs]
 
