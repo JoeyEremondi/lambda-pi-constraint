@@ -18,7 +18,7 @@ cabal-version:       >=1.10
 executable lambda-pi-constraint
   -- -prof -fprof-auto -fprof-auto -fprof-cafs
   ghc-options:
-        -O2
+        -O2 -prof -fprof-auto -fprof-auto -fprof-cafs
   main-is:             Main.hs
   other-modules:
 --    Original,
@@ -35,7 +35,6 @@ executable lambda-pi-constraint
   -- other-extensions:
   build-depends:       base >=4.7 && <4.9
                        , mtl
-                       , lens
                        , parsec
                        , pretty
                        , readline

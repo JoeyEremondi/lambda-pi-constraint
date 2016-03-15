@@ -379,7 +379,7 @@ instance Occurs Nom where
     occurrence _ _ = Nothing
     frees _ _ = []
 
-unions = error "TODO unions"
+unions = concat
 
 instance Occurs VAL where
     occurrence xs (L (B _ b))  = occurrence xs b
