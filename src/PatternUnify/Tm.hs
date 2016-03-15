@@ -513,7 +513,14 @@ elim (FZero k) (FinElim m mz _ _) = mz $$ k
 elim (FSucc k f) theElim@(FinElim m _ ms _) = do
   sub <- elim f theElim
   ms $$$ [k, f, sub]
---TODO elim for Vec Eq
+
+elim (VNil _) theElim@(VecElim a m mn mc n) = return mn
+elim (VCons _ _  h t) theElim@(VecElim a m mn mc (Succ n)) = do
+  sub <- elim t theElim
+  mc $$$ [n, h, t, sub]
+
+elim (ERefl _ z) theElim@(EqElim a m mr x y) =
+  mr $$ z
 elim t           a      = badElim $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 badElim s = errorWithStackTrace s
