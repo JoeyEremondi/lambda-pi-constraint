@@ -16,7 +16,6 @@ import qualified Common
 import Control.Monad.Identity (Identity)
 import Control.Monad.State
 import Control.Monad.Trans
-import qualified Control.Monad.Trans.UnionFind as UF
 import Control.Monad.Writer
 import Data.Data
 import Data.Typeable

@@ -38,13 +38,12 @@ executable lambda-pi-constraint
                        , parsec
                        , pretty
                        , readline
-                       , random
+                       --, random
                        , containers
-                       , union-find
+                       --, union-find
                        --, RepLib
                        , unbound-generics
                        --, signed-multiset
-                       , pretty
                        -- , she
   hs-source-dirs:      src
   default-language:    Haskell2010
