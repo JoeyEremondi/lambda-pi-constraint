@@ -242,15 +242,25 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
           cType_ ii g eq eqC
           eqVal <- evaluate ii eq g
           (mVal Tm.$$$ [xVal, yVal])
-{-
+
     iType_' ii g (Fst_ pr) = do
       pairType <- iType_ ii g pr
-      sType <- freshType $ region pr
+      sType <- freshType (region pr) g
       tType <- fresh (region pr) g (sType Tm.--> conStar)
-      unifySets pairType (Tm.SIG sType tType)
+      unifySets reg pairType (Tm.SIG sType tType) g
       --Head has the type of the first elem
       return sType
--}
+
+    iType_' ii g (Snd_ pr) = do
+      pairType <- iType_ ii g pr
+      sType <- freshType (region pr) g
+      tType <- fresh (region pr) g (sType Tm.--> conStar)
+      unifySets reg pairType (Tm.SIG sType tType) g
+      prVal <- evaluate ii (L reg $ Inf_ pr) g
+      headVal <- prVal Tm.%% Tm.Hd
+      --Head has second type, with first val given as argument
+      tType Tm.$$ headVal
+
 
     iType_' ii g (Bound_ vi) = error "TODO why never bound?"
       --return $ (snd $ snd g `listLookup` (ii - (vi+1) ) ) --TODO is this right?

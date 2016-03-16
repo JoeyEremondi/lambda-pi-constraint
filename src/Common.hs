@@ -193,12 +193,12 @@ parseITerm_ 3 e = getRegion >>= \pos ->
   <|>
     do
         reserved lambdaPi "fst"
-        pr <- parseCTerm_ 3 e
+        pr <- parseITerm_ 3 e
         return (L pos $ Fst_ pr)
   <|>
     do
         reserved lambdaPi "snd"
-        pr <- parseCTerm_ 3 e
+        pr <- parseITerm_ 3 e
         return (L pos $ Snd_ pr)
   <|> do
         n <- natural lambdaPi
@@ -722,8 +722,8 @@ data ITerm_'
 
    |  Fin_ CTerm_
    |  FinElim_ CTerm_ CTerm_ CTerm_ CTerm_ CTerm_
-   |  Fst_ CTerm_
-   |  Snd_ CTerm_
+   |  Fst_ ITerm_
+   |  Snd_ ITerm_
 
   deriving (Show, Eq)
 

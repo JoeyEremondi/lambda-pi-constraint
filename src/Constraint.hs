@@ -312,12 +312,12 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
         hdVal Tm.%% spineVal
 
       Common.Fst_ x -> do
-        pr <- cToUnifForm ii env x
+        pr <- iToUnifForm ii env x
         prVal <- evalInEnv env pr
         pr Tm.%% Tm.Hd
 
       Common.Snd_ x -> do
-        pr <- cToUnifForm ii env x
+        pr <- iToUnifForm ii env x
         prVal <- evalInEnv env pr
         pr Tm.%% Tm.Tl
 --  in result --trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
