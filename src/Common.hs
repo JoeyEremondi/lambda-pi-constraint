@@ -88,7 +88,7 @@ parensIf False = id
 
 
 lambdaPi = makeTokenParser (haskellStyle { identStart = letter <|> P.char '_',
-                                           reservedNames = ["forall", "exists", "fst", "snd", "let", "assume", "putStrLn", "out", "pair"] })
+                                           reservedNames = ["forall", "exists", "fst", "snd", "let", "assume", "putStrLn", "out"] })
 
 parseStmt_ :: [String] -> LPParser (Stmt ITerm_ CTerm_)
 parseStmt_ e =
@@ -220,7 +220,7 @@ parseCTerm_ :: Int -> [String] -> LPParser CTerm_
 parseCTerm_ 0 e = getRegion >>= \pos ->
       parseLam_ e
     <|>
-      parsePair_ e
+      try (parsePair_ e)
     <|> fmap (\x -> L pos (Inf_ x)) (parseITerm_ 0 e)
 parseCTerm_ p e =  getRegion >>= \pos ->
       try (parsePair_ e)

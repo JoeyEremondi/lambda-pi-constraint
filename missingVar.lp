@@ -17,26 +17,14 @@ let v2 = (snd zeroes) :: Nat
 
 let geq = (\ x y -> exists (z :: Nat) . Eq Nat x (plus y z) ) :: Nat -> Nat -> *
 
-let gt =
-  (\ x y -> geq x (Succ y))
-  :: Nat -> Nat -> *
-
-let leq = (\ x y -> geq y x) :: Nat -> Nat -> *
-
-let lt = (\ x y -> gt y x) :: Nat -> Nat -> *
-
-let ident0left =
+let ident0 =
   (\ x -> Refl Nat (plus 0 x))
   :: forall (x :: Nat) . Eq Nat x (plus 0 x)
 
-let ident0right =
-  (\ x -> Refl Nat (plus x 0))
-  :: forall (x :: Nat) . Eq Nat x (plus x 0)
-
 let geq0 =
-  (\n -> (n , ident0left n) )
+  (\n -> (n , ident0 n) )
   :: forall (n :: Nat ) . geq n 0
 
 let natsAreInf =
-  (\n -> (Succ n, (0, Refl _ (Succ n) ) ) )
-  :: forall (n :: Nat) . exists (m :: Nat) . gt m n
+  (\n -> (Succ n, _) )
+  :: forall (n :: Nat) . exists (m :: Nat) . geq m (Succ n)
