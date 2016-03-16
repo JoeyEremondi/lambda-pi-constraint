@@ -151,6 +151,9 @@ cToUnifForm ii env tm'@(Common.L _ tm) = --trace ("CTO " ++ render (Common.cPrin
         retBody <- cToUnifForm (ii + 1) newEnv ctm
         return $ Tm.L $ LN.bind newNom retBody
 
+      Common.Pair_ x y ->
+        Tm.PAIR <$> cToUnifForm ii env x <*> cToUnifForm ii env y
+
       Common.Zero_ ->
         return $ Tm.Zero
 
@@ -214,6 +217,17 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
           --tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
         return $ Tm.PI sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
           --mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
+
+      Common.Sigma_ s t@(Common.L tReg _) -> do
+        freeNom <- freshNom $ localName ii
+        let localVal = Tm.var freeNom
+        sVal <- (cToUnifForm ii env s)
+          --Our argument in t function has type S
+        let
+          newEnv = addValue (ii, Tm.var freeNom) $ addType (ii, sVal) env
+        translatedFn <- (cToUnifForm (ii + 1) newEnv t)
+          --tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
+        return $ Tm.SIG sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
 
       Common.Bound_ i ->
         let
@@ -296,6 +310,16 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
         hdVal <- evalInEnv env hd
         spineVal <- evalElimInEnv env spine
         hdVal Tm.%% spineVal
+
+      Common.Fst_ x -> do
+        pr <- cToUnifForm ii env x
+        prVal <- evalInEnv env pr
+        pr Tm.%% Tm.Hd
+
+      Common.Snd_ x -> do
+        pr <- cToUnifForm ii env x
+        prVal <- evalInEnv env pr
+        pr Tm.%% Tm.Tl
 --  in result --trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
 
 type ConTyFn = Tm.VAL
