@@ -88,7 +88,7 @@ parensIf False = id
 
 
 lambdaPi = makeTokenParser (haskellStyle { identStart = letter <|> P.char '_',
-                                           reservedNames = ["forall", "exists", "let", "assume", "putStrLn", "out"] })
+                                           reservedNames = ["forall", "exists", "fst", "snd", "let", "assume", "putStrLn", "out"] })
 
 parseStmt_ :: [String] -> LPParser (Stmt ITerm_ CTerm_)
 parseStmt_ e =
@@ -190,6 +190,16 @@ parseITerm_ 3 e = getRegion >>= \pos ->
   <|> do
         reserved lambdaPi "_"
         return $ L pos $ Meta_ ("β_" ++ regionName pos)
+  <|>
+    do
+        reserved lambdaPi "fst"
+        pr <- parseCTerm_ 3 e
+        return (L pos $ Fst_ pr)
+  <|>
+    do
+        reserved lambdaPi "snd"
+        pr <- parseCTerm_ 3 e
+        return (L pos $ Snd_ pr)
   <|> do
         n <- natural lambdaPi
         return (toNat_ pos n)
