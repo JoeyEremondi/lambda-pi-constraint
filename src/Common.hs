@@ -272,8 +272,12 @@ iPrint_ p ii (L _ it) = iPrint_' p ii it
     iPrint_' p ii Star_             =  text "*"
     iPrint_' p ii (Pi_ d (L _ (Inf_ (L _ (Pi_ d' r)))))
                                    =  parensIf (p > 0) (nestedForall_ (ii + 2) [(ii + 1, d'), (ii, d)] r)
-    iPrint_' p ii (Pi_ d r)         =  parensIf (p > 0) (sep [text "forall " <> text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d <> text " .", cPrint_ 0 (ii + 1) r])
-    iPrint_' p ii (Sigma_ d r)         =  parensIf (p > 0) (sep [text "exists " <> text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d <> text " .", cPrint_ 0 (ii + 1) r])
+    iPrint_' p ii (Pi_ d r)         =  parensIf (p > 0) (sep [text "forall " <>
+      parensIf True (text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d )
+      <> text " .", cPrint_ 0 (ii + 1) r])
+    iPrint_' p ii (Sigma_ d r)         =  parensIf (p > 0) (sep [text "exists " <>
+      parensIf True (text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d ) 
+      <> text " .", cPrint_ 0 (ii + 1) r])
     iPrint_' p ii (Bound_ k)        =  text (vars !! (ii - k - 1))
     iPrint_' p ii (Free_ (Global s))=  text s
     iPrint_' p ii (i :$: c)         =  parensIf (p > 2) (sep [iPrint_ 2 ii i, nest 2 (cPrint_ 3 ii c)])
