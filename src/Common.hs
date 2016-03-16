@@ -273,6 +273,7 @@ iPrint_ p ii (L _ it) = iPrint_' p ii it
     iPrint_' p ii (Pi_ d (L _ (Inf_ (L _ (Pi_ d' r)))))
                                    =  parensIf (p > 0) (nestedForall_ (ii + 2) [(ii + 1, d'), (ii, d)] r)
     iPrint_' p ii (Pi_ d r)         =  parensIf (p > 0) (sep [text "forall " <> text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d <> text " .", cPrint_ 0 (ii + 1) r])
+    iPrint_' p ii (Sigma_ d r)         =  parensIf (p > 0) (sep [text "exists " <> text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d <> text " .", cPrint_ 0 (ii + 1) r])
     iPrint_' p ii (Bound_ k)        =  text (vars !! (ii - k - 1))
     iPrint_' p ii (Free_ (Global s))=  text s
     iPrint_' p ii (i :$: c)         =  parensIf (p > 2) (sep [iPrint_ 2 ii i, nest 2 (cPrint_ 3 ii c)])
@@ -287,6 +288,8 @@ iPrint_ p ii (L _ it) = iPrint_' p ii it
     iPrint_' p ii (Fin_ n)          =  iPrint_ p ii (locFree (Global "Fin") `globalApp` n)
     iPrint_' p ii (FinElim_ m mz ms n f)
                                    =  iPrint_ p ii (locFree (Global "finElim") `globalApp` m `globalApp` mz `globalApp` ms `globalApp` n `globalApp` f)
+    iPrint_' p ii (Fst_ pr)          =  text "fst" <> iPrint_ p ii pr
+    iPrint_' p ii (Snd_ pr)          =  text "snd" <> iPrint_ p ii pr
     iPrint_' p ii x                 =  text ("[" ++ show x ++ "]")
 
 cPrint_ :: Int -> Int -> CTerm_ -> Doc
@@ -294,6 +297,7 @@ cPrint_ p ii (L reg ct) = cPrint_' p ii ct
   where
     cPrint_' p ii (Inf_ i)    = iPrint_ p ii i
     cPrint_' p ii (Lam_ c)    = parensIf (p > 0) (text "\\ " <> text (vars !! ii) <> text " -> " <> cPrint_ 0 (ii + 1) c)
+    cPrint_' p ii (Pair_ h t)    = parensIf True ( cPrint_ p ii h <> text " , " <> cPrint_ 0 (ii + 1) t)
     cPrint_' p ii Zero_       = fromNat_ 0 ii (L reg Zero_)     --  text "Zero"
     cPrint_' p ii (Succ_ n)   = fromNat_ 0 ii (L reg $ Succ_ n) --  iPrint_ p ii (Free_ (Global "Succ") :$: n)
     cPrint_' p ii (Nil_ a)    = iPrint_ p ii (locFree (Global "Nil") `globalApp` a)

@@ -83,7 +83,7 @@ iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
-iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
+iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
   iType_' iiGlobal g it
   where
     iType_' ii g m@(Meta_ s) = do
@@ -267,7 +267,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
 
 
 cType_ :: Int -> WholeEnv -> CTerm_ -> ConType -> ConstraintM ()
-cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0 0 lct) ++ " :: " ++ Tm.prettyString globalTy) $
+cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0 lct) ++ " :: " ++ Tm.prettyString globalTy) $
   cType_' iiGlobal g ct globalTy
   where
     cType_' ii g (Inf_ e) tyAnnot
