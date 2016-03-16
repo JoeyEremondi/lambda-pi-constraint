@@ -879,6 +879,7 @@ iSubst_ ii i' (L reg it) = L reg $ iSubst_' ii i' it
 
     iSubst_' ii r  Star_           =  Star_
     iSubst_' ii r  (Pi_ ty ty')    =  Pi_  (cSubst_ ii r ty) (cSubst_ (ii + 1) r ty')
+    iSubst_' ii r  (Sigma_ ty ty')    =  Sigma_  (cSubst_ ii r ty) (cSubst_ (ii + 1) r ty')
 
     iSubst_' ii (L _ isub) (Bound_ j)      =  if ii == j then isub else Bound_ j
     iSubst_' ii i' (Free_ y)       =  Free_ y
@@ -909,11 +910,15 @@ iSubst_ ii i' (L reg it) = L reg $ iSubst_' ii i' it
                                               (cSubst_ ii r mz) (cSubst_ ii r ms)
                                               (cSubst_ ii r n) (cSubst_ ii r f)
 
+    iSubst_' ii r  (Fst_ pr)        =  Fst_ (iSubst_ ii r pr)
+    iSubst_' ii r  (Snd_ pr)        =  Snd_ (iSubst_ ii r pr)
+
 cSubst_ :: Int -> ITerm_ -> CTerm_ -> CTerm_
 cSubst_ ii i' (L reg ct) = L reg $ cSubst_' ii i' ct
   where
     cSubst_' ii i' (Inf_ i)      =  Inf_ (iSubst_ ii i' i)
     cSubst_' ii i' (Lam_ c)      =  Lam_ (cSubst_ (ii + 1) i' c)
+    cSubst_' ii i' (Pair_ x y)      =  Pair_ (cSubst_ ii i' x) (cSubst_ ii i' y)
 
     cSubst_' ii r  Zero_         =  Zero_
     cSubst_' ii r  (Succ_ n)     =  Succ_ (cSubst_ ii r n)
