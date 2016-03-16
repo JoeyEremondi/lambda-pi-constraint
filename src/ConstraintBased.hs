@@ -84,7 +84,9 @@ iType0_ = iType_ 0
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
 iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
-  iType_' iiGlobal g it
+  do
+    result <- iType_' iiGlobal g it
+    return $ trace ("===>  RET ITYPE " ++ show (iPrint_ 0 0 lit) ++ " :: " ++ Tm.prettyString result) $ result
   where
     iType_' ii g m@(Meta_ s) = do
       metaType <- freshType reg g
@@ -300,7 +302,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0
         let arg = -- trace ("Lambda giving arg " ++ show ii) $
               builtin $ Free_ (Local ii)
             --TODO g or newEnv?
-        argVal <-evalInEnv g $ Tm.var argName --iToUnifForm ii newEnv arg
+        argVal <- return $ Tm.var argName --evalInEnv g $ Tm.var argName --iToUnifForm ii newEnv arg
         unifySets reg fnTy (Tm.PI argTy returnTyFn)  g
         returnTy <- freshType (region body) newEnv
         appedTy <- (returnTyFn Tm.$$ argVal)
@@ -317,8 +319,8 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0
       --Head has the type of the first elem
       cType_ ii g x sType
       --Tail type depends on given argument
-      x' <- evaluate ii x g
-      fstVal <- evalInEnv g x'
+      --x' <- evaluate ii x g
+      fstVal <- evaluate ii x g --evalInEnv g x'
       appedTy <- (tType Tm.$$ fstVal)
       cType_ ii g y appedTy
 
