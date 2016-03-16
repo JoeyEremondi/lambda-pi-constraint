@@ -31,6 +31,8 @@ import Data.List (intercalate)
 
 import qualified Unbound.Generics.LocallyNameless as LN
 
+import qualified Data.Graph as Graph
+
 
 
 -- The |test| function executes the constraint solving algorithm on the
@@ -52,7 +54,7 @@ solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    result = trace ("Initial context:\n" ++ initialContextString ) $
+    result = --trace ("Initial context:\n" ++ initialContextString ) $
        runContextual (B0, map Right es) $ do
           initialise
           ambulando [] Map.empty
@@ -93,16 +95,35 @@ getContextErrors startEntries cx@(lcx, rcx) = do
       getErrorPairs entries =
         let
           failures = filter isFailed entries
-          initPending = filter isInitial $ filter isPending entries
-          failedInits = map (\(Prob ident _ (Failed s)) -> (ident, s)) $ filter isInitial failures
-          pendOnFailed =
-            [(ident, err)
-            | (Prob failId _ (Failed err)) <- failures
-            , (Prob ident _ (Pending pendingOn)) <- initPending
-            , failId `Prelude.elem` pendingOn
+          allPendings = filter isPending entries
+
+          failEdges pFrom@(Prob idPendingOn _ (Pending pendingOn)) =
+            (pFrom, probIdToName idPendingOn,
+            [ probIdToName idFailed
+            | (Prob idFailed _ (Failed err)) <- failures
+            , idFailed `Prelude.elem` pendingOn
             ]
+            ++
+            [ probIdToName idFailed
+            | (Prob idFailed _ _) <- allPendings
+            , idFailed `Prelude.elem` pendingOn
+            ])
+
+          (pendGraph, vertToInfo, infoToVert) = Graph.graphFromEdges $
+              [ failEdges p | p <- allPendings]
+              ++ [(failProb, probIdToName idFailed, []) | failProb@(Prob idFailed _ _) <- failures]
+
+          failPaths =
+            [ (initId, err)
+            | initId <- initialIdents
+            , (Prob failId _ (Failed err)) <- failures
+            , (Just vinit) <- [infoToVert $ probIdToName initId]
+            , (Just vfail) <- [infoToVert $ probIdToName failId]
+            , Graph.path pendGraph vinit vfail
+            ]
+
         in
-          failedInits ++ pendOnFailed
+          failPaths
 
 
 

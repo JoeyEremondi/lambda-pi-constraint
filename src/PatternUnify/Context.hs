@@ -102,7 +102,7 @@ wrapProb ((x, e) : _Gam)  p = All e (bind x (wrapProb _Gam p))
 --
 
 
-newtype ProbId = ProbId Nom
+newtype ProbId = ProbId {probIdToName :: Nom}
   deriving (Eq, Show, Pretty, Generic)
 
 instance Alpha ProbId
