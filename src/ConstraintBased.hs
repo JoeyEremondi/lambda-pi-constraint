@@ -113,6 +113,17 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
               cType_  (ii + 1) newEnv
                         (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
               return conStar
+    --Similar to Pi
+    iType_' ii g (Sigma_ tyt tyt')
+       =  do  cType_ ii g tyt conStar
+              argNom <- freshNom $ localName (ii)
+              ty <- evaluate ii tyt g --Ensure LHS has type Set
+              --Ensure, when we apply free var to RHS, we get a set
+              let newEnv = addType (ii, ty) $ addValue (ii, Tm.var argNom)  g
+              cType_  (ii + 1) newEnv
+                        (cSubst_ 0 (builtin $ Free_ (Local ii)) tyt') conStar
+              return conStar
+
     iType_' ii g (Free_ x)
       =     case typeLookup x g of
               Just ty        ->  return ty
@@ -231,6 +242,15 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
           cType_ ii g eq eqC
           eqVal <- evaluate ii eq g
           (mVal Tm.$$$ [xVal, yVal])
+{-
+    iType_' ii g (Fst_ pr) = do
+      pairType <- iType_ ii g pr
+      sType <- freshType $ region pr
+      tType <- fresh (region pr) g (sType Tm.--> conStar)
+      unifySets pairType (Tm.SIG sType tType)
+      --Head has the type of the first elem
+      return sType
+-}
 
     iType_' ii g (Bound_ vi) = error "TODO why never bound?"
       --return $ (snd $ snd g `listLookup` (ii - (vi+1) ) ) --TODO is this right?
@@ -280,7 +300,17 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
         let subbedBody = cSubst_ 0 arg body
         cType_  (ii + 1) newEnv subbedBody returnTy
 
-
+    cType_' ii g (Pair_ x y) sigTy = do
+      sType <- freshType (region x) g
+      tType <- fresh (region y) g (sType Tm.--> conStar)
+      unifySets reg sigTy (Tm.SIG sType tType) g
+      --Head has the type of the first elem
+      cType_ ii g x sType
+      --Tail type depends on given argument
+      x' <- evaluate ii x g
+      fstVal <- evalInEnv g x'
+      appedTy <- (tType Tm.$$ fstVal)
+      cType_ ii g y appedTy
 
     cType_' ii g Zero_      ty  =  unifySets reg ty Tm.Nat g
     cType_' ii g (Succ_ k)  ty  = do
