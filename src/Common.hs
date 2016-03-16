@@ -88,7 +88,7 @@ parensIf False = id
 
 
 lambdaPi = makeTokenParser (haskellStyle { identStart = letter <|> P.char '_',
-                                           reservedNames = ["forall", "let", "assume", "putStrLn", "out"] })
+                                           reservedNames = ["forall", "exists", "let", "assume", "putStrLn", "out"] })
 
 parseStmt_ :: [String] -> LPParser (Stmt ITerm_ CTerm_)
 parseStmt_ e =
@@ -139,6 +139,13 @@ parseITerm_ 0 e = getRegion >>= \pos ->
         reserved lambdaPi "."
         t' <- parseCTerm_ 0 fe
         return (foldl (\ p t -> L pos $ Pi_ t (L pos $ Inf_ p)) (L pos $  Pi_ t t') ts)
+  <|>
+  do
+    reserved lambdaPi "exists"
+    (fe,t:ts) <- parseBindings_ True e
+    reserved lambdaPi "."
+    t' <- parseCTerm_ 0 fe
+    return (foldl (\ p t -> L pos $ Sigma_ t (L pos $ Inf_ p)) (L pos $  Sigma_ t t') ts)
   <|>
   try
      (do
@@ -196,9 +203,12 @@ parseITerm_ 3 e = getRegion >>= \pos ->
 parseCTerm_ :: Int -> [String] -> LPParser CTerm_
 parseCTerm_ 0 e = getRegion >>= \pos ->
       parseLam_ e
+    <|>
+      parsePair_ e
     <|> fmap (\x -> L pos (Inf_ x)) (parseITerm_ 0 e)
 parseCTerm_ p e =  getRegion >>= \pos ->
       try (parens lambdaPi (parseLam_ e))
+  <|> try (parens lambdaPi (parsePair_ e))
   <|> fmap (L pos . Inf_) (parseITerm_ p e)
 
 
@@ -213,6 +223,18 @@ parseLam_ e =
          t <- parseCTerm_ 0 (reverse xs ++ e)
          --  reserved lambdaPi "."
          return (iterate mkLam t !! length xs)
+
+parsePair_ :: [String] -> LPParser CTerm_
+parsePair_ e =
+      do
+         pos <- getRegion
+         reservedOp lambdaPi "<"
+         s <- parseCTerm_ 0 e
+         reservedOp lambdaPi ","
+         t <- parseCTerm_ 0 e
+         reservedOp lambdaPi ">"
+         return $ L pos $ Pair_ s t
+
 
 toNat_ :: Region -> Integer -> ITerm_
 toNat_ r n = L r $ Ann_ (toNat_' r n) (L r $ Inf_ $ L r Nat_)
@@ -647,6 +669,7 @@ type CTerm_ = Located CTerm_'
 data CTerm_'
    =  Inf_  ITerm_
    |  Lam_  CTerm_
+   |  Pair_  CTerm_ CTerm_
 
    |  Zero_
    |  Succ_ CTerm_
@@ -671,6 +694,7 @@ data ITerm_'
    =  Ann_ CTerm_ CTerm_
    |  Star_
    |  Pi_ CTerm_ CTerm_
+   |  Sigma_ CTerm_ CTerm_
    |  Bound_  Int
    |  Free_  Name
    |  ITerm_ :$: CTerm_
@@ -688,6 +712,8 @@ data ITerm_'
 
    |  Fin_ CTerm_
    |  FinElim_ CTerm_ CTerm_ CTerm_ CTerm_ CTerm_
+   |  Fst_ CTerm_
+   |  Snd_ CTerm_
 
   deriving (Show, Eq)
 
