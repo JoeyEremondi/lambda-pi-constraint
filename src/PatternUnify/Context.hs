@@ -98,7 +98,7 @@ allTwinsProb x _S _T p = All (Twins _S _T) (bind x p)
 wrapProb :: [(Nom, Param)] -> Problem -> Problem
 wrapProb []               p = p
 wrapProb ((x, e) : _Gam)  p = All e (bind x (wrapProb _Gam p))
---
+
 
 
 newtype ProbId = ProbId {probIdToName :: Nom}
@@ -232,7 +232,7 @@ pushL e = --trace ("Push left " ++ prettyString e) $
 
 pushR :: Either Subs Entry -> Contextual ()
 pushR (Left s)   = pushSubs s
-pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
+pushR (Right e)  = trace ("Push right " ++ prettyString e) $
  modifyR (Right e :)
 
 pushSubs :: Subs -> Contextual ()

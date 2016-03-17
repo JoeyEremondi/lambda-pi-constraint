@@ -8,11 +8,9 @@
 -- into those which must succeed, those which should block (possibly
 -- succeeding partially), and those which must fail.
 
-module PatternUnify.Test where
+module PatternUnify.Run where
 
 import Unbound.Generics.LocallyNameless
-
---import GHC.Generics
 
 import PatternUnify.Kit
 import PatternUnify.Tm
@@ -26,8 +24,6 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Map as Map
 
 import Debug.Trace (trace)
-
---import Data.List (intercalate)
 
 import qualified Unbound.Generics.LocallyNameless as LN
 
@@ -47,8 +43,6 @@ test = runTest (const True)
 
 initialise :: Contextual ()
 initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
-
---prettyString t = render $ runPretty $ pretty t
 
 solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
@@ -142,27 +136,3 @@ runTest q es = do
                    case r of
                        Left err  -> putStrLn $ "Error: " ++ err
                        Right ((), cx)  -> putStrLn $ "Final context:\n" ++ pp cx ++ "\n"
-
-
-
-isFailed :: ProblemState -> Bool
-isFailed (Failed _)  = True
-isFailed _           = False
-
-lifted :: Nom -> Type -> [Entry] -> [Entry]
-lifted x _T es = lift [] es
-   where
-     lift :: SubsList -> [Entry] -> [Entry]
-     lift g (E a _A d : as) = E a (_Pi x _T (substs g _A)) d :
-                                  lift ((a, runFreshM $ meta a $$ var x) : g) as
-     lift g (Prob a p s : as) = Prob a (allProb x _T (substs g p)) s : lift g as
-     lift _ [] = []
-
-boy :: String -> Type -> [Entry] -> [Entry]
-boy = lifted . s2n
-
-gal :: String -> Type -> Entry
-gal x _T = E (s2n x) _T HOLE
-
-eq :: String -> Type -> VAL -> Type -> VAL -> Entry
-eq x _S s _T t = Prob (ProbId (s2n x)) (Unify (EQN _S s _T t)) Active

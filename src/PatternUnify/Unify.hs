@@ -151,7 +151,7 @@ munify :: (Fresh m) => m Equation -> m Problem
 munify = fmap Unify
 
 unify :: ProbId -> Equation -> Contextual ()
--- >
+unify n q | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
 unify n q@(EQN (PI _A _B) f (PI _S _T) g) = do
     x <- freshNom
     let (xL, xR) = (N (Var x TwinL) [], N (Var x TwinR) [])

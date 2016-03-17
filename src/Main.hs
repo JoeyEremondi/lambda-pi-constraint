@@ -10,7 +10,6 @@ import PatternUnify.Tm as Tm
 
 import Constraint as Constraint
 
---import Text.PrettyPrint.HughesPJ as PP hiding (($$))
 import PatternUnify.Kit
 
 main :: IO ()

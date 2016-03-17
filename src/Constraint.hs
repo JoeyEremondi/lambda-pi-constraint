@@ -29,7 +29,7 @@ import qualified PatternUnify.Tm as Tm
 
 import qualified PatternUnify.Context as UC
 
-import qualified PatternUnify.Test as PUtest
+import qualified PatternUnify.Run as Run
 
 import Control.Monad.Identity (runIdentity)
 
@@ -106,7 +106,7 @@ solveConstraintM cm =
     ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] )
     regionDict = getRegionDict constraints
     ret = do
-      (_, context) <- PUtest.solveEntries $ map conEntry constraints
+      (_, context) <- Run.solveEntries $ map conEntry constraints
       let finalType = evalState (UC.metaValue nom) context
       let solvedMetas =
             map (\sourceNom -> (sourceNom, evalState (UC.metaValue $ LN.s2n sourceNom) context)) $
@@ -380,14 +380,14 @@ fresh reg env tp = do
         unsafeLook i = Maybe.fromJust $ valueLookup i env
     lambdaType <-
           Foldable.foldrM extendArrow tp (currentQuants) --TODO right order?
-    --let ii = trace ("Made fresh lambda type " ++ PUtest.prettyString lambdaType)
+    --let ii = trace ("Made fresh lambda type " ++ Run.prettyString lambdaType)
     --      $ length (typeEnv env)
     let ourHead =
-          --trace ("Lambda type " ++ PUtest.prettyString lambdaType ++ " with env " ++ show currentQuants) $
+          --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
             Tm.Meta ourNom
     let ourElims = map (\(_,freeVal) -> Tm.A freeVal) currentVals
     let ourNeutral = Tm.N ourHead ourElims
-    let ourEntry = --trace ("Made fresh meta app " ++ PUtest.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
+    let ourEntry = --trace ("Made fresh meta app " ++ Run.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
           UC.E ourNom lambdaType UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNeutral
