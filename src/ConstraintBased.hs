@@ -226,7 +226,6 @@ iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
           xVal <- evaluate ii x g
           cType_ ii g y aVal
           yVal <- evaluate ii y g
-          --TODO make this nicer with a fold?
           let
             eqC =
               ((Tm.Eq yVal xVal aVal))
@@ -269,16 +268,6 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0
               --We have to evaluate ii $ our normal form
               --trace ("INF " ++ show e ++ "\nunifying " ++ show [tyAnnot, tyInferred] ++ "\nenv " ++ show g) $
               unifySets reg tyAnnot tyInferred g
-    {-
-    --Default: can't fully infer function types? --TODO
-    cType_' ii g (Lam_ body) (Tm.PI argTy returnTy) = do
-      let newEnv = addType (ii, argTy ) g
-          arg = builtin $ Free_ (Local ii)
-          subbedBody = cSubst_ 0 arg body
-          argVal = Tm.var $ localName (ii)
-      cType_  (ii + 1) newEnv subbedBody (returnTy Tm.$$ argVal)
-    --TODO is this okay? Fns should always be fully annotated?
-    -}
 
     --Special case when we have metavariable in type
     cType_' ii g (Lam_ body) fnTy = do
@@ -308,8 +297,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0
       --Head has the type of the first elem
       cType_ ii g x sType
       --Tail type depends on given argument
-      --x' <- evaluate ii x g
-      fstVal <- evaluate ii x g --evalInEnv g x'
+      fstVal <- evaluate ii x g
       appedTy <- (tType Tm.$$ fstVal)
       cType_ ii g y appedTy
 
@@ -379,4 +367,3 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0
           --Show constraint that the type parameters must match that type
           unify reg zVal xVal bVal g
           unify reg zVal yVal bVal g
-          --TODO something special for quoting

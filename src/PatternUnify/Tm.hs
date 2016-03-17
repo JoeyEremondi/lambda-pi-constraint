@@ -152,9 +152,6 @@ instance Pretty VAL where
     pretty (ERefl a x) = parens <$> ((\pa px -> text "Refl" <+> pa <+> px)
       <$> pretty a <*> pretty x)
 
-
-    --pretty _ = return $ text "prettyTODO"
-
 instance Pretty Can where
     pretty c = return $ text $ show c
 
@@ -202,9 +199,6 @@ instance Pretty Elim where
       <*> pretty mr
       <*> pretty x
       <*> pretty y)
-{-
-mapElim f (EqElim a m mr x y) = EqElim (f a) (f m) (f mr) (f x) (f y)
--}
 
 
 pattern SET           = C Set []
@@ -502,8 +496,6 @@ eval g (ERefl a x) = ERefl <$> (eval g a) <*> (eval g x)
 eval g (FZero n) = FZero <$> eval g n
 eval g (FSucc n f) = FSucc <$> (eval g n) <*> (eval g f)
 
-
---eval g t = error $ "Missing eval case for " ++ show t
 
 
 evalHead :: Subs -> Head -> VAL

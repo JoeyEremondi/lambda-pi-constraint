@@ -21,12 +21,7 @@ import Unbound.Generics.LocallyNameless (unbind, subst, substs, Fresh, runFreshM
 
 import PatternUnify.Kit (pp, elem, notElem, bind3, bind6)
 import PatternUnify.Tm
-{- (Can(..), VAL(..), Elim(..), Head(..), Twin(..),
-           Nom, Type, Subs,
-           ($$), (%%), ($*$),
-           var, lam, lams, lams', _Pi, _Pis, (-->),
-           freshNom, compSubs, occurrence, toVars, linearOn,
-           isStrongRigid, isRigid, isFlexible, fvs, fmvs, isVar) -}
+
 import PatternUnify.Check (checkProb, check, typecheck, equal, isReflexive)
 import PatternUnify.Context (Entry(..), ProblemState(..), Problem(..), Equation(..),
                 Dec(..), Param(..), Contextual, ProbId(..),
