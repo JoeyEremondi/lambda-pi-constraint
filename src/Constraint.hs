@@ -1,16 +1,5 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances, PatternSynonyms #-}
-module Constraint
-{-
-  ( ConType
-  , ConTyFn
-  , ConstraintM
-  , Unifyable, unify, fresh
-  , unknownIdent
-  , evaluate
-  , conType, conTyFn, liftConTyFn, valToFn
-  , mkPi, applyPi, applyVal
-  , mkNat, mkVec, mkEq
-  ) -} where
+module Constraint where
 
 import qualified Common
 import Control.Monad.Identity (Identity)
@@ -127,7 +116,6 @@ evaluate :: Int -> Common.CTerm_ -> WholeEnv -> ConstraintM Tm.VAL
 evaluate ii t g = do
   result <- cToUnifForm ii g t
   evalInEnv g result
-  --fst <$> LN.freshen result
 
 cToUnifForm :: Int -> WholeEnv -> Common.CTerm_ -> ConstraintM Tm.VAL
 cToUnifForm ii env tm'@(Common.L _ tm) = --trace ("CTO " ++ render (Common.cPrint_ 0 ii tm') ) $
@@ -139,7 +127,6 @@ cToUnifForm ii env tm'@(Common.L _ tm) = --trace ("CTO " ++ render (Common.cPrin
       Common.Lam_ ctm -> do
 
         newNom <- freshNom $ localName (ii) --LN.s2n ("lamVar" ++ show ii)
-          --(globals, boundVars) = env
         let newEnv = addValue (ii, Tm.var newNom) env -- (globals, (Common.Local ii, Tm.var newNom) : boundVars)
         retBody <- cToUnifForm (ii + 1) newEnv ctm
         return $ Tm.L $ LN.bind newNom retBody
@@ -178,8 +165,7 @@ listLookup l i =
 
 --The name for a local variable i at depth ii
 localName :: Int -> String
-localName ii = --TODO get fresh properly
-  --LN.string2Name $
+localName ii =
     case ii of
       0 -> "xx_"
       1 -> "yy_"
@@ -207,9 +193,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
         let
           newEnv = addValue (ii, Tm.var freeNom) $ addType (ii, sVal) env
         translatedFn <- (cToUnifForm (ii + 1) newEnv t)
-          --tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
         return $ Tm.PI sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
-          --mkPiFn (cToUnifForm ii env s) (\x -> cToUnifForm (ii+1) (newEnv x) t)
 
       Common.Sigma_ s t@(Common.L tReg _) -> do
         freeNom <- freshNom $ localName ii
@@ -219,7 +203,6 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
         let
           newEnv = addValue (ii, Tm.var freeNom) $ addType (ii, sVal) env
         translatedFn <- (cToUnifForm (ii + 1) newEnv t)
-          --tFn = Common.L tReg $ Common.Lam_ t --Bind over our free variable, since that's what Unif is expecting
         return $ Tm.SIG sVal (Tm.lam freeNom translatedFn) --Close over our localVal in lambda
 
       Common.Bound_ i ->
@@ -227,9 +210,6 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
           result = snd $ (valueEnv env `listLookup` i )
         in --trace ("Lookup ii" ++ show ii ++ " i " ++ show i ++ " as " ++ Tm.prettyString result ++ "\n  env: " ++ show (valueEnv env)) $
           return result
-
-        --Tm.var $ localName (ii - i - 1) --Local name, just get the corresponding Nom
-        --Tm.var $ deBrToNom ii i
 
 
       Common.Free_ (Common.Global nm) ->
@@ -255,13 +235,8 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
           a <- (cToUnifForm ii env x)
           fVal <- evalInEnv env f1
           aVal <- evalInEnv env a
-          result <- --trace ("$ APP2 " ++ show (Tm.prettyString fVal, Tm.prettyString aVal))  $
+          result <-
                 fVal Tm.$$ aVal
-          --trace (
-              --"APP  " ++ Tm.prettyString f1 ++ " <--- " ++ show f ++ "  \n  "
-              -- ++ Tm.prettyString a ++ " <--- " ++ show x ++ "  \n  "
-              -- ++ Tm.prettyString result) $
-          --trace ("APP RESULT " ++ Tm.prettyString result) $
           return result
 
       Common.Nat_ ->
@@ -313,7 +288,6 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
         pr <- iToUnifForm ii env x
         prVal <- evalInEnv env pr
         pr Tm.%% Tm.Tl
---  in result --trace ("\n**ITO" ++ show ii ++ " " ++ show tm ++ "\nRESULT " ++ show result) result
 
 type ConTyFn = Tm.VAL
 
@@ -380,8 +354,6 @@ fresh reg env tp = do
         unsafeLook i = Maybe.fromJust $ valueLookup i env
     lambdaType <-
           Foldable.foldrM extendArrow tp (currentQuants) --TODO right order?
-    --let ii = trace ("Made fresh lambda type " ++ Run.prettyString lambdaType)
-    --      $ length (typeEnv env)
     let ourHead =
           --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
             Tm.Meta ourNom
@@ -391,9 +363,7 @@ fresh reg env tp = do
           UC.E ourNom lambdaType UC.HOLE
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNeutral
-    --let ourEntry =  UC.E ourNom tp UC.HOLE
-    --addConstr $ Constraint Common.startRegion ourEntry
-    --return $ Tm.meta ourNom
+
 
 declareMeta :: Tm.Nom -> Tm.VAL -> ConstraintM ()
 declareMeta ourNom tp = do
@@ -444,36 +414,10 @@ type ConType = Tm.VAL
 type ConstraintM = LN.FreshMT (WriterT [Constraint] (StateT ConstrainState Identity))
 
 
---Operations in our monad:
-
-{-
---Do the given computation with the given name added to our quantifier list
---Then remove it from the list when we're done
-forallVar :: Tm.Nom -> Tm.VAL -> (ConstraintM a) -> ConstraintM a
-forallVar nm tp cm = do
-  modify (\st -> st {quantParams = (nm, tp) : quantParams st})
-  result <- cm
-  modify (\st -> st {quantParams = tail $ quantParams st})
-  return result
--}
-
-{-
-freshInt :: ConstraintM Int
-freshInt = do
-  (h:t) <- lift $ intStore <$> get
-  modify (\st -> st {intStore = t})
-  return h
--}
-
 freshNom :: String -> ConstraintM Tm.Nom
 freshNom hint = do
   localId <- freshInt
-  --let newHint = hint ++ show startNum ++ "_" ++ show localId ++ "_"
   LN.fresh $ LN.s2n hint
---freshNom hint = do
---  (h:t) <- lift $ intStore <$> get
---  modify (\st -> st {intStore = t})
---  return $ LN.string2Name $ hint ++ (show h)
 
 
 --Helpful utility function
@@ -492,17 +436,6 @@ unknownIdent reg env s = error $
 
 mkEq :: ConType -> ConType -> ConType -> ConType
 mkEq = Tm.Eq
-
-
-
-
---conTyFn :: (Common.Type_ -> ConType) -> ConTyFn
---conTyFn f = error "TODO conTyFn"
-
-
-
---mkPi :: ConType -> ConTyFn -> ConType
---mkPi = Tm._PI "piVar"
 
 
 mkPiFn :: ConType -> (ConType -> ConType) -> ConType
@@ -530,12 +463,5 @@ mkPiFnM s fm = do
   arg <- (fm $ Tm.var newFreeVar)
   return $ Tm.PI s  $ Tm.lam newFreeVar  arg
 
-
---conType :: Common.Type_ -> ConType
---conType = vToUnifForm 0
-
 mkVec :: ConType -> ConType -> ConType
 mkVec = Tm.Vec
-
---liftConTyFn :: (Common.Type_ -> Common.Type_) -> ConTyFn
---liftConTyFn f = error "TODO liftConTy"
