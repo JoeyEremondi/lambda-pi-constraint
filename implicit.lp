@@ -12,15 +12,15 @@ let plus =
 
 -- predecessor, mapping 0 to 0
 let pred =
-  natElim
+  (natElim
     _
     Zero
-    ( \ n' _rec -> n' )
+    ( \ n' _rec -> n' )) :: Nat -> Nat
 
 -- a simpler elimination scheme for natural numbers
 let natFold =
   ( \ m mz ms -> natElim
-                   ( \ _ -> m )
+                   _
                    mz
                    ( \ n' rec -> ms rec ) )
   :: forall (m :: *) . m -> (m -> m) -> Nat -> m

@@ -2,7 +2,7 @@
 let alwaysZero =
   ( \n ->
     natElim
-      (\_ -> _)
+      _
       (\n -> n)
       (\p rec n -> Succ (rec n))
       n ) :: Nat -> Nat -> Nat
