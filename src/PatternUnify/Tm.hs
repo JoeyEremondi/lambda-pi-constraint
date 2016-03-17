@@ -25,7 +25,7 @@ import Unbound.Generics.LocallyNameless
 
 import PatternUnify.Kit
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 import GHC.Stack (errorWithStackTrace)
 

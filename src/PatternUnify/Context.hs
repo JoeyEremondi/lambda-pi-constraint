@@ -248,6 +248,7 @@ popL = do
     case cx of
         (cx' :< e)  -> putL cx' >> return e
         B0          -> fail "popL ran out of context"
+        _ -> undefined
 
 popR :: Contextual (Maybe (Either Subs Entry))
 popR = do
@@ -297,6 +298,7 @@ lookupMeta x = look =<< getL
     look (cx  :< E y t _)  | x == y     = return t
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx
+    look _ = undefined
 
 metaSubs :: MonadState Context m => m Subs
 metaSubs = do
@@ -319,3 +321,4 @@ metaValue x = look =<< getL
     look (cx  :< Prob _ _ _) = look cx
     look (cx  :< E y _ HOLE)  | x == y     = return $ meta x
                            | otherwise  = look cx
+    look _ = undefined

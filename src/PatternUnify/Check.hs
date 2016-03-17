@@ -26,7 +26,7 @@ import PatternUnify.Context
 
 --import qualified Data.List as List
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 
 data Tel where
@@ -421,3 +421,4 @@ validate q = local (const []) $ do
                                           checkProb ident st p
                                           unless (q st) $ throwError "validate: bad state"
                                           help _Del
+    help _ = undefined

@@ -63,6 +63,7 @@ xs <>< (y : ys) = (xs :< y) <>< ys
 (<>>) :: Bwd a -> [a] -> [a]
 B0         <>> ys = ys
 (xs :< x)  <>> ys = xs <>> (x : ys)
+_  <>> _ = undefined
 
 trail :: Bwd a -> [a]
 trail = (<>> [])

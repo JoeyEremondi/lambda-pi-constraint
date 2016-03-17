@@ -1,6 +1,84 @@
-*** Exception (reporting due to +RTS -xc): (THUNK_STATIC), stack trace: 
-  Common.compileFile,
-  called from Main.main
-Solved metas:
-β_5_7 := \ yy_ . Nat -> Nat
-alwaysZero :: Nat -> Nat -> Nat
+Initial context:
+??_7_19_ ?? : (Set : Set) === (Set : Set) <= ACTIVE
+??_7_24_2 ?? : ∀ (xx_ : Set)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??_7_30_4 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : xx_)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??_7_35_6 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : xx_)  .  ∀ (zz_ : xx_)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??_7_29_7 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : xx_)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??_7_41_11 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : xx_)  .  ∀ (zz_ : xx_ -> xx_)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??_7_48_13 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : xx_)  .  ∀ (zz_ : xx_ -> xx_)  .  ∀ (local3_ : Nat)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??_7_41_14 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : xx_)  .  ∀ (zz_ : xx_ -> xx_)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??_7_29_15 ?? : ∀ (xx_ : Set)  .  ∀ (yy_ : xx_)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??_7_24_16 ?? : ∀ (xx_ : Set)  .  (Set : Set) === (Set : Set) <= ACTIVE
+??_7_6_17 ?? : (Set : Set) === (Set : Set) <= ACTIVE
+α_3_5__28 ? : Set
+α_3_5__30 ? : ?α_3_5__28 -> Set
+??_3_5_31 ?? : (Pi (xx_ : Set) (xx_ -> (xx_ -> xx_) -> Nat -> xx_) : Set) === (Pi ?α_3_5__28 ?α_3_5__30 : Set) <= ACTIVE
+α_3_5__32 ? : ?α_3_5__28 -> Set
+??_3_5_33 ?? : ∀ (xx_ : ?α_3_5__28)  .  (?α_3_5__32 xx_ : Set) === (?α_3_5__30 xx_ : Set) <= ACTIVE
+α_3_5__34 ? : ?α_3_5__28 -> Set
+α_3_5__36 ? : Pi (xx_ : ?α_3_5__28) (?α_3_5__34 xx_ -> Set)
+??_3_5_37 ?? : ∀ (xx_ : ?α_3_5__28)  .  (?α_3_5__32 xx_ : Set) === (Pi (?α_3_5__34 xx_) (?α_3_5__36 xx_) : Set) <= ACTIVE
+α_3_5__38 ? : Pi (xx_ : ?α_3_5__28) (?α_3_5__34 xx_ -> Set)
+??_3_5_39 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  (?α_3_5__38 xx_ yy_ : Set) === (?α_3_5__36 xx_ yy_ : Set) <= ACTIVE
+α_3_5__40 ? : Pi (xx_ : ?α_3_5__28) (?α_3_5__34 xx_ -> Set)
+α_3_18__42 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (?α_3_5__40 xx_ yy_ -> Set))
+??_3_5_43 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  (?α_3_5__38 xx_ yy_ : Set) === (Pi (?α_3_5__40 xx_ yy_) (?α_3_18__42 xx_ yy_) : Set) <= ACTIVE
+α_3_18__44 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (?α_3_5__40 xx_ yy_ -> Set))
+??_3_5_45 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  (?α_3_18__44 xx_ yy_ zz_ : Set) === (?α_3_18__42 xx_ yy_ zz_ : Set) <= ACTIVE
+α_4_21__46 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (?α_3_5__40 xx_ yy_ -> Set))
+α_3_18__47 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (?α_4_21__46 xx_ yy_ zz_ -> Set)))
+??_3_18_48 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  (Pi (natT_m : Nat -> Set) (natT_m 0 -> (Pi (msArg : Nat) (natT_m msArg -> natT_m S( msArg ))) -> Pi (natT_n : Nat) (natT_m natT_n)) : Set) === (Pi (?α_4_21__46 xx_ yy_ zz_) (?α_3_18__47 xx_ yy_ zz_) : Set) <= ACTIVE
+α_4_21__49 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (?α_3_5__40 xx_ yy_ -> Set))
+α_4_27__51 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (?α_4_21__49 xx_ yy_ zz_ -> Set)))
+??_4_21_52 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  (?α_4_21__46 xx_ yy_ zz_ : Set) === (Pi (?α_4_21__49 xx_ yy_ zz_) (?α_4_27__51 xx_ yy_ zz_) : Set) <= ACTIVE
+α_4_27__53 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (?α_4_21__49 xx_ yy_ zz_ -> Set)))
+??_4_21_54 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  ∀ (local3_ : ?α_4_21__49 xx_ yy_ zz_)  .  (?α_4_27__53 xx_ yy_ zz_ local3_ : Set) === (?α_4_27__51 xx_ yy_ zz_ local3_ : Set) <= ACTIVE
+α_4_27__55 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (?α_4_21__49 xx_ yy_ zz_ -> Set)))
+β_4_27 ? : ?α_4_27__55 xx_29 yy_35 zz_41 local3_50
+??_4_27_56 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  ∀ (local3_ : ?α_4_21__49 xx_ yy_ zz_)  .  (?α_4_27__53 xx_ yy_ zz_ local3_ : Set) === (?α_4_27__55 xx_ yy_ zz_ local3_ : Set) <= ACTIVE
+α_5_20__59 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (?α_3_5__40 xx_ yy_ -> Set))
+α_3_18__60 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (?α_5_20__59 xx_ yy_ zz_ -> Set)))
+??_3_18_61 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  (?α_3_18__47 xx_ yy_ zz_ (\ local3_ . ?β_4_27) : Set) === (Pi (?α_5_20__59 xx_ yy_ zz_) (?α_3_18__60 xx_ yy_ zz_) : Set) <= ACTIVE
+??_5_20_62 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  (?α_5_20__59 xx_ yy_ zz_ : Set) === (?α_3_5__34 xx_ : Set) <= ACTIVE
+α_6_22__63 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (?α_3_5__40 xx_ yy_ -> Set))
+α_3_18__64 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (?α_6_22__63 xx_ yy_ zz_ -> Set)))
+??_3_18_65 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  (?α_3_18__60 xx_ yy_ zz_ yy_ : Set) === (Pi (?α_6_22__63 xx_ yy_ zz_) (?α_3_18__64 xx_ yy_ zz_) : Set) <= ACTIVE
+α_6_22__66 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (?α_3_5__40 xx_ yy_ -> Set))
+α_6_22__68 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (?α_6_22__66 xx_ yy_ zz_ -> Set)))
+??_6_22_69 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  (?α_6_22__63 xx_ yy_ zz_ : Set) === (Pi (?α_6_22__66 xx_ yy_ zz_) (?α_6_22__68 xx_ yy_ zz_) : Set) <= ACTIVE
+α_6_22__70 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (?α_6_22__66 xx_ yy_ zz_ -> Set)))
+??_6_22_71 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  ∀ (local3_ : ?α_6_22__66 xx_ yy_ zz_)  .  (?α_6_22__70 xx_ yy_ zz_ local3_ : Set) === (?α_6_22__68 xx_ yy_ zz_ local3_ : Set) <= ACTIVE
+α_6_22__72 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (?α_6_22__66 xx_ yy_ zz_ -> Set)))
+α_6_34__74 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (Pi (local3_ : ?α_6_22__66 xx_ yy_ zz_) (?α_6_22__72 xx_ yy_ zz_ local3_ -> Set))))
+??_6_22_75 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  ∀ (local3_ : ?α_6_22__66 xx_ yy_ zz_)  .  (?α_6_22__70 xx_ yy_ zz_ local3_ : Set) === (Pi (?α_6_22__72 xx_ yy_ zz_ local3_) (?α_6_34__74 xx_ yy_ zz_ local3_) : Set) <= ACTIVE
+α_6_34__76 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (Pi (local3_ : ?α_6_22__66 xx_ yy_ zz_) (?α_6_22__72 xx_ yy_ zz_ local3_ -> Set))))
+??_6_22_77 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  ∀ (local3_ : ?α_6_22__66 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_22__72 xx_ yy_ zz_ local3_)  .  (?α_6_34__76 xx_ yy_ zz_ local3_ local4_ : Set) === (?α_6_34__74 xx_ yy_ zz_ local3_ local4_ : Set) <= ACTIVE
+α_6_37__78 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (Pi (local3_ : ?α_6_22__66 xx_ yy_ zz_) (?α_6_22__72 xx_ yy_ zz_ local3_ -> Set))))
+α_6_34__79 ? : Pi (xx_ : ?α_3_5__28) (Pi (yy_ : ?α_3_5__34 xx_) (Pi (zz_ : ?α_3_5__40 xx_ yy_) (Pi (local3_ : ?α_6_22__66 xx_ yy_ zz_) (Pi (local4_ : ?α_6_22__72 xx_ yy_ zz_ local3_) (?α_6_37__78 xx_ yy_ zz_ local3_ local4_ -> Set)))))
+??_6_34_80 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  ∀ (local3_ : ?α_6_22__66 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_22__72 xx_ yy_ zz_ local3_)  .  (?α_3_5__40 xx_ yy_ : Set) === (Pi (?α_6_37__78 xx_ yy_ zz_ local3_ local4_) (?α_6_34__79 xx_ yy_ zz_ local3_ local4_) : Set) <= ACTIVE
+??_6_37_81 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  ∀ (local3_ : ?α_6_22__66 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_22__72 xx_ yy_ zz_ local3_)  .  (?α_6_37__78 xx_ yy_ zz_ local3_ local4_ : Set) === (?α_6_22__72 xx_ yy_ zz_ local3_ : Set) <= ACTIVE
+??_6_34_82 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  ∀ (local3_ : ?α_6_22__66 xx_ yy_ zz_)  .  ∀ (local4_ : ?α_6_22__72 xx_ yy_ zz_ local3_)  .  (?α_6_34__76 xx_ yy_ zz_ local3_ local4_ : Set) === (?α_6_34__79 xx_ yy_ zz_ local3_ local4_ local4_ : Set) <= ACTIVE
+??_3_18_87 ?? : ∀ (xx_ : ?α_3_5__28)  .  ∀ (yy_ : ?α_3_5__34 xx_)  .  ∀ (zz_ : ?α_3_5__40 xx_ yy_)  .  (?α_3_18__44 xx_ yy_ zz_ : Set) === (?α_3_18__64 xx_ yy_ zz_ (\ local3_ local4_ . zz_ local4_) : Set) <= ACTIVE
+topLevel88 ? : Set
+??_1_1_89 ?? : (Pi (xx_ : Set) (xx_ -> (xx_ -> xx_) -> Nat -> xx_) : Set) === (?topLevel88 : Set) <= ACTIVE
+TryPrune ProbId {probIdToName = x94} (?α_3_5__28 : Set) === (Set : Set)
+TryPrune ProbId {probIdToName = x151} (?α_3_5__30 x153 : Set) === (x153 -> (x153 -> x153) -> Nat -> x153 : Set)
+TryPrune ProbId {probIdToName = ??_3_5_33} (?α_3_5__32 xx_358 : Set) === (xx_358 -> (xx_358 -> xx_358) -> Nat -> xx_358 : Set)
+TryPrune ProbId {probIdToName = x601} (?α_3_5__34 xx_603 : Set) === (xx_603 : Set)
+TryPrune ProbId {probIdToName = x661} (?α_3_5__36 xx_663 x665 : Set) === ((xx_663 -> xx_663) -> Nat -> xx_663 : Set)
+TryPrune ProbId {probIdToName = ??_3_5_39} (?α_3_5__38 xx_825 yy_826 : Set) === ((xx_825 -> xx_825) -> Nat -> xx_825 : Set)
+TryPrune ProbId {probIdToName = x1026} (?α_3_5__40 xx_1028 yy_1029 : Set) === (xx_1028 -> xx_1028 : Set)
+TryPrune ProbId {probIdToName = x1154} (?α_3_18__42 xx_1189 yy_1190 x1202 : Set) === (Nat -> xx_1189 : Set)
+TryPrune ProbId {probIdToName = ??_3_5_45} (?α_3_18__44 xx_1302 yy_1303 zz_1304 : Set) === (Nat -> xx_1302 : Set)
+TryPrune ProbId {probIdToName = x1507} (?α_4_21__46 xx_1509 yy_1510 zz_1511 : Set) === (Nat -> Set : Set)
+TryPrune ProbId {probIdToName = x1723} (?α_3_18__47 xx_1762 yy_1763 zz_1764 x1778 : Set) === (x1778 0 -> (Pi (msArg : Nat) (x1778 msArg -> x1778 S( msArg ))) -> Pi (natT_n : Nat) (x1778 natT_n) : Set)
+TryPrune ProbId {probIdToName = x2208} (?α_4_21__49 xx_2210 yy_2211 zz_2212 : Set) === (Nat : Set)
+TryPrune ProbId {probIdToName = x2314} (?α_4_27__51 xx_2323 yy_2324 zz_2325 x2329 : Set) === (Set : Set)
+TryPrune ProbId {probIdToName = ??_4_21_54} (?α_4_27__53 xx_2405 yy_2406 zz_2407 local3_2410 : Set) === (Set : Set)
+TryPrune ProbId {probIdToName = ??_4_27_56} (?α_4_27__55 xx_2486 yy_2487 zz_2488 local3_2491 : Set) === (Set : Set)
+TryPrune ProbId {probIdToName = x2646} (?β_4_27 : Set) === (?α_5_20__59 xx_2648 yy_2649 zz_2650 : Set)
+TryPrune ProbId {probIdToName = x2712} (?β_4_27 : Set) === (?x2675 : Set)
+TryPrune ProbId {probIdToName = x2712} (?x2675 : Set) === (?β_4_27 : Set)
+TryPrune ProbId {probIdToName = x2801} (?α_3_18__60 xx_2810 yy_2811 zz_2812 x2816 : Set) === ((Nat -> ?β_4_27 -> ?β_4_27) -> Nat -> ?β_4_27 : Set)
+TryPrune ProbId {probIdToName = x3065} (?β_4_27 : Set) === (xx_3066 : Set)
+lambda-pi-constraint: Pruning overlap: Cannot prune [xx_3066] from neutral xx_3066

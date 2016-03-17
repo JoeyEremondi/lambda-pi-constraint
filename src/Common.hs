@@ -5,7 +5,7 @@ import           Prelude                                hiding (print)
 
 import           Control.Monad.Except
 import           Data.Char
-import           Data.List 
+import           Data.List
 
 import           Text.PrettyPrint.HughesPJ              hiding (parens)
 import qualified Text.PrettyPrint.HughesPJ              as PP
@@ -16,14 +16,14 @@ import           Text.Parsec.Token
 import           Text.ParserCombinators.Parsec          hiding (State, parse)
 import           Text.ParserCombinators.Parsec.Language
 
-import           System.IO                              hiding (print)
+--import           System.IO                              hiding (print)
 
 import           System.IO.Error
 
 import           Control.Monad.Identity                 (Identity, runIdentity)
-import qualified Control.Monad.State                    as State
+--import qualified Control.Monad.State                    as State
 
-import Unbound.Generics.LocallyNameless (s2n)
+--import Unbound.Generics.LocallyNameless (s2n)
 import qualified PatternUnify.Tm as Tm
 
 data Region =
@@ -215,6 +215,7 @@ parseITerm_ 3 e = getRegion >>= \pos ->
           Just n  -> return (L pos $ Bound_ n)
           Nothing -> return (L pos $ Free_ (Global x))
   <|> parens lambdaPi (parseITerm_ 0 e)
+parseITerm_ _ _ = undefined
 
 parseCTerm_ :: Int -> [String] -> LPParser CTerm_
 parseCTerm_ 0 e = getRegion >>= \pos ->

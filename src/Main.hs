@@ -6,7 +6,6 @@ import Common
 
 import System.Environment (getArgs)
 
-import PatternUnify.Test
 import PatternUnify.Tm as Tm
 
 import Constraint as Constraint

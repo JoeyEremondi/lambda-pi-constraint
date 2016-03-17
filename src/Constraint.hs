@@ -15,18 +15,11 @@ module Constraint
 import qualified Common
 import Control.Monad.Identity (Identity)
 import Control.Monad.State
-import Control.Monad.Trans
 import Control.Monad.Writer
-import Data.Data
-import Data.Typeable
-
-import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.Foldable as Foldable
 
 import qualified Data.Maybe as Maybe
-
-import Control.Applicative
 
 import qualified Data.List as List
 
@@ -44,8 +37,6 @@ import Debug.Trace (trace)
 
 import qualified Data.Map as Map
 
-import Text.PrettyPrint.HughesPJ hiding (parens, ($$))
-
 type ConstrContext = [(Common.Name, Tm.VAL)]
 
 data WholeEnv =
@@ -60,11 +51,13 @@ typeLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
 typeLookup (Common.Global s) env = List.lookup s (globalTypes env)
 typeLookup (Common.Local i) env =
   List.lookup i (typeEnv env)
+typeLookup (Common.Quote x) _ = error $ "Cannot lookup quoted value " ++ show x
 
 valueLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
 valueLookup (Common.Global s) env = List.lookup s (globalValues env)
 valueLookup (Common.Local i) env =
   List.lookup i (valueEnv env)
+valueLookup (Common.Quote x) _ = error $ "Cannot lookup quoted value " ++ show x
 
 data ConstrainState =
   ConstrainState
@@ -335,6 +328,7 @@ splitContext entries = helper entries [] []
       helper rest ((s,x) : globals) locals
     helper ((Common.Local i, x) : rest) globals locals =
       helper rest globals ((i,x) : locals)
+    helper _ _ _ = undefined
 
 
 

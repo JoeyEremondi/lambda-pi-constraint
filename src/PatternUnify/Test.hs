@@ -54,7 +54,7 @@ solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    result = --trace ("Initial context:\n" ++ initialContextString ) $
+    result = trace ("Initial context:\n" ++ initialContextString ) $
        runContextual (B0, map Right es) $ do
           initialise
           ambulando [] Map.empty
@@ -108,6 +108,7 @@ getContextErrors startEntries cx@(lcx, rcx) = do
             | (Prob idFailed _ _) <- allPendings
             , idFailed `Prelude.elem` pendingOn
             ])
+          failEdges _ = undefined
 
           (pendGraph, vertToInfo, infoToVert) = Graph.graphFromEdges $
               [ failEdges p | p <- allPendings]

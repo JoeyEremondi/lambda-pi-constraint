@@ -3,25 +3,11 @@ module ConstraintBased (checker) where
 
 import Prelude hiding (print)
 
-import Data.Char
 import Data.List
 
 import Text.PrettyPrint.HughesPJ hiding (parens, ($$))
-import qualified Text.PrettyPrint.HughesPJ as PP
-
-import Text.ParserCombinators.Parsec hiding (State, parse)
-import qualified Text.ParserCombinators.Parsec as P
-import Text.ParserCombinators.Parsec.Language
-import Text.ParserCombinators.Parsec.Token
-
-import qualified Unbound.Generics.LocallyNameless as LN
 
 
-import System.IO hiding (print)
-
-import System.IO.Error
-
-import Control.Applicative
 
 import Common
 
@@ -30,8 +16,6 @@ import Constraint hiding (cToUnifForm, iToUnifForm)
 import qualified Data.List as List
 
 import qualified PatternUnify.Tm as Tm
-
-import Data.Foldable (foldlM, foldrM)
 
 
 import Debug.Trace (trace)

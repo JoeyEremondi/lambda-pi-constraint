@@ -15,6 +15,7 @@ import Data.Maybe (isNothing)
 import Data.Set (Set, isSubsetOf)
 
 import qualified Data.Map as Map
+--import qualified Data.List as List
 
 import Unbound.Generics.LocallyNameless (unbind, subst, substs, Fresh, runFreshM)
 
@@ -626,7 +627,7 @@ prune xs (SIG _S _T)   = (++) <$> prune xs _S  <*> prune xs _T
 prune xs (PAIR s t)    = (++) <$> prune xs s   <*> prune xs t
 prune xs (L b)         = prune xs =<< (snd <$> unbind b)
 prune xs neut@(N (Var z _) es)
-        | z `elem` xs  = error $ "Pruning overlap: Cannot prune " ++ (show xs) ++ " from neutral " ++ (pp neut)
+        | z `elem` xs  = fail $ "Pruning overlap: Cannot prune " ++ (show xs) ++ " from neutral " ++ (pp neut)
         | otherwise    = concat <$> mapM pruneElim es
   where  pruneElim (A a)  = prune xs a
          pruneElim _      = return []
