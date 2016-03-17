@@ -11,10 +11,8 @@ module PatternUnify.Tm where
 
 import Prelude hiding (elem, notElem)
 
-import Control.Applicative (pure, (<*>), (<$>))
 import Data.List (unionBy)
 import Data.Function (on)
-import Data.Traversable (traverse)
 import Data.Foldable (foldlM)
 
 import GHC.Generics
@@ -23,10 +21,7 @@ import Data.Typeable
 import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
 
 import Unbound.Generics.LocallyNameless.Bind
-import Unbound.Generics.LocallyNameless hiding (empty)
-import Unbound.Generics.LocallyNameless.Name (isFreeName)
---import Unbound.Generics.LocallyNameless.Types (GenBind(..))
---import Unbound.Util (unions)
+import Unbound.Generics.LocallyNameless
 
 import PatternUnify.Kit
 
@@ -38,6 +33,8 @@ import Data.List (union)
 
 import qualified Data.Map as Map
 
+
+prettyString :: (Pretty a) => a -> String
 prettyString t = render $ runPretty $ pretty t
 
 type Nom = Name VAL
@@ -93,8 +90,10 @@ instance Subst VAL VAL where
     substs subList expr   = runFreshM $ eval (Map.fromList subList) expr
     subst n u  = substs [(n, u)]
 
+dictSubsts :: Subs -> VAL -> VAL
 dictSubsts subDict expr   = runFreshM $ eval (subDict) expr
 
+dictSubst :: Nom -> VAL -> VAL -> VAL
 dictSubst n u  = dictSubsts $ Map.singleton n u
 
 instance Subst VAL Can
@@ -385,6 +384,7 @@ instance Occurs Nom where
     occurrence _ _ = Nothing
     frees _ _ = []
 
+unions :: [[a]] -> [a]
 unions = concat
 
 instance Occurs VAL where
