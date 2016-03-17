@@ -58,7 +58,6 @@ data VAL where
     VNil :: VAL -> VAL
     VCons :: VAL -> VAL -> VAL -> VAL -> VAL
     ERefl :: VAL -> VAL -> VAL
-    AnnVal  :: VAL -> VAL -> VAL --Annotated Values --TODO need this?
   deriving (Show, Generic)
 
 type Type = VAL
@@ -154,7 +153,7 @@ instance Pretty VAL where
       <$> pretty a <*> pretty x)
 
 
-    pretty _ = return $ text "prettyTODO"
+    --pretty _ = return $ text "prettyTODO"
 
 instance Pretty Can where
     pretty c = return $ text $ show c
@@ -347,7 +346,6 @@ etaContract (Eq a x y) = Eq <$> etaContract a <*> etaContract x <*> etaContract 
 etaContract (ERefl a x) = ERefl <$> etaContract a <*> etaContract x
 
 
-
 occursIn :: (Alpha t, Typeable a) => Name a -> t -> Bool
 x `occursIn` t = x `elem` toListOf fv t
 
@@ -412,7 +410,7 @@ instance Occurs VAL where
     occurrence xs (VCons a n h t) = occurrence xs [a,n,h,t]
     occurrence xs (ERefl a x) = occurrence xs [a,x]
 
-    occurrence xs _ = Nothing --TODO occurrence cases
+    --occurrence xs _ = Nothing --TODO occurrence cases
 
     frees isMeta (L (B _ t))  = frees isMeta t
     frees isMeta (C _ as)     = unions (map (frees isMeta) as)
@@ -433,7 +431,6 @@ instance Occurs VAL where
     frees isMeta (VCons a n h t) = unions (map (frees isMeta) [a,n,h,t])
     frees isMeta (Eq a x y) = unions (map (frees isMeta) [a,x,y])
     frees isMeta (ERefl a x) = unions (map (frees isMeta) [a,x])
-    frees isMeta _ = [] --TODO frees cases
 
 type OC = Occurrence
 
@@ -506,7 +503,7 @@ eval g (FZero n) = FZero <$> eval g n
 eval g (FSucc n f) = FSucc <$> (eval g n) <*> (eval g f)
 
 
-eval g t = error $ "Missing eval case for " ++ show t
+--eval g t = error $ "Missing eval case for " ++ show t
 
 
 evalHead :: Subs -> Head -> VAL
