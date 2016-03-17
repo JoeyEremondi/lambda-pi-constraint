@@ -7,7 +7,6 @@ module PatternUnify.Unify where
 
 import Prelude hiding (elem, notElem)
 
-import Control.Applicative ((<$>), (<*>))
 import Control.Monad.Except (catchError, throwError, when)
 import Control.Monad.Reader (ask)
 
@@ -19,7 +18,7 @@ import qualified Data.Map as Map
 
 import Unbound.Generics.LocallyNameless (unbind, subst, substs, Fresh, runFreshM)
 
-import PatternUnify.Kit (pp, elem, notElem, bind2, bind3, bind4, bind5, bind6)
+import PatternUnify.Kit (pp, elem, notElem, bind3, bind6)
 import PatternUnify.Tm
 {- (Can(..), VAL(..), Elim(..), Head(..), Twin(..),
            Nom, Type, Subs,

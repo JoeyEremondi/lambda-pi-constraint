@@ -12,11 +12,9 @@ module PatternUnify.Check where
 
 import Prelude hiding (any, elem, notElem)
 
-import Control.Applicative
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Foldable (any)
 
 import Unbound.Generics.LocallyNameless
 
@@ -26,7 +24,7 @@ import PatternUnify.Kit
 import PatternUnify.Tm
 import PatternUnify.Context
 
-import qualified Data.List as List
+--import qualified Data.List as List
 
 import Debug.Trace (trace)
 

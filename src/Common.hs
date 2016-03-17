@@ -5,7 +5,7 @@ import           Prelude                                hiding (print)
 
 import           Control.Monad.Except
 import           Data.Char
-import           Data.List
+import           Data.List 
 
 import           Text.PrettyPrint.HughesPJ              hiding (parens)
 import qualified Text.PrettyPrint.HughesPJ              as PP

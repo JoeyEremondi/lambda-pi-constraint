@@ -19,8 +19,6 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 
-import qualified Data.Traversable as Traversable
-
 import Debug.Trace
 import GHC.Generics
 
