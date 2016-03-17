@@ -1,4 +1,0 @@
-$ APP
-  ("\\ local4_ nat_k . nat_k (NatElim ((\\ local3_ . (Fin  local3_) -> Set)) ((\\ local3_ . (Fin  S( 0 )))) ((\\ local4_1 local5_ . local4_1 (NatElim ((\\ local6_ . (Fin  S( local6_ )) -> Set)) ((\\ local3_ . (Fin  S( 0 )))) ((\\ local5_1 local6_ . local5_1 (NatElim ((\\ local7_ . (Fin  S( S( local7_ ) )) -> Set)) ((\\ local3_ . xx_35 local3_)) (local4_1))))))))"
-
-  ,"\\ local3_ local4_ local5_ . (Fin  S( 0 ))")
