@@ -34,16 +34,15 @@ module PatternUnify.Kit  (  bool
             ) where
 
 
-import Control.Applicative
 import Control.Monad.Reader
-import Data.Foldable
 
 import Text.PrettyPrint.HughesPJ as PP hiding (($$))
-import Unbound.Generics.LocallyNameless hiding (join)
+import Unbound.Generics.LocallyNameless
 
 elem :: Eq a => a -> [a] -> Bool
 elem x y = x `Prelude.elem` y
 
+notElem :: Eq a => a -> [a] -> Bool
 notElem x y = not $ PatternUnify.Kit.elem x y
 
 bool :: a -> a -> Bool -> a
@@ -118,13 +117,18 @@ commaSep = hsep . punctuate comma
 --from http://hackage.haskell.org/package/definitive-base-2.3/docs/src/Algebra-Monad-Base.html#bind3
 bind2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
 bind2 f a b = join (f<$>a<*>b)
-(>>>=) :: Monad m => (m a,m b) -> (a -> b -> m c) -> m c
-(a,b) >>>= f = bind2 f a b
+
 bind3 :: Monad m => (a -> b -> c -> m d) -> m a -> m b -> m c -> m d
 bind3 f a b c = join (f<$>a<*>b<*>c)
-(>>>>=) :: Monad m => (m a,m b,m c) -> (a -> b -> c -> m d) -> m d
-(a,b,c) >>>>= f = bind3 f a b c
 
+bind4
+  :: Monad m =>
+  (t -> t1 -> t2 -> t3 -> m b)
+  -> m t
+  -> m t1
+  -> m t2
+  -> m t3
+  -> m b
 bind4 f ma mb mc md = do
   a <- ma
   b <- mb
@@ -132,6 +136,7 @@ bind4 f ma mb mc md = do
   d <- md
   f a b c d
 
+bind5 :: (Monad m) => (t -> t1 -> t2 -> t3 -> t4 -> m b) -> m t -> m t1 -> m t2 -> m t3 -> m t4 -> m b
 bind5 f ma mb mc md me = do
   a <- ma
   b <- mb
@@ -140,6 +145,8 @@ bind5 f ma mb mc md me = do
   e <- me
   f a b c d e
 
+
+bind6 :: (Monad m) => (t -> t1 -> t2 -> t3 -> t4 -> t5 -> m b) -> m t -> m t1 -> m t2 -> m t3 -> m t4 -> m t5 -> m b
 bind6 f ma mb mc md me mf = do
   a <- ma
   b <- mb

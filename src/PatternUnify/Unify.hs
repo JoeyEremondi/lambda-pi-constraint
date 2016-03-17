@@ -574,6 +574,7 @@ intersect _ _ _ _ _     = error "intersect: ill-typed!"
 
 tryPrune ::  ProbId -> Equation ->
                  Contextual () -> Contextual ()
+tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k | trace ("TryPrune " ++ show n ++ " " ++ pp q) False = error "tryPrune"
 tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k = do
     _Gam  <- ask
     let potentials = vars _Gam

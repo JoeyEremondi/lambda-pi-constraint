@@ -1,8 +1,7 @@
--- addition of natural numbers
-let alwaysZero =
-  ( \n ->
-    natElim
-      _
-      (\n -> n)
-      (\p rec n -> Succ (rec n))
-      n ) :: Nat -> Nat -> Nat
+-- a simpler elimination scheme for natural numbers
+let natFold =
+  ( \ m mz ms -> natElim
+                   _
+                   mz
+                   ( \ n' rec -> ms rec ) )
+  :: forall (m :: *) . m -> (m -> m) -> Nat -> m

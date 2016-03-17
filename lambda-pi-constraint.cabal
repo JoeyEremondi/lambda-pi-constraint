@@ -18,7 +18,7 @@ cabal-version:       >=1.10
 executable lambda-pi-constraint
   -- -prof -fprof-auto -fprof-auto -fprof-cafs
   ghc-options:
-        -O2 -prof -fprof-auto -fprof-auto -fprof-cafs -rtsopts
+        -O2 -Wall -prof -fprof-auto -fprof-auto -fprof-cafs -rtsopts
   main-is:             Main.hs
   other-modules:
 --    Original,

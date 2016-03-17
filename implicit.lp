@@ -46,14 +46,14 @@ let nat2Elim =
 
 
 -- increment by one
-let inc = natFold Nat (Succ Zero) Succ
+let inc = natFold _ (Succ Zero) Succ
 
 
 
 let myFinElim = finElim
 
 -- embed Fin into Nat
-let finNat = finElim (\ _ _ -> Nat)
+let finNat = finElim _
                      (\ _ -> Zero)
                      (\ _ _ rec -> Succ rec)
 
