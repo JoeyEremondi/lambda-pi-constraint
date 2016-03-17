@@ -6,14 +6,14 @@ let const = (\ a b x y -> x) :: forall (a :: *) (b :: *) . a -> b -> a
 -- addition of natural numbers
 let plus =
   natElim
-    ( \ _ -> Nat -> Nat )           -- motive
+    _           -- motive
     ( \ n -> n )                    -- case for Zero
     ( \ p rec n -> Succ (rec n) )   -- case for Succ
 
 -- predecessor, mapping 0 to 0
 let pred =
   natElim
-    ( \ _ -> Nat )
+    _
     Zero
     ( \ n' _rec -> n' )
 

@@ -420,7 +420,7 @@ freshTopLevel tp = do
 
 unify :: Common.Region -> Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
 unify reg v1 v2 tp env = do
-    probId <- UC.ProbId <$> freshNom "??"
+    probId <- UC.ProbId <$> freshNom ("??_" ++ Common.regionName reg ++ "_")
     --TODO right to reverse?
     let currentQuants = reverse $ typeEnv env
         prob = UC.Unify $ UC.EQN tp v1 tp v2

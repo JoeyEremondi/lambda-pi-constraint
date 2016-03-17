@@ -469,8 +469,15 @@ type Subs = Map.Map Nom VAL
 
 type SubsList = [(Nom, VAL)]
 
-compSubs :: Subs -> Subs -> Subs
-compSubs new old = Map.union new (Map.map (dictSubsts new) old)
+--Compose substitutions
+compSubs :: Subs -> Subs -> Subs --TODO this is pointless converting to list
+compSubs newDict oldDict =
+  let
+    new = Map.toList newDict
+    old = Map.toList oldDict
+  in
+    Map.fromList $ unionBy ((==) `on` fst) new (substs new old)
+  --Map.union new (Map.map (dictSubsts new) old)
 
 eval :: (Fresh m) => Subs -> VAL -> m VAL
 --eval g t | trace ("Eval " ++ pp t ++ "\n  Subs: " ++ show g) False = error "Eval"

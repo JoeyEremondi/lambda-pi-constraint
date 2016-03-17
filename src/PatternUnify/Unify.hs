@@ -63,7 +63,7 @@ putProb x q s = do
 
 pendingSolve ::  ProbId -> Problem -> [ProbId] ->
                  Contextual ()
-pendingSolve n q []  =  do  checkProb Solved q `catchError`
+pendingSolve n q []  =  do  checkProb n Solved q `catchError`
                                 (error . (++ "when checking problem " ++
                                               pp n ++ " : " ++ pp q))
                             putProb n q Solved
@@ -378,7 +378,10 @@ matchSpine
     return $ [eq1, eq2, eq3, eq4, eq5, eq6, eq7] ++ rest
 
 matchSpine _ _ []  _ _ []  = return []
-matchSpine _ _ _   _ _ _   = throwError "spine mismatch"
+matchSpine t hd spn   t' hd' spn'   =
+  throwError $
+    "Cannot match (" ++ (pp hd) ++ " " ++ (show $ map pp spn) ++ ") :: " ++ pp t
+    ++ "    with    (" ++ (pp hd') ++ " " ++ (show $ map pp spn') ++ ") :: " ++ pp t'
 
 
 -- \subsection{Flex-rigid equations}
@@ -573,7 +576,10 @@ tryPrune ::  ProbId -> Equation ->
                  Contextual () -> Contextual ()
 tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k = do
     _Gam  <- ask
-    u     <- prune (vars _Gam \\ fvs ds) t
+    let potentials = vars _Gam
+        freesToIgnore = --trace ("Pruning " ++ (show potentials) ++ " from " ++ (show $ map pp ds) ++ " ignoring " ++ (show $ fvs ds) ++ "\n   in exp " ++ pp t)  $
+          fvs ds
+    u     <- prune (potentials \\ freesToIgnore) t
     case u of
         d:_  -> active n q >> instantiate d
         []   -> k
@@ -598,6 +604,7 @@ tryPrune _ q _ = error $ "tryPrune: " ++ show q
 
 prune ::  [Nom] -> VAL ->
               Contextual [(Nom, Type, VAL -> VAL)]
+--prune xs t | trace ("In Pruning " ++ (show xs) ++ " from " ++ pp t) False = error "prune"
 prune xs SET           = return []
 prune xs Nat = return []
 prune xs (Fin n) = prune xs n
@@ -618,8 +625,8 @@ prune xs (PI _S _T)    = (++) <$> prune xs _S  <*> prune xs _T
 prune xs (SIG _S _T)   = (++) <$> prune xs _S  <*> prune xs _T
 prune xs (PAIR s t)    = (++) <$> prune xs s   <*> prune xs t
 prune xs (L b)         = prune xs =<< (snd <$> unbind b)
-prune xs (N (Var z _) es)
-        | z `elem` xs  = throwError "pruning error"
+prune xs neut@(N (Var z _) es)
+        | z `elem` xs  = error $ "Pruning overlap: Cannot prune " ++ (show xs) ++ " from neutral " ++ (pp neut)
         | otherwise    = concat <$> mapM pruneElim es
   where  pruneElim (A a)  = prune xs a
          pruneElim _      = return []

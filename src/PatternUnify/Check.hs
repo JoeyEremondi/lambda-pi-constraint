@@ -26,6 +26,8 @@ import PatternUnify.Kit
 import PatternUnify.Tm
 import PatternUnify.Context
 
+import qualified Data.List as List
+
 import Debug.Trace (trace)
 
 
@@ -79,10 +81,11 @@ check _T          (N u as)  = do
                                _U   <- infer u
                                _T'  <-
                                   checkSpine _U (N u []) as
-                               eq   <- (_T <-> _T')
-                               unless eq $ fail $ "Inferred type " ++ pp _T' ++
+                               eq   <- (_T <-> _T') --TODO make fail
+                               unless eq $ error $ "Inferred type " ++ pp _T' ++
                                                   " of " ++ pp (N u as) ++
                                                   " is not " ++ pp _T
+                                                  ++ " in env " ++ show vars
 
 check (SET) (Nat) = return ()
 check (SET) (Fin n) = do
@@ -362,9 +365,9 @@ isReflexive eqn@(EQN _S s _T t) = --trace ("IsRelexive " ++ pp eqn) $
 
 
 
-checkProb :: ProblemState -> Problem -> Contextual ()
---checkProb st p | trace ("checkProb " ++ show st ++ " " ++ pp p) False = error "checkProb"
-checkProb st p@(Unify (EQN _S s _T t)) = do
+checkProb :: ProbId -> ProblemState -> Problem -> Contextual ()
+checkProb ident st p | trace ("@@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False = error "checkProb"
+checkProb ident st p@(Unify (EQN _S s _T t)) = do
    check SET _S
    check _S s
    check SET _T
@@ -373,15 +376,15 @@ checkProb st p@(Unify (EQN _S s _T t)) = do
        then do  eq <- isReflexive (EQN _S s _T t)
                 unless eq $ fail $ "checkProb: not unified " ++ pp p
        else return ()
-checkProb st (All (P _T) b) = do
+checkProb ident st (All (P _T) b) = do
     check SET _T
     (x, p) <- unbind b
-    inScope x (P _T) $ checkProb st p
-checkProb st (All (Twins _S _T) b) = do
+    inScope x (P _T) $ checkProb ident st p
+checkProb ident st (All (Twins _S _T) b) = do
     check SET _S
     check SET _T
     (x, p) <- unbind b
-    inScope x (Twins _S _T) $ checkProb st p
+    inScope x (Twins _S _T) $ checkProb ident st p
 
 
 
@@ -390,7 +393,7 @@ validate q = local (const []) $ do
     _Del' <- getR
     unless (null _Del') $ fail "validate: not at far right"
     _Del <- getL
-    help _Del `catchError` (fail . (++ ("\nwhen validating\n" ++ pp (_Del, _Del'))))
+    trace ("Context before validating " ++ List.intercalate "\n" (map pp _Del)) $ help _Del `catchError` (fail . (++ ("\nwhen validating\n" ++ pp (_Del, _Del'))))
     putL _Del
   where
     help :: ContextL -> Contextual ()
@@ -404,6 +407,7 @@ validate q = local (const []) $ do
                                           check SET _T
                                           check _T v
                                           help _Del
-    help (_Del :< Prob _ p st)      = do  checkProb st p
+    help (_Del :< Prob ident p st)      = do
+                                          checkProb ident st p
                                           unless (q st) $ throwError "validate: bad state"
                                           help _Del

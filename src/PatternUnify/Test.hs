@@ -54,7 +54,7 @@ solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    result = --trace ("Initial context:\n" ++ initialContextString ) $
+    result = trace ("Initial context:\n" ++ initialContextString ) $
        runContextual (B0, map Right es) $ do
           initialise
           ambulando [] Map.empty
@@ -63,7 +63,7 @@ solveEntries !es  =
     resultString = case result of
       Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
       Right (_, ctx) -> render $ runPretty $ pretty ctx
-  in --trace ("\n\n=============\nFinal\n" ++ resultString) $
+  in trace ("\n\n=============\nFinal\n" ++ resultString) $
     case result of
       Left err -> Left [(ProbId $ LN.string2Name "builtinLoc", errString err)]
       Right ((), ctx) -> getContextErrors es ctx
@@ -133,8 +133,11 @@ runTest q es = do
                    putStrLn $ "Initial context:\n" ++
                                 render (runPretty (prettyEntries es))
 
-                   let r = runContextual (B0, map Right es)
-                                       (initialise >> ambulando [] Map.empty >> validate q)
+                   let r = runContextual (B0, map Right es) $
+                                       (do
+                                         initialise
+                                         ambulando [] Map.empty
+                                         validate q)
                    case r of
                        Left err  -> putStrLn $ "Error: " ++ err
                        Right ((), cx)  -> putStrLn $ "Final context:\n" ++ pp cx ++ "\n"

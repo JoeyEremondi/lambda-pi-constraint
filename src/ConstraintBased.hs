@@ -83,9 +83,10 @@ iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
-iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
-  iType_' iiGlobal g it
-    --return $ trace ("===>  RET ITYPE " ++ show (iPrint_ 0 0 lit) ++ " :: " ++ Tm.prettyString result) $ result
+iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
+  do
+    result <- iType_' iiGlobal g it
+    return $ trace ("===>  RET ITYPE " ++ show (iPrint_ 0 0 lit) ++ " :: " ++ Tm.prettyString result) $   result
   where
     iType_' ii g m@(Meta_ s) = do
       metaType <- freshType reg g
@@ -135,8 +136,8 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                 piArg <- freshType (region argExp) g
                 piBodyFn <- fresh (region funExp) g (piArg Tm.--> Tm.SET) --TODO star to star?
 
-                --trace ("APP " ++ show (iPrint_ 0 0 lit) ++ "\n  fn type, unifying " ++ Tm.prettyString fnType ++ "  WITH  " ++ Tm.prettyString (Tm.PI piArg piBodyFn)) $
-                unifySets reg (fnType) (Tm.PI piArg piBodyFn) g
+                trace ("APP " ++ show (iPrint_ 0 0 lit) ++ "\n  fn type, unifying " ++ Tm.prettyString fnType ++ "  WITH  " ++ Tm.prettyString (Tm.PI piArg piBodyFn)) $
+                  unifySets reg (fnType) (Tm.PI piArg piBodyFn) g
 
                 --Ensure that the argument has the proper type
                 cType_ ii g argExp piArg
@@ -146,8 +147,8 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
 
                 --Our resulting type is the application of our arg type into the
                 --body of the pi type
-                piBodyFn Tm.$$ argVal
-                --trace ("APP " ++ show (iPrint_ 0 0 lit) ++ "\n  return " ++ Tm.prettyString retType) $ return retType
+                retType <- piBodyFn Tm.$$ argVal
+                trace ("APP " ++ show (iPrint_ 0 0 lit) ++ "\n  return " ++ Tm.prettyString retType) $ return retType
 
     iType_' ii g Nat_                  =  return conStar
     iType_' ii g (NatElim_ m mz ms n)  =
@@ -158,7 +159,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
           ourApp1 <- (mVal Tm.$$ Tm.Zero)
           cType_ ii g mz ourApp1
           --Check that ms has type ( (k: N) -> m k -> m (S k) )
-          let ln = LN.s2n "l"
+          ln <- freshNom $ "l"
           let lv = Tm.var ln
           ourApp2 <- (Tm.msVType mVal)
           cType_ ii g ms ourApp2
@@ -271,7 +272,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
 
 
 cType_ :: Int -> WholeEnv -> CTerm_ -> ConType -> ConstraintM ()
-cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0 0 lct) ++ " :: " ++ Tm.prettyString globalTy) $
+cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0 lct) ++ " :: " ++ Tm.prettyString globalTy) $
   cType_' iiGlobal g ct globalTy
   where
     cType_' ii g (Inf_ e) tyAnnot

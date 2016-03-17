@@ -38,8 +38,8 @@ prettySource s = "builtin:"
 
 regionName BuiltinRegion = "builtin"
 regionName (SourceRegion pos) = --TODO multiFile
-  (show (sourceColumn pos))
-  ++ "_" ++ show (sourceLine pos)
+  (show (sourceLine pos))
+  ++ "_" ++ show (sourceColumn pos)
 
 data Located a = L {region :: Region, contents :: a}
   deriving (Eq, Ord, Show)
@@ -276,7 +276,7 @@ iPrint_ p ii (L _ it) = iPrint_' p ii it
       parensIf True (text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d )
       <> text " .", cPrint_ 0 (ii + 1) r])
     iPrint_' p ii (Sigma_ d r)         =  parensIf (p > 0) (sep [text "exists " <>
-      parensIf True (text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d ) 
+      parensIf True (text (vars !! ii) <> text " :: " <> cPrint_ 0 ii d )
       <> text " .", cPrint_ 0 (ii + 1) r])
     iPrint_' p ii (Bound_ k)        =  text (vars !! (ii - k - 1))
     iPrint_' p ii (Free_ (Global s))=  text s
