@@ -3,7 +3,7 @@
       FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
       UndecidableInstances, GeneralizedNewtypeDeriving,
       TypeSynonymInstances, ScopedTypeVariables, PatternSynonyms,
-      DeriveGeneric #-}
+      DeriveGeneric, BangPatterns #-}
 
 -- This module defines a typechecker and definitional equality test for a
 -- simple Set-in-Set type theory.
@@ -366,25 +366,36 @@ isReflexive eqn@(EQN _S s _T t) = --trace ("IsRelexive " ++ pp eqn) $
 
 
 checkProb :: ProbId -> ProblemState -> Problem -> Contextual ()
-checkProb ident st p | trace ("@@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False = error "checkProb"
+--checkProb ident st p | trace ("@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False =
+    --error "checkProb"
 checkProb ident st p@(Unify (EQN _S s _T t)) = do
-   check SET _S
-   check _S s
-   check SET _T
-   check _T t
+   currentSubs <- metaSubs
+   !_SVal <-  eval currentSubs _S
+   check SET _SVal
+   sVal <- eval currentSubs s
+   check _SVal sVal
+   _TVal <- eval currentSubs _T
+   check SET _TVal
+   tVal <- eval currentSubs t
+   check _TVal tVal
    if st == Solved
-       then do  eq <- isReflexive (EQN _S s _T t)
+       then do  eq <- isReflexive (EQN _SVal sVal _TVal tVal)
                 unless eq $ fail $ "checkProb: not unified " ++ pp p
        else return ()
 checkProb ident st (All (P _T) b) = do
-    check SET _T
+    currentSubs <- metaSubs
+    _TVal <- eval currentSubs _T
+    check SET _TVal
     (x, p) <- unbind b
-    inScope x (P _T) $ checkProb ident st p
+    inScope x (P _TVal) $ checkProb ident st p
 checkProb ident st (All (Twins _S _T) b) = do
-    check SET _S
-    check SET _T
+    currentSubs <- metaSubs
+    _SVal <- eval currentSubs _S
+    check SET _SVal
+    _TVal <- eval currentSubs _T
+    check SET _TVal
     (x, p) <- unbind b
-    inScope x (Twins _S _T) $ checkProb ident st p
+    inScope x (Twins _SVal _TVal) $ checkProb ident st p
 
 
 
@@ -393,7 +404,8 @@ validate q = local (const []) $ do
     _Del' <- getR
     unless (null _Del') $ fail "validate: not at far right"
     _Del <- getL
-    trace ("Context before validating " ++ List.intercalate "\n" (map pp _Del)) $ help _Del `catchError` (fail . (++ ("\nwhen validating\n" ++ pp (_Del, _Del'))))
+    --trace ("Context before validating " ++ List.intercalate "\n" (map pp _Del)) $
+    help _Del `catchError` (fail . (++ ("\nwhen validating\n" ++ pp (_Del, _Del'))))
     putL _Del
   where
     help :: ContextL -> Contextual ()

@@ -17,6 +17,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 
 import qualified Data.Map as Map
+import qualified Data.Maybe as Maybe
 
 import qualified Data.Traversable as Traversable
 
@@ -299,11 +300,22 @@ lookupMeta x = look =<< getL
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx
 
+metaSubs :: MonadState Context m => m Subs
+metaSubs = do
+  leftContext <- getL
+  let pairList = Maybe.catMaybes $ map maybeSub leftContext
+  --trace ("MetaSubs " ++ show pairList) $
+  return $ Map.fromList $ pairList
+  where
+    maybeSub (E y _ (DEFN val)) = Just (y,val)
+    maybeSub _ = Nothing
+
+
 metaValue :: MonadState Context m => Nom -> m VAL
 metaValue x = look =<< getL
   where
     look :: Monad m => ContextL -> m Type
-    look B0 = fail $ "lookupMeta: missing " ++ show x
+    look B0 = fail $ "metaValue: missing " ++ show x
     look (cx  :< E y _ (DEFN val))  | x == y     = return val
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx

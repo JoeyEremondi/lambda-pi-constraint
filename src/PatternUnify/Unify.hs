@@ -32,7 +32,7 @@ import PatternUnify.Context (Entry(..), ProblemState(..), Problem(..), Equation(
                 Dec(..), Param(..), Contextual, ProbId(..),
                 allProb, allTwinsProb, wrapProb,
                 pushL, popL, pushR, popR,
-                lookupVar, localParams, lookupMeta)
+                lookupVar, localParams, lookupMeta, modifyL)
 
 import qualified Data.Set as Set
 
@@ -806,7 +806,9 @@ splitSig _ _ _ = return Nothing
 ambulando :: [ProbId] -> Subs -> Contextual ()
 ambulando ns theta = popR >>= \ x -> case x of
                      -- if right context is empty, stop
- Nothing             -> return ()
+ Nothing             -> do --Make sure our final substitutions are applied
+                          modifyL (map (update [] theta))
+                          return ()
                      -- compose suspended substitutions
  Just (Left theta')  -> ambulando ns (compSubs theta theta')
                      -- process entries
@@ -826,6 +828,7 @@ ambulando ns theta = popR >>= \ x -> case x of
 -- state changed if appropriate.
 
 update :: [ProbId] -> Subs -> Entry -> Entry
+--update ns theta entry | trace ("UPDATE " ++ show ns ++ " " ++ show theta ++ " " ++ pp entry) False = error "update"
 update _ theta (Prob n p Blocked) = Prob n p' k
       where  p'  = substs (Map.toList theta) p
              k   = if p == p' then Blocked else Active
@@ -836,4 +839,6 @@ update ns theta (Prob n p (Pending ys))
              p'  = substs (Map.toList theta) p
 update _  _      e'@(Prob _ _ Solved)      = e'
 update _  _      e'@(Prob _ _ (Failed _))  = e'
-update _  theta  e'                        = substs (Map.toList theta) e'
+update _  theta  e'                        =
+  --trace ("UPDATE SUBS"  ++ pp e' ++ "\n   " ++ show theta ++ "\n\n") $
+  substs (Map.toList theta) e'
