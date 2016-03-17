@@ -41,5 +41,5 @@ repLP checker b = readevalprint (lp checker) (b, [], lpve, lpte)
 
 lpassume checker state@(inter, out, ve, te) x t =
   check (lp checker) state x (builtin $ Ann_ t (builtin $ Inf_ $ builtin $ Star_))
-        (\ (y, v) -> return ()) --  putStrLn (render (text x <> text " :: " <> cPrint_ 0 0 (quote0_ v))))
+        (\ (y, v) -> return ())
         (\ (y, v) -> (inter, out, ve, (Global x, v) : te))
