@@ -15,6 +15,7 @@ import qualified Text.Parsec as P
 import qualified Text.Parsec.Pos as Pos
 import Text.Parsec.Token
 import Text.ParserCombinators.Parsec hiding (State, parse)
+import Text.ParserCombinators.Parsec.Error
 import Text.ParserCombinators.Parsec.Language
 
 import System.IO.Error
@@ -60,8 +61,6 @@ builtin x = L BuiltinRegion x
 getRegion = SourceRegion `fmap` getPosition
 
 
-putstrln x = putStrLn x
-
 simplyTyped = makeTokenParser (haskellStyle { identStart = letter {-<|> P.char '_'-},
                                               reservedNames = ["_", "match", "let", "assume", "putStrLn"] })
 
@@ -83,6 +82,20 @@ parseIO f p x =
                   Left e  -> putStrLn (show e) >> return Nothing
                   Right r -> return (Just r)
 
+
+parseSimple :: String -> LPParser a -> String -> Either [(Maybe SourcePos, String)] a
+parseSimple fileName p x =
+  let
+    --doParse :: LPParser Int
+    doParse = do
+      whiteSpace simplyTyped
+      x <- p
+      eof
+      return x
+  in
+    case runIdentity $ P.runParserT doParse (Pos.initialPos "") fileName x of
+                  Left e  -> Left [(Just $ errorPos e, intercalate "\n" $ map messageString $ errorMessages e)]
+                  Right r -> Right r
 
 vars :: [String]
 vars = [ c : n | n <- "" : map show [1..], c <- ['x','y','z'] ++ ['a'..'w'] ]
@@ -449,6 +462,8 @@ compileFile int state@(inter, out, ve, te) f =
     stmts <- parseIO f (many (isparse int)) x
     maybe (return state) (foldM (handleStmt int) state) stmts
 
+
+
 compilePhrase :: Interpreter i c v t tinf inf -> State v inf -> String -> IO (State v inf)
 compilePhrase int state@(inter, out, ve, te) x =
   do
@@ -622,8 +637,6 @@ check int state@(inter, out, ve, te) i t kp k =
                         let v = ieval int ve t
                         kp (y, newVal, subs)
                         return (k (y, newVal))
-
-stassume state@(inter, out, ve, te) x t = return (inter, out, ve, (Global x, t) : te)
 
 
 

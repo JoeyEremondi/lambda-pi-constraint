@@ -1,58 +1,37 @@
+{-# LANGUAGE QuasiQuotes     #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Language.LambdaPiPlus
   ( CompileContext
   , compile
   , initialContext
+  , noPreludeContext
   ) where
 
-import Common
-import qualified ConstraintBased as CB
-import Main
-import qualified PatternUnify.Tm as Tm
-import Text.Parsec
-import Text.Parsec.Pos (SourcePos)
+import qualified Language.LambdaPiPlus.Internals as Internal
 
-import Control.Monad (foldM)
+import Language.Haskell.TH.Syntax (qRunIO)
 
-type CompileContext = Common.State Tm.VAL Tm.VAL
-type CompileResult = Either [(Maybe SourcePos, String)] CompileContext
+import Common (lpte, lpve)
+
+import Language.Haskell.TH.Lift
+
+import PatternUnify.Tm as Tm
+
+type CompileContext = Internal.CompileContext
+
+noPreludeContext = Internal.emptyContext
+
+compile = Internal.compile
 
 initialContext :: CompileContext
-initialContext = error "TODO prelude"
-
-int = lp CB.checker
-
-compile :: String -> CompileContext -> (CompileResult)
-compile source context = do
-  stmts <- parseSimple "editor-window" (many (isparse int)) source
-  foldM (doStmt $ lp CB.checker) context stmts
-
-
-doStmt :: LpInterp
-              -> CompileContext -> Stmt ITerm_ CTerm_ -> CompileResult
-doStmt int state@(inter, out, ve, te) stmt =
+initialContext = $(
   do
-    case stmt of
-        Assume assm -> foldM (doAssume) state assm
-        Let x e    -> checkEval x e
-        Eval e     -> checkEval it e
-        PutStrLn x -> error "TODO implement write to console"--putStrLn x >> return state
-        Out f      -> return (inter, f, ve, te)
-  where
-    --  checkEval :: String -> i -> IO (State v inf)
-    checkEval i t =
-      doCheck int state i t
-        (\ (y, v) -> (inter, "", (Global i, v) : ve, (Global i, ihastype int y) : te))
-
-doAssume :: CompileContext -> (String, CTerm_) -> CompileResult
-doAssume  state@(inter, out, ve, te) (x, t) =
-  doCheck (lp CB.checker) state x (builtin $ Ann_ t (builtin $ Inf_ $ builtin $ Star_))
-        (\ (y, v) -> (inter, out, ve, (Global x, v) : te))
-
-doCheck :: LpInterp -> CompileContext -> String -> ITerm_
-          -> ((Tm.Type, Tm.VAL) -> CompileContext) -> CompileResult
-doCheck int state@(inter, out, ve, te) i t k =
-                do
-                  --  typecheck and evaluate
-                  (y, newVal, subs) <- iitype int ve te t
-                  let v = ieval int ve t
-                  return (k (y, newVal))
+    preludeText <- qRunIO $ readFile "prelude.lp"
+    let
+      preludeContext =
+        case Internal.compile preludeText Internal.emptyContext of
+          Left e -> error $ "ERROR compiling prelude: " ++ show e
+          Right ctx -> ctx
+    [|preludeContext|]
+  )

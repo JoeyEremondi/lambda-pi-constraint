@@ -19,8 +19,9 @@ main = do
       repLP CB.checker True
     (fileName:_) -> do
       compileFile (lp CB.checker) (True, [], lpve, lpte) fileName
-      return () 
+      return ()
 
+type LpInterp = Interpreter ITerm_ CTerm_ Tm.VAL Tm.VAL CTerm_ Tm.VAL
 
 lp :: TypeChecker -> Interpreter ITerm_ CTerm_ Tm.VAL Tm.VAL CTerm_ Tm.VAL
 lp checker = I { iname = "lambda-Pi",
