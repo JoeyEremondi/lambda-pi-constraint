@@ -19,7 +19,7 @@ main = do
       repLP CB.checker True
     (fileName:_) -> do
       compileFile (lp CB.checker) (True, [], lpve, lpte) fileName
-      return ()
+      return () 
 
 
 lp :: TypeChecker -> Interpreter ITerm_ CTerm_ Tm.VAL Tm.VAL CTerm_ Tm.VAL

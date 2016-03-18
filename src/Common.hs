@@ -32,13 +32,19 @@ data Region =
 
 prettySource :: Region -> String
 prettySource (SourceRegion pos) =
-   (show $ sourceLine pos) ++ ":" ++ (show $ sourceColumn pos)
+   prettyPos pos
 prettySource s = "builtin:"
+
+prettyPos pos = (sourceName pos) ++ ": " ++ (show $ sourceLine pos) ++ "," ++ (show $ sourceColumn pos)
 
 regionName BuiltinRegion = "builtin"
 regionName (SourceRegion pos) = --TODO multiFile
   (show (sourceLine pos))
   ++ "_" ++ show (sourceColumn pos)
+
+compactRegion :: Region -> String
+compactRegion (SourceRegion pos) = (show $ sourceLine pos) ++ "," ++ (show $ sourceColumn pos)
+compactRegion _ = "0,0"
 
 data Located a = L {region :: Region, contents :: a}
   deriving (Eq, Ord, Show)
@@ -566,7 +572,7 @@ lpve =
 iinfer :: Interpreter i c v t tinf inf -> NameEnv v -> Ctx inf -> i -> IO (Maybe (t, v, [(Region, v)]))
 iinfer int d g t =
   case iitype int d g t of
-    Left e -> putStrLn e >> return Nothing
+    Left errs -> (forM errs $ \(pos, e) -> putStrLn ("ERROR: " ++ (maybe "<builtin>" prettyPos pos) ++ " " ++ e)) >> return Nothing
     Right v -> return (Just v)
 
 handleStmt :: Interpreter i c v t tinf inf
@@ -595,7 +601,7 @@ handleStmt int state@(inter, out, ve, te) stmt =
                          _ -> do
                            putStrLn "Solved metas:"
                            forM subs $ \(loc, val) ->
-                            putStrLn $ "    " ++ show loc ++ " := " ++ (render $ ivprint int val)
+                            putStrLn $ "    " ++ compactRegion loc ++ " := " ++ (render $ ivprint int val)
                            return ()
                        unless (null out) (writeFile out (process outtext)))
         (\ (y, v) -> (inter, "", (Global i, v) : ve, (Global i, ihastype int y) : te))
@@ -637,7 +643,7 @@ data Name
 
 
 
-type Result a = Either String a
+type Result a = Either [(Maybe SourcePos, String)] a
 
 
 type CTerm_ = Located CTerm_'

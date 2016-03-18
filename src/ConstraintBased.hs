@@ -30,14 +30,17 @@ mapSnd f (a,b) = (a, f b)
 mapFst f (a,b) = (f a, b)
 
 
-errorMsg :: [(Region, String)] -> String
-errorMsg pairs =
-  List.intercalate "\n" $
-  map (\(reg, err) -> show reg ++ ": " ++ err ) pairs
+--errorMsg :: [(Region, String)] -> String
+--errorMsg pairs =
+--  List.intercalate "\n" $
+--  map (\(reg, err) -> show reg ++ ": " ++ err ) pairs
 
 checker :: TypeChecker
 checker (valNameEnv, typeContext) term =
   let
+    toPos (reg, err) = case reg of
+      BuiltinRegion -> (Nothing, err)
+      (SourceRegion pos) -> (Just pos, err)
     (typeGlobals, typeLocals) = splitContext typeContext
     (valGlobals, valLocals) = splitContext  valNameEnv
     genResult =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
@@ -49,7 +52,7 @@ checker (valNameEnv, typeContext) term =
     --     ++ (intercalate "\n" (map (\(s, v) -> s ++ " := " ++ Tm.prettyString v) pairs))
   in
     case soln of
-      Left pairs -> Left $ errorMsg pairs
+      Left pairs -> Left $ map toPos pairs
       Right (tp, nf, subs, metaLocs) -> Right $
         let
           subbedVal = LN.runFreshM $ Tm.eval subs nf
