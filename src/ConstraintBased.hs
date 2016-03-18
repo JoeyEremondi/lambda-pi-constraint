@@ -7,6 +7,8 @@ import Prelude hiding (print)
 
 import qualified Data.Map as Map
 
+import qualified Data.Maybe as Maybe
+
 import Text.PrettyPrint.HughesPJ hiding (parens, ($$))
 
 import qualified Unbound.Generics.LocallyNameless as LN
@@ -48,10 +50,13 @@ checker (valNameEnv, typeContext) term =
   in
     case soln of
       Left pairs -> Left $ errorMsg pairs
-      Right (tp, nf, subs) -> Right $
+      Right (tp, nf, subs, metaLocs) -> Right $
         let
           subbedVal = LN.runFreshM $ Tm.eval subs nf
-          namePairs = map (\(nm, val) -> (Global $ LN.name2String nm, val)) $ Map.toList subs
+          pairToMaybe (nm, val) = do
+            loc <- Map.lookup nm metaLocs
+            return (loc, val)
+          namePairs = Maybe.catMaybes $ map pairToMaybe $ Map.toList subs
         in
           (tp, subbedVal, namePairs)
 

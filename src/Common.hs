@@ -19,6 +19,8 @@ import Text.ParserCombinators.Parsec.Language
 
 import System.IO.Error
 
+import qualified Data.Map as Map
+
 import Control.Monad.Identity (Identity, runIdentity)
 
 import qualified PatternUnify.Tm as Tm
@@ -370,7 +372,7 @@ type State v inf = (Bool, String, NameEnv v, Ctx inf)
 
 --Returns value's type, value with metas filled in, and dictionary of solved meta values (for printing)
 type TypeChecker =
-  (NameEnv Tm.VAL, [(Name, Tm.VAL)]) -> ITerm_ -> Result (Type_, Tm.VAL, NameEnv Tm.VAL)
+  (NameEnv Tm.VAL, [(Name, Tm.VAL)]) -> ITerm_ -> Result (Type_, Tm.VAL, [(Region, Tm.VAL)])
 
 commands :: [InteractiveCommand]
 commands
@@ -450,12 +452,13 @@ compilePhrase int state@(inter, out, ve, te) x =
 data Interpreter i c v t tinf inf =
   I { iname    :: String,
       iprompt  :: String,
-      iitype   :: NameEnv v -> Ctx inf -> i -> Result (t, v, NameEnv v),
+      iitype   :: NameEnv v -> Ctx inf -> i -> Result (t, v, [(Region, v)]),
       iquote   :: v -> c,
       ieval    :: NameEnv v -> i -> v,
       ihastype :: t -> inf,
       icprint  :: c -> Doc,
       itprint  :: t -> Doc,
+      ivprint  :: v -> Doc,
       iiparse  :: LPParser i,
       isparse  :: LPParser (Stmt i tinf),
       iassume  :: State v inf -> (String, tinf) -> IO (State v inf) }
@@ -560,7 +563,7 @@ lpve =
 
 
 
-iinfer :: Interpreter i c v t tinf inf -> NameEnv v -> Ctx inf -> i -> IO (Maybe (t, v, NameEnv v))
+iinfer :: Interpreter i c v t tinf inf -> NameEnv v -> Ctx inf -> i -> IO (Maybe (t, v, [(Region, v)]))
 iinfer int d g t =
   case iitype int d g t of
     Left e -> putStrLn e >> return Nothing
@@ -580,18 +583,25 @@ handleStmt int state@(inter, out, ve, te) stmt =
     --  checkEval :: String -> i -> IO (State v inf)
     checkEval i t =
       check int state i t
-        (\ (y, v) -> do
+        (\ (y, v, subs) -> do
                        --  ugly, but we have limited space in the paper
                        --  usually, you'd want to have the bound identifier *and*
                        --  the result of evaluation
-                       let outtext = if i == it then render (icprint int (iquote int v) <> text " :: " <> itprint int y)
+                       let outtext = if i == it then render (ivprint int v <> text " :: " <> itprint int y)
                                                 else render (text i <> text " :: " <> itprint int y)
                        putStrLn outtext
+                       case subs of
+                         [] -> return ()
+                         _ -> do
+                           putStrLn "Solved metas:"
+                           forM subs $ \(loc, val) ->
+                            putStrLn $ "    " ++ show loc ++ " := " ++ (render $ ivprint int val)
+                           return ()
                        unless (null out) (writeFile out (process outtext)))
         (\ (y, v) -> (inter, "", (Global i, v) : ve, (Global i, ihastype int y) : te))
 
 check :: Interpreter i c v t tinf inf -> State v inf -> String -> i
-         -> ((t, v) -> IO ()) -> ((t, v) -> State v inf) -> IO (State v inf)
+         -> ((t, v, [(Region, v)]) -> IO ()) -> ((t, v) -> State v inf) -> IO (State v inf)
 check int state@(inter, out, ve, te) i t kp k =
                 do
                   --  typecheck and evaluate
@@ -601,10 +611,10 @@ check int state@(inter, out, ve, te) i t kp k =
                       do
                         --  putStrLn "type error"
                         return state
-                    Just (y, newVal, _)   ->
+                    Just (y, newVal, subs)   ->
                       do
                         let v = ieval int ve t
-                        kp (y, newVal)
+                        kp (y, newVal, subs)
                         return (k (y, newVal))
 
 stassume state@(inter, out, ve, te) x t = return (inter, out, ve, (Global x, t) : te)

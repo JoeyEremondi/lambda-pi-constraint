@@ -5,7 +5,7 @@
 
 module PatternUnify.Unify where
 
-import Control.Monad.Except (MonadError, catchError, throwError, when)
+import Control.Monad.Except ( catchError, throwError, when)
 import Control.Monad.Reader (ask)
 import Data.List ((\\))
 import qualified Data.Map as Map

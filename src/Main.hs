@@ -31,6 +31,7 @@ lp checker = I { iname = "lambda-Pi",
          ihastype = id,
          icprint = cPrint_ 0 0,
          itprint = runPretty . pretty,
+         ivprint = runPretty . pretty,
          iiparse = parseITerm_ 0 [],
          isparse = parseStmt_ [],
          iassume = \ s (x, t) -> lpassume checker s x t }
@@ -41,5 +42,5 @@ repLP checker b = readevalprint (lp checker) (b, [], lpve, lpte)
 
 lpassume checker state@(inter, out, ve, te) x t =
   check (lp checker) state x (builtin $ Ann_ t (builtin $ Inf_ $ builtin $ Star_))
-        (\ (y, v) -> return ())
+        (\ (y, v, _) -> return ())
         (\ (y, v) -> (inter, out, ve, (Global x, v) : te))
