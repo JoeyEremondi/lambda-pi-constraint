@@ -1,9 +1,17 @@
 --{-# OPTIONS_GHC -F -pgmF she #-}
-{-# LANGUAGE GADTs, KindSignatures, TemplateHaskell,
-      FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
-      UndecidableInstances, GeneralizedNewtypeDeriving,
-      TypeSynonymInstances, ScopedTypeVariables, PatternSynonyms,
-      DeriveGeneric, BangPatterns #-}
+{-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE PatternSynonyms            #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeSynonymInstances       #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 -- This module defines a typechecker and definitional equality test for a
 -- simple Set-in-Set type theory.
@@ -20,9 +28,9 @@ import Unbound.Generics.LocallyNameless
 
 import GHC.Generics
 
+import PatternUnify.Context
 import PatternUnify.Kit
 import PatternUnify.Tm
-import PatternUnify.Context
 
 --import qualified Data.List as List
 

@@ -1,5 +1,11 @@
-{-# LANGUAGE DeriveFunctor, DeriveFoldable, FlexibleContexts, FlexibleInstances,
-                 MultiParamTypeClasses, TypeOperators, TemplateHaskell, PatternSynonyms #-}
+{-# LANGUAGE DeriveFoldable        #-}
+{-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms       #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeOperators         #-}
 
 -- This module defines some basic general purpose kit, in particular
 -- backwards lists and a typeclass of things that can be pretty-printed.

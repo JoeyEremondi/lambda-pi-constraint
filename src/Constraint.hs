@@ -1,4 +1,6 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, PatternSynonyms #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE PatternSynonyms      #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Constraint where
 
 import qualified Common
@@ -31,9 +33,9 @@ type ConstrContext = [(Common.Name, Tm.VAL)]
 data WholeEnv =
   WholeEnv
   { valueEnv     :: [(Int, Tm.VAL)]
-  , typeEnv :: [(Int, Tm.VAL)]
+  , typeEnv      :: [(Int, Tm.VAL)]
   , globalValues :: [(String, Tm.VAL)]
-  , globalTypes :: [(String, Tm.VAL)]
+  , globalTypes  :: [(String, Tm.VAL)]
   } deriving (Show)
 
 typeLookup :: Common.Name -> WholeEnv -> Maybe Tm.VAL
@@ -50,7 +52,7 @@ valueLookup (Common.Quote x) _ = error $ "Cannot lookup quoted value " ++ show x
 
 data ConstrainState =
   ConstrainState
-  { intStore :: [Int]
+  { intStore    :: [Int]
   , sourceMetas :: [String]
   --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }

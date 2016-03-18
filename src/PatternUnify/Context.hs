@@ -1,9 +1,17 @@
 --{-# OPTIONS_GHC -F -pgmF she #-}
-{-# LANGUAGE GADTs, KindSignatures, TemplateHaskell, BangPatterns,
-      FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
-      UndecidableInstances, GeneralizedNewtypeDeriving,
-      TypeSynonymInstances, ScopedTypeVariables, StandaloneDeriving, PatternSynonyms,
-      DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE PatternSynonyms            #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeSynonymInstances       #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 -- This module defines unification problems, metacontexts and operations
 -- for working on them in the |Contextual| monad.
@@ -11,8 +19,8 @@
 module PatternUnify.Context where
 
 import Control.Applicative
-import Control.Monad.Identity
 import Control.Monad.Except
+import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.State
 
@@ -22,8 +30,8 @@ import qualified Data.Maybe as Maybe
 import Debug.Trace
 import GHC.Generics
 
+import Unbound.Generics.LocallyNameless hiding (join, restrict)
 import Unbound.Generics.LocallyNameless.Bind
-import Unbound.Generics.LocallyNameless hiding (restrict, join)
 import Unbound.Generics.LocallyNameless.Unsafe (unsafeUnbind)
 --import Unbound.LocallyNameless.Types (GenBind(..))
 

@@ -1,24 +1,25 @@
-{-# LANGUAGE FlexibleInstances, PatternSynonyms #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE PatternSynonyms   #-}
 module Common where
 
-import           Prelude                                hiding (print)
+import Prelude hiding (print)
 
-import           Control.Monad.Except
-import           Data.Char
-import           Data.List
+import Control.Monad.Except
+import Data.Char
+import Data.List
 
-import           Text.PrettyPrint.HughesPJ              hiding (parens)
-import qualified Text.PrettyPrint.HughesPJ              as PP
+import Text.PrettyPrint.HughesPJ hiding (parens)
+import qualified Text.PrettyPrint.HughesPJ as PP
 
-import qualified Text.Parsec                            as P
-import qualified Text.Parsec.Pos                        as Pos
-import           Text.Parsec.Token
-import           Text.ParserCombinators.Parsec          hiding (State, parse)
-import           Text.ParserCombinators.Parsec.Language
+import qualified Text.Parsec as P
+import qualified Text.Parsec.Pos as Pos
+import Text.Parsec.Token
+import Text.ParserCombinators.Parsec hiding (State, parse)
+import Text.ParserCombinators.Parsec.Language
 
-import           System.IO.Error
+import System.IO.Error
 
-import           Control.Monad.Identity                 (Identity, runIdentity)
+import Control.Monad.Identity (Identity, runIdentity)
 
 import qualified PatternUnify.Tm as Tm
 

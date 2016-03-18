@@ -1,8 +1,16 @@
 --{-# OPTIONS_GHC -F -pgmF she #-}
-{-# LANGUAGE GADTs, KindSignatures, TemplateHaskell, BangPatterns,
-      FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
-      UndecidableInstances, GeneralizedNewtypeDeriving,
-      TypeSynonymInstances, ScopedTypeVariables, PatternSynonyms #-}
+{-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE PatternSynonyms            #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeSynonymInstances       #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 -- This module defines test cases for the unification algorithm, divided
 -- into those which must succeed, those which should block (possibly
@@ -12,11 +20,11 @@ module PatternUnify.Run where
 
 import Unbound.Generics.LocallyNameless
 
+import PatternUnify.Check
+import PatternUnify.Context
 import PatternUnify.Kit
 import PatternUnify.Tm
 import PatternUnify.Unify
-import PatternUnify.Context
-import PatternUnify.Check
 
 import qualified Data.Either as Either
 import qualified Data.Maybe as Maybe
