@@ -52,8 +52,9 @@ valueLookup (Common.Quote x) _ = error $ "Cannot lookup quoted value " ++ show x
 
 data ConstrainState =
   ConstrainState
-  { intStore    :: [Int]
-  , sourceMetas :: [String]
+  { intStore      :: [Int]
+  , sourceMetas   :: [Tm.Nom]
+  , metaLocations :: Map.Map Tm.Nom Common.Region
   --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }
 
@@ -84,27 +85,39 @@ addValue x env = env {valueEnv = x : valueEnv env }
 addType :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
 addType x env = env {typeEnv = x : typeEnv env }
 
-recordSourceMeta :: String -> ConstraintM ()
-recordSourceMeta nm = lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas x)} )
+recordSourceMeta :: Common.Region -> Tm.Nom -> ConstraintM ()
+recordSourceMeta reg nm = do
+  lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas x)
+                           ,metaLocations = Map.insert nm reg  $ metaLocations x } )
 
 runConstraintM :: ConstraintM a -> a
 runConstraintM cm =
-  fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] []  )
+  fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty  )
 
 solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] (Tm.VAL, Tm.Subs)
 solveConstraintM cm =
   let
-    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] )
+    ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
     regionDict = getRegionDict constraints
     ret = do
       (_, context) <- Run.solveEntries $ map conEntry constraints
-      let metaSubs = Map.fromList $ Maybe.catMaybes $ map UC.maybeSub (fst context)
+      let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (fst context)
       let finalType = evalState (UC.metaValue nom) context
-      return (finalType, metaSubs)
-  in case ret of
+      return (finalType, unsolved, metaSubs)
+  in
+    case ret of
       Left pairs -> Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) pairs
-      Right x -> Right x
+      Right (tp, [], subs) -> Right (tp, subs)
+      Right (_, unsolved, _) -> Left $ map (unsolvedMsg (metaLocations cstate)) unsolved
 
+unsolvedMsg :: Map.Map Tm.Nom Common.Region -> (Tm.Nom, Maybe Tm.VAL) -> (Common.Region, String)
+unsolvedMsg metaSources (nm,Nothing) = (metaSources Map.! nm, "Could deduce no information about metavariable")
+unsolvedMsg metaSources (nm,(Just val)) =
+  (metaSources Map.! nm
+  , "Metavariable has the form "
+    ++ Tm.prettyString val
+    ++ " for some unconstrained variables "
+    ++ List.intercalate " " (map Tm.prettyString $ Tm.fmvs val) )
 
 
 cToUnifForm0 = cToUnifForm 0
@@ -370,9 +383,6 @@ declareMeta ourNom tp = do
   let ourEntry =  UC.E ourNom tp UC.HOLE
   addConstr $ Constraint Common.startRegion ourEntry
 
-
-metaNom :: String -> Tm.Nom
-metaNom = LN.string2Name
 
 freshTopLevel ::Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
