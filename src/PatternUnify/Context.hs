@@ -320,6 +320,20 @@ maybeSub :: Entry -> Maybe (Nom, VAL)
 maybeSub (E y _ (DEFN val)) = Just (y,val)
 maybeSub _ = Nothing
 
+getUnsolvedAndSolved :: [Entry] -> ([(Nom, Maybe VAL)], Subs)
+getUnsolvedAndSolved [] = return Map.empty
+getUnsolvedAndSolved (entry : rest) =
+  let
+    (uns, solved) = getUnsolvedAndSolved rest
+  in
+    case entry of
+      E y _ (DEFN val) ->
+        case fmvs val of
+          [] -> (uns, Map.insert y val solved)
+          _ -> ((y, Just val) : uns, solved)
+      E y _ HOLE -> ((y, Nothing) : uns,solved)
+      _ -> (uns, solved)
+
 metaValue :: MonadState Context m => Nom -> m VAL
 metaValue x = look =<< getL
   where
