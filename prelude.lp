@@ -374,9 +374,3 @@ let natsAreInf =
 let sum =
   (\ s t -> exists (b :: Bool) . boolElim (\_ -> *) s t b )
   :: * -> * -> *
-
-let sumElim =
-  (\ m s t fs ft pair ->
-    boolElim (\_ -> m) (fs (snd pair)) (ft (snd pair)) (fst pair)
-  )
-  :: forall (m :: *) (s :: *) (t :: *) . (s -> m) -> (t -> m) -> sum s t -> m
