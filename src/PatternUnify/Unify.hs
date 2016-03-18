@@ -5,7 +5,7 @@
 
 module PatternUnify.Unify where
 
-import Control.Monad.Except (catchError, throwError, when)
+import Control.Monad.Except (MonadError, catchError, throwError, when)
 import Control.Monad.Reader (ask)
 import Data.List ((\\))
 import qualified Data.Map as Map
@@ -65,7 +65,7 @@ pendingSolve
   :: ProbId -> Problem -> [ProbId] -> Contextual ()
 pendingSolve n q [] =
   do checkProb n Solved q `catchError`
-       (error . (++ "when checking problem " ++ pp n ++ " : " ++ pp q))
+       (throwError . (++ "when checking problem " ++ pp n ++ " : " ++ pp q))
      putProb n q Solved
 pendingSolve n q ds = putProb n q (Pending ds)
 
@@ -94,7 +94,7 @@ define
   :: [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
 hole _Gam _T f =
   do check SET (_Pis _Gam _T) `catchError`
-       (error . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
+       (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
      x <- freshNom
      pushL $ E x (_Pis _Gam _T) HOLE
      a <- f =<< (N (Meta x) [] $*$ _Gam)
@@ -105,7 +105,7 @@ defineGlobal
   :: Nom -> Type -> VAL -> Contextual a -> Contextual a
 defineGlobal x _T v m =
   do check _T v `catchError`
-       (error .
+       (throwError .
         (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
      pushL $ E x _T (DEFN v)
      pushR (Left (Map.singleton x v))
@@ -483,7 +483,7 @@ flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _) =
              | beta `elem` fmvs (_Gam, _Xi, q) -> flexRigid (e : _Xi) n q
            _ -> pushR (Right e) >> flexRigid _Xi n q
 -- %if False
-flexRigid _ _ q = error $ "flexRigid: " ++ show q
+flexRigid _ _ q = throwError $ "flexRigid: " ++ show q
 
 -- %endif
 -- Given a flex-rigid or flex-flex equation whose head metavariable has
@@ -502,7 +502,7 @@ tryInvert n q@(EQN _ (N (Meta alpha) es) _ s) _T k =
       Nothing -> k
       Just v -> active n q >> define [] alpha _T v
 -- %if False
-tryInvert _ _ q _ = error $ "tryInvert: " ++ show q
+tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
 
 -- %endif
 -- Given a metavariable $[[alpha]]$ of type $[[T]]$, spine
@@ -565,7 +565,7 @@ flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es)) =
              | gamma `elem` fmvs (_Gam, q) -> pushL e >> block n q
            _ -> pushR (Right e) >> flexFlex n q
 -- %if False
-flexFlex _ q = error $ "flexFlex: " ++ show q
+flexFlex _ q = throwError $ "flexFlex: " ++ show q
 
 -- %endif
 -- %% Consider the case $[[alpha </ ei // i /> == beta </ xj // j />]]$
@@ -603,13 +603,13 @@ tryIntersect alpha _T ds es =
 -- a type for $[[beta]]$ and a term with which to solve $[[alpha]]$ given
 -- $[[beta]]$. It accumulates lists of the original and retained
 -- parameters (|_Phi| and |_Psi| respectively).
-intersect :: Fresh m
-          => [( Nom, Type )]
+intersect ::
+          [( Nom, Type )]
           -> [( Nom, Type )]
           -> Type
           -> [Nom]
           -> [Nom]
-          -> m (Maybe ( Type, VAL -> VAL ))
+          -> Contextual (Maybe ( Type, VAL -> VAL ))
 intersect _Phi _Psi _S [] []
   | (Set.fromList $ fvs _S) `isSubsetOf` (Set.fromList $ vars _Psi) =
     return $
@@ -625,7 +625,7 @@ intersect _Phi _Psi (PI _A _B) (x:xs) (y:ys) =
      ourApp <- (_B $$ var z)
      intersect (_Phi ++ [(z, _A)]) _Psi' ourApp xs ys
 -- %if False
-intersect _ _ _ _ _ = error "intersect: ill-typed!"
+intersect _ _ _ _ _ = throwError "intersect: ill-typed!"
 
 -- %endif
 -- Note that we have to generate fresh names in case the renamings are
@@ -656,7 +656,7 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k =
        d:_ -> active n q >> instantiate d
        [] -> k
 -- %if False
-tryPrune _ q _ = error $ "tryPrune: " ++ show q
+tryPrune _ q _ = throwError $ "tryPrune: " ++ show q
 
 -- %endif
 -- Pruning a term requires traversing it looking for occurrences of
@@ -694,7 +694,7 @@ prune xs (PAIR s t) = (++) <$> prune xs s <*> prune xs t
 prune xs (L b) = prune xs =<< (snd <$> unbind b)
 prune xs neut@(N (Var z _) es)
   | z `elem` xs =
-    fail $
+    throwError $
     "Pruning overlap: Cannot prune " ++
     (show xs) ++ " from neutral " ++ (pp neut)
   | otherwise = concat <$> mapM pruneElim es
@@ -704,7 +704,7 @@ prune xs (N (Meta beta) es) =
   do _T <- lookupMeta beta
      maybe [] (\( _U, f ) -> [(beta, _U, f)]) <$> pruneSpine [] [] xs _T es
 -- %if False
-prune xs (C _ ts) = error "concat <$> mapM (prune xs) ts"
+prune xs (C _ ts) = throwError "concat <$> mapM (prune xs) ts"
 
 -- %endif
 -- Once a metavariable has been found, |pruneSpine| unfolds its type and

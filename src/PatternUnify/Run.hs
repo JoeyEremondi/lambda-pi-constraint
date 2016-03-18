@@ -26,6 +26,8 @@ import PatternUnify.Kit
 import PatternUnify.Tm
 import PatternUnify.Unify
 
+import Control.Monad.Except
+
 import qualified Data.Either as Either
 import qualified Data.Maybe as Maybe
 
@@ -57,10 +59,10 @@ solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
     result = --trace ("Initial context:\n" ++ initialContextString ) $
-       runContextual (B0, map Right es) $ do
+       (runContextual (B0, map Right es) $ do
           initialise
           ambulando [] Map.empty
-          validate (const True)
+          validate (const True)) `catchError` Left --Make sure we don't crash
     errString err = ">>>>>>>>>>>>>>\nERROR " ++ err ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     resultString = case result of
       Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"

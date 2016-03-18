@@ -255,7 +255,7 @@ popL = do
     cx <- getL
     case cx of
         (cx' :< e)  -> putL cx' >> return e
-        B0          -> fail "popL ran out of context"
+        B0          -> throwError "popL ran out of context"
         _ -> undefined
 
 popR :: Contextual (Maybe (Either Subs Entry))
@@ -284,25 +284,25 @@ inScope x p = local (++ [(x, p)])
 localParams :: (Params -> Params) -> Contextual a -> Contextual a
 localParams f = local f
 
-lookupVar :: MonadReader Params m => Nom -> Twin -> m Type
+lookupVar :: Nom -> Twin -> Contextual Type
 lookupVar x w = do
   vars <- ask
   look vars vars
   where
-    look vars [] = fail $ "lookupVar: missing " ++ show x ++ "\nin env " ++ show vars
+    look vars [] = throwError $ "lookupVar: missing " ++ show x ++ "\nin env " ++ show vars
     look vars  ((y, e) : _) | x == y =
       case (e, w) of
         (P _T,         Only)   -> return _T
         (Twins _S _T,  TwinL)  -> return _S
         (Twins _S _T,  TwinR)  -> return _T
-        _                      -> fail $ "lookupVar: evil twin"
+        _                      -> throwError $ "lookupVar: evil twin"
     look vars (_ : _Gam)                      = look vars _Gam
 
-lookupMeta :: MonadState Context m => Nom -> m Type
+lookupMeta :: Nom -> Contextual Type
 lookupMeta x = look =<< getL
   where
-    look :: Monad m => ContextL -> m Type
-    look B0 = fail $ "lookupMeta: missing " ++ show x
+    --look :: Monad m => ContextL -> m Type
+    look B0 = throwError $ "lookupMeta: missing " ++ show x
     look (cx  :< E y t _)  | x == y     = return t
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx

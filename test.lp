@@ -8,3 +8,10 @@ let plus =
 let plusPf =
    (Refl _ _)
    :: Eq Nat 0 (plus 0 0)
+
+let natFold =
+  ( \ m mz ms -> natElim
+                   ( \ _ -> _ )
+                   mz
+                   ( \ n' rec -> ms rec ) )
+  :: forall (m :: *) . m -> (m -> m) -> Nat -> m
