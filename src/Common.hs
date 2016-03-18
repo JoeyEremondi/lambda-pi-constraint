@@ -368,7 +368,9 @@ type NameEnv v = [(Name, v)]
 type Ctx inf = [(Name, inf)]
 type State v inf = (Bool, String, NameEnv v, Ctx inf)
 
-type TypeChecker = (NameEnv Tm.VAL, [(Name, Tm.VAL)]) -> ITerm_ -> Result Type_
+--Returns value's type, value with metas filled in, and dictionary of solved meta values (for printing)
+type TypeChecker =
+  (NameEnv Tm.VAL, [(Name, Tm.VAL)]) -> ITerm_ -> Result (Type_, Tm.VAL, NameEnv Tm.VAL)
 
 commands :: [InteractiveCommand]
 commands

@@ -91,18 +91,16 @@ runConstraintM :: ConstraintM a -> a
 runConstraintM cm =
   fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] []  )
 
-solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] (Tm.VAL, [(String, Tm.VAL)])
+solveConstraintM :: ConstraintM Tm.Nom -> Either [(Common.Region, String)] (Tm.VAL, Tm.Subs)
 solveConstraintM cm =
   let
     ((nom, constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] )
     regionDict = getRegionDict constraints
     ret = do
       (_, context) <- Run.solveEntries $ map conEntry constraints
+      let metaSubs = Map.fromList $ Maybe.catMaybes $ map UC.maybeSub (fst context)
       let finalType = evalState (UC.metaValue nom) context
-      let solvedMetas =
-            map (\sourceNom -> (sourceNom, evalState (UC.metaValue $ LN.s2n sourceNom) context)) $
-              sourceMetas cstate
-      return (finalType, solvedMetas)
+      return (finalType, metaSubs)
   in case ret of
       Left pairs -> Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) pairs
       Right x -> Right x

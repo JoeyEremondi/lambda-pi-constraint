@@ -314,10 +314,11 @@ metaSubs = do
   let pairList = Maybe.catMaybes $ map maybeSub leftContext
   --trace ("MetaSubs " ++ show pairList) $
   return $ Map.fromList $ pairList
-  where
-    maybeSub (E y _ (DEFN val)) = Just (y,val)
-    maybeSub _ = Nothing
 
+
+maybeSub :: Entry -> Maybe (Nom, VAL)
+maybeSub (E y _ (DEFN val)) = Just (y,val)
+maybeSub _ = Nothing
 
 metaValue :: MonadState Context m => Nom -> m VAL
 metaValue x = look =<< getL
