@@ -3,11 +3,13 @@ module ConstraintBased (checker) where
 
 import Prelude hiding (print)
 
-import Data.List
+--import Data.List
+
+import qualified Data.Map as Map
 
 import Text.PrettyPrint.HughesPJ hiding (parens, ($$))
 
-
+import qualified Unbound.Generics.LocallyNameless as LN
 
 import Common
 
@@ -36,32 +38,36 @@ checker (valNameEnv, typeContext) term =
   let
     (typeGlobals, typeLocals) = splitContext typeContext
     (valGlobals, valLocals) = splitContext  valNameEnv
-    finalVar =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
-    soln = solveConstraintM finalVar
-    solvedMetas = snd <$> soln
-    solvedString = case solvedMetas of
-      Left _ -> ""
-      Right pairs ->
-        "Solved metas:\n"
-        ++ (intercalate "\n" (map (\(s, v) -> s ++ " := " ++ Tm.prettyString v) pairs))
-    eitherVal = trace solvedString $ fst <$> soln
+    genResult =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
+    soln = solveConstraintM genResult
+    -- solvedString = case solvedMetas of
+    --   Left _ -> ""
+    --   Right pairs ->
+    --     "Solved metas:\n"
+    --     ++ (intercalate "\n" (map (\(s, v) -> s ++ " := " ++ Tm.prettyString v) pairs))
   in
-    case eitherVal of
+    case soln of
       Left pairs -> Left $ errorMsg pairs
-      Right x -> Right x
+      Right (tp, nf, subs) -> Right $
+        let
+          subbedVal = LN.runFreshM $ Tm.eval subs nf
+          namePairs = map (\(nm, val) -> (Global $ LN.name2String nm, val)) $ Map.toList subs
+        in
+          (tp, subbedVal, namePairs)
 
 
 conStar = Tm.SET
 
-getConstraints :: WholeEnv -> ITerm_ -> ConstraintM Tm.Nom
+getConstraints :: WholeEnv -> ITerm_ -> ConstraintM (Tm.Nom, Tm.VAL)
 --getConstraints env term | trace ("\n\n**************************************\nChecking, converted " ++ show (iPrint_ 0 0 term))  $ trace ("\n  into " ++ Tm.prettyString (constrEval (map (mapFst Global) $ globalTypes env, map (mapFst Global) $ globalValues env) term ) ++ "\n\n") False
 --  = error "genConstraints"
 getConstraints env term =
   do
     finalType <- iType0_ env term
     finalVar <- freshTopLevel Tm.SET
+    finalValue <- evaluate 0 (L startRegion $ Inf_ term) env
     unifySets startRegion finalType (Tm.meta finalVar) env
-    return finalVar
+    return (finalVar, finalValue)
 
 iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
@@ -75,8 +81,8 @@ iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
   where
     iType_' ii g m@(Meta_ s) = do
       metaType <- freshType reg g
-      let ourNom = metaNom s
-      recordSourceMeta s
+      ourNom <- freshNom s
+      recordSourceMeta reg ourNom
       --Add metavariable to our context
       declareMeta ourNom metaType
       return metaType

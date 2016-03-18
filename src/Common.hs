@@ -418,7 +418,12 @@ handleCommand int state@(inter, out, ve, te) cmd
        Help   ->  putStr (helpTxt commands) >> return (Just state)
        TypeOf x ->
                   do  x <- parseIO "<interactive>" (iiparse int) x
-                      t <- maybe (return Nothing) (iinfer int ve te) x
+                      infResult <- maybe (return Nothing) (iinfer int ve te) x
+                      let (t, _, _) =
+                            case infResult of
+                              Nothing -> (Nothing, Nothing, Nothing)
+                              (Just (x,y,z)) -> (Just x, Just y, Just z)
+
                       maybe (return ()) (\u -> putStrLn (render (itprint int u))) t
                       return (Just state)
        Browse ->  do  putStr (unlines [ s | Global s <- reverse (nub (map fst te)) ])
@@ -445,7 +450,7 @@ compilePhrase int state@(inter, out, ve, te) x =
 data Interpreter i c v t tinf inf =
   I { iname    :: String,
       iprompt  :: String,
-      iitype   :: NameEnv v -> Ctx inf -> i -> Result t,
+      iitype   :: NameEnv v -> Ctx inf -> i -> Result (t, v, NameEnv v),
       iquote   :: v -> c,
       ieval    :: NameEnv v -> i -> v,
       ihastype :: t -> inf,
@@ -555,6 +560,7 @@ lpve =
 
 
 
+iinfer :: Interpreter i c v t tinf inf -> NameEnv v -> Ctx inf -> i -> IO (Maybe (t, v, NameEnv v))
 iinfer int d g t =
   case iitype int d g t of
     Left e -> putStrLn e >> return Nothing
@@ -595,11 +601,11 @@ check int state@(inter, out, ve, te) i t kp k =
                       do
                         --  putStrLn "type error"
                         return state
-                    Just y   ->
+                    Just (y, newVal, _)   ->
                       do
                         let v = ieval int ve t
-                        kp (y, v)
-                        return (k (y, v))
+                        kp (y, newVal)
+                        return (k (y, newVal))
 
 stassume state@(inter, out, ve, te) x t = return (inter, out, ve, (Global x, t) : te)
 
