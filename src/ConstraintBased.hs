@@ -32,10 +32,10 @@ errorMsg pairs =
   map (\(reg, err) -> show reg ++ ": " ++ err ) pairs
 
 checker :: TypeChecker
-checker (nameEnv, context) term =
+checker (valNameEnv, typeContext) term =
   let
-    (typeGlobals, typeLocals) = splitContext context
-    (valGlobals, valLocals) = splitContext  nameEnv
+    (typeGlobals, typeLocals) = splitContext typeContext
+    (valGlobals, valLocals) = splitContext  valNameEnv
     finalVar =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
     soln = solveConstraintM finalVar
     solvedMetas = snd <$> soln
