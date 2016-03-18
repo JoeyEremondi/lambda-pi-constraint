@@ -1,4 +1,4 @@
-module LambdaPiPlus
+module Language.LambdaPiPlus
   ( CompileContext
   , compile
   ) where

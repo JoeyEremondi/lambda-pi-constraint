@@ -1,7 +1,10 @@
--- a simpler elimination scheme for natural numbers
-let natFold =
-  ( \ m mz ms -> natElim
-                   (\_ -> _)
-                   mz
-                   ( \ n' rec -> ms rec ) )
-  :: forall (m :: *) . m -> (m -> m) -> Nat -> m
+-- addition of natural numbers
+let plus =
+  natElim
+    (\_ -> _)           -- motive
+    ( \ n -> n )                    -- case for Zero
+    ( \ p rec n -> Succ (rec n) )   -- case for Succ
+
+let plusPf =
+   (Refl _ _)
+   :: Eq Nat 0 (plus 0 0)

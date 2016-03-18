@@ -18,17 +18,17 @@ module PatternUnify.Tm where
 import Data.Foldable (foldlM)
 import Data.Function (on)
 import Data.List (unionBy)
+import Data.List (union)
+import qualified Data.Map as Map
 import Data.Typeable
+--import Debug.Trace (trace)
 import GHC.Generics
+import GHC.Stack (errorWithStackTrace)
 import PatternUnify.Kit
 import Prelude hiding (elem, notElem)
 import Unbound.Generics.LocallyNameless
 import Unbound.Generics.LocallyNameless.Bind
 import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
---import Debug.Trace (trace)
-import Data.List (union)
-import qualified Data.Map as Map
-import GHC.Stack (errorWithStackTrace)
 
 prettyString :: (Pretty a)
              => a -> String

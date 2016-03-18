@@ -14,7 +14,7 @@ import Data.Set (Set, isSubsetOf)
 import Prelude hiding (elem, notElem)
 --import qualified Data.List as List
 import qualified Data.Set as Set
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 import PatternUnify.Check (check, checkProb, equal, isReflexive, typecheck)
 import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              Param (..), ProbId (..), Problem (..),
@@ -151,8 +151,8 @@ munify :: (Fresh m)
 munify = fmap Unify
 
 unify :: ProbId -> Equation -> Contextual ()
-unify n q
-  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
+--unify n q
+--  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
 unify n q@(EQN (PI _A _B) f (PI _S _T) g) =
   do x <- freshNom
      let ( xL, xR ) = (N (Var x TwinL) [], N (Var x TwinR) [])
@@ -643,8 +643,8 @@ intersect _ _ _ _ _ = error "intersect: ill-typed!"
 -- it runs the continuation.
 tryPrune
   :: ProbId -> Equation -> Contextual () -> Contextual ()
-tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k
-  | trace ("TryPrune " ++ show n ++ " " ++ pp q) False = error "tryPrune"
+--tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k
+--  | trace ("TryPrune " ++ show n ++ " " ++ pp q) False = error "tryPrune"
 tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k =
   do _Gam <- ask
      let potentials = vars _Gam

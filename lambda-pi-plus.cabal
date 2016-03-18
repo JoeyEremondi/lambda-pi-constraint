@@ -17,10 +17,14 @@ build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
 
-executable lambda-pi-constraint
+source-repository head
+    type:     git
+    location: git://github.com/JoeyEremondi/lambda-pi-plus.git
+
+executable lambda-pi-plus
   -- -prof -fprof-auto -fprof-auto -fprof-cafs
   ghc-options:
-        -O2  -fwarn-incomplete-patterns -fwarn-unused-imports -prof -fprof-auto -fprof-auto -fprof-cafs -rtsopts
+        -O2  -fwarn-incomplete-patterns -fwarn-unused-imports -fprof-auto -fprof-auto -fprof-cafs -rtsopts
   main-is:             Main.hs
   other-modules:
     ConstraintBased,
@@ -44,8 +48,7 @@ executable lambda-pi-constraint
 library
   -- -prof -fprof-auto -fprof-auto -fprof-cafs
   ghc-options:
-        -O2  -fwarn-incomplete-patterns -fwarn-unused-imports -prof -fprof-auto -fprof-auto -fprof-cafs -rtsopts
-  main-is:             Main.hs
+        -O2  -fwarn-incomplete-patterns -fwarn-unused-imports -fprof-auto -fprof-auto -fprof-cafs -rtsopts
   exposed-modules:
     Language.LambdaPiPlus
   other-modules:

@@ -27,7 +27,7 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 
-import Debug.Trace
+--import Debug.Trace
 import GHC.Generics
 
 import Unbound.Generics.LocallyNameless hiding (join, restrict)
@@ -222,8 +222,8 @@ ctrace :: String -> Contextual ()
 ctrace s = do
     cx    <- get
     _Gam  <- ask
-    trace (s ++ "\n" ++ pp cx ++ "\n---\n" ++ ppWith prettyParams _Gam)
-          (return ()) >>= \ () -> return ()
+    --trace (s ++ "\n" ++ pp cx ++ "\n---\n" ++ ppWith prettyParams _Gam)
+    (return ()) >>= \ () -> return ()
 
 runContextual :: Context -> Contextual a -> Either Err (a, Context)
 runContextual cx = runIdentity . runExceptT . runFreshMT . flip runStateT cx . flip runReaderT [] . unContextual
@@ -240,7 +240,7 @@ pushL e = --trace ("Push left " ++ prettyString e) $
 
 pushR :: Either Subs Entry -> Contextual ()
 pushR (Left s)   = pushSubs s
-pushR (Right e)  = trace ("Push right " ++ prettyString e) $
+pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
  modifyR (Right e :)
 
 pushSubs :: Subs -> Contextual ()
