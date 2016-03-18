@@ -55,11 +55,13 @@ library
     ConstraintBased,
     Common,
     Constraint,
+    Main,
     PatternUnify.Check,
     PatternUnify.Context,
     PatternUnify.Run,
     PatternUnify.Tm,
-    PatternUnify.Unify
+    PatternUnify.Unify,
+    Language.LambdaPiPlus.Internals
   -- other-extensions:
   build-depends:       base >=4.7 && <4.9
                        , mtl

@@ -581,8 +581,14 @@ lpve =
              ]
 
 
+solvedMetasString int subs =
+  "Solved metas:\n"
+  ++ intercalate "\n " (flip map subs $ \(loc, val) ->
+      "    " ++ compactRegion loc ++ " := " ++ (render $ ivprint int val))
 
-
+makeOutText int i y v subs =
+  if i == it then render (ivprint int v <> text " :: " <> itprint int y)
+                           else render (text i <> text " :: " <> itprint int y)
 
 iinfer :: Interpreter i c v t tinf inf -> NameEnv v -> Ctx inf -> i -> IO (Maybe (t, v, [(Region, v)]))
 iinfer int d g t =
@@ -608,15 +614,12 @@ handleStmt int state@(inter, out, ve, te) stmt =
                        --  ugly, but we have limited space in the paper
                        --  usually, you'd want to have the bound identifier *and*
                        --  the result of evaluation
-                       let outtext = if i == it then render (ivprint int v <> text " :: " <> itprint int y)
-                                                else render (text i <> text " :: " <> itprint int y)
+                       let outtext = makeOutText int i y v subs
                        putStrLn outtext
                        case subs of
                          [] -> return ()
                          _ -> do
-                           putStrLn "Solved metas:"
-                           forM subs $ \(loc, val) ->
-                            putStrLn $ "    " ++ compactRegion loc ++ " := " ++ (render $ ivprint int val)
+                           putStrLn $ solvedMetasString int subs
                            return ()
                        unless (null out) (writeFile out (process outtext)))
         (\ (y, v) -> (inter, "", (Global i, v) : ve, (Global i, ihastype int y) : te))
