@@ -63,7 +63,7 @@ solveEntries !es  =
           initialise
           ambulando [] Map.empty
           validate (const True)) `catchError` Left --Make sure we don't crash
-    errString err = ">>>>>>>>>>>>>>\nERROR " ++ err ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
+    errString err = "ERROR " ++ err -- ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     resultString = case result of
       Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
       Right (_, ctx) -> render $ runPretty $ pretty ctx
