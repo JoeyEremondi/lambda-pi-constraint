@@ -100,8 +100,8 @@ solveConstraintM cm =
     (((nom, normalForm), constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
     regionDict = getRegionDict constraints
     ret = do
-      (_, context) <- Run.solveEntries $ map conEntry constraints
-      let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (fst context)
+      (_, context@(cl, cr, probId)) <- Run.solveEntries $ map conEntry constraints
+      let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (cl)
       let finalType = evalState (UC.metaValue nom) context
       return (finalType, unsolved, metaSubs)
   in

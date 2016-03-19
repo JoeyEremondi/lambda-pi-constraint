@@ -410,7 +410,7 @@ validate q = local (const []) $ do
     unless (null _Del') $ throwError "validate: not at far right"
     _Del <- getL
     --trace ("Context before validating " ++ List.intercalate "\n" (map pp _Del)) $
-    help _Del `catchError` (throwError . (++ ("\nwhen validating\n" ++ pp (_Del, _Del'))))
+    help _Del `catchError` (throwError . (++ ("\nwhen validating\n" ++ show (_Del, _Del'))))
     putL _Del
   where
     help :: ContextL -> Contextual ()

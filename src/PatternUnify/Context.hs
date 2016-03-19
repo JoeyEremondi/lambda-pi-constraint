@@ -154,7 +154,7 @@ instance Pretty Entry where
 
 type ContextL  = Bwd Entry
 type ContextR  = [Either Subs Entry]
-type Context   = (ContextL, ContextR)
+type Context   = (ContextL, ContextR, ProbId)
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -180,7 +180,7 @@ instance Pretty Param where
 type Params  = [(Nom, Param)]
 
 instance Pretty Context where
-    pretty (cl, cr) =  pair <$>  (prettyEntries (trail cl)) <*>
+    pretty (cl, cr, _) =  pair <$>  (prettyEntries (trail cl)) <*>
                                ( vcat <$> (mapM f cr) )
       where
         pair cl' cr' = cl' $+$ text "*" $+$ cr'
@@ -209,10 +209,10 @@ prettyParams xs = vcat <$> flip mapM xs
 
 
 
-type Err = String
+type Err = (String)
 
 newtype Contextual a = Contextual { unContextual ::
-    ReaderT Params (StateT Context (FreshMT (ExceptT Err Identity))) a }
+    ReaderT Params (ExceptT Err (FreshMT (StateT Context Identity))) a }
   deriving (Functor, Applicative, Monad,
                 Fresh, MonadError Err,
                 MonadState Context, MonadReader Params,
@@ -225,14 +225,15 @@ ctrace s = do
     --trace (s ++ "\n" ++ pp cx ++ "\n---\n" ++ ppWith prettyParams _Gam)
     (return ()) >>= \ () -> return ()
 
-runContextual :: Context -> Contextual a -> Either Err (a, Context)
-runContextual cx = runIdentity . runExceptT . runFreshMT . flip runStateT cx . flip runReaderT [] . unContextual
+runContextual :: Context -> Contextual a -> (Either Err a, Context)
+runContextual cx =
+   runIdentity . flip runStateT cx . runFreshMT . runExceptT . flip runReaderT [] . unContextual
 
 modifyL :: (ContextL -> ContextL) -> Contextual ()
-modifyL f = modify (\ (x, y) -> (f x, y))
+modifyL f = modify (\ (x, y, pid) -> (f x, y, pid))
 
 modifyR :: (ContextR -> ContextR) -> Contextual ()
-modifyR f = modify (\ (x, y) -> (x, f y))
+modifyR f = modify (\ (x, y, pid) -> (x, f y, pid))
 
 pushL :: Entry -> Contextual ()
 pushL e = --trace ("Push left " ++ prettyString e) $
@@ -266,10 +267,10 @@ popR = do
         []          -> return Nothing
 
 getL :: MonadState Context m => m ContextL
-getL = gets fst
+getL = gets (\(x,_,_) -> x)
 
 getR :: Contextual ContextR
-getR = gets snd
+getR = gets (\(_,x,_) -> x)
 
 putL :: ContextL -> Contextual ()
 putL x = modifyL (const x)

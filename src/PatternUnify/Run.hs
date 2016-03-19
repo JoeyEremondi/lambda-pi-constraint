@@ -58,23 +58,24 @@ solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    result = --trace ("Initial context:\n" ++ initialContextString ) $
-       (runContextual (B0, map Right es) $ do
+    (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
+       (runContextual (B0, map Right es, error "initial problem ID") $ do
           initialise
           ambulando [] Map.empty
-          validate (const True)) `catchError` Left --Make sure we don't crash
+          validate (const True))  --Make sure we don't crash
+    (_,_,lastLoc) = ctx
     errString err = "ERROR " ++ err -- ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     resultString = case result of
       Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
-      Right (_, ctx) -> render $ runPretty $ pretty ctx
+      Right _ -> render $ runPretty $ pretty ctx
   in --trace ("\n\n=============\nFinal\n" ++ resultString) $
     case result of
-      Left err -> Left [(ProbId $ LN.string2Name "builtinLoc", errString err)]
-      Right ((), ctx) -> getContextErrors es ctx
+      Left err -> Left [(lastLoc, errString err)]
+      Right _ -> getContextErrors es ctx
 
 
 getContextErrors :: [Entry] -> Context -> Either [(ProbId, Err)] ((), Context)
-getContextErrors startEntries cx@(lcx, rcx) = do
+getContextErrors startEntries cx@(lcx, rcx, _) = do
   let leftErrors = getErrorPairs (trail lcx)
       rightErrors = getErrorPairs (Either.rights rcx)
   case (leftErrors ++ rightErrors) of
@@ -138,11 +139,11 @@ runTest q es = do
                    putStrLn $ "Initial context:\n" ++
                                 render (runPretty (prettyEntries es))
 
-                   let r = runContextual (B0, map Right es) $
+                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID") $
                                        (do
                                          initialise
                                          ambulando [] Map.empty
                                          validate q)
                    case r of
                        Left err  -> putStrLn $ "Error: " ++ err
-                       Right ((), cx)  -> putStrLn $ "Final context:\n" ++ pp cx ++ "\n"
+                       Right _  -> putStrLn $ "Final context:\n" ++ pp cx ++ "\n"
