@@ -374,6 +374,7 @@ checkProb :: ProbId -> ProblemState -> Problem -> Contextual ()
 --checkProb ident st p | trace ("@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False =
     --error "checkProb"
 checkProb ident st p@(Unify (EQN _S s _T t)) = do
+   setProblem ident
    currentSubs <- metaSubs
    !_SVal <-  eval currentSubs _S
    check SET _SVal
@@ -388,12 +389,14 @@ checkProb ident st p@(Unify (EQN _S s _T t)) = do
                 unless eq $ throwError $ "checkProb: not unified " ++ pp p
        else return ()
 checkProb ident st (All (P _T) b) = do
+    setProblem ident
     currentSubs <- metaSubs
     _TVal <- eval currentSubs _T
     check SET _TVal
     (x, p) <- unbind b
     inScope x (P _TVal) $ checkProb ident st p
 checkProb ident st (All (Twins _S _T) b) = do
+    setProblem ident
     currentSubs <- metaSubs
     _SVal <- eval currentSubs _S
     check SET _SVal
@@ -417,7 +420,8 @@ validate q = local (const []) $ do
     help B0 = return ()
     --TODO why is this so slow?
     --help (_Del :< E x _ _) | any (x `occursIn`) _Del = throwError "validate: dependency error"
-    help (_Del :< E _ _T HOLE)      = do  putL _Del
+    help (_Del :< E _ _T HOLE)      = do
+                                          putL _Del
                                           check SET _T
                                           help _Del
     help (_Del :< E _ _T (DEFN v))  = do  putL _Del

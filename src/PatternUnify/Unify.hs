@@ -5,7 +5,7 @@
 
 module PatternUnify.Unify where
 
-import Control.Monad.Except ( catchError, throwError, when)
+import Control.Monad.Except (catchError, throwError, when)
 import Control.Monad.Reader (ask)
 import Data.List ((\\))
 import qualified Data.Map as Map
@@ -20,7 +20,7 @@ import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              Param (..), ProbId (..), Problem (..),
                              ProblemState (..), allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
-                             popR, pushL, pushR, wrapProb)
+                             popR, pushL, pushR, setProblem, wrapProb)
 import PatternUnify.Kit (bind3, bind6, elem, notElem, pp)
 import PatternUnify.Tm
 import Unbound.Generics.LocallyNameless (Fresh, runFreshM, subst, substs,
@@ -58,18 +58,20 @@ solved n q =
 putProb
   :: ProbId -> Problem -> ProblemState -> Contextual ()
 putProb x q s =
-  do _Gam <- ask
+  do setProblem x
+     _Gam <- ask
      pushR . Right $ Prob x (wrapProb _Gam q) s
 
 pendingSolve
   :: ProbId -> Problem -> [ProbId] -> Contextual ()
 pendingSolve n q [] =
-  do checkProb n Solved q `catchError`
+  do setProblem n
+     checkProb n Solved q `catchError`
        (throwError . (++ "when checking problem " ++ pp n ++ " : " ++ pp q))
      putProb n q Solved
 pendingSolve n q ds = putProb n q (Pending ds)
 
-simplify n q rs = help rs []
+simplify n q rs = setProblem n >> help rs []
   where help
           :: [Problem] -> [ProbId] -> Contextual ()
         help [] xs = pendingSolve n q xs
@@ -154,7 +156,8 @@ unify :: ProbId -> Equation -> Contextual ()
 --unify n q
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
 unify n q@(EQN (PI _A _B) f (PI _S _T) g) =
-  do x <- freshNom
+  do setProblem n
+     x <- freshNom
      let ( xL, xR ) = (N (Var x TwinL) [], N (Var x TwinR) [])
      eq1 <-
        (munify (eqn (_B $$ xL)
@@ -165,7 +168,8 @@ unify n q@(EQN (PI _A _B) f (PI _S _T) g) =
               (Unify q)
               [Unify (EQN SET _A SET _S), allTwinsProb x _A _S eq1]
 unify n q@(EQN (SIG _A _B) t (SIG _C _D) w) =
-  do a <- t %% Hd
+  do setProblem n
+     a <- t %% Hd
      b <- t %% Tl
      c <- w %% Hd
      d <- w %% Tl
@@ -180,14 +184,24 @@ unify n q@(EQN (SIG _A _B) t (SIG _C _D) w) =
   where
         -- >
 unify n q@(EQN _ (N (Meta _) _) _ (N (Meta _) _)) =
-  tryPrune n q $ tryPrune n (sym q) $ flexFlex n q
+  do
+    setProblem n
+    tryPrune n q $ tryPrune n (sym q) $ flexFlex n q
 -- >
-unify n q@(EQN _ (N (Meta _) _) _ _) = tryPrune n q $ flexRigid [] n q
+unify n q@(EQN _ (N (Meta _) _) _ _) =
+  do
+    setProblem n
+    tryPrune n q $ flexRigid [] n q
 -- >
 unify n q@(EQN _ _ _ (N (Meta _) _)) =
-  tryPrune n (sym q) $ flexRigid [] n (sym q)
+  do
+    setProblem n
+    tryPrune n (sym q) $ flexRigid [] n (sym q)
 -- >
-unify n q = rigidRigid q >>= simplify n (Unify q) . map Unify
+unify n q =
+  do
+    setProblem n
+    rigidRigid q >>= simplify n (Unify q) . map Unify
 
 -- Here |sym| swaps the two sides of an equation:
 sym :: Equation -> Equation
@@ -471,6 +485,7 @@ matchSpine t hd spn t' hd' spn' =
 flexRigid
   :: [Entry] -> ProbId -> Equation -> Contextual ()
 flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _) =
+  setProblem n >>
   do _Gam <- ask
      popL >>=
        \e ->
@@ -483,7 +498,7 @@ flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _) =
              | beta `elem` fmvs (_Gam, _Xi, q) -> flexRigid (e : _Xi) n q
            _ -> pushR (Right e) >> flexRigid _Xi n q
 -- %if False
-flexRigid _ _ q = throwError $ "flexRigid: " ++ show q
+flexRigid _ n q = throwError $ "flexRigid: " ++ show q
 
 -- %endif
 -- Given a flex-rigid or flex-flex equation whose head metavariable has
@@ -496,6 +511,7 @@ flexRigid _ _ q = throwError $ "flexRigid: " ++ show q
 tryInvert
   :: ProbId -> Equation -> Type -> Contextual () -> Contextual ()
 tryInvert n q@(EQN _ (N (Meta alpha) es) _ s) _T k =
+  setProblem n >>
   invert alpha _T es s >>=
   \m ->
     case m of
@@ -543,6 +559,7 @@ invert alpha _T es t =
 -- subsection~\ref{subsec:spec:flex-flex}.
 flexFlex :: ProbId -> Equation -> Contextual ()
 flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es)) =
+  setProblem n >>
   do _Gam <- ask
      popL >>=
        \e ->
@@ -646,6 +663,7 @@ tryPrune
 --tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k
 --  | trace ("TryPrune " ++ show n ++ " " ++ pp q) False = error "tryPrune"
 tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k =
+  setProblem n >>
   do _Gam <- ask
      let potentials = vars _Gam
          freesToIgnore   --trace ("Pruning " ++ (show potentials) ++ " from " ++ (show $ map pp ds) ++ " ignoring " ++ (show $ fvs ds) ++ "\n   in exp " ++ pp t)  $
@@ -656,7 +674,9 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k =
        d:_ -> active n q >> instantiate d
        [] -> k
 -- %if False
-tryPrune _ q _ = throwError $ "tryPrune: " ++ show q
+tryPrune n q _ = do
+  setProblem n
+  throwError $ "tryPrune: " ++ show q
 
 -- %endif
 -- Pruning a term requires traversing it looking for occurrences of
@@ -774,12 +794,14 @@ instantiate d@( alpha, _T, f ) =
 solver :: ProbId -> Problem -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
 solver n (Unify q) =
+  setProblem n >>
   isReflexive q >>=
   \b ->
     if b
        then solved n q
        else unify n q `catchError` failed n q
 solver n (All p b) =
+  setProblem n >>
   do ( x, q ) <- unbind b
      --trace ("Solver forall unbind " ++ show (x,q)) $
      case p of

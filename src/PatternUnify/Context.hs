@@ -244,6 +244,9 @@ pushR (Left s)   = pushSubs s
 pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
  modifyR (Right e :)
 
+setProblem :: ProbId -> Contextual ()
+setProblem pid = modify (\ (x, y, _) -> (x, y, pid))
+
 pushSubs :: Subs -> Contextual ()
 pushSubs n   =
   if Map.null n then
