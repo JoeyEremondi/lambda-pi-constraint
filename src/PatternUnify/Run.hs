@@ -26,8 +26,6 @@ import PatternUnify.Kit
 import PatternUnify.Tm
 import PatternUnify.Unify
 
-import Control.Monad.Except
-
 import qualified Data.Either as Either
 import qualified Data.Maybe as Maybe
 
@@ -35,7 +33,7 @@ import qualified Data.Map as Map
 
 --import Debug.Trace (trace)
 
-import qualified Unbound.Generics.LocallyNameless as LN
+--import qualified Unbound.Generics.LocallyNameless as LN
 
 import qualified Data.Graph as Graph
 
@@ -63,15 +61,74 @@ solveEntries !es  =
           initialise
           ambulando [] Map.empty
           validate (const True))  --Make sure we don't crash
-    (_,_,lastLoc) = ctx
-    errString err = "ERROR " ++ err -- ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
+    (lcx,rcx,lastLoc) = ctx
+    allEntries = lcx ++ (Either.rights rcx)
+    depGraph = problemDependenceGraph allEntries es
+    (initLoc : _) = initialsDependingOn depGraph (Maybe.catMaybes $ map getIdent es) [lastLoc]
+    --errString err = "ERROR " ++ err -- ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     resultString = case result of
       Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
       Right _ -> render $ runPretty $ pretty ctx
   in --trace ("\n\n=============\nFinal\n" ++ resultString) $
     case result of
-      Left err -> Left [(lastLoc, errString err)]
+      Left err -> Left [(initLoc, err)]
       Right _ -> getContextErrors es ctx
+
+
+
+
+
+isFailed (Prob _ _ (Failed e)) = True
+isFailed _ = False
+
+isPending (Prob _ _ (Pending _)) = True
+isPending _ = False
+
+getIdent (Prob ident _ _) = Just ident
+getIdent _ = Nothing
+
+problemDependenceGraph :: [Entry] -> [Entry] -> (Graph.Graph, Graph.Vertex -> (Entry, Nom, [Nom]), Nom -> Maybe Graph.Vertex)
+problemDependenceGraph entries startEntries  =
+  let
+
+    failures = filter isFailed entries
+    allPendings = filter isPending entries
+
+
+
+    initialIdents = Maybe.catMaybes $ map getIdent startEntries
+
+    isInitial (Prob ident _ _) = ident `Prelude.elem` initialIdents
+    isInitial _ = False
+
+    failEdges pFrom@(Prob idPendingOn _ (Pending pendingOn)) =
+      (pFrom, probIdToName idPendingOn,
+      [ probIdToName idFailed
+      | (Prob idFailed _ (Failed err)) <- failures
+      , idFailed `Prelude.elem` pendingOn
+      ]
+      ++
+      [ probIdToName idFailed
+      | (Prob idFailed _ _) <- allPendings
+      , idFailed `Prelude.elem` pendingOn
+      ])
+    failEdges _ = undefined
+  in
+    Graph.graphFromEdges $
+        [ failEdges p | p <- allPendings]
+        ++ [(failProb, probIdToName idFailed, []) | failProb@(Prob idFailed _ _) <- failures]
+
+initialsDependingOn :: (Graph.Graph, t, Nom -> Maybe Graph.Vertex) -> [ProbId] -> [ProbId] -> [ProbId]
+initialsDependingOn (pendGraph, vertToInfo, infoToVert) initialIdents targetIdents =
+  let
+  in
+    [ (initId)
+    | initId <- initialIdents
+    , failId <- targetIdents
+    , (Just vinit) <- [infoToVert $ probIdToName initId]
+    , (Just vfail) <- [infoToVert $ probIdToName failId]
+    , Graph.path pendGraph vinit vfail
+    ]
 
 
 getContextErrors :: [Entry] -> Context -> Either [(ProbId, Err)] ((), Context)
@@ -82,42 +139,15 @@ getContextErrors startEntries cx@(lcx, rcx, _) = do
     [] -> return ((), cx)
     ret -> Left ret
     where
-      getIdent (Prob ident _ _) = Just ident
-      getIdent _ = Nothing
-
-      initialIdents = Maybe.catMaybes $ map getIdent startEntries
-
-      isInitial (Prob ident _ _) = ident `Prelude.elem` initialIdents
-      isInitial _ = False
-
-      isFailed (Prob _ _ (Failed e)) = True
-      isFailed _ = False
-
-      isPending (Prob _ _ (Pending _)) = True
-      isPending _ = False
 
       getErrorPairs :: [Entry] -> [(ProbId, String)]
       getErrorPairs entries =
         let
+          initialIdents = Maybe.catMaybes $ map getIdent startEntries
           failures = filter isFailed entries
           allPendings = filter isPending entries
 
-          failEdges pFrom@(Prob idPendingOn _ (Pending pendingOn)) =
-            (pFrom, probIdToName idPendingOn,
-            [ probIdToName idFailed
-            | (Prob idFailed _ (Failed err)) <- failures
-            , idFailed `Prelude.elem` pendingOn
-            ]
-            ++
-            [ probIdToName idFailed
-            | (Prob idFailed _ _) <- allPendings
-            , idFailed `Prelude.elem` pendingOn
-            ])
-          failEdges _ = undefined
-
-          (pendGraph, vertToInfo, infoToVert) = Graph.graphFromEdges $
-              [ failEdges p | p <- allPendings]
-              ++ [(failProb, probIdToName idFailed, []) | failProb@(Prob idFailed _ _) <- failures]
+          (pendGraph, vertToInfo, infoToVert) = problemDependenceGraph entries startEntries
 
           failPaths =
             [ (initId, err)
