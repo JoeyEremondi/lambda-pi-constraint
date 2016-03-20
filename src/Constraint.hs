@@ -90,6 +90,10 @@ recordSourceMeta reg nm = do
   lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas x)
                            ,metaLocations = Map.insert nm reg  $ metaLocations x } )
 
+recordTypeMeta :: Common.Region -> Tm.Nom -> ConstraintM ()
+recordTypeMeta reg nm = do
+  lift $ (modify $ \x -> x {metaLocations = Map.insert nm reg  $ metaLocations x } )
+
 runConstraintM :: ConstraintM a -> a
 runConstraintM cm =
   fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty  )
@@ -103,7 +107,9 @@ solveConstraintM cm =
       (_, context@(cl, cr, probId)) <- Run.solveEntries $ map conEntry constraints
       let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (cl)
       let finalType = evalState (UC.metaValue nom) context
-      return (finalType, unsolved, metaSubs)
+      let sourceSubs = Map.filterWithKey (\k _ -> k `elem` sourceMetas cstate) metaSubs
+      return (finalType, unsolved, sourceSubs)
+
   in
     case ret of
       Left pairs -> Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) pairs
@@ -112,12 +118,10 @@ solveConstraintM cm =
 
 unsolvedMsg :: Map.Map Tm.Nom Common.Region -> (Tm.Nom, Maybe Tm.VAL) -> (Common.Region, String)
 unsolvedMsg metaSources (nm,Nothing) =
-  (Maybe.fromMaybe Common.BuiltinRegion (Map.lookup nm metaSources)
+  ( Maybe.fromMaybe Common.BuiltinRegion (Map.lookup nm metaSources)
   , "Could deduce no information about metavariable or inferred type. Try adding type annotations, or giving explicit arguments.")
 unsolvedMsg metaSources (nm,(Just val)) =
-  (case Map.lookup nm metaSources of
-    Nothing -> trace ("No source loc for " ++ show nm ++ " in map " ++ show metaSources) $ Common.BuiltinRegion
-    Just x -> x
+  (Maybe.fromMaybe Common.BuiltinRegion $ Map.lookup nm metaSources
   , "Metavariable (or type) has the form "
     ++ Tm.prettyString val
     ++ " for some unconstrained variables. Try adding an annotation or giving explicit arguments. "
@@ -359,7 +363,7 @@ freshInt = do
 fresh :: Common.Region -> WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh reg env tp = do
     ourNom <- freshNom $ "α_" ++ Common.regionName reg ++ "__"
-    recordSourceMeta reg ourNom
+    recordTypeMeta reg ourNom
     declareWithNom reg env tp ourNom
 
 

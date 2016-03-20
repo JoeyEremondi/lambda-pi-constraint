@@ -4,14 +4,12 @@ let plus =
   (\n -> natElim
       _           -- motive
       ( \ n -> n )
-      ( \ p rec n -> Succ (rec n) ) n) :: _
+      ( \ p rec n -> Succ (rec n) ) n) :: Nat -> Nat -> Nat
 
-{-
+
 let plusPf =
    (Refl _ _)
    :: Eq Nat 0 (plus 0 0)
-
-
 
 
 let natFold =
@@ -20,4 +18,3 @@ let natFold =
                    mz
                    ( \ n' rec -> ms rec ) )
   :: forall (m :: *) . m -> (m -> m) -> Nat -> m
--}

@@ -583,7 +583,7 @@ lpve =
 
 solvedMetasString int subs =
   "Solved metas:\n"
-  ++ intercalate "\n " (flip map subs $ \(loc, val) ->
+  ++ intercalate "\n" (flip map subs $ \(loc, val) ->
       "    " ++ compactRegion loc ++ " := " ++ (render $ ivprint int val))
 
 makeOutText int i y v subs =
