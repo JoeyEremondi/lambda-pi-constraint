@@ -94,7 +94,7 @@ parseSimple fileName p x =
       return x
   in
     case runIdentity $ P.runParserT doParse (Pos.initialPos "") fileName x of
-                  Left e  -> Left [(Just $ errorPos e, intercalate "\n" $ map messageString $ errorMessages e)]
+                  Left e  -> Left [(Just $ errorPos e, show e)]
                   Right r -> Right r
 
 vars :: [String]

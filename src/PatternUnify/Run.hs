@@ -61,10 +61,13 @@ solveEntries !es  =
           initialise
           ambulando [] Map.empty
           validate (const True))  --Make sure we don't crash
-    (lcx,rcx,lastLoc) = ctx
+    (lcx,rcx,lastProb) = ctx
     allEntries = lcx ++ (Either.rights rcx)
     depGraph = problemDependenceGraph allEntries es
-    (initLoc : _) = initialsDependingOn depGraph (Maybe.catMaybes $ map getIdent es) [lastLoc]
+    leadingToList = initialsDependingOn depGraph (Maybe.catMaybes $ map getIdent es) [lastProb]
+    initLoc = case leadingToList of
+      [] -> lastProb
+      (i:_) -> i
     --errString err = "ERROR " ++ err -- ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     resultString = case result of
       Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"

@@ -355,33 +355,31 @@ freshInt = do
 fresh :: Common.Region -> WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh reg env tp = do
     ourNom <- freshNom $ "α_" ++ Common.regionName reg ++ "__"
-    let
-      extendArrow (i,t) arrowSoFar =
-        do
-          --lNom <- freshNom $ localName i
-          let Just (Tm.N ourVar _) = valueLookup (Common.Local i) env
-              lNom = Tm.headVar ourVar
-          return $ Tm._Pi lNom t arrowSoFar
-    let currentQuants = reverse $ typeEnv env
-        currentVals = reverse $ valueEnv env
-        unsafeLook i = Maybe.fromJust $ valueLookup i env
-    lambdaType <-
-          Foldable.foldrM extendArrow tp (currentQuants) --TODO right order?
-    let ourHead =
-          --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
-            Tm.Meta ourNom
-    let ourElims = map (\(_,freeVal) -> Tm.A freeVal) currentVals
-    let ourNeutral = Tm.N ourHead ourElims
-    let ourEntry = --trace ("Made fresh meta app " ++ Run.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
-          UC.E ourNom lambdaType UC.HOLE
-    addConstr $ Constraint Common.startRegion ourEntry
-    return ourNeutral
+    declareWithNom reg env tp ourNom
 
 
-declareMeta :: Tm.Nom -> Tm.VAL -> ConstraintM ()
-declareMeta ourNom tp = do
-  let ourEntry =  UC.E ourNom tp UC.HOLE
+declareWithNom reg env tp ourNom = do
+  let
+    extendArrow (i,t) arrowSoFar =
+      do
+        --lNom <- freshNom $ localName i
+        let Just (Tm.N ourVar _) = valueLookup (Common.Local i) env
+            lNom = Tm.headVar ourVar
+        return $ Tm._Pi lNom t arrowSoFar
+  let currentQuants = reverse $ typeEnv env
+      currentVals = reverse $ valueEnv env
+      unsafeLook i = Maybe.fromJust $ valueLookup i env
+  lambdaType <-
+        Foldable.foldrM extendArrow tp (currentQuants) --TODO right order?
+  let ourHead =
+        --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
+          Tm.Meta ourNom
+  let ourElims = map (\(_,freeVal) -> Tm.A freeVal) currentVals
+  let ourNeutral = Tm.N ourHead ourElims
+  let ourEntry = --trace ("Made fresh meta app " ++ Run.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
+        UC.E ourNom lambdaType UC.HOLE
   addConstr $ Constraint Common.startRegion ourEntry
+  return ourNeutral
 
 
 freshTopLevel ::Tm.VAL -> ConstraintM Tm.Nom

@@ -92,7 +92,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
       ourNom <- return $ LN.s2n s --freshNom s
       recordSourceMeta reg ourNom
       --Add metavariable to our context
-      declareMeta ourNom metaType
+      declareWithNom reg g metaType ourNom
       return metaType
 
     iType_' ii g (Ann_ e tyt )
