@@ -617,9 +617,9 @@ handleStmt int state@(inter, out, ve, te) stmt =
                        let outtext = makeOutText int i y v subs
                        putStrLn outtext
                        case subs of
-                         [] -> return ()
+                         [] -> putStrLn "\n"
                          _ -> do
-                           putStrLn $ solvedMetasString int subs
+                           putStrLn $ solvedMetasString int subs ++ "\n"
                            return ()
                        unless (null out) (writeFile out (process outtext)))
         (\ (y, v) -> (inter, "", (Global i, v) : ve, (Global i, ihastype int y) : te))

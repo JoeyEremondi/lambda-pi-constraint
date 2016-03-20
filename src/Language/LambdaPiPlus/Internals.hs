@@ -58,7 +58,7 @@ doStmt int (state@(inter, out, ve, te), output) stmt =
 modOutput ident y v subs output =
   output
   ++ makeOutText int ident y v subs ++ "\n"
-  ++ solvedMetasString int subs ++ "\n"
+  ++ solvedMetasString int subs ++ "\n\n"
 
 doAssume :: (CompileContext, String) -> (String, CTerm_) -> CompileM (CompileContext, String)
 doAssume  (state@(inter, out, ve, te), output) (x, t) =

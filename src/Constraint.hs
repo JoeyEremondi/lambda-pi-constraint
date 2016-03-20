@@ -114,7 +114,12 @@ solveConstraintM cm =
     case ret of
       Left pairs -> Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) pairs
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
-      Right (_, unsolved, _) -> Left $ map (unsolvedMsg (sourceMetas cstate) (metaLocations cstate)) $ filter (\(nom, _) -> Map.member nom $ metaLocations cstate) unsolved
+      Right (_, unsolved, _) ->
+        Left $ case (filter (\(nom, _) -> nom `elem` (sourceMetas cstate)) unsolved ) of
+          [] ->
+            map (unsolvedMsg (sourceMetas cstate) (metaLocations cstate)) $
+            filter (\(nom, _) -> Map.member nom $ metaLocations cstate) unsolved
+          sms -> map (unsolvedMsg (sourceMetas cstate) (metaLocations cstate)) sms
 
 unsolvedMsg :: [Tm.Nom] -> Map.Map Tm.Nom Common.Region -> (Tm.Nom, Maybe Tm.VAL) -> (Common.Region, String)
 unsolvedMsg sourceMetas metaSources (nm,_) | not (nm `elem` sourceMetas) =

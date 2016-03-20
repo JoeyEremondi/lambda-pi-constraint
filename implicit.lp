@@ -89,7 +89,9 @@ let Void = Fin 0
 
 -- eliminator
 let voidElim =
-  ( \ m -> finElim _
+  ( \ m -> finElim (natElim _
+                            (\ x -> m x)
+                            (\ _ _ _ -> Unit))
                    (\ _ -> U)
                    (\ _ _ _ -> U)
                    0 )
