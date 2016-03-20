@@ -114,15 +114,19 @@ solveConstraintM cm =
     case ret of
       Left pairs -> Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) pairs
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
-      Right (_, unsolved, _) -> Left $ map (unsolvedMsg (metaLocations cstate)) unsolved
+      Right (_, unsolved, _) -> Left $ map (unsolvedMsg (sourceMetas cstate) (metaLocations cstate)) $ filter (\(nom, _) -> Map.member nom $ metaLocations cstate) unsolved
 
-unsolvedMsg :: Map.Map Tm.Nom Common.Region -> (Tm.Nom, Maybe Tm.VAL) -> (Common.Region, String)
-unsolvedMsg metaSources (nm,Nothing) =
+unsolvedMsg :: [Tm.Nom] -> Map.Map Tm.Nom Common.Region -> (Tm.Nom, Maybe Tm.VAL) -> (Common.Region, String)
+unsolvedMsg sourceMetas metaSources (nm,_) | not (nm `elem` sourceMetas) =
   ( Maybe.fromMaybe Common.BuiltinRegion (Map.lookup nm metaSources)
-  , "Could deduce no information about metavariable or inferred type. Try adding type annotations, or giving explicit arguments.")
-unsolvedMsg metaSources (nm,(Just val)) =
+  , "Could not infer type. Try adding type annotations, or report this as a bug.")
+unsolvedMsg sourceMetas metaSources (nm,Nothing) =
+  ( Maybe.fromMaybe Common.BuiltinRegion (Map.lookup nm metaSources)
+  , "Could deduce no information about metavariable " ++ (drop 2 $ show nm)
+  ++  ". Try adding type annotations, or giving explicit arguments.")
+unsolvedMsg sourceMetas metaSources (nm,(Just val)) =
   (Maybe.fromMaybe Common.BuiltinRegion $ Map.lookup nm metaSources
-  , "Metavariable (or type) has the form "
+  , "Metavariable " ++ (drop 2 $ show nm) ++ " has the form "
     ++ Tm.prettyString val
     ++ " for some unconstrained variables. Try adding an annotation or giving explicit arguments. "
     ++ List.intercalate " " (map Tm.prettyString $ Tm.fmvs val) )

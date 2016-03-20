@@ -5,10 +5,13 @@ let const = (\ a b x y -> x) :: forall (a :: *) (b :: *) . a -> b -> a
 
 -- addition of natural numbers
 let plus =
-  natElim
-    _           -- motive
-    ( \ n -> n )                    -- case for Zero
-    ( \ p rec n -> Succ (rec n) )   -- case for Succ
+  (\n ->
+    natElim
+      _           -- motive
+      ( \ n -> n )                    -- case for Zero
+      ( \ p rec n -> Succ (rec n) )
+      n )   -- case for Succ
+  :: Nat -> Nat -> Nat
 
 -- predecessor, mapping 0 to 0
 let pred =
@@ -20,7 +23,7 @@ let pred =
 -- a simpler elimination scheme for natural numbers
 let natFold =
   ( \ m mz ms -> natElim
-                   ( \ _ -> m )
+                   _
                    mz
                    ( \ n' rec -> ms rec ) )
   :: forall (m :: *) . m -> (m -> m) -> Nat -> m
@@ -28,8 +31,8 @@ let natFold =
 -- an eliminator for natural numbers that has special
 -- cases for 0 and 1
 let nat1Elim =
-  ( \ m m0 m1 ms -> natElim m m0
-                            (\ p rec -> natElim (\ n -> m (Succ n)) m1 ms p) )
+  ( \ m m0 m1 ms -> natElim _ m0
+                            (\ p rec -> natElim _ m1 ms p) )
   :: forall (m :: Nat -> *) . m 0 -> m 1 ->
      (forall n :: Nat . m (Succ n) -> m (Succ (Succ n))) ->
      forall (n :: Nat) . m n
@@ -38,8 +41,8 @@ let nat1Elim =
 -- an eliminator for natural numbers that has special
 -- cases for 0, 1 and 2
 let nat2Elim =
-  ( \ m m0 m1 m2 ms -> nat1Elim m m0 m1
-                                (\ p rec -> natElim (\ n -> m (Succ (Succ n))) m2 ms p) )
+  ( \ m m0 m1 m2 ms -> nat1Elim _ m0 m1
+                                (\ p rec -> natElim _ m2 ms p) )
   :: forall (m :: Nat -> *) . m 0 -> m 1 -> m 2 ->
      (forall n :: Nat . m (Succ (Succ n)) -> m (Succ (Succ (Succ n)))) ->
      forall (n :: Nat) . m n
@@ -64,14 +67,11 @@ let U = FZero 0
 
 -- eliminator
 let unitElim =
-  ( \ m mu -> finElim ( nat1Elim (\ n -> Fin n -> *)
+  ( \ m mu -> finElim ( nat1Elim _
                                  (\ _ -> Unit)
                                  (\ x -> m x)
                                  (\ _ _ _ -> Unit) )
-                      ( natElim (\ n -> natElim (\ n -> Fin (Succ n) -> *)
-                                                (\ x -> m x)
-                                                (\ _ _ _ -> Unit)
-                                                n (FZero n))
+                      ( natElim _
                                 mu
                                 (\ _ _ -> U) )
                       ( \ n f _ -> finElim (\ n f -> natElim (\ n -> Fin (Succ n) -> *)
@@ -89,13 +89,12 @@ let Void = Fin 0
 
 -- eliminator
 let voidElim =
-  ( \ m -> finElim (natElim (\ n -> Fin n -> *)
-                            (\ x -> m x)
-                            (\ _ _ _ -> Unit))
+  ( \ m -> finElim _
                    (\ _ -> U)
                    (\ _ _ _ -> U)
                    0 )
   :: forall (m :: Void -> *) (v :: Void) . m v
+
 
 -- type of booleans
 let Bool = Fin 2
@@ -141,6 +140,7 @@ let boolElim =
                          2 )
   :: forall (m :: Bool -> *) . m False -> m True -> forall (b :: Bool) . m b
 
+{-
 -- boolean not, and, or, equivalence, xor
 let not = boolElim (\ _ -> Bool) True False
 let and = boolElim (\ _ -> Bool -> Bool) (\ _ -> False) (id Bool)
@@ -380,3 +380,4 @@ let sumElim =
     boolElim (\_ -> m) (fs (snd pair)) (ft (snd pair)) (fst pair)
   )
   :: forall (m :: *) (s :: *) (t :: *) . (s -> m) -> (t -> m) -> sum s t -> m
+-}
