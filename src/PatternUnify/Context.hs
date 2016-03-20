@@ -38,6 +38,8 @@ import Unbound.Generics.LocallyNameless.Unsafe (unsafeUnbind)
 import PatternUnify.Kit
 import PatternUnify.Tm
 
+import Debug.Trace (trace)
+
 import Data.List (union)
 
 data Dec = HOLE | DEFN VAL
@@ -240,9 +242,10 @@ pushL e = --trace ("Push left " ++ prettyString e) $
   modifyL (:< e)
 
 pushR :: Either Subs Entry -> Contextual ()
-pushR (Left s)   = pushSubs s
+pushR (Left s)   = --trace ("Push subs " ++ show s) $
+  pushSubs s
 pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
- modifyR (Right e :)
+  modifyR (Right e :)
 
 setProblem :: ProbId -> Contextual ()
 setProblem pid = modify (\ (x, y, _) -> (x, y, pid))

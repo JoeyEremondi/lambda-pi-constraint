@@ -31,7 +31,7 @@ import qualified Data.Maybe as Maybe
 
 import qualified Data.Map as Map
 
---import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 --import qualified Unbound.Generics.LocallyNameless as LN
 

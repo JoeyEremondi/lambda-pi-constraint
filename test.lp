@@ -1,17 +1,23 @@
 -- addition of natural numbers
-let plus =
-  natElim
-    (\_ -> _)           -- motive
-    ( \ n -> n )                    -- case for Zero
-    ( \ p rec n -> Succ (rec n) )   -- case for Succ
 
+let plus =
+  (\n -> natElim
+      _           -- motive
+      ( \ n -> n )
+      ( \ p rec n -> Succ (rec n) ) n) :: _
+
+{-
 let plusPf =
    (Refl _ _)
    :: Eq Nat 0 (plus 0 0)
 
+
+
+
 let natFold =
   ( \ m mz ms -> natElim
-                   ( \ _ -> Nat )
+                   ( \ _ -> _ )
                    mz
                    ( \ n' rec -> ms rec ) )
-  :: _
+  :: forall (m :: *) . m -> (m -> m) -> Nat -> m
+-}

@@ -111,12 +111,16 @@ solveConstraintM cm =
       Right (_, unsolved, _) -> Left $ map (unsolvedMsg (metaLocations cstate)) unsolved
 
 unsolvedMsg :: Map.Map Tm.Nom Common.Region -> (Tm.Nom, Maybe Tm.VAL) -> (Common.Region, String)
-unsolvedMsg metaSources (nm,Nothing) = (metaSources Map.! nm, "Could deduce no information about metavariable")
+unsolvedMsg metaSources (nm,Nothing) =
+  (Maybe.fromMaybe Common.BuiltinRegion (Map.lookup nm metaSources)
+  , "Could deduce no information about metavariable or inferred type. Try adding type annotations, or giving explicit arguments.")
 unsolvedMsg metaSources (nm,(Just val)) =
-  (metaSources Map.! nm
-  , "Metavariable has the form "
+  (case Map.lookup nm metaSources of
+    Nothing -> trace ("No source loc for " ++ show nm ++ " in map " ++ show metaSources) $ Common.BuiltinRegion
+    Just x -> x
+  , "Metavariable (or type) has the form "
     ++ Tm.prettyString val
-    ++ " for some unconstrained variables "
+    ++ " for some unconstrained variables. Try adding an annotation or giving explicit arguments. "
     ++ List.intercalate " " (map Tm.prettyString $ Tm.fmvs val) )
 
 
@@ -191,7 +195,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
     case tm of
       --TODO look at type during eval?
       Common.Meta_ nm ->
-        return $ Tm.meta $ LN.string2Name nm
+        return $ applyEnvToNom (LN.string2Name nm) env
       Common.Ann_ val _ ->
         cToUnifForm ii env val
 
@@ -355,9 +359,11 @@ freshInt = do
 fresh :: Common.Region -> WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh reg env tp = do
     ourNom <- freshNom $ "α_" ++ Common.regionName reg ++ "__"
+    recordSourceMeta reg ourNom
     declareWithNom reg env tp ourNom
 
 
+declareWithNom :: t -> WholeEnv -> Tm.Type -> Tm.Nom -> ConstraintM Tm.VAL
 declareWithNom reg env tp ourNom = do
   let
     extendArrow (i,t) arrowSoFar =
@@ -374,13 +380,18 @@ declareWithNom reg env tp ourNom = do
   let ourHead =
         --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
           Tm.Meta ourNom
-  let ourElims = map (\(_,freeVal) -> Tm.A freeVal) currentVals
-  let ourNeutral = Tm.N ourHead ourElims
   let ourEntry = --trace ("Made fresh meta app " ++ Run.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
         UC.E ourNom lambdaType UC.HOLE
   addConstr $ Constraint Common.startRegion ourEntry
-  return ourNeutral
+  return $ applyEnvToNom ourNom env
 
+applyEnvToNom ourNom env =
+  let
+    currentVals = reverse $ valueEnv env
+    ourElims = map (\(_,freeVal) -> Tm.A freeVal) currentVals
+    ourHead = Tm.Meta ourNom
+  in
+    Tm.N ourHead ourElims
 
 freshTopLevel ::Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
