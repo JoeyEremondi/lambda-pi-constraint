@@ -22,7 +22,7 @@ import qualified PatternUnify.Tm as Tm
 class TypeGraph graph info | graph -> info where
 
    -- construct a type graph
-   addTermGraph :: Int -> Tm.VAL -> graph -> (Int, VertexId, graph)
+   addTermGraph :: Tm.Subs -> Tm.Nom -> Tm.VAL -> graph -> (Tm.Nom, VertexId, graph)
    addVertex    :: VertexId -> VertexInfo -> graph -> graph
    addEdge      :: EdgeId -> info -> graph -> graph
    addNewEdge   :: (VertexId, VertexId) -> info -> graph -> graph
@@ -43,10 +43,10 @@ class TypeGraph graph info | graph -> info where
    allPathsListWithout :: S.Set VertexId -> VertexId -> [VertexId] -> graph -> TypeGraphPath info
 
    -- substitution and term graph
-   substituteVariable :: Int -> graph -> Tm.VAL
-   substituteType     ::  Tm.VAL  -> graph -> Tm.VAL
-   substituteTypeSafe :: Tm.VAL  -> graph -> Maybe Tm.VAL
-   makeSubstitution   :: graph -> [(VertexId, Tm.VAL)]
+   substituteVariable :: Tm.Subs -> Tm.Nom -> graph -> Tm.VAL
+   substituteType     :: Tm.Subs -> Tm.VAL  -> graph -> Tm.VAL
+   substituteTypeSafe :: Tm.Subs -> Tm.VAL  -> graph -> Maybe Tm.VAL
+   makeSubstitution   :: Tm.Subs -> graph -> [(VertexId, Tm.VAL)]
    typeFromTermGraph  :: VertexId -> graph -> Tm.VAL
 
    -- Extra administration
@@ -78,12 +78,12 @@ class TypeGraph graph info | graph -> info where
          (vid, _):_ -> vid
          _ -> internalError "Top.TypeGraph.TypeGraphState" "representativeInGroupOf" "unexpected empty equivalence group"
 
-   substituteVariable syns = error "TODO substituteVariable"
-      --substituteType syns . TVar
+   substituteVariable syns =
+      substituteType syns . Tm.var
 
-   substituteType tp graph =
+   substituteType syns tp graph =
       let err = internalError "Top.TypeGraph.TypeGraphState" "substituteType" "inconsistent state"
-      in fromMaybe err (substituteTypeSafe tp graph)
+      in fromMaybe err (substituteTypeSafe syns tp graph)
 
    -- Extra administration
    markAsPossibleError _     = id
