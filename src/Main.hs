@@ -7,7 +7,7 @@ import System.Environment (getArgs)
 
 import PatternUnify.Tm as Tm
 
-import Constraint as Constraint
+import Constraint as Constraint 
 
 import PatternUnify.Kit
 

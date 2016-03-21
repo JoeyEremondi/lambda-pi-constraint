@@ -70,7 +70,7 @@ canTy (CNat, []) CZero = return Stop
 canTy (CNat, []) CSucc = return $ askTel "n" Nat $ Stop
 
 canTy (CFin, [n]) CFZero = return $ askTel "n" Nat $ Stop
-canTy (CFin, [Succ n]) CSucc = return $ askTel "n" Nat $ askTel "f" (Fin n) Stop
+canTy (CFin, [Succ n]) CFSucc = return $ askTel "n" Nat $ askTel "f" (Fin n) Stop
 
 canTy (CVec, [a,Zero]) CNil = return $ askTel "a" SET $ Stop
 canTy (CVec, [a,Succ n]) CCons = return $ askTel "a" SET $
@@ -80,8 +80,7 @@ canTy (CVec, [a,Succ n]) CCons = return $ askTel "a" SET $
 
 canTy (CEq, [a,x,y]) CRefl =
   return $ askTel "a" SET $
-  askTel  "x" a $
-  askTel "y" a $ Stop
+  askTel  "x" a $ Stop
 
 canTy (c, as) v = throwError $ "canTy: canonical type " ++ pp (C c as) ++
                              " does not accept " ++ pp v

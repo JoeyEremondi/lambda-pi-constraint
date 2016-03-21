@@ -9,23 +9,24 @@
 module Top.Implementation.TypeGraph.Basics where
 
 import Top.Implementation.TypeGraph.Path
-import Top.Types
+--import Top.Types
 import Utils (internalError)
 -- import Data.Maybe
 import Data.List (intercalate, partition, sort)
+import qualified PatternUnify.Tm as Tm
 
 -----------------------------------------------------------------------------------------
 
-newtype VertexId = VertexId Int deriving (Eq, Ord)
-type VertexInfo  = (VertexKind, Maybe Tp)
+newtype VertexId = VertexId Tm.Nom deriving (Eq, Ord)
+type VertexInfo  = (VertexKind, Maybe Tm.VAL)
 data VertexKind  = VVar | VCon String | VApp VertexId VertexId | VFunApp VertexId VertexId
    deriving (Show, Eq, Ord)
 
 instance Show VertexId where
    show (VertexId i) = show i
 
-vertexIdToTp :: VertexId -> Tp
-vertexIdToTp (VertexId i) = TVar i
+vertexIdToTp :: VertexId -> Tm.VAL
+vertexIdToTp (VertexId i) = Tm.var i
 
 data EdgeId        = EdgeId VertexId VertexId EdgeNr
 newtype EdgeNr     = EdgeNrX Int deriving (Eq, Ord)
