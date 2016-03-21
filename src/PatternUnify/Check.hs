@@ -57,9 +57,32 @@ canTy :: (Can, [VAL]) -> Can -> Contextual Tel
 canTy (Set, []) Set  =  return Stop
 canTy (Set, []) c | c `elem` [Pi, Sig] = return $ askTel "S" SET $
                                              askTel "T" (mv "S" --> SET) $ Stop
+canTy (Set, []) CNat = return Stop
+canTy (Set, []) CFin = return $ askTel "n" Nat $ Stop
+canTy (Set, []) CVec = return $ askTel "a" SET $ askTel "n" Nat $ Stop
+canTy (Set, []) CEq = return $ askTel "a" SET $ askTel "x" (mv "a") $ askTel "y" (mv "a") $ Stop
+
 canTy (Sig, [_S, _T]) Pair  = do
   appResult <- (_T $$ mv "s")
   return $ askTel "s" _S $ askTel "t" appResult $ Stop
+
+canTy (CNat, []) CZero = return Stop
+canTy (CNat, []) CSucc = return $ askTel "n" Nat $ Stop
+
+canTy (CFin, [n]) CFZero = return $ askTel "n" Nat $ Stop
+canTy (CFin, [Succ n]) CSucc = return $ askTel "n" Nat $ askTel "f" (Fin n) Stop
+
+canTy (CVec, [a,Zero]) CNil = return $ askTel "a" SET $ Stop
+canTy (CVec, [a,Succ n]) CCons = return $ askTel "a" SET $
+  askTel "n" Nat $
+  askTel "h" a $
+  askTel "t" (Vec a n ) $ Stop
+
+canTy (CEq, [a,x,y]) CRefl =
+  return $ askTel "a" SET $
+  askTel  "x" a $
+  askTel "y" a $ Stop
+
 canTy (c, as) v = throwError $ "canTy: canonical type " ++ pp (C c as) ++
                              " does not accept " ++ pp v
 
