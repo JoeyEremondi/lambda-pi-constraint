@@ -1,0 +1,177 @@
+
+-- identity and const
+id    :: forall (a :: *) . a -> a
+const :: forall (a :: *) (b :: *) . a -> b -> a
+
+-- addition of natural numbers
+plus :: Nat -> Nat -> Nat
+
+-- predecessor, mapping 0 to 0
+pred  :: Nat -> Nat -> Nat
+
+-- a simpler elimination scheme for natural numbers
+natFold :: forall (m :: *) . m -> (m -> m) -> Nat -> m
+
+-- an eliminator for natural numbers that has special
+-- cases for 0 and 1
+nat1Elim :: forall (m :: Nat -> *) . m 0 -> m 1 ->
+     (forall n :: Nat . m (Succ n) -> m (Succ (Succ n))) ->
+     forall (n :: Nat) . m n
+
+
+-- an eliminator for natural numbers that has special
+-- cases for 0, 1 and 2
+nat2Elim :: forall (m :: Nat -> *) . m 0 -> m 1 -> m 2 ->
+     (forall n :: Nat . m (Succ (Succ n)) -> m (Succ (Succ (Succ n)))) ->
+     forall (n :: Nat) . m n
+
+
+-- increment by one
+inc :: Nat -> Nat
+
+
+-- embed Fin into Nat
+finNat :: forall (n :: Nat) . Fin n -> Nat
+
+-- unit type
+Unit :: *
+-- constructor
+U :: Unit
+
+-- eliminator
+unitElim :: forall (m :: Unit -> *) . m U -> forall (u :: Unit) . m u
+
+-- empty type
+Void :: *
+
+-- eliminator
+voidElim :: forall (m :: Void -> *) (v :: Void) . m v
+
+-- type of booleans
+Bool :: *
+
+-- constructors
+False :: Bool
+True  :: Bool
+
+-- eliminator
+boolElim :: forall (m :: Bool -> *) . m False -> m True -> forall (b :: Bool) . m b
+
+-- boolean not, and, or, equivalence, xor
+not :: Bool -> Bool
+and :: Bool -> Bool -> Bool
+or  :: Bool -> Bool -> Bool
+iff :: Bool -> Bool -> Bool
+xor :: Bool -> Bool -> Bool
+
+-- even, odd, isZero, isSucc
+even :: Nat -> Bool
+odd     :: Nat -> Bool
+isZero  :: Nat -> Bool
+isSucc  :: Nat -> Bool
+
+
+
+-- equality on natural numbers
+natEq :: Nat -> Nat
+
+-- "oh so true"
+Prop :: Bool -> *
+
+-- reflexivity of equality on natural numbers
+pNatEqRefl :: forall (n :: Nat) . Prop (natEq n n)
+
+-- alias for type-level negation
+Not :: * -> *
+
+-- Leibniz prinicple (look at the type signature)
+leibniz :: forall (a :: *) (b :: *) (f :: a -> b) (x :: a) (y :: a) .
+     Eq a x y -> Eq b (f x) (f y)
+
+-- symmetry of (general) equality
+symm :: forall (a :: *) (x :: a) (y :: a) .
+     Eq a x y -> Eq a y x
+
+-- transitivity of (general) equality
+tran :: forall (a :: *) (x :: a) (y :: a) (z :: a) .
+     Eq a x y -> Eq a y z -> Eq a x z
+
+-- apply an equality proof on two types
+apply :: forall (a :: *) (b :: *) (p :: Eq * a b) . a -> b
+
+-- proof that 1 is not 0
+p1IsNot0 :: Not (Eq Nat 1 0)
+
+-- proof that 0 is not 1
+p0IsNot1 :: Not (Eq Nat 0 1)
+
+-- proof that zero is not a successor
+p0IsNoSucc :: forall (n :: Nat) . Not (Eq Nat 0 (Succ n))
+
+
+-- generate a vector of given length from a specified element (replicate)
+replicate :: forall (n :: Nat) . forall (a :: *) . a -> Vec a n
+
+-- alternative definition of replicate
+replicate' :: forall (a :: *) (n :: Nat) . a -> Vec a n
+
+-- generate a vector of given length n, containing the natural numbers smaller than n
+fromto :: forall (n :: Nat) . Vec Nat n
+
+
+-- append two vectors
+append ::  forall (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n).
+      Vec a (plus m n)
+
+-- helper function for tail, see below
+tail' :: forall (a :: *) (m :: Nat) . Vec a m -> forall (n :: Nat) . Eq Nat m (Succ n) -> Vec a n
+
+-- compute the tail of a vector
+tail :: forall (a :: *) (n :: Nat) . Vec a (Succ n) -> Vec a n
+
+-- projection out of a vector
+at :: forall (a :: *) (n :: Nat) . Vec a n -> Fin n -> a
+
+-- head of a vector
+head :: forall (a :: *) (n :: Nat) . Vec a (Succ n) -> a
+
+-- vector map
+map :: forall (a :: *) (b :: *) (f :: a -> b) (n :: Nat) . Vec a n -> Vec b n
+
+-- proofs that 0 is the neutral element of addition
+-- one direction is trivial by definition of plus:
+p0PlusNisN :: forall n :: Nat . Eq Nat (plus 0 n) n
+
+-- the other direction requires induction on N:
+pNPlus0isN :: forall n :: Nat . Eq Nat (plus n 0) n
+
+
+--------------------------------------------------
+-- Product / Sigma types proofs and utilities
+--------------------------------------------------
+
+
+Prod :: * -> * -> *
+
+--fst and snd as functions
+getFst :: forall (s :: *) (t :: s -> *) . (exists (x :: s) . (t x)) -> s
+
+
+zeroes :: Prod Nat Nat
+
+v1 :: Nat
+
+v2 :: Nat
+
+geq :: Nat -> Nat -> *
+
+gt :: Nat -> Nat -> *
+
+leq :: Nat -> Nat -> *
+
+lt :: Nat -> Nat -> *
+
+
+geq0 :: forall (n :: Nat ) . geq n 0
+
+natsAreInf :: forall (n :: Nat) . exists (m :: Nat) . gt m n

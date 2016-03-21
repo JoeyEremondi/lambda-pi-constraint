@@ -1,20 +1,15 @@
--- addition of natural numbers
+let gt =
+  (\ x y -> geq x (Succ y))
+  :: Nat -> Nat -> *
 
-let plus =
-  (\n -> natElim
-      _           -- motive
-      ( \ n -> n )
-      ( \ p rec n -> Succ (rec n) ) n) :: Nat -> Nat -> Nat
+let leq = (\ x y -> geq y x) :: Nat -> Nat -> *
 
+let lt = (\ x y -> gt y x) :: Nat -> Nat -> *
 
-let plusPf =
-   (Refl _ _)
-   :: Eq Nat 0 (plus 0 0)
+let geq0 =
+  (\n -> (n , p0PlusNisN n) )
+  :: forall (n :: Nat ) . geq n 0
 
-
-let natFold =
-  ( \ m mz ms -> natElim
-                   ( \ _ -> _ )
-                   mz
-                   ( \ n' rec -> ms rec ) )
-  :: forall (m :: *) . m -> (m -> m) -> Nat -> m
+let natsAreInf =
+  (\n -> (Succ n, (0, symm Nat (plus (Succ n) 0) (Succ n) (pNPlus0isN (Succ n))) ) )
+  :: forall (n :: Nat) . exists (m :: Nat) . gt m n

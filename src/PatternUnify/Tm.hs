@@ -132,6 +132,8 @@ instance Subst VAL Head
 
 instance Subst VAL Elim
 
+doubleCol = text "::"
+
 instance Pretty VAL where
   pretty (PI _S (L b)) =
     lunbind b $
@@ -139,7 +141,7 @@ instance Pretty VAL where
       wrapDoc PiSize $
       if x `occursIn` _T --TODO put back?
          then (\x' _S' _T' ->
-                 text "Pi" <+> parens (x' <+> colon <+> _S') <+> _T') <$>
+                 text "forall" <+> parens (x' <+> doubleCol <+> _S') <+> text " . " <+> parens _T') <$>
               prettyHigh x <*>
               prettyHigh _S <*>
               prettyAt ArgSize _T
@@ -152,7 +154,7 @@ instance Pretty VAL where
       wrapDoc PiSize $
       if x `occursIn` _T
          then (\x' _S' _T' ->
-                 text "Sig" <+> parens (x' <+> colon <+> _S') <+> _T') <$>
+                 text "exists" <+> parens (x' <+> colon <+> _S') <+> text " . " <+> parens _T') <$>
               prettyHigh x <*>
               prettyHigh _S <*>
               prettyAt ArgSize _T
@@ -179,29 +181,36 @@ instance Pretty VAL where
     (\c' as' -> c' <+> hsep as') <$> pretty c <*> mapM (prettyAt ArgSize) as
   pretty Nat = return $ text "Nat"
   pretty (Vec a n) =
-    (\pa pn -> text "Vec" <+> pa <+> pn) <$> pretty a <*> pretty n
+    (\pa pn -> text "Vec" <+> parens pa <+> parens pn) <$> pretty a <*> pretty n
   pretty (Eq a x y) =
-    (\pa px py -> text "Eq" <+> pa <+> px <+> py) <$> pretty a <*> pretty x <*>
+    (\pa px py -> text "Eq" <+> parens pa <+> parens px <+> parens py) <$> pretty a <*> pretty x <*>
     pretty y
   pretty Zero = return $ text "0"
-  pretty (Succ n) = (\pn -> text "S(" <+> pn <+> text ")") <$> pretty n
-  pretty (Fin n) = parens <$> (\pn -> text "Fin " <+> pn) <$> pretty n
-  pretty (FZero n) = parens <$> (\pn -> text "FZero " <+> pn) <$> pretty n
+  pretty nat@(Succ n) = prettyNat nat
+  pretty (Fin n) = parens <$> (\pn -> text "Fin " <+> parens pn) <$> pretty n
+  pretty (FZero n) = parens <$> (\pn -> text "FZero " <+> parens pn) <$> pretty n
   pretty (FSucc n f) =
     parens <$>
-    ((\pn pf -> text "FS(" <+> pn <+> text "," <+> pf <+> text ")") <$>
+    ((\pn pf -> text "FSucc" <+> parens pn <+> parens pf ) <$>
      pretty n <*>
      pretty f)
-  pretty (VNil _) = return $ text "[]"
+  pretty (VNil a) = parens <$> (\pa -> text "Nil " <+> pa) <$> pretty a
   pretty (VCons a n h t) =
-    (\pa pn ph pt -> ph <+> (text "::{" <+> pa <+> pn <+> text "}") <+> pt) <$>
+    (\pa pn ph pt ->text "Cons " <+> parens pa <+> parens pn <+> parens ph <+> parens pt) <$>
     pretty a <*>
     pretty n <*>
     pretty h <*>
     pretty t
   pretty (ERefl a x) =
     parens <$>
-    ((\pa px -> text "Refl" <+> pa <+> px) <$> pretty a <*> pretty x)
+    ((\pa px -> text "Refl" <+> parens pa <+> parens px) <$> pretty a <*> pretty x)
+
+prettyNat x = helper x 0 id where
+  helper Zero count pfn = return $ text (show count)
+  helper (Succ n) count pfn =
+    helper n (count + 1) (\baseVal -> text "Succ" <+> parens (pfn baseVal))
+  helper x _ pfn = pfn <$> pretty x
+
 
 instance Pretty Can where
   pretty c = return $ text $ show c
