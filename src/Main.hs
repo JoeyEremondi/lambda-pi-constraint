@@ -11,6 +11,8 @@ import Constraint as Constraint
 
 import PatternUnify.Kit
 
+import Top.Implementation.TypeGraph.Class
+
 main :: IO ()
 main = do
   args <- getArgs

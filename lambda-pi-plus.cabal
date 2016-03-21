@@ -27,14 +27,21 @@ executable lambda-pi-plus
         -O2  -fwarn-incomplete-patterns -fwarn-unused-imports -fprof-auto -fprof-auto -fprof-cafs -rtsopts
   main-is:             Main.hs
   other-modules:
-    ConstraintBased,
-    Common,
-    Constraint,
-    PatternUnify.Check,
-    PatternUnify.Context,
-    PatternUnify.Run,
-    PatternUnify.Tm,
-    PatternUnify.Unify
+    ConstraintBased
+    , Common
+    , Constraint
+    , PatternUnify.Check
+    , PatternUnify.Context
+    , PatternUnify.Run
+    , PatternUnify.Tm
+    , PatternUnify.Unify
+
+    , Top.Implementation.TypeGraph.Basics
+    , Top.Implementation.TypeGraph.Class
+    , Top.Implementation.TypeGraph.Standard
+
+
+
   -- other-extensions:
   build-depends:       base >=4.7 && <4.9
                        , mtl
