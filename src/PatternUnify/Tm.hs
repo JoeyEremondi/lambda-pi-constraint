@@ -44,17 +44,17 @@ data VAL where
         L :: Bind Nom VAL -> VAL
         N :: Head -> [Elim] -> VAL
         C :: Can -> [VAL] -> VAL
-        Nat :: VAL
-        Fin :: VAL -> VAL
-        Vec :: VAL -> VAL -> VAL
-        Eq :: VAL -> VAL -> VAL -> VAL
-        Zero :: VAL
-        Succ :: VAL -> VAL
-        FZero :: VAL -> VAL
-        FSucc :: VAL -> VAL -> VAL
-        VNil :: VAL -> VAL
-        VCons :: VAL -> VAL -> VAL -> VAL -> VAL
-        ERefl :: VAL -> VAL -> VAL
+--        Nat :: VAL
+--        Fin :: VAL -> VAL
+--        Vec :: VAL -> VAL -> VAL
+--        Eq :: VAL -> VAL -> VAL -> VAL
+--        Zero :: VAL
+--        Succ :: VAL -> VAL
+--        FZero :: VAL -> VAL
+--        FSucc :: VAL -> VAL -> VAL
+--        VNil :: VAL -> VAL
+--        VCons :: VAL -> VAL -> VAL -> VAL -> VAL
+--        ERefl :: VAL -> VAL -> VAL
     deriving (Show, Generic)
 
 type Type = VAL
@@ -64,6 +64,17 @@ data Can
   | Pi
   | Sig
   | Pair
+  | CNat
+  | CZero
+  | CSucc
+  | CVec
+  | CNil
+  | CCons
+  | CEq
+  | CRefl
+  | CFin
+  | CFZero
+  | CFSucc
   deriving (Eq, Show, Generic)
 
 data Twin
@@ -272,6 +283,21 @@ pattern PI _S _T = C Pi [_S, _T]
 pattern SIG _S _T = C Sig [_S, _T]
 
 pattern PAIR s t = C Pair [s, t]
+
+pattern Nat = C CNat []
+pattern Zero = C CZero []
+pattern Succ n = C CSucc [n]
+
+pattern Fin n = C CFin [n]
+pattern FZero n = C CFZero [n]
+pattern FSucc n f = C CFSucc [n, f]
+
+pattern Vec a n = C CVec [a,n]
+pattern VNil a = C CNil [a]
+pattern VCons a n h t = C CCons [a,n,h,t]
+
+pattern Eq a x y = C CEq [a,x,y]
+pattern ERefl a x = C CRefl [a,x]
 
 var :: Nom -> VAL
 var x = N (Var x Only) []
