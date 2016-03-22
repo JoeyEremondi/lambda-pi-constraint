@@ -33,7 +33,7 @@ class TypeGraph graph info | graph -> info where
    -- inspect an equivalence group in a type graph
    verticesInGroupOf       :: VertexId -> graph -> [(VertexId, VertexInfo)]
    childrenInGroupOf       :: VertexId -> graph -> ([ParentChild], [ParentChild])
-   constantsInGroupOf      :: VertexId -> graph -> [String]
+   constantsInGroupOf      :: VertexId -> graph -> [Tm.Can]
    representativeInGroupOf :: VertexId -> graph -> VertexId
    edgesFrom               :: VertexId -> graph -> [(EdgeId, info)]
 

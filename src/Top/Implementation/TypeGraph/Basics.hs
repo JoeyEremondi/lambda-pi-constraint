@@ -19,7 +19,7 @@ import qualified PatternUnify.Tm as Tm
 
 newtype VertexId = VertexId Tm.Nom deriving (Eq, Ord)
 type VertexInfo  = (VertexKind, Maybe Tm.VAL)
-data VertexKind  = VVar | VCon String | VApp VertexId VertexId | VFunApp VertexId VertexId
+data VertexKind  = VVar | VCon Tm.Can | VApp VertexId VertexId | VFunApp VertexId VertexId
    deriving (Show, Eq, Ord)
 
 instance Show VertexId where

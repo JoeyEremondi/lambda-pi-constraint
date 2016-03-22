@@ -75,7 +75,7 @@ data Can
   | CFin
   | CFZero
   | CFSucc
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, Ord)
 
 data Twin
   = Only
@@ -186,10 +186,6 @@ instance Pretty VAL where
   pretty (N h as) =
     wrapDoc AppSize $
     (\h' as' -> h' <+> hsep as') <$> pretty h <*> mapM (prettyAt ArgSize) as
-  pretty (C c []) = pretty c
-  pretty (C c as) =
-    wrapDoc AppSize $
-    (\c' as' -> c' <+> hsep as') <$> pretty c <*> mapM (prettyAt ArgSize) as
   pretty Nat = return $ text "Nat"
   pretty (Vec a n) =
     (\pa pn -> text "Vec" <+> parens pa <+> parens pn) <$> pretty a <*> pretty n
@@ -215,6 +211,11 @@ instance Pretty VAL where
   pretty (ERefl a x) =
     parens <$>
     ((\pa px -> text "Refl" <+> parens pa <+> parens px) <$> pretty a <*> pretty x)
+
+  pretty (C c []) = pretty c
+  pretty (C c as) =
+    wrapDoc AppSize $
+    (\c' as' -> c' <+> hsep as') <$> pretty c <*> mapM (prettyAt ArgSize) as
 
 prettyNat x = helper x 0 id where
   helper Zero count pfn = return $ text (show count)
@@ -440,19 +441,7 @@ etaContract (PAIR s t) =
          , as' == bs' -> return $ N x as'
        ( s', t' ) -> return $ PAIR s' t'
 etaContract (C c as) = C c <$> (mapM etaContract as)
-etaContract Nat = return Nat
-etaContract Zero = return Zero
-etaContract (Succ k) = Succ <$> (etaContract k)
-etaContract (Fin n) = Fin <$> etaContract n
-etaContract (FZero n) = FZero <$> etaContract n
-etaContract (FSucc n f) = FSucc <$> (etaContract n) <*> etaContract f
-etaContract (Vec a n) = Vec <$> etaContract a <*> etaContract n
-etaContract (VNil a) = VNil <$> etaContract a
-etaContract (VCons a n h t) =
-  VCons <$> etaContract a <*> etaContract n <*> etaContract h <*> etaContract t
-etaContract (Eq a x y) =
-  Eq <$> etaContract a <*> etaContract x <*> etaContract y
-etaContract (ERefl a x) = ERefl <$> etaContract a <*> etaContract x
+
 
 occursIn :: (Alpha t, Typeable a)
          => Name a -> t -> Bool
@@ -510,27 +499,6 @@ instance Occurs VAL where
   occurrence xs (N (Meta y) as)
     | y `elem` xs = Just (Rigid Strong)
     | otherwise = const Flexible <$> occurrence xs as
-  occurrence xs (Nat) = Nothing
-  occurrence xs (Fin n) = occurrence xs n
-  occurrence xs (Vec a n) =
-    occurrence xs
-               [a, n]
-  occurrence xs (Eq a x y) =
-    occurrence xs
-               [a, x, y]
-  occurrence xs (Zero) = Nothing
-  occurrence xs (Succ n) = occurrence xs n
-  occurrence xs (FZero n) = occurrence xs n
-  occurrence xs (FSucc n f) =
-    occurrence xs
-               [n, f]
-  occurrence xs (VNil a) = occurrence xs a
-  occurrence xs (VCons a n h t) =
-    occurrence xs
-               [a, n, h, t]
-  occurrence xs (ERefl a x) =
-    occurrence xs
-               [a, x]
   --occurrence xs _ = Nothing --TODO occurrence cases
   frees isMeta (L (B _ t)) = frees isMeta t
   frees isMeta (C _ as) = unions (map (frees isMeta) as)
@@ -542,23 +510,6 @@ instance Occurs VAL where
               Meta v
                 | isMeta && isFreeName v -> [v]
               _ -> []
-  frees isMeta (Nat) = []
-  frees isMeta (Fin n) = frees isMeta n
-  frees isMeta (Zero) = []
-  frees isMeta (Succ n) = frees isMeta n
-  frees isMeta (FZero n) = frees isMeta n
-  frees isMeta (FSucc n f) = (frees isMeta n `union` frees isMeta f)
-  frees isMeta (Vec a n) = (frees isMeta a `union` frees isMeta n)
-  frees isMeta (VNil a) = frees isMeta a
-  frees isMeta (VCons a n h t) =
-    unions (map (frees isMeta)
-                [a, n, h, t])
-  frees isMeta (Eq a x y) =
-    unions (map (frees isMeta)
-                [a, x, y])
-  frees isMeta (ERefl a x) =
-    unions (map (frees isMeta)
-                [a, x])
 
 type OC = Occurrence
 
@@ -635,18 +586,7 @@ eval g (N u as) =
   do elims <- mapM (mapElimM (eval g)) as
      evalHead g u %%% elims
 eval g (C c as) = C c <$> (mapM (eval g) as)
-eval g Nat = return Nat
-eval g (Vec a n) = Vec <$> (eval g a) <*> (eval g n)
-eval g (Eq a x y) = Eq <$> (eval g a) <*> (eval g x) <*> (eval g y)
-eval g (Fin n) = Fin <$> (eval g n)
-eval _ Zero = return Zero
-eval g (Succ n) = Succ <$> (eval g n)
-eval g (VNil a) = VNil <$> (eval g a)
-eval g (VCons a n h t) =
-  VCons <$> (eval g a) <*> (eval g n) <*> (eval g h) <*> (eval g t)
-eval g (ERefl a x) = ERefl <$> (eval g a) <*> (eval g x)
-eval g (FZero n) = FZero <$> eval g n
-eval g (FSucc n f) = FSucc <$> (eval g n) <*> (eval g f)
+
 
 evalHead :: Subs -> Head -> VAL
 evalHead g hv =
