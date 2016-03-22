@@ -87,6 +87,22 @@ instance TypeGraph (StandardTypeGraph info) info where
                    let vid = VertexId $ Tm.headVar h
                    in (unique, vid, if vertexExists vid stg then stg else addVertex vid (VVar, original) stg)
               --Insert function application
+               Tm.N hd elims ->
+                  let initVal = rec unique (Tm.N hd []) stg --TODO not type-correct?
+                      addElim u elim g = case elim of
+                        Tm.A x -> rec u x g
+                        _ -> error "Other Elim cases"
+                      foldFn (ulast, vlast, glast) elim =
+                        let
+                           (unew, vnew, subGraph) = addElim ulast elim glast
+                           vid = VertexId unew
+                        in
+                         ( mkFresh unew
+                         , vid
+                         , addVertex vid (VFunApp vlast vnew, original) subGraph)
+
+                  in --
+                     foldl foldFn initVal elims
 
 
 
@@ -106,7 +122,7 @@ instance TypeGraph (StandardTypeGraph info) info where
    verticesInGroupOf i =
       vertices . getGroupOf i
 
-   substituteTypeSafe synonyms = _
+   substituteTypeSafe synonyms = error "TODO substituteTypeSafe"
       -- let rec history (Tm.Var i) stg
       --       |  i `elem` history  = Nothing
       --       |  otherwise         =
@@ -139,14 +155,17 @@ instance TypeGraph (StandardTypeGraph info) info where
              case typeOfGroup syns eqgroup of
                 Just tp -> [ (vid, tp) | (vid@(VertexId i), _) <- vertices eqgroup, notId i tp ]
                 Nothing -> internalError "Top.TypeGraph.Implementation" "makeSubstitution" "inconsistent equivalence group"
-          notId i (TVar j) = i /= j
+          notId i (Tm.N h []) = i /= (Tm.headVar h)
           notId _ _        = True
       in concatMap f (getAllGroups stg)
 
    typeFromTermGraph vid stg =
       case [ tp | (x, (tp, _)) <- verticesInGroupOf vid stg, vid == x ] of
-         [VCon s]   -> TCon s
-         [VApp a b] -> TApp (typeFromTermGraph a stg) (typeFromTermGraph b stg)
+         [VCon s]   -> Tm.C s []
+         [VApp a b] ->
+           case typeFromTermGraph a stg of
+             (Tm.C ctor args) ->
+                Tm.C ctor $ args ++ [typeFromTermGraph b stg]
          _          -> vertexIdToTp vid
 
    markAsPossibleError     =
