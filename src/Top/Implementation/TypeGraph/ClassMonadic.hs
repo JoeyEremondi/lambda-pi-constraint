@@ -1,8 +1,12 @@
-{-# LANGUAGE UndecidableInstances, FunctionalDependencies, RankNTypes,
-            MultiParamTypeClasses, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
@@ -10,15 +14,15 @@
 
 module Top.Implementation.TypeGraph.ClassMonadic where
 
-import Top.Interface.Basic
-import Top.Interface.TypeInference
-import Top.Interface.Qualification
-import qualified Top.Implementation.TypeGraph.Class as TG
-import Top.Implementation.TypeGraph.Basics
-import Top.Types
-import Top.Solver
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified PatternUnify.Tm as Tm
+import Top.Implementation.TypeGraph.Basics
+import qualified Top.Implementation.TypeGraph.Class as TG
+import Top.Interface.Basic
+import Top.Interface.Qualification
+import Top.Interface.TypeInference
+import Top.Solver
 
 class (HasBasic m info, HasTI m info, HasQual m info, HasTG m info, MonadWriter LogEntries m, Show info) => HasTypeGraph m info | m -> info
 
@@ -35,7 +39,7 @@ changeTypeGraph f = withTypeGraph (\g -> ((), f g))
 
 -- construct a type graph
 
-addTermGraph :: HasTypeGraph m info => Tp -> m VertexId
+addTermGraph :: HasTypeGraph m info => Tm.VAL -> m VertexId
 addTermGraph tp =
    do unique   <- getUnique
       synonyms <- getTypeSynonyms
@@ -44,7 +48,7 @@ addTermGraph tp =
                     in ((u, v), g))
       setUnique newUnique
       return vid
-      
+
 addVertex :: HasTypeGraph m info => VertexId -> VertexInfo -> m ()
 addVertex vid info = changeTypeGraph (TG.addVertex vid info)
 
@@ -87,29 +91,29 @@ allPathsListWithout :: HasTypeGraph m info => S.Set VertexId -> VertexId -> [Ver
 allPathsListWithout set v1 vs = useTypeGraph (TG.allPathsListWithout set v1 vs)
 
 -- substitution and term graph
-substituteVariable :: HasTypeGraph m info => Int -> m Tp
+substituteVariable :: HasTypeGraph m info => Int -> m Tm.VAL
 substituteVariable i =
    do synonyms <- getTypeSynonyms
       useTypeGraph (TG.substituteVariable synonyms i)
 
-substituteType :: HasTypeGraph m info => Tp -> m Tp
+substituteType :: HasTypeGraph m info => Tm.VAL -> m Tm.VAL
 substituteType tp =
    do synonyms <- getTypeSynonyms
       useTypeGraph (TG.substituteType synonyms tp)
-      
-substituteTypeSafe :: HasTypeGraph m info => Tp -> m (Maybe Tp)
+
+substituteTypeSafe :: HasTypeGraph m info => Tm.VAL -> m (Maybe Tm.VAL)
 substituteTypeSafe tp =
    do synonyms <- getTypeSynonyms
       useTypeGraph (TG.substituteTypeSafe synonyms tp)
-      
-makeSubstitution   :: HasTypeGraph m info => m [(VertexId, Tp)]
+
+makeSubstitution   :: HasTypeGraph m info => m [(VertexId, Tm.VAL)]
 makeSubstitution =
    do synonyms <- getTypeSynonyms
       useTypeGraph (TG.makeSubstitution synonyms)
 
-typeFromTermGraph :: HasTypeGraph m info => VertexId -> m Tp
+typeFromTermGraph :: HasTypeGraph m info => VertexId -> m Tm.VAL
 typeFromTermGraph vid = useTypeGraph (TG.typeFromTermGraph vid)
-   
+
 -- Extra administration
 markAsPossibleError :: HasTypeGraph m info => VertexId -> m ()
 markAsPossibleError vid = changeTypeGraph (TG.markAsPossibleError vid)
@@ -119,19 +123,20 @@ getMarkedPossibleErrors = useTypeGraph TG.getMarkedPossibleErrors
 
 unmarkPossibleErrors :: HasTypeGraph m info => m ()
 unmarkPossibleErrors = changeTypeGraph TG.unmarkPossibleErrors
-   
+
 ---------------------
 ------ EXTRA
-   
-theUnifyTerms :: HasTypeGraph m info => info -> Tp -> Tp -> m ()
+
+theUnifyTerms :: HasTypeGraph m info => info -> Tm.VAL -> Tm.VAL -> m ()
 theUnifyTerms info t1 t2 =
    do v1  <- addTermGraph t1
-      v2  <- addTermGraph t2        
+      v2  <- addTermGraph t2
       addNewEdge (v1, v2) info
- 
-makeFixpointSubst :: HasTypeGraph m info => m FixpointSubstitution
-makeFixpointSubst = 
-   do xs <- makeSubstitution
-      let list = [ (i, tp) | (VertexId i, tp) <- xs ]
-      return (FixpointSubstitution (M.fromList list))
-     
+
+makeFixpointSubst = error "TODO fixpointSubst"
+
+-- makeFixpointSubst :: HasTypeGraph m info => m FixpointSubstitution
+-- makeFixpointSubst =
+--    do xs <- makeSubstitution
+--       let list = [ (i, tp) | (VertexId i, tp) <- xs ]
+--       return (FixpointSubstitution (M.fromList list))

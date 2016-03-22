@@ -1,8 +1,11 @@
-{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances,
-            FunctionalDependencies, FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
@@ -11,14 +14,14 @@
 module Top.Interface.Basic where
 
 import Top.Constraint
-import Top.Util.Option
 import Top.Monad.Select
 import Top.Monad.StateFix
+import Top.Util.Option
 import Utils (internalError)
 
 ------------------------------------------------------------------------
 -- (I)  Class name and (dedicated) deselect function
-    
+
 data ClassBasic = ClassBasic
 
 deBasic :: (Embedded ClassBasic (s (StateFixT s m)) (t (StateFixT s m)), Monad m) => SelectFix t (StateFixT s m) a -> StateFixT s m a
@@ -35,7 +38,7 @@ class Monad m => HasBasic m info | m -> info where
    popConstraint       :: m (Maybe (Constraint m))
    discardConstraints  :: m ()
    -- errors
-   addLabeledError     :: ErrorLabel -> info -> m () 
+   addLabeledError     :: ErrorLabel -> info -> m ()
    getLabeledErrors    :: m [(info, ErrorLabel)]
    updateErrorInfo     :: (info -> m info) -> m ()
    -- conditions
@@ -57,9 +60,9 @@ class Monad m => HasBasic m info | m -> info where
 instance ( Monad m
          , Embedded ClassBasic (s (StateFixT s m)) (t (StateFixT s m))
          , HasBasic (SelectFix t (StateFixT s m)) info
-         ) => 
+         ) =>
            HasBasic (StateFixT s m) info where
-           
+
    -- constraints
    pushConstraint        = deBasic . pushConstraint . mapConstraint selectFix
    pushConstraints       = deBasic . pushConstraints . map (mapConstraint selectFix)
@@ -88,36 +91,36 @@ pushNamedOperation s = pushConstraint . operation s
 addError :: HasBasic m info => info -> m ()
 addError = addLabeledError NoErrorLabel
 
-getErrors :: HasBasic m info => m [info]  
+getErrors :: HasBasic m info => m [info]
 getErrors = liftM (map fst) getLabeledErrors
 
 doChecks :: HasBasic m info => m ()
-doChecks = 
+doChecks =
    do ms <- getChecks
       bs <- filterM (liftM not . fst) ms
-      unless (null bs) $ 
-         let err = "\n\n  The following constraints were violated:\n" 
+      unless (null bs) $
+         let err = "\n\n  The following constraints were violated:\n"
                    ++ unlines (map (("  - "++) . snd) bs)
          in internalError "Top.States.BasicState" "doChecks" err
 
 startSolving  :: HasBasic m info => m ()
 startSolving =
    do mc <- popConstraint
-      case mc of                    
-         Nothing -> 
+      case mc of
+         Nothing ->
             do check <- getOption checkConditions
                errs  <- getErrors
                when (check && null errs) doChecks
-         Just c  -> 
+         Just c  ->
             do solveConstraint c
                addCheck (show c) (checkCondition c)
-               startSolving 
+               startSolving
 
 -- |A datatype to label the errors that are detected.
-data ErrorLabel = ErrorLabel String 
-                | NoErrorLabel 
+data ErrorLabel = ErrorLabel String
+                | NoErrorLabel
    deriving (Eq, Ord, Show)
-   
+
 stopOption, checkOption :: Option Bool
 stopOption  = option False "Stop solving constraints after the first error"
 checkOption = option False "Check constraint satisfaction afterwards"

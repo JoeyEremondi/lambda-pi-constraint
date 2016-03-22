@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
@@ -21,11 +21,11 @@ import Utils (internalError)
 type PathHeuristics info = Path (EdgeId, info) -> [Heuristic info]
 
 newtype Heuristic  info = Heuristic (forall m . HasTypeGraph m info => HComponent m info)
-data Selector m info 
+data Selector m info
    = Selector       (String, (EdgeId, info) -> m (Maybe (Int, String, [EdgeId], info)))
    | SelectorList   (String, [(EdgeId, info)] -> m (Maybe (Int, String, [EdgeId], info)))
 
-data HComponent m info 
+data HComponent m info
      = Filter    String ([(EdgeId, info)] -> m [(EdgeId, info)])
      | Voting   [Selector m info]
 
@@ -35,13 +35,13 @@ getSelectorName (SelectorList (name,_)) = name
 
 resultsEdgeFilter :: (Eq a, Monad m) => ([a] -> a) -> String -> ((EdgeId,info) -> m a) -> HComponent m info
 resultsEdgeFilter selector description function =
-   Filter description $ \es -> 
-   do tupledList <- let f tuple = 
+   Filter description $ \es ->
+   do tupledList <- let f tuple =
                            do result <- function tuple
                               return (result, tuple)
                     in mapM f es
-      let maximumResult 
-            | null tupledList = internalError "Top.TypeGraph.Heuristics" "resultsEdgeFilter" "unexpected empty list" 
+      let maximumResult
+            | null tupledList = internalError "Top.TypeGraph.Heuristics" "resultsEdgeFilter" "unexpected empty list"
             | otherwise       = selector (map fst tupledList)
       return (map snd (filter ((maximumResult ==) . fst) tupledList))
 
@@ -52,8 +52,8 @@ minimalEdgeFilter :: (Ord a, Monad m) => String -> ((EdgeId,info) -> m a) -> HCo
 minimalEdgeFilter = resultsEdgeFilter minimum
 
 edgeFilter :: Monad m => String -> ((EdgeId, info) -> m Bool) -> HComponent m info
-edgeFilter description function = 
-   Filter description $ \es -> 
+edgeFilter description function =
+   Filter description $ \es ->
       do xs <- filterM function es
          return (if null xs then es else xs)
 
@@ -61,8 +61,8 @@ edgeFilter description function =
 -----------------------------------------------------------------------------
 
 doWithoutEdges :: HasTypeGraph m info => [(EdgeId, info)] -> m result -> m result
-doWithoutEdges xs computation = 
-   case xs of 
+doWithoutEdges xs computation =
+   case xs of
       []   -> computation
       [e]  -> doWithoutEdge e computation
       e:es -> doWithoutEdge e (doWithoutEdges es computation)
@@ -70,11 +70,11 @@ doWithoutEdges xs computation =
 doWithoutEdge :: HasTypeGraph m info => (EdgeId, info) -> m result -> m result
 doWithoutEdge (edge, info) computation =
    do -- copy1 <- mapM showGroupOf [0..100]
-      deleteEdge edge       
-      result <- computation           
+      deleteEdge edge
+      result <- computation
       addEdge edge info
       -- copy2 <- mapM showGroupOf [0..100]
-      -- if copy1 /= copy2 then 
+      -- if copy1 /= copy2 then
       --   error ("SAFETY check failed\n\n" ++ head [ x1++x2 | (x1, x2) <- zip copy1 copy2, x1 /= x2]) else
       return result
 
@@ -90,7 +90,7 @@ class HasTwoTypes a where
    getTwoTypes :: a -> (Tp, Tp)
 
 getSubstitutedTypes :: (HasTypeGraph m info, HasTwoTypes info) => info -> m (Maybe Tp, Maybe Tp)
-getSubstitutedTypes info = 
+getSubstitutedTypes info =
    do let (t1,t2) = getTwoTypes info
       mt1 <- substituteTypeSafe t1
       mt2 <- substituteTypeSafe t2

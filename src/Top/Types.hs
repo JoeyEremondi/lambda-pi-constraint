@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  portable
@@ -11,7 +11,7 @@
 
 module Top.Types (module Export) where
 
-import Top.Types.Primitive      as Export
+--import Top.Types.Primitive      as Export
 import Top.Types.Substitution   as Export
 import Top.Types.Quantification as Export
 import Top.Types.Qualification  as Export

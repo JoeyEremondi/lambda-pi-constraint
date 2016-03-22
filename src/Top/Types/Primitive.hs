@@ -1,11 +1,11 @@
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  portable
 --
--- This module contains a data type to represent (plain) types, some basic 
+-- This module contains a data type to represent (plain) types, some basic
 -- functionality for types, and an instance for Show.
 --
 -----------------------------------------------------------------------------
@@ -97,7 +97,7 @@ functionSpine = rec [] where
 
 -- |Returns the right spine of a function type of a maximal length.
 functionSpineOfLength :: Int -> Tp -> (Tps, Tp)
-functionSpineOfLength i tp = 
+functionSpineOfLength i tp =
    let (as, a ) = functionSpine tp
        (bs, cs) = splitAt i as
    in (bs, foldr (.->.) a cs)
@@ -106,7 +106,7 @@ functionSpineOfLength i tp =
 arityOfTp :: Tp -> Int
 arityOfTp = length . fst . functionSpine
 
--- |The priority of a type, primarily used for the insertion of parentheses 
+-- |The priority of a type, primarily used for the insertion of parentheses
 -- in pretty printing.
 priorityOfType :: Tp -> Int
 priorityOfType tp = case leftSpine tp of
@@ -167,13 +167,13 @@ isIOType _                    = False
 -- Show and Read instances
 
 instance Show Tp where
-   -- parenthesis are needed when the type must be shown as a part of 
+   -- parenthesis are needed when the type must be shown as a part of
    -- some other data type
-   showsPrec prio theType rest = 
+   showsPrec prio theType rest =
       parIf (prio > 0) (showTp theType) ++ rest
-   
+
     where
-      showTp tp = 
+      showTp tp =
          case leftSpine tp of
             (TCon "->",[t1,t2]) -> rec (<1) t1 ++ " -> " ++ rec (const False) t2
             (TVar i   ,[]     ) -> 'v' : show i
@@ -184,21 +184,21 @@ instance Show Tp where
                                                               f xs = foldr1 (\x y -> x++", "++y) xs
                                                           in "(" ++ f ts' ++ ")"
             (t,ts) -> unwords (map (rec (<2)) (t:ts))
-      
-      rec p t = parIf (p (priorityOfType t)) (showTp t) 
+
+      rec p t = parIf (p (priorityOfType t)) (showTp t)
       parIf True  s = "("++s++")"
       parIf False s = s
-      
-instance Read Tp where 
+
+instance Read Tp where
    readsPrec _ = tpParser
 
 tpParser :: String -> [(Tp, String)]
-tpParser = level0 
+tpParser = level0
  where
    level0 = foldr1 (.->.) <$> seplist (tok "->") level1
    level1 = foldl1 TApp <$> list1 level2
-   level2 =  ident 
-         <|> (listType <$> bracks level0) 
+   level2 =  ident
+         <|> (listType <$> bracks level0)
          <|> ((\xs -> if length xs == 1 then head xs else tupleType xs) <$> pars (commaList level0))
 
    ident xs =
@@ -206,15 +206,15 @@ tpParser = level0
          ([], _) -> []
          (s, xs2) | length s > 1 && "v" `isPrefixOf` s && all isDigit (drop 1 s)
                                -> [ (TVar (read $ drop 1 s), xs2) ]
-                  |  otherwise -> [ (TCon s, xs2) ]     
-                
+                  |  otherwise -> [ (TCon s, xs2) ]
+
    (p <*> q) xs = [ (f a, xs2) | (f, xs1) <- p xs, (a, xs2) <- q xs1 ]
    (f <$> p) xs = [ (f a, xs1) | (a, xs1) <- p xs ]
    (p <|> q) xs = p xs ++ q xs
    p <* q = const <$> p <*> q
    p *> q = flip const <$> p <*> q
    succeed a xs = [(a, xs)]
-   tok s xs = 
+   tok s xs =
       let ys = dropWhile isSpace xs
       in [ (s, drop (length s) ys) | not (null ys), s `isPrefixOf` ys ]
    pars   p = tok "(" *> p <* tok ")"
@@ -231,18 +231,18 @@ class HasTypes a where
    getTypes    :: a -> Tps
    changeTypes :: (Tp -> Tp) -> a -> a
 
-instance HasTypes Tp where 
+instance HasTypes Tp where
    getTypes tp = [tp]
    changeTypes = ($)
 
 instance HasTypes a => HasTypes [a] where
    getTypes      = concatMap getTypes
-   changeTypes f = map (changeTypes f)  
+   changeTypes f = map (changeTypes f)
 
 instance (HasTypes a, HasTypes b) => HasTypes (a, b) where
    getTypes      (a, b) = getTypes a ++ getTypes b
    changeTypes f (a, b) = (changeTypes f a, changeTypes f b)
-   
+
 instance HasTypes a => HasTypes (Maybe a) where
    getTypes    = maybe [] getTypes
    changeTypes = fmap . changeTypes

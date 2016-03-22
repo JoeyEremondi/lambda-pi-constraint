@@ -14,16 +14,16 @@
 
 module Top.Constraint where
 
---import Top.Types (Substitutable(..))
+import Top.Types (Substitutable(..))
 
 type Constraints m = [Constraint m]
 data Constraint  m =
-   forall c . (Show c{-, Substitutable c-}) => Constraint c (c -> m ()) (c -> m Bool)
+   forall c . (Show c, Substitutable c) => Constraint c (c -> m ()) (c -> m Bool)
 
 -- |A constraint is solvable if it knows how it can be solved in a certain
 -- state (a monadic operation), if it can check afterwards whether the final
 -- state satisfies it, and when it can be shown.
-class (Show c, {-Substitutable c,-} Monad m) => Solvable c m where
+class (Show c, Substitutable c, Monad m) => Solvable c m where
    solveConstraint :: c -> m ()
    checkCondition  :: c -> m Bool
 
@@ -33,9 +33,9 @@ class (Show c, {-Substitutable c,-} Monad m) => Solvable c m where
 instance Show (Constraint m) where
    show (Constraint c _ _) = show c
 
--- instance Substitutable (Constraint m) where
---    ftv (Constraint c _ _)     = ftv c
---    sub |-> (Constraint c f g) = Constraint (sub |-> c) f g
+instance Substitutable (Constraint m) where
+   ftv (Constraint c _ _)     = ftv c
+   sub |-> (Constraint c f g) = Constraint (sub |-> c) f g
 
 instance Monad m => Solvable (Constraint m) m where
    solveConstraint (Constraint c f _) = f c
@@ -60,9 +60,9 @@ operation s m = Constraint (Op_ s) (const m) (const (return True))
 instance Show (Operation m) where
    show (Op_ s) = "<" ++ s ++ ">"
 
--- instance Substitutable (Operation m) where
---    ftv _    = []
---    _ |-> op = op
+instance Substitutable (Operation m) where
+   ftv _    = []
+   _ |-> op = op
 
 -- |If both constraints of type 'a' and 'b' can be solved in a Monad 'm', then
 -- 'Either a b' constraints can also be solved in this monad.
@@ -83,9 +83,9 @@ instance (Show (f info), Show (g info)) => Show (ConstraintSum f g info) where
 instance (Functor f, Functor g) => Functor (ConstraintSum f g) where
    fmap f = constraintSum (SumLeft . fmap f) (SumRight . fmap f)
 
--- instance (Substitutable (f info), Substitutable (g info)) => Substitutable (ConstraintSum f g info) where
---    (|->) sub = constraintSum (SumLeft . (sub |->)) (SumRight . (sub |->))
---    ftv       = constraintSum ftv ftv
+instance (Substitutable (f info), Substitutable (g info)) => Substitutable (ConstraintSum f g info) where
+   (|->) sub = constraintSum (SumLeft . (sub |->)) (SumRight . (sub |->))
+   ftv       = constraintSum ftv ftv
 
 instance (Solvable (f info) m, Solvable (g info) m) => Solvable (ConstraintSum f g info) m where
    solveConstraint = constraintSum solveConstraint solveConstraint
