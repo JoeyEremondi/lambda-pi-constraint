@@ -20,6 +20,7 @@ import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.Class
 import Top.Implementation.TypeGraph.EquivalenceGroup
 import Top.Types
+import Unbound.Generics.LocallyNameless (runFreshM)
 import Utils (internalError)
 
 data StandardTypeGraph info = STG
@@ -43,9 +44,51 @@ instance Show (StandardTypeGraph info) where
    show stg =
       "(Type graph consists of " ++ show (M.size (equivalenceGroupMap stg)) ++ " equivalence groups)"
 
+--TODO make this way better
+mkFresh :: Tm.Nom -> Tm.Nom
+mkFresh = error "TODO makeFresh"
+
 instance TypeGraph (StandardTypeGraph info) info where
 
-   addTermGraph subs freshNm val gr = _
+   addTermGraph synonyms = rec
+    where
+      rec unique tp stg =
+         let
+           evaldType :: Tm.VAL
+           evaldType = runFreshM $ Tm.eval synonyms tp
+           (newtp, original) = (evaldType, Just tp)
+                -- case expandToplevelTC synonyms tp of
+                --    Nothing -> (tp, Nothing)
+                --    Just x  -> (x, Just tp)
+         in case newtp of
+               --Insert constructor node
+               Tm.C s [] ->
+                  let vid = VertexId unique
+                  in (mkFresh unique, vid, addVertex vid (VCon s, original) stg)
+
+               --Insert constructor application
+               --TODO rest?
+               Tm.C ctor args ->
+                   let initVal = rec unique (Tm.C ctor []) stg --TODO not type-correct?
+                       foldFn (ulast, vlast, glast) ctorArg =
+                         let
+                            (unew, vnew, subGraph) = rec ulast ctorArg glast
+                            vid = VertexId unew
+                         in
+                          ( mkFresh unew
+                          , vid
+                          , addVertex vid (VApp vlast vnew, original) subGraph)
+
+                   in --
+                      foldl foldFn initVal args
+
+               --Insert single variable
+               Tm.N h [] ->
+                   let vid = VertexId $ Tm.headVar h
+                   in (unique, vid, if vertexExists vid stg then stg else addVertex vid (VVar, original) stg)
+              --Insert function application
+
+
 
    addVertex v info =
       createGroup (insertVertex v info emptyGroup)
@@ -63,26 +106,26 @@ instance TypeGraph (StandardTypeGraph info) info where
    verticesInGroupOf i =
       vertices . getGroupOf i
 
-   substituteTypeSafe synonyms =
-      let rec history (TVar i) stg
-            |  i `elem` history  = Nothing
-            |  otherwise         =
-                  case maybeGetGroupOf (VertexId i) stg of
-                     Nothing ->
-                        Just (TVar i)
-                     Just _ ->
-                        do newtp <- typeOfGroup synonyms (getGroupOf (VertexId i) stg)
-                           case newtp of
-                              TVar j -> Just (TVar j)
-                              _      -> rec (i:history) newtp stg
-
-          rec _ tp@(TCon _) _ = Just tp
-
-          rec history (TApp l r) stg =
-             do l' <- rec history l stg
-                r' <- rec history r stg
-                Just (TApp l' r')
-       in rec []
+   substituteTypeSafe synonyms = _
+      -- let rec history (Tm.Var i) stg
+      --       |  i `elem` history  = Nothing
+      --       |  otherwise         =
+      --             case maybeGetGroupOf (VertexId i) stg of
+      --                Nothing ->
+      --                   Just (TVar i)
+      --                Just _ ->
+      --                   do newtp <- typeOfGroup synonyms (getGroupOf (VertexId i) stg)
+      --                      case newtp of
+      --                         TVar j -> Just (TVar j)
+      --                         _      -> rec (i:history) newtp stg
+      --
+      --     rec _ tp@(Tm.C con []) _ = Just tp
+      --
+      --     rec history (Tm.C con (r : rest)) stg =
+      --        do l' <- rec history l stg
+      --           r' <- rec history r stg
+      --           Just (TApp l' r')
+      --  in rec []
 
    edgesFrom i =
       let p (EdgeId v1 v2 _, _) = v1 == i || v2 == i
