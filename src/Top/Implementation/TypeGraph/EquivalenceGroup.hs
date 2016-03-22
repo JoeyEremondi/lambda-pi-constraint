@@ -119,7 +119,7 @@ splitGroup eqgroup =
 ----------------------------------------------------------------------
 -- * Interrogating an equivalence group
 
-constants :: EquivalenceGroup info -> [String]
+constants :: EquivalenceGroup info -> [Tm.Can]
 constants eqgroup =
    nub [ s | (_, (VCon s, _)) <- vertices eqgroup ]
 
@@ -200,7 +200,7 @@ typeOfGroup synonyms eqgroup
    | not (null allConstants) && not (null allApplies)  =  Nothing
 
    | not (null allOriginals)  =  Just (theBestType synonyms allOriginals)
-   | not (null allConstants)  =  Just (_ (head allConstants))
+   | not (null allConstants)  =  Just (Tm.C (head allConstants) []) --TODO is this poorly typed?
    | not (null allApplies)    =  Just $  let (VertexId  l, VertexId r) = head allApplies
                                          in ( runFreshM $ (Tm.var l) Tm.$$ (Tm.var r))
    | otherwise                =  Just (Tm.var (head allVariables))
@@ -216,7 +216,7 @@ typeOfGroup synonyms eqgroup
 -- Todo: improve
 theBestType :: Tm.Subs -> [Tm.VAL] -> Tm.VAL
 theBestType synonyms tps =
-   let f t1 t2 = fromMaybe t1 (_ synonyms t1 t2)
+   let f t1 t2 = fromMaybe t1 ((error "TODO equalUnderSyn") synonyms t1 t2)
    in foldr1 f tps
 
 -- Check for some invariants: identity if everything is okay, otherwise an internal error

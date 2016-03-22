@@ -20,8 +20,10 @@ import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.Class
 import Top.Implementation.TypeGraph.EquivalenceGroup
 import Top.Types
-import Unbound.Generics.LocallyNameless (runFreshM)
+import qualified Unbound.Generics.LocallyNameless as Ln
 import Utils (internalError)
+
+import Data.Foldable (foldlM)
 
 data StandardTypeGraph info = STG
    { referenceMap            :: M.Map VertexId Int{- group number -}
@@ -46,7 +48,12 @@ instance Show (StandardTypeGraph info) where
 
 --TODO make this way better
 mkFresh :: Tm.Nom -> Tm.Nom
-mkFresh = error "TODO makeFresh"
+mkFresh nm =
+  let
+    s = Ln.name2String nm
+    i = Ln.name2Integer nm
+  in
+    Ln.makeName s (i+1)
 
 instance TypeGraph (StandardTypeGraph info) info where
 
@@ -55,7 +62,7 @@ instance TypeGraph (StandardTypeGraph info) info where
       rec unique tp stg =
          let
            evaldType :: Tm.VAL
-           evaldType = runFreshM $ Tm.eval synonyms tp
+           evaldType = Ln.runFreshM $ Tm.eval synonyms tp
            (newtp, original) = (evaldType, Just tp)
                 -- case expandToplevelTC synonyms tp of
                 --    Nothing -> (tp, Nothing)
@@ -122,26 +129,26 @@ instance TypeGraph (StandardTypeGraph info) info where
    verticesInGroupOf i =
       vertices . getGroupOf i
 
-   substituteTypeSafe synonyms = error "TODO substituteTypeSafe"
-      -- let rec history (Tm.Var i) stg
-      --       |  i `elem` history  = Nothing
-      --       |  otherwise         =
-      --             case maybeGetGroupOf (VertexId i) stg of
-      --                Nothing ->
-      --                   Just (TVar i)
-      --                Just _ ->
-      --                   do newtp <- typeOfGroup synonyms (getGroupOf (VertexId i) stg)
-      --                      case newtp of
-      --                         TVar j -> Just (TVar j)
-      --                         _      -> rec (i:history) newtp stg
-      --
-      --     rec _ tp@(Tm.C con []) _ = Just tp
-      --
-      --     rec history (Tm.C con (r : rest)) stg =
-      --        do l' <- rec history l stg
-      --           r' <- rec history r stg
-      --           Just (TApp l' r')
-      --  in rec []
+   substituteTypeSafe synonyms =
+      let
+          rec :: [Tm.Nom] -> Tm.VAL -> StandardTypeGraph info -> Maybe Tm.VAL
+          rec history (Tm.N hd []) stg
+            |  (Tm.headVar hd) `elem` history  = Nothing
+            |  otherwise         =
+                  case maybeGetGroupOf (VertexId (Tm.headVar hd)) stg of
+                     Nothing ->
+                        Just (Tm.N hd [])
+                     Just _ ->
+                        do newtp <- typeOfGroup synonyms (getGroupOf (VertexId (Tm.headVar hd)) stg)
+                           case newtp of
+                              vval@(Tm.N hdj [])  -> Just vval -- (Tm.headVar hdj)
+                              _      -> rec ((Tm.headVar hd):history) newtp stg
+
+          rec _ tp@(Tm.C con []) _ = Just tp
+
+          rec history (Tm.C con argList) stg =
+            Tm.C con <$> mapM (\arg -> rec history arg stg) argList
+       in rec []
 
    edgesFrom i =
       let p (EdgeId v1 v2 _, _) = v1 == i || v2 == i
