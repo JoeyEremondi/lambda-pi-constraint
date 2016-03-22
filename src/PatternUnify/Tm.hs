@@ -145,6 +145,13 @@ instance Subst VAL Elim
 
 doubleCol = text "::"
 
+maybePar (PI _ _) = id
+maybePar (SIG _ _) = id
+maybePar (C _ []) = id
+maybePar (N _ []) = id
+maybePar tm = parens
+
+
 instance Pretty VAL where
   pretty (PI _S (L b)) =
     lunbind b $
@@ -152,7 +159,7 @@ instance Pretty VAL where
       wrapDoc PiSize $
       if x `occursIn` _T --TODO put back?
          then (\x' _S' _T' ->
-                 text "forall" <+> parens (x' <+> doubleCol <+> _S') <+> text " . " <+> parens _T') <$>
+                 text "forall" <+> parens (x' <+> doubleCol <+> _S') <+> text " . " <+> _T') <$>
               prettyHigh x <*>
               prettyHigh _S <*>
               prettyAt ArgSize _T
@@ -163,13 +170,14 @@ instance Pretty VAL where
     lunbind b $
     \( x, _T ) ->
       wrapDoc PiSize $
-      if x `occursIn` _T
+      (if x `occursIn` _T
          then (\x' _S' _T' ->
-                 text "exists" <+> parens (x' <+> colon <+> _S') <+> text " . " <+> parens _T') <$>
+                 text "exists" <+> parens (x' <+> colon <+> _S') <+> text " . " <+> _T')
+          else (\x' _S' _T' ->
+                  text "Prod" <+> maybePar _S _S' <+> maybePar _T _T')) <$>
               prettyHigh x <*>
               prettyHigh _S <*>
               prettyAt ArgSize _T
-         else between (text "*") <$> prettyAt AppSize _S <*> prettyAt PiSize _T
   -- >
   pretty (L b) = wrapDoc LamSize $ (text "\\" <+>) <$> prettyLam b
     where prettyLam u =
@@ -186,46 +194,61 @@ instance Pretty VAL where
   pretty (N h as) =
     wrapDoc AppSize $
     (\h' as' -> h' <+> hsep as') <$> pretty h <*> mapM (prettyAt ArgSize) as
-  pretty Nat = return $ text "Nat"
-  pretty (Vec a n) =
-    (\pa pn -> text "Vec" <+> parens pa <+> parens pn) <$> pretty a <*> pretty n
-  pretty (Eq a x y) =
-    (\pa px py -> text "Eq" <+> parens pa <+> parens px <+> parens py) <$> pretty a <*> pretty x <*>
-    pretty y
-  pretty Zero = return $ text "0"
-  pretty nat@(Succ n) = prettyNat nat
-  pretty (Fin n) = parens <$> (\pn -> text "Fin " <+> parens pn) <$> pretty n
-  pretty (FZero n) = parens <$> (\pn -> text "FZero " <+> parens pn) <$> pretty n
-  pretty (FSucc n f) =
-    parens <$>
-    ((\pn pf -> text "FSucc" <+> parens pn <+> parens pf ) <$>
-     pretty n <*>
-     pretty f)
-  pretty (VNil a) = parens <$> (\pa -> text "Nil " <+> pa) <$> pretty a
-  pretty (VCons a n h t) =
-    (\pa pn ph pt ->text "Cons " <+> parens pa <+> parens pn <+> parens ph <+> parens pt) <$>
-    pretty a <*>
-    pretty n <*>
-    pretty h <*>
-    pretty t
-  pretty (ERefl a x) =
-    parens <$>
-    ((\pa px -> text "Refl" <+> parens pa <+> parens px) <$> pretty a <*> pretty x)
+  -- pretty Nat = return $ text "Nat"
+  -- pretty (Vec a n) =
+  --   (\pa pn -> text "Vec" <+> maybePar a pa <+> maybePar n pn) <$> pretty a <*> pretty n
+  -- pretty (Eq a x y) =
+  --   (\pa px py -> text "Eq" <+> maybePar a pa <+> maybePar x px <+> maybePar y py) <$> pretty a <*> pretty x <*>
+  --   pretty y
+  -- pretty Zero = return $ text "0"
+  -- pretty nat@(Succ n) = prettyNat nat
+  -- pretty (Fin n) =  (\pn -> text "Fin " <+> maybePar n pn) <$> pretty n
+  -- pretty (FZero n) =  (\pn -> text "FZero " <+> maybePar n pn) <$> pretty n
+  -- pretty (FSucc n f) =
+  --
+  --   ((\pn pf -> text "FSucc" <+> maybePar n pn <+> parens pf ) <$>
+  --    pretty n <*>
+  --    pretty f)
+  -- pretty (VNil a) = parens <$> (\pa -> text "Nil " <+> pa) <$> pretty a
+  -- pretty (VCons a n h t) =
+  --   (\pa pn ph pt ->text "Cons " <+> parens pa <+> parens pn <+> parens ph <+> parens pt) <$>
+  --   pretty a <*>
+  --   pretty n <*>
+  --   pretty h <*>
+  --   pretty t
+  -- pretty (ERefl a x) =
+  --   parens <$>
+  --   ((\pa px -> text "Refl" <+> parens pa <+> parens px) <$> pretty a <*> pretty x)
 
   pretty (C c []) = pretty c
   pretty (C c as) =
     wrapDoc AppSize $
-    (\c' as' -> c' <+> hsep as') <$> pretty c <*> mapM (prettyAt ArgSize) as
+    (\c' as' -> c' <+> hsep as') <$> pretty c <*> mapM (\a -> maybePar a <$> (prettyAt ArgSize a)) as
 
 prettyNat x = helper x 0 id where
   helper Zero count pfn = return $ text (show count)
   helper (Succ n) count pfn =
-    helper n (count + 1) (\baseVal -> text "Succ" <+> parens (pfn baseVal))
+    helper n (count + 1) (\baseVal -> text "Succ" <+> maybePar n (pfn baseVal))
   helper x _ pfn = pfn <$> pretty x
 
 
 instance Pretty Can where
-  pretty c = return $ text $ show c
+  pretty Set = return $ text "*"
+  pretty Pi = error "Pi special case"
+  pretty Sig = error "Sigma special case"
+  pretty Pair = return $ text "Pair"
+  pretty CNat = return $ text "Nat"
+  pretty CZero = return $ text "Zero"
+  pretty CSucc = return $ text "Succ"
+  pretty CVec = return $ text "Vec"
+  pretty CNil = return $ text "Nil"
+  pretty CCons = return $ text "Cons"
+  pretty CEq = return $ text "Eq"
+  pretty CRefl = return $ text "Refl"
+  pretty CFin = return $ text "Fin"
+  pretty CFZero = return $ text "FZero"
+  pretty CFSucc = return $ text "FSucc"
+  --pretty c = return $ text $ show c
 
 instance Pretty Twin where
   pretty Only = return $ empty
