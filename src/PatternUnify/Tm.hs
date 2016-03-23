@@ -191,7 +191,7 @@ instance Pretty VAL where
                    L b' -> (v <+>) <$> prettyLam b'
                    _ -> (\t' -> v <+> text "." <+> t') <$> prettyAt LamSize t
   pretty (N h []) = pretty h
-  pretty (N h as) =
+  pretty (N h as@(_:_)) =
     wrapDoc AppSize $
     (\h' as' -> h' <+> hsep as') <$> pretty h <*> mapM (prettyAt ArgSize) as
   -- pretty Nat = return $ text "Nat"
@@ -224,11 +224,6 @@ instance Pretty VAL where
   pretty (C c as) =
     wrapDoc AppSize $
     (\c' as' -> c' <+> hsep as') <$> pretty c <*> mapM (\a -> maybePar a <$> (prettyAt ArgSize a)) as
-
-  pretty (C c []) = pretty c
-  pretty (C c as) =
-    wrapDoc AppSize $
-    (\c' as' -> c' <+> hsep as') <$> pretty c <*> mapM (prettyAt ArgSize) as
 
 prettyNat x = helper x 0 id where
   helper Zero count pfn = return $ text (show count)
