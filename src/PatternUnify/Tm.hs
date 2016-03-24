@@ -89,28 +89,41 @@ data Head
   | Meta Nom
   deriving (Eq, Show, Generic)
 
-data Elim
-  = A VAL
-  | Hd
-  | Tl
-  | NatElim VAL
-            VAL
-            VAL
-  | VecElim VAL
-            VAL
-            VAL
-            VAL
-            VAL
-  | EqElim VAL
-           VAL
-           VAL
-           VAL
-           VAL
-  | FinElim VAL
-            VAL
-            VAL
-            VAL
+data Elim = Elim CanElim [VAL]
   deriving (Eq, Show, Generic)
+
+data CanElim =
+  CA
+  | CHd
+  | CTl
+  | CNatElim
+  | CEqElim
+  | CVecElim
+  | CFinElim
+  deriving (Eq, Show, Generic)
+
+-- data Elim
+--   = A VAL
+--   | Hd
+--   | Tl
+--   | NatElim VAL
+--             VAL
+--             VAL
+--   | VecElim VAL
+--             VAL
+--             VAL
+--             VAL
+--             VAL
+--   | EqElim VAL
+--            VAL
+--            VAL
+--            VAL
+--            VAL
+--   | FinElim VAL
+--             VAL
+--             VAL
+--             VAL
+--   deriving (Eq, Show, Generic)
 
 instance Eq VAL where
   (==) = aeq
@@ -124,6 +137,10 @@ instance Alpha Twin
 instance Alpha Head
 
 instance Alpha Elim
+
+instance Alpha CanElim
+
+instance Subst VAL CanElim
 
 instance Subst VAL VAL where
   substs subList expr = runFreshM $ eval (Map.fromList subList) expr
@@ -190,10 +207,12 @@ instance Pretty VAL where
                  case t of
                    L b' -> (v <+>) <$> prettyLam b'
                    _ -> (\t' -> v <+> text "." <+> t') <$> prettyAt LamSize t
-  pretty (N h []) = pretty h
-  pretty (N h as) =
-    wrapDoc AppSize $
-    (\h' as' -> h' <+> hsep as') <$> pretty h <*> mapM (prettyAt ArgSize) as
+--  pretty (N h []) = pretty h
+  pretty (N h as) = do
+    h' <- pretty h
+    elimsText <- prettyElims h' as
+    wrapDoc AppSize elimsText
+    -- (\h' as' -> h' <+> hsep as') <$> pretty h <*> mapM (prettyAt ArgSize) as
   -- pretty Nat = return $ text "Nat"
   -- pretty (Vec a n) =
   --   (\pa pn -> text "Vec" <+> maybePar a pa <+> maybePar n pn) <$> pretty a <*> pretty n
@@ -224,6 +243,16 @@ instance Pretty VAL where
   pretty (C c as) =
     wrapDoc AppSize $
     (\c' as' -> c' <+> hsep as') <$> pretty c <*> mapM (\a -> maybePar a <$> (prettyAt ArgSize a)) as
+
+pretytElims :: (Monad m) => Doc -> [Elim] -> m Doc
+pretytElims hdText [] = return hdText
+prettyElims hdText (A arg : rest) = do
+  arg' <- pretty arg --TODO parens?
+  prettyElims (hdText <+> arg' ) rest
+prettyElims hdText (Elim can args : rest ) = do
+  can' <- pretty can
+  args' <- mapM pretty args
+  prettyElims ((parens $ can' <+> hsep args') <+> hdText) rest
 
 prettyNat x = helper x 0 id where
   helper Zero count pfn = return $ text (show count)
@@ -264,41 +293,18 @@ instance Pretty Head where
 
 instance Pretty Elim where
   pretty (A a) = pretty a
-  pretty Hd = return $ text "!"
-  pretty Tl = return $ text "-"
-  pretty (VecElim a m mn mc n) =
-    parens <$>
-    ((\a' m' mn' mc' n' -> text "VecElim" <+> a' <+> m' <+> mn' <+> mc' <+> n') <$>
-     pretty a <*>
-     pretty m <*>
-     pretty mn <*>
-     pretty mc <*>
-     pretty n)
-  pretty (NatElim m mz ms) =
-    parens <$>
-    ((\m' mz' ms' -> text "NatElim" <+> parens m' <+> parens mz' <+> parens ms') <$>
-     pretty m <*>
-     pretty mz <*>
-     pretty ms)
-  pretty (FinElim m mz ms n) =
-    parens <$>
-    ((\m' mz' ms' n' ->
-        text "FinElim" <+>
-        parens m' <+> parens mz' <+> parens ms' <+> parens n') <$>
-     pretty m <*>
-     pretty mz <*>
-     pretty ms <*>
-     pretty n)
-  pretty (EqElim a m mr x y) =
-    parens <$>
-    ((\a' m' mr' x' y' ->
-        text "EqElim" <+>
-        parens a' <+> parens m' <+> parens mr' <+> parens x' <+> parens y') <$>
-     pretty a <*>
-     pretty m <*>
-     pretty mr <*>
-     pretty x <*>
-     pretty y)
+  pretty (Elim can args) =
+    (\can' as' -> can' <+> hsep as') <$> pretty can <*> mapM pretty args
+
+instance Pretty CanElim where
+  pretty CA = error "Should not pretty A"
+  pretty CHd = return $ text $ "fst"
+  pretty CTl = return $ text $ "snd"
+  pretty CNatElim = return $ text $ "natElim"
+  pretty CEqElim = return $ text $ "eqElim"
+  pretty CVecElim = return $ text $ "vecElim"
+  pretty CFinElim = return $ text $ "finElim"
+
 
 pattern SET = C Set []
 
@@ -322,6 +328,15 @@ pattern VCons a n h t = C CCons [a,n,h,t]
 
 pattern Eq a x y = C CEq [a,x,y]
 pattern ERefl a x = C CRefl [a,x]
+
+pattern A x = Elim CA [x]
+pattern Hd = Elim CHd []
+pattern Tl = Elim CTl []
+pattern NatElim m mz ms = Elim CNatElim [m, mz, ms]
+pattern FinElim m mz ms n = Elim CFinElim [m, mz, ms, n]
+pattern VecElim a m mn mc n = Elim CVecElim [a, m, mn, mc, n]
+pattern EqElim a m mr x y = Elim CEqElim [a, m, mr, x, y]
+
 
 var :: Nom -> VAL
 var x = N (Var x Only) []
@@ -378,42 +393,10 @@ _SIG x = _Sig (s2n x)
 
 mapElimM :: (Monad m)
          => (VAL -> m VAL) -> Elim -> m Elim
-mapElimM f (A a) = A <$> (f a)
-mapElimM _ Hd = return Hd
-mapElimM _ Tl = return Tl
-mapElimM f (NatElim m mz ms) = NatElim <$> (f m) <*> (f mz) <*> (f ms)
-mapElimM f (FinElim m mz ms n) =
-  FinElim <$> (f m) <*> (f mz) <*> (f ms) <*> (f n)
-mapElimM f (VecElim a m mn mc n) =
-  VecElim <$> (f a) <*> (f m) <*> (f mn) <*> (f mc) <*> (f n)
-mapElimM f (EqElim a m mr x y) =
-  EqElim <$> (f a) <*> (f m) <*> (f mr) <*> (f x) <*> (f y)
+mapElimM f (Elim can args) = Elim can <$> mapM f args
 
 mapElim :: (VAL -> VAL) -> Elim -> Elim
-mapElim f (A a) = A (f a)
-mapElim _ Hd = Hd
-mapElim _ Tl = Tl
-mapElim f (NatElim m mz ms) =
-  NatElim (f m)
-          (f mz)
-          (f ms)
-mapElim f (FinElim m mz ms n) =
-  FinElim (f m)
-          (f mz)
-          (f ms)
-          (f n)
-mapElim f (VecElim a m mn mc n) =
-  VecElim (f a)
-          (f m)
-          (f mn)
-          (f mc)
-          (f n)
-mapElim f (EqElim a m mr x y) =
-  EqElim (f a)
-         (f m)
-         (f mr)
-         (f x)
-         (f y)
+mapElim f (Elim can args) = Elim can $ map f args
 
 headVar :: Head -> Nom
 headVar (Var x _) = x
