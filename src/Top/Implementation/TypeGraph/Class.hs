@@ -23,7 +23,7 @@ import qualified Unbound.Generics.LocallyNameless as Ln
 class TypeGraph graph info | graph -> info where
 
    -- construct a type graph
-   addTermGraph :: (Ln.Fresh m) => Tm.Subs -> Tm.Nom -> Tm.VAL -> graph -> m (Tm.Nom, VertexId, graph)
+   addTermGraph :: (Ln.Fresh m) => Tm.Subs -> Tm.Nom -> Tm.VAL -> graph -> m (VertexId, graph)
    addVertex    :: VertexId -> VertexInfo -> graph -> graph
    addEdge      :: EdgeId -> info -> graph -> graph
    addNewEdge   :: (Ln.Fresh m) => (VertexId, VertexId) -> info -> graph -> m graph

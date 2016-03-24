@@ -52,33 +52,30 @@ instance Show (StandardTypeGraph info) where
 
 
 -- addElim subs original unique (Tm.Elim can args) g0 =
-addElim :: (Ln.Fresh m, TypeGraph graph info) => Tm.Subs -> Maybe Tm.VAL -> Tm.Nom -> Tm.Elim -> graph -> m (Tm.Nom, VertexId, graph)
+addElim :: (Ln.Fresh m, TypeGraph graph info) => Tm.Subs -> Maybe Tm.VAL -> Tm.Nom -> Tm.Elim -> graph -> m (VertexId, graph)
 addElim subs original unique (Tm.Elim can args) g0 = do
   let vinit = VertexId unique
-  fresh1 <- Ln.fresh unique
-  let initVal = (fresh1, vinit, addVertex vinit (VConElim can, original) g0)
+  let initVal = (vinit, addVertex vinit (VConElim can, original) g0)
   let
-    foldFn (ulast, vlast, glast) ctorArg = do
-      (unew, vnew, subGraph) <- addTermGraph subs ulast ctorArg glast
-      let vid = VertexId unew
-      ourFresh <- Ln.fresh unew
+    foldFn (vlast, glast) ctorArg = do
+      (vnew, subGraph) <- addTermGraph subs unique ctorArg glast
+      vid <- VertexId <$> Ln.fresh unique
       return
-       ( ourFresh
-       , vid
+       ( vid
        , addVertex vid (VApp vlast vnew, original) subGraph)
   foldlM foldFn initVal args
 
-addHead :: (Ln.Fresh m, TypeGraph graph info) => Maybe Tm.VAL -> Tm.Nom -> Tm.Head -> graph -> m (Tm.Nom, VertexId, graph)
+addHead :: (Ln.Fresh m, TypeGraph graph info) => Maybe Tm.VAL -> Tm.Nom -> Tm.Head -> graph -> m (VertexId, graph)
 addHead original unique (Tm.Var nm _) stg = do--TODO handle twins?
   let vinit = VertexId unique
-  ourFresh <- Ln.fresh unique
-  return (ourFresh, vinit, addVertex vinit (VSourceVar nm, original) stg)
+  --ourFresh <- Ln.fresh unique
+  return (vinit, addVertex vinit (VSourceVar nm, original) stg)
 --Metavariables are indexed by their names
 addHead original unique (Tm.Meta nm) stg =
   let
     vinit = VertexId nm
   in
-    return (unique, vinit, addVertex vinit (VSourceVar nm, original) stg)
+    return (vinit, addVertex vinit (VSourceVar nm, original) stg)
 
 
 instance TypeGraph (StandardTypeGraph info) info where
@@ -95,13 +92,11 @@ instance TypeGraph (StandardTypeGraph info) info where
                    fresh1 <- Ln.fresh unique
                    let
                        vinit = VertexId unique
-                       initVal = (fresh1, vinit, addVertex vinit (VCon ctor, original) stg)
-                       foldFn (ulast, vlast, glast) ctorArg = do
-                         (unew, vnew, subGraph) <- addTermGraph synonyms ulast ctorArg glast
-                         myFresh <- Ln.fresh unew
-                         let vid = VertexId unew
-                         return ( myFresh
-                          , vid
+                       initVal = (vinit, addVertex vinit (VCon ctor, original) stg)
+                       foldFn (vlast, glast) ctorArg = do
+                         (vnew, subGraph) <- addTermGraph synonyms unique ctorArg glast
+                         vid <- VertexId <$> Ln.fresh unique
+                         return ( vid
                           , addVertex vid (VApp vlast vnew, original) subGraph)
 
                    foldlM foldFn initVal args
@@ -110,13 +105,12 @@ instance TypeGraph (StandardTypeGraph info) info where
                Tm.N hd elims -> do
                   let vinit = VertexId unique
                   initVal <- addHead original unique hd stg
-                  let foldFn (ulast, vlast, glast) elim = do
-                        (unew, vnew, subGraph) <- addElim synonyms original ulast elim glast
+                  let foldFn (vlast, glast) elim = do
+                        (vnew, subGraph) <- addElim synonyms original unique elim glast
+                        unew <- Ln.fresh unique
                         let vid = VertexId unew
-                        ourFresh <- Ln.fresh unew
                         return
-                         ( ourFresh
-                         , vid
+                         ( vid
                          , addVertex vid (VElim vlast vnew, original) subGraph)
                   foldlM foldFn initVal elims
 
@@ -320,9 +314,8 @@ addEqn
   -> StandardTypeGraph info
   -> m (StandardTypeGraph info)
 addEqn info (Ctx.EQN _ v1 _ v2) stg = do
-    u0 <- Ln.fresh $ Ln.s2n "node"
-    (u1, var1, g1) <-  addTermGraph M.empty u0 v1 stg
-    (u2, var2, g2) <-  addTermGraph M.empty u1 v2 stg
+    (var1, g1) <-  addTermGraph M.empty (Ln.s2n "node") v1 stg
+    (var2, g2) <-  addTermGraph M.empty (Ln.s2n "node") v2 stg
     edgeNr <- Ln.fresh $ Ln.s2n "edge"
     let ourEdge = EdgeId var1 var2 $ EdgeNrX edgeNr
     return $ addEdge ourEdge info g2
