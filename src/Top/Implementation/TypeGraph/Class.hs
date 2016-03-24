@@ -18,14 +18,15 @@ import Top.Implementation.TypeGraph.Basics
 import Utils (internalError)
 
 import qualified PatternUnify.Tm as Tm
+import qualified Unbound.Generics.LocallyNameless as Ln
 
 class TypeGraph graph info | graph -> info where
 
    -- construct a type graph
-   addTermGraph :: Tm.Subs -> Tm.Nom -> Tm.VAL -> graph -> (Tm.Nom, VertexId, graph)
+   addTermGraph :: (Ln.Fresh m) => Tm.Subs -> Tm.Nom -> Tm.VAL -> graph -> m (Tm.Nom, VertexId, graph)
    addVertex    :: VertexId -> VertexInfo -> graph -> graph
    addEdge      :: EdgeId -> info -> graph -> graph
-   addNewEdge   :: (VertexId, VertexId) -> info -> graph -> graph
+   addNewEdge   :: (Ln.Fresh m) => (VertexId, VertexId) -> info -> graph -> m graph
 
    -- deconstruct a type graph
    deleteEdge :: EdgeId -> graph -> graph

@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
 --
@@ -32,7 +33,7 @@ data StandardTypeGraph info = STG
    , equivalenceGroupMap     :: M.Map Int (EquivalenceGroup info)
    , equivalenceGroupCounter :: Int
    , possibleErrors          :: [VertexId]
-   , constraintNumber        :: Int
+   , constraintNumber        :: Tm.Nom
    }
 
 instance Show info => Empty (StandardTypeGraph info) where
@@ -41,58 +42,47 @@ instance Show info => Empty (StandardTypeGraph info) where
       , equivalenceGroupMap     = M.empty
       , equivalenceGroupCounter = 0
       , possibleErrors          = []
-      , constraintNumber        = 0
+      , constraintNumber        = Ln.s2n "constr"
       }
 
 instance Show (StandardTypeGraph info) where
    show stg =
       "(Type graph consists of " ++ show (M.size (equivalenceGroupMap stg)) ++ " equivalence groups)"
 
---TODO make this way better
-mkFresh :: Tm.Nom -> Tm.Nom
-mkFresh nm =
-  let
-    s = Ln.name2String nm
-    i = Ln.name2Integer nm
-  in
-    Ln.makeName s (i+1)
 
--- addElim :: (TypeGraph graph info) => Tm.Subs -> Maybe Tm.VAL -> Tm.Nom -> Tm.Elim -> graph -> (Tm.Nom, VertexId, graph)
+
 -- addElim subs original unique (Tm.Elim can args) g0 =
-addElim subs original unique (Tm.Elim can args) g0 =
+addElim :: (Ln.Fresh m, TypeGraph graph info) => Tm.Subs -> Maybe Tm.VAL -> Tm.Nom -> Tm.Elim -> graph -> m (Tm.Nom, VertexId, graph)
+addElim subs original unique (Tm.Elim can args) g0 = do
+  let vinit = VertexId unique
+  fresh1 <- Ln.fresh unique
+  let initVal = (fresh1, vinit, addVertex vinit (VConElim can, original) g0)
   let
-      vinit = VertexId unique
-      initVal = (mkFresh unique, vinit, addVertex vinit (VConElim can, original) g0)
-      foldFn (ulast, vlast, glast) ctorArg =
-        let
-           (unew, vnew, subGraph) = addTermGraph subs ulast ctorArg glast
-           vid = VertexId unew
-        in
-         ( mkFresh unew
-         , vid
-         , addVertex vid (VApp vlast vnew, original) subGraph)
+    foldFn (ulast, vlast, glast) ctorArg = do
+      (unew, vnew, subGraph) <- addTermGraph subs ulast ctorArg glast
+      let vid = VertexId unew
+      ourFresh <- Ln.fresh unew
+      return
+       ( ourFresh
+       , vid
+       , addVertex vid (VApp vlast vnew, original) subGraph)
+  foldlM foldFn initVal args
 
-  in --
-     foldl foldFn initVal args
-
-addHead :: (TypeGraph graph info) => Maybe Tm.VAL -> Tm.Nom -> Tm.Head -> graph -> (Tm.Nom, VertexId, graph)
-addHead original unique (Tm.Var nm _) stg = --TODO handle twins?
-  let
-    vinit = VertexId unique
-  in
-    (mkFresh unique, vinit, addVertex vinit (VSourceVar nm, original) stg)
+addHead :: (Ln.Fresh m, TypeGraph graph info) => Maybe Tm.VAL -> Tm.Nom -> Tm.Head -> graph -> m (Tm.Nom, VertexId, graph)
+addHead original unique (Tm.Var nm _) stg = do--TODO handle twins?
+  let vinit = VertexId unique
+  ourFresh <- Ln.fresh unique
+  return (ourFresh, vinit, addVertex vinit (VSourceVar nm, original) stg)
 --Metavariables are indexed by their names
 addHead original unique (Tm.Meta nm) stg =
   let
     vinit = VertexId nm
   in
-    (unique, vinit, addVertex vinit (VSourceVar nm, original) stg)
+    return (unique, vinit, addVertex vinit (VSourceVar nm, original) stg)
 
 
 instance TypeGraph (StandardTypeGraph info) info where
-   addTermGraph synonyms = rec
-    where
-      rec unique tp stg =
+   addTermGraph synonyms unique tp stg =
          let
            evaldType :: Tm.VAL
            evaldType = Ln.runFreshM $ Tm.eval synonyms tp
@@ -101,37 +91,34 @@ instance TypeGraph (StandardTypeGraph info) info where
                 --    Nothing -> (tp, Nothing)
                 --    Just x  -> (x, Just tp)
          in case newtp of
-               Tm.C ctor args ->
+               Tm.C ctor args -> do
+                   fresh1 <- Ln.fresh unique
                    let
                        vinit = VertexId unique
-                       initVal = (mkFresh unique, vinit, addVertex vinit (VCon ctor, original) stg)
-                       foldFn (ulast, vlast, glast) ctorArg =
-                         let
-                            (unew, vnew, subGraph) = rec ulast ctorArg glast
-                            vid = VertexId unew
-                         in
-                          ( mkFresh unew
+                       initVal = (fresh1, vinit, addVertex vinit (VCon ctor, original) stg)
+                       foldFn (ulast, vlast, glast) ctorArg = do
+                         (unew, vnew, subGraph) <- addTermGraph synonyms ulast ctorArg glast
+                         myFresh <- Ln.fresh unew
+                         let vid = VertexId unew
+                         return ( myFresh
                           , vid
                           , addVertex vid (VApp vlast vnew, original) subGraph)
 
-                   in --
-                      foldl foldFn initVal args
+                   foldlM foldFn initVal args
 
                 --Insert function application
-               Tm.N hd elims ->
-                  let
-                      vinit = VertexId unique
-                      initVal = addHead original unique hd stg
-                      foldFn (ulast, vlast, glast) elim =
-                        let
-                           (unew, vnew, subGraph) = addElim synonyms original ulast elim glast
-                           vid = VertexId unew
-                        in
-                         ( mkFresh unew
+               Tm.N hd elims -> do
+                  let vinit = VertexId unique
+                  initVal <- addHead original unique hd stg
+                  let foldFn (ulast, vlast, glast) elim = do
+                        (unew, vnew, subGraph) <- addElim synonyms original ulast elim glast
+                        let vid = VertexId unew
+                        ourFresh <- Ln.fresh unew
+                        return
+                         ( ourFresh
                          , vid
                          , addVertex vid (VElim vlast vnew, original) subGraph)
-                  in --
-                     foldl foldFn initVal elims
+                  foldlM foldFn initVal elims
 
 
 
@@ -141,9 +128,10 @@ instance TypeGraph (StandardTypeGraph info) info where
    addEdge edge@(EdgeId v1 v2 _) info =
       propagateEquality v1 . updateGroupOf v1 (insertEdge edge info) . combineClasses [v1, v2]
 
-   addNewEdge (v1, v2) info stg =
+   addNewEdge (v1, v2) info stg = do
       let cnr = makeEdgeNr (constraintNumber stg)
-      in addEdge (EdgeId v1 v2 cnr) info (stg { constraintNumber = constraintNumber stg + 1})
+      ourFresh <- Ln.fresh $ constraintNumber stg
+      return $ addEdge (EdgeId v1 v2 cnr) info (stg { constraintNumber = ourFresh})
 
    deleteEdge edge@(EdgeId v1 _ _) =
       propagateRemoval v1 . updateGroupOf v1 (removeEdge edge)
@@ -328,68 +316,55 @@ addPossibleInconsistentGroup vid stg = stg { possibleErrors = vid : possibleErro
 
 addEqn
   :: (Ln.Fresh m)
-  => Ctx.Equation
+  => info -> Ctx.Equation
   -> StandardTypeGraph info
   -> m (StandardTypeGraph info)
-addEqn (Ctx.EQN _ v1 _ v2) stg = do
+addEqn info (Ctx.EQN _ v1 _ v2) stg = do
     u0 <- Ln.fresh $ Ln.s2n "node"
-    (u1, var1, g1) <- addTermGraphM M.empty u0 v1 stg
-    (u2, var2, g2) <- addTermGraphM M.empty u1 v2 stg
-    return $ _
+    (u1, var1, g1) <-  addTermGraph M.empty u0 v1 stg
+    (u2, var2, g2) <-  addTermGraph M.empty u1 v2 stg
+    edgeNr <- Ln.fresh $ Ln.s2n "edge"
+    let ourEdge = EdgeId var1 var2 $ EdgeNrX edgeNr
+    return $ addEdge ourEdge info g2
 
-addTermGraphM :: (Ln.Fresh m) => Tm.Subs -> Tm.Nom -> Tm.VAL -> StandardTypeGraph info -> m (Tm.Nom, Int, StandardTypeGraph info)
-addTermGraphM synonyms = rec
- where
-   rec unique tp stg =
-      let
-        evaldType :: Tm.VAL
-        evaldType = Ln.runFreshM $ Tm.eval synonyms tp
-        (newtp, original) = (evaldType, Just tp)
-             -- case expandToplevelTC synonyms tp of
-             --    Nothing -> (tp, Nothing)
-             --    Just x  -> (x, Just tp)
-      in case newtp of
-            --Insert constructor node
-            Tm.C s [] -> do
-               let vid = VertexId unique
-               return (mkFresh unique, vid, addVertex vid (VCon s, original) stg)
-
-            --Insert constructor application
-            --TODO rest?
-            Tm.C ctor args -> do
-                let initVal = rec unique (Tm.C ctor []) stg --TODO not type-correct?
-                    foldFn (ulast, vlast, glast) ctorArg =
-                      let
-                         (unew, vnew, subGraph) = rec ulast ctorArg glast
-                         vid = VertexId unew
-                      in
-                       ( mkFresh unew
-                       , vid
-                       , addVertex vid (VApp vlast vnew, original) subGraph)
-
-                return $ foldl foldFn initVal args
-
-            --Insert single variable
-            Tm.N h [] ->
-                let vid = VertexId $ Tm.headVar h
-                in (unique, vid, if vertexExists vid stg then stg else addVertex vid (VVar, original) stg)
-           --Insert function application
-            Tm.N hd elims ->
-               let initVal = rec unique (Tm.N hd []) stg --TODO not type-correct?
-                   addElim u elim g = case elim of
-                     Tm.A x -> rec u x g
-                     _ -> error "Other Elim cases"
-                   foldFn (ulast, vlast, glast) elim =
-                     let
-                        (unew, vnew, subGraph) = addElim ulast elim glast
-                        vid = VertexId unew
-                     in
-                      ( mkFresh unew
-                      , vid
-                      , addVertex vid (_ vlast vnew, original) subGraph)
-
-               in --
-                  foldl foldFn initVal elims
+-- addTermGraphM :: (Ln.Fresh m) => Tm.Subs -> Tm.Nom -> Tm.VAL -> StandardTypeGraph info -> m (Tm.Nom, VertexId, StandardTypeGraph info)
+-- addTermGraphM synonyms unique tp stg =
+--       let
+--         evaldType :: Tm.VAL
+--         evaldType = Ln.runFreshM $ Tm.eval synonyms tp
+--         (newtp, original) = (evaldType, Just tp)
+--              -- case expandToplevelTC synonyms tp of
+--              --    Nothing -> (tp, Nothing)
+--              --    Just x  -> (x, Just tp)
+--       in case newtp of
+--             Tm.C ctor args -> do
+--                 let
+--                     vinit = VertexId unique
+--                     initVal = (mkFresh unique, vinit, addVertex vinit (VCon ctor, original) stg)
+--                     foldFn (ulast, vlast, glast) ctorArg = do
+--                       (unew, vnew, subGraph) <- addTermGraphM synonyms ulast ctorArg glast
+--                       myFresh <- Ln.fresh unew
+--                       let vid = VertexId unew
+--                       return ( myFresh
+--                        , vid
+--                        , addVertex vid (VApp vlast vnew, original) subGraph)
+--
+--                 foldlM foldFn initVal args
+--
+--              --Insert function application
+--             Tm.N hd elims -> do
+--                let
+--                    vinit = VertexId unique
+--                    initVal = addHead original unique hd stg
+--                    foldFn (ulast, vlast, glast) elim = do
+--                      let
+--                         (unew, vnew, subGraph) = addElim synonyms original ulast elim glast
+--                         vid = VertexId unew
+--                      return
+--                       ( mkFresh unew
+--                       , vid
+--                       , addVertex vid (VElim vlast vnew, original) subGraph)
+--                foldlM foldFn initVal elims
 --------------------------------------------------------------------------------
 {-
 setHeuristics :: [Heuristic info] -> StandardTypeGraph info -> StandardTypeGraph info

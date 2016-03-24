@@ -14,6 +14,7 @@ import Utils (internalError)
 -- import Data.Maybe
 import Data.List (intercalate, partition, sort)
 import qualified PatternUnify.Tm as Tm
+import qualified Unbound.Generics.LocallyNameless as Ln
 
 -----------------------------------------------------------------------------------------
 
@@ -29,15 +30,15 @@ vertexIdToTp :: VertexId -> Tm.VAL
 vertexIdToTp (VertexId i) = Tm.var i
 
 data EdgeId        = EdgeId VertexId VertexId EdgeNr
-newtype EdgeNr     = EdgeNrX Int deriving (Eq, Ord)
+newtype EdgeNr     = EdgeNrX Tm.Nom deriving (Eq, Ord)
 data ChildSide     = LeftChild | RightChild
    deriving (Eq, Ord)
 
-makeEdgeNr :: Int -> EdgeNr
+makeEdgeNr :: Tm.Nom -> EdgeNr
 makeEdgeNr = EdgeNrX
 
 impliedEdgeNr :: EdgeNr
-impliedEdgeNr = makeEdgeNr (-1)
+impliedEdgeNr = makeEdgeNr $ Ln.s2n (show $ -1)
 
 instance Show EdgeNr where
    show (EdgeNrX i) = '#':show i
