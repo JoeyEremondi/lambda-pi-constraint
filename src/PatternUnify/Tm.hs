@@ -100,7 +100,7 @@ data CanElim =
   | CEqElim
   | CVecElim
   | CFinElim
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, Ord)
 
 -- data Elim
 --   = A VAL

@@ -57,8 +57,25 @@ mkFresh nm =
   in
     Ln.makeName s (i+1)
 
-instance TypeGraph (StandardTypeGraph info) info where
+-- addElim :: (TypeGraph graph info) => Tm.Subs -> Maybe Tm.VAL -> Tm.Nom -> Tm.Elim -> graph -> (Tm.Nom, VertexId, graph)
+-- addElim subs original unique (Tm.Elim can args) g0 =
+addElim subs original unique (Tm.Elim can args) g0 =
+  let
+      vinit = VertexId unique
+      initVal = (mkFresh unique, vinit, addVertex vinit (VConElim can, original) g0)
+      foldFn (ulast, vlast, glast) ctorArg =
+        let
+           (unew, vnew, subGraph) = addTermGraph subs ulast ctorArg glast
+           vid = VertexId unew
+        in
+         ( mkFresh unew
+         , vid
+         , addVertex vid (VApp vlast vnew, original) subGraph)
 
+  in --
+     foldl foldFn initVal args
+
+instance TypeGraph (StandardTypeGraph info) info where
    addTermGraph synonyms = rec
     where
       rec unique tp stg =
@@ -70,15 +87,10 @@ instance TypeGraph (StandardTypeGraph info) info where
                 --    Nothing -> (tp, Nothing)
                 --    Just x  -> (x, Just tp)
          in case newtp of
-               --Insert constructor node
-               Tm.C s [] ->
-                  let vid = VertexId unique
-                  in (mkFresh unique, vid, addVertex vid (VCon s, original) stg)
-
-               --Insert constructor application
-               --TODO rest?
                Tm.C ctor args ->
-                   let initVal = rec unique (Tm.C ctor []) stg --TODO not type-correct?
+                   let
+                       vinit = VertexId unique
+                       initVal = (mkFresh unique, vinit, addVertex vinit (VCon ctor, original) stg)
                        foldFn (ulast, vlast, glast) ctorArg =
                          let
                             (unew, vnew, subGraph) = rec ulast ctorArg glast
@@ -91,25 +103,19 @@ instance TypeGraph (StandardTypeGraph info) info where
                    in --
                       foldl foldFn initVal args
 
-               --Insert single variable
-               Tm.N h [] ->
-                   let vid = VertexId $ Tm.headVar h
-                   in (unique, vid, if vertexExists vid stg then stg else addVertex vid (VVar, original) stg)
-              --Insert function application
+                --Insert function application
                Tm.N hd elims ->
-                  let initVal = rec unique (Tm.N hd []) stg --TODO not type-correct?
-                      addElim u elim g = case elim of
-                        Tm.A x -> rec u x g
-                        _ -> error "Other Elim cases"
+                  let
+                      vinit = VertexId unique
+                      initVal = (mkFresh unique, vinit, addVertex vinit (VSourceVar $ Tm.headVar hd, original) stg)
                       foldFn (ulast, vlast, glast) elim =
                         let
-                           (unew, vnew, subGraph) = addElim ulast elim glast
+                           (unew, vnew, subGraph) = addElim synonyms original ulast elim glast
                            vid = VertexId unew
                         in
                          ( mkFresh unew
                          , vid
-                         , addVertex vid (VFunApp vlast vnew, original) subGraph)
-
+                         , addVertex vid (VElim vlast vnew, original) subGraph)
                   in --
                      foldl foldFn initVal elims
 
@@ -366,7 +372,7 @@ addTermGraphM synonyms = rec
                      in
                       ( mkFresh unew
                       , vid
-                      , addVertex vid (VFunApp vlast vnew, original) subGraph)
+                      , addVertex vid (_ vlast vnew, original) subGraph)
 
                in --
                   foldl foldFn initVal elims
