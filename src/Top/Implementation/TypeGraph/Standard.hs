@@ -75,6 +75,20 @@ addElim subs original unique (Tm.Elim can args) g0 =
   in --
      foldl foldFn initVal args
 
+addHead :: (TypeGraph graph info) => Maybe Tm.VAL -> Tm.Nom -> Tm.Head -> graph -> (Tm.Nom, VertexId, graph)
+addHead original unique (Tm.Var nm _) stg = --TODO handle twins?
+  let
+    vinit = VertexId unique
+  in
+    (mkFresh unique, vinit, addVertex vinit (VSourceVar nm, original) stg)
+--Metavariables are indexed by their names
+addHead original unique (Tm.Meta nm) stg =
+  let
+    vinit = VertexId nm
+  in
+    (unique, vinit, addVertex vinit (VSourceVar nm, original) stg)
+
+
 instance TypeGraph (StandardTypeGraph info) info where
    addTermGraph synonyms = rec
     where
@@ -107,7 +121,7 @@ instance TypeGraph (StandardTypeGraph info) info where
                Tm.N hd elims ->
                   let
                       vinit = VertexId unique
-                      initVal = (mkFresh unique, vinit, addVertex vinit (VSourceVar $ Tm.headVar hd, original) stg)
+                      initVal = addHead original unique hd stg
                       foldFn (ulast, vlast, glast) elim =
                         let
                            (unew, vnew, subGraph) = addElim synonyms original ulast elim glast
