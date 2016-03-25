@@ -10,7 +10,7 @@
 --
 -----------------------------------------------------------------------------
 
-module Top.Types.Primitive (HasTypes) where
+module Top.Types.Primitive (HasTypes(getTypes, changeTypes)) where
 
 import Data.Char (isDigit, isSpace)
 import Data.List (isPrefixOf, union)

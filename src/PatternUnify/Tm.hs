@@ -337,6 +337,7 @@ pattern FinElim m mz ms n = Elim CFinElim [m, mz, ms, n]
 pattern VecElim a m mn mc n = Elim CVecElim [a, m, mn, mc, n]
 pattern EqElim a m mr x y = Elim CEqElim [a, m, mr, x, y]
 
+pattern Con c = C c []
 
 var :: Nom -> VAL
 var x = N (Var x Only) []

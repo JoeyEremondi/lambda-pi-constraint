@@ -1,7 +1,8 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
@@ -9,6 +10,7 @@
 
 module Top.Constraint.Information where
 
+import qualified PatternUnify.Tm as Tm
 import Top.Types
 
 instance TypeConstraintInfo ()
@@ -17,8 +19,9 @@ instance PolyTypeConstraintInfo ()
 instance TypeConstraintInfo String
 instance PolyTypeConstraintInfo String
 
+
 class Show info => TypeConstraintInfo info where
-   equalityTypePair     :: (Tp, Tp)  -> info -> info
+   equalityTypePair     :: (Tm.VAL, Tm.VAL)  -> info -> info
    ambiguousPredicate   :: Predicate -> info -> info
    unresolvedPredicate  :: Predicate -> info -> info
    predicateArisingFrom :: (Predicate, info) -> info -> info
@@ -27,7 +30,7 @@ class Show info => TypeConstraintInfo info where
    neverDirective       :: (Predicate, info) -> info -> info
    closeDirective       :: (String, info)    -> info -> info
    disjointDirective    :: (String, info) -> (String, info) -> info -> info
-   
+
    -- default definitions
    equalityTypePair _     = id
    ambiguousPredicate _   = id
@@ -38,10 +41,10 @@ class Show info => TypeConstraintInfo info where
    neverDirective _       = id
    closeDirective _       = id
    disjointDirective _ _  = id
-   
+
 class TypeConstraintInfo info => PolyTypeConstraintInfo info where
-   instantiatedTypeScheme :: Forall (Qualification Predicates Tp) -> info -> info
-   skolemizedTypeScheme   :: (Tps, Forall (Qualification Predicates Tp)) -> info -> info
+   instantiatedTypeScheme :: Forall (Qualification Predicates Tm.VAL) -> info -> info
+   skolemizedTypeScheme   :: ([Tm.VAL], Forall (Qualification Predicates Tm.VAL)) -> info -> info
 
    -- default definition
    instantiatedTypeScheme _  = id
