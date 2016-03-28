@@ -1,13 +1,13 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
 --
 -- A representation of type schemes. A type scheme is a (qualified) type
--- with a number of quantifiers (foralls) in front of it. A partial mapping 
+-- with a number of quantifiers (foralls) in front of it. A partial mapping
 -- from type variable (Int) to their name (String) is preserved.
 --
 -----------------------------------------------------------------------------
@@ -23,11 +23,11 @@ import Top.Types.Unification
 import Top.Types.Classes
 import Data.List
 import qualified Data.Map as M
-
+{-
 ----------------------------------------------------------------------
 -- * Type schemes
 
--- |A type scheme consists of a list of quantified type variables, a finite map 
+-- |A type scheme consists of a list of quantified type variables, a finite map
 -- that partially maps these type variables to their original identifier, and a
 -- qualified type.
 type TpScheme = Forall QType
@@ -36,25 +36,25 @@ type QType    = Qualification Predicates Tp
 -- |A type class to convert something into a type scheme
 class IsTpScheme a where
    toTpScheme :: a -> TpScheme
-   
+
 instance IsTpScheme TpScheme where
    toTpScheme = id
 
 instance IsTpScheme QType where
    toTpScheme = noQuantifiers
-   
+
 instance IsTpScheme Tp where
    toTpScheme = noQuantifiers . ([] .=>.)
 
 ----------------------------------------------------------------------
 -- * Basic functionality for types and type schemes
 
--- |Determine the arity of a type scheme.    
+-- |Determine the arity of a type scheme.
 arityOfTpScheme :: TpScheme -> Int
 arityOfTpScheme = arityOfTp . unqualify . unquantify
 
 genericInstanceOf :: OrderedTypeSynonyms -> ClassEnvironment -> TpScheme ->  TpScheme -> Bool
-genericInstanceOf synonyms classes scheme1 scheme2 = 
+genericInstanceOf synonyms classes scheme1 scheme2 =
    let -- monomorphic type variables are treated as constants
        s1 = skolemizeFTV scheme1
        s2 = skolemizeFTV scheme2
@@ -71,13 +71,13 @@ isOverloaded :: TpScheme -> Bool
 isOverloaded = not . null . qualifiers . unquantify
 
 makeScheme :: [Int] -> Predicates -> Tp -> TpScheme
-makeScheme monos preds tp = 
+makeScheme monos preds tp =
    let is  = ftv tp \\ monos
        p   = any (`elem` is) . ftv
-   in quantify is (filter p preds .=>. tp)   
+   in quantify is (filter p preds .=>. tp)
 
 instantiateWithNameMap :: Int -> TpScheme -> (Int, Predicates, Tp) -- get rid of this function.
-instantiateWithNameMap unique (Quantification (qs,nm,qtp)) = 
+instantiateWithNameMap unique (Quantification (qs,nm,qtp)) =
    let sub = listToSubstitution [ (i,TCon s) | (i,s) <- nm, i `elem` qs ]
        (u, qtp') = instantiate unique (Quantification (qs \\ map fst nm, [], sub |-> qtp))
        (ps, tp) = split qtp'
@@ -88,7 +88,7 @@ instance (ShowQualifiers q, Show a) => ShowQuantors (Qualification q a)
 -- |A sigma is a type scheme or a type scheme variable
 type Scheme qs = Forall (Qualification qs Tp)
 
-data Sigma qs  = SigmaVar    SigmaVar 
+data Sigma qs  = SigmaVar    SigmaVar
                | SigmaScheme (Scheme qs)
 type SigmaVar  = Int
 
@@ -96,19 +96,19 @@ instance (ShowQualifiers qs, Substitutable qs) => Show (Sigma qs) where
    show (SigmaVar i)    = 's':show i
    show (SigmaScheme s) = show s
 
-instance Substitutable qs => Substitutable (Sigma qs) where   
-   _   |-> sv@(SigmaVar _) = sv 
-   sub |-> (SigmaScheme s) = SigmaScheme (sub |-> s)   
-   
+instance Substitutable qs => Substitutable (Sigma qs) where
+   _   |-> sv@(SigmaVar _) = sv
+   sub |-> (SigmaScheme s) = SigmaScheme (sub |-> s)
+
    ftv (SigmaVar _)    = []
-   ftv (SigmaScheme s) = ftv s 
+   ftv (SigmaScheme s) = ftv s
 
 instance (Substitutable qs, ShowQualifiers qs) => ShowQuantors (Sigma qs) where
    showQuantorsWithout options sigma =
       case sigma of
          SigmaVar _     -> show sigma
          SigmaScheme ts -> showQuantorsWithout options ts
-   
+
 -- |A substitution for type scheme variables
 type TpSchemeMap = M.Map SigmaVar TpScheme
 
@@ -116,9 +116,10 @@ type SigmaPreds = Sigma Predicates
 
 class IsSigmaPreds a where
    toSigmaPreds :: a -> SigmaPreds
-   
-instance IsSigmaPreds SigmaPreds where toSigmaPreds = id 
+
+instance IsSigmaPreds SigmaPreds where toSigmaPreds = id
 instance IsSigmaPreds TpScheme   where toSigmaPreds = SigmaScheme . toTpScheme
 instance IsSigmaPreds QType      where toSigmaPreds = SigmaScheme . toTpScheme
 instance IsSigmaPreds Tp         where toSigmaPreds = SigmaScheme . toTpScheme
 instance IsSigmaPreds Int        where toSigmaPreds = SigmaVar
+-}

@@ -10,7 +10,7 @@
 --
 -----------------------------------------------------------------------------
 
-module Top.Types.Quantification where
+module Top.Types.Quantification () where
 
 import Data.List
 import Data.Maybe
@@ -19,10 +19,11 @@ import Top.Types.Substitution
 import Utils (internalError)
 
 import qualified PatternUnify.Tm as Tm
+import qualified Unbound.Generics.LocallyNameless as Ln
 
 -----------------------------------------------------------------------------
 -- * Quantification
-
+{-
 newtype Quantification q a = Quantification ([Tm.Nom], QuantorMap, a)
 
 type QuantorMap = [(Tm.Nom, String)]
@@ -53,19 +54,19 @@ instance HasTypes a => HasTypes (Quantification q a) where
    changeTypes f (Quantification (is, qmap, a)) = Quantification (is, qmap, changeTypes f a)
 
 introduceTypeVariables :: Substitutable a => Tm.Nom -> Quantification q a -> (Tm.Nom, a)
-introduceTypeVariables i (Quantification (qs, _, a)) =
-   let sub = listToSubstitution (zip qs (map (Tm.var . show) [i..]))
-   in (i + length qs, sub |-> a)
+introduceTypeVariables i (Quantification (qs, _, a)) = error "introduceTypeVariables"
+  --  let sub = listToSubstitution (zip qs (map (Tm.var . Ln.s2n . show) [i..]))
+  --  in (i + length qs, sub |-> a)
 
 introduceSkolemConstants :: Substitutable a => Tm.Nom -> Quantification q a -> (Tm.Nom, a)
-introduceSkolemConstants i (Quantification (qs, _, a)) =
-   let sub = listToSubstitution (zip qs (map (makeSkolemConstant . Ln.s2n . show) [i..]))
-   in (i + length qs, sub |-> a)
+introduceSkolemConstants i (Quantification (qs, _, a)) = error "introduceSkolemConstants"
+  --  let sub = listToSubstitution (zip qs (map (makeSkolemConstant . Ln.s2n . show) [i..]))
+  --  in (i + length qs, sub |-> a)
 
-bindTypeVariables :: Substitutable a => [Int] -> a -> Quantification q a
+bindTypeVariables :: Substitutable a => [Tm.Nom] -> a -> Quantification q a
 bindTypeVariables is a = Quantification (is `intersect` ftv a, [], a)
 
-bindSkolemConstants :: HasSkolems a => [Int] -> a -> Quantification q a
+bindSkolemConstants :: HasSkolems a => [Tm.Nom] -> a -> Quantification q a
 bindSkolemConstants scs a =
    let scs'  = scs `union` allSkolems a
        skMap = [ (i, Tm.var i) | i <- scs' ]
@@ -83,7 +84,7 @@ type Forall = Quantification Universal
 instance Show Universal where
    show = const "forall"
 
-instantiate, skolemize :: Substitutable a => Int -> Forall a -> (Int, a)
+instantiate, skolemize :: Substitutable a => Tm.Nom -> Forall a -> (Tm.Nom, a)
 instantiate = introduceTypeVariables
 skolemize   = introduceSkolemConstants
 
@@ -94,10 +95,10 @@ generalize context a =
 generalizeAll :: Substitutable a => a -> Forall a
 generalizeAll a = quantify (ftv a) a
 
-quantify :: Substitutable a => [Int] -> a -> Forall a
+quantify :: Substitutable a => [Tm.Nom] -> a -> Forall a
 quantify = bindTypeVariables
 
-unskolemize :: HasSkolems a => [Int] -> a -> Forall a
+unskolemize :: HasSkolems a => [Tm.Nom] -> a -> Forall a
 unskolemize = bindSkolemConstants
 
 -----------------------------------------------------------------------------
@@ -109,14 +110,14 @@ type Exists = Quantification Existential
 instance Show Existential where
    show = const "exists"
 
-open, reveal :: Substitutable a => Int -> Exists a -> (Int, a)
+open, reveal :: Substitutable a => Tm.Nom -> Exists a -> (Tm.Nom, a)
 open   = introduceSkolemConstants
 reveal = introduceTypeVariables
 
-close :: HasSkolems a => [Int] -> a -> Exists a
+close :: HasSkolems a => [Tm.Nom] -> a -> Exists a
 close = bindSkolemConstants
 
-unreveal :: Substitutable a => [Int] -> a -> Exists a
+unreveal :: Substitutable a => [Tm.Nom] -> a -> Exists a
 unreveal = bindTypeVariables
 
 -----------------------------------------------------------------------------
@@ -125,10 +126,10 @@ unreveal = bindTypeVariables
 skolemPrefix :: String
 skolemPrefix = "_"
 
-makeSkolemConstant :: Int -> Tm.VAL
-makeSkolemConstant = Tm.Con . (skolemPrefix++) . show
+makeSkolemConstant :: Tm.Nom -> Tm.VAL
+makeSkolemConstant = error "makeSkolemConstant" --Tm.Con . (skolemPrefix++) . show
 
-fromSkolemString :: String -> Maybe Int
+fromSkolemString :: String -> Maybe Tm.Nom
 fromSkolemString s
    | skolemPrefix `isPrefixOf` s =
         Just (read (drop (length skolemPrefix) s))
@@ -140,8 +141,8 @@ skolemizeFTV a =
    in sub |-> a
 
 class HasSkolems a where
-   allSkolems    :: a -> [Int]
-   changeSkolems :: [(Int, Tm.VAL)] -> a -> a
+   allSkolems    :: a -> [Tm.Nom]
+   changeSkolems :: [(Tm.Nom, Tm.VAL)] -> a -> a
 
 instance HasSkolems Tm.VAL where
   --  allSkolems (TVar _)   = []
@@ -208,6 +209,7 @@ instance (Substitutable a, ShowQuantors a, Show q) => ShowQuantors (Quantificati
                       | otherwise =
                            let op (rest, donts) (i,n)
                                   | i `elem` qs = let ints = [1..] :: [Int]
+                                                      s :: Tm.Can
                                                       s = head [ n ++ extra
                                                                | extra <- "" : map show ints
                                                                , n ++ extra `notElem` donts
@@ -233,3 +235,4 @@ instance (Substitutable a, ShowQuantors a, Show q) => ShowQuantors (Quantificati
 variableList :: [String]
 variableList =  [ [x]        | x <- ['a'..'z'] ]
              ++ [ x:show i | i <- [1 :: Int ..], x <- ['a'..'z'] ]
+-}

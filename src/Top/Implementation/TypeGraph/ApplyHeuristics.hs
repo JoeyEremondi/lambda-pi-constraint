@@ -6,8 +6,7 @@
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
 -----------------------------------------------------------------------------
-
-module Top.Implementation.TypeGraph.ApplyHeuristics (applyHeuristics, predicatePath, expandPath) where
+module Top.Implementation.TypeGraph.ApplyHeuristics (applyHeuristics,  expandPath) where
 
 import Data.Graph (buildG, scc)
 import Data.List
@@ -19,11 +18,13 @@ import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.ClassMonadic
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
-import Top.Interface.Qualification hiding (contextReduction)
-import Top.Interface.TypeInference
+--import Top.Interface.Qualification hiding (contextReduction)
+--import Top.Interface.TypeInference
 import Top.Solver
 import Top.Types
 import Utils (internalError)
+
+import qualified PatternUnify.Tm as Tm
 
 type ErrorInfo info = ([EdgeId], info)
 
@@ -151,14 +152,14 @@ constantClashPaths (first:rest) =
   pathInGroup :: HasTypeGraph m info => [(VertexId, VertexInfo)] -> m [TypeGraphPath info]
   pathInGroup = errorPath . groupTheConstants . getConstants
 
-  getConstants :: [(VertexId, VertexInfo)] -> [(VertexId, String)]
+  getConstants :: [(VertexId, VertexInfo)] -> [(VertexId, Tm.Can)]
   getConstants vertices =
      [ (i, s  ) | (i, (VCon s  , _)) <- vertices ] ++
-     [ (i, "@") | (i, (VApp _ _, _)) <- vertices ]
+     error "getConst @ "--[ (i, "@") | (i, (VApp _ _, _)) <- vertices ]
 
   -- lists of vertex numbers with the same type constant
   -- (all vertices are in the same equivalence group)
-  groupTheConstants :: [(VertexId, String)] -> [[VertexId]]
+  groupTheConstants :: [(VertexId, Tm.Can)] -> [[VertexId]]
   groupTheConstants =
      sortBy (compare `on` length)
      .  map (map fst)
@@ -265,7 +266,7 @@ allSubPathsList childList vertex targets = rec S.empty vertex
          newPaths <- mapM f childTargets
          return (path :+: altList newPaths)
 
-      targetPairs :: [(VertexId, (VertexKind, Maybe Tp))] -> [(VertexId, [VertexId])]
+      targetPairs :: [(VertexId, (VertexKind, Maybe Tm.VAL))] -> [(VertexId, [VertexId])]
       targetPairs vs =
          let p (i, j) =  i `elem` map fst vs
                          && not (i `S.member` without || j `S.member` without)
@@ -315,9 +316,9 @@ impliedEdgeTable = insertPairs M.empty
 -------------------------------
 --
 
-newtype IntPair = HiddenIP { tupleFromIntPair :: (Int, Int) }
+newtype IntPair = HiddenIP { tupleFromIntPair :: (Tm.Nom, Tm.Nom) }
 
-intPair :: (Int, Int) -> IntPair
+intPair :: (Tm.Nom, Tm.Nom) -> IntPair
 intPair (x, y)
    | x <= y    = HiddenIP (x, y)
    | otherwise = HiddenIP (y, x)
@@ -340,51 +341,51 @@ lookupPair fm pair =
    let err = internalError "Top.TypeGraph.ApplyHeuristics" "lookupPair" "could not find implied edge while expanding"
    in M.findWithDefault err pair fm
 
--- move to another module
-predicatePath :: (HasQual m info, HasTypeGraph m info) => m (Path (EdgeId, PathStep info))
-predicatePath =
-   do ps       <- allQualifiers
-      simples  <- simplePredicates ps
-      makeList S.empty Empty simples
-
- where
-  simplePredicates ps =
-     do classEnv <- getClassEnvironment
-        syns     <- getTypeSynonyms
-        let reduced = fst (contextReduction syns classEnv ps)
-        return [ (s, VertexId i) | Predicate s (TVar i) <- reduced ]
-
-  makeList history path pairs =
-     do xs <- mapM (make history path) pairs
-        return (altList xs)
-
-  make history path (pClass, i)
-     | i `S.member` history = return Fail
-     | otherwise =
-          do classEnv <- getClassEnvironment
-             syns     <- getTypeSynonyms
-             vertices <- verticesInGroupOf i
-
-             -- vertices to inspect
-             let constants  = [ (vid, TCon s) | (vid, (VCon s, _)) <- vertices ]
-             applys <- let f i' = do tp <- typeFromTermGraph i'
-                                     return (i', tp)
-                       in mapM f [ i' | (i', (VApp _ _, _)) <- vertices ]
-
-             let f (vid, tp)
-                    | null errs = -- everything is okay: recursive call
-                         do let -- don't visit these vertices
-                                donts = S.fromList [ VertexId j | j <- ftv (map snd applys), j `notElem` ftv tp ]
-                            path'   <- allPathsListWithout history i [vid]
-                            simples <- simplePredicates reduced
-                            makeList (donts `S.union` newHistory) (path :+: path') simples
-
-                    | otherwise = -- this is an error path
-                         do path' <- allPathsListWithout history i [vid]
-                            return (path :+: path')
-
-                  where (reduced, errs) = contextReduction syns classEnv [Predicate pClass tp]
-                        newHistory      = S.fromList (map fst vertices) `S.union` history
-
-             xs <- mapM f (constants ++ applys)
-             return (altList xs)
+-- -- move to another module
+-- predicatePath :: ({-HasQual m info,-} HasTypeGraph m info) => m (Path (EdgeId, PathStep info))
+-- predicatePath =
+--    do ps       <- allQualifiers
+--       simples  <- simplePredicates ps
+--       makeList S.empty Empty simples
+ --
+ -- where
+ --  simplePredicates ps =
+ --     do classEnv <- getClassEnvironment
+ --        syns     <- getTypeSynonyms
+ --        let reduced = fst (contextReduction syns classEnv ps)
+ --        return [ (s, VertexId i) | Predicate s (TVar i) <- reduced ]
+ --
+ --  makeList history path pairs =
+ --     do xs <- mapM (make history path) pairs
+ --        return (altList xs)
+ --
+ --  make history path (pClass, i)
+ --     | i `S.member` history = return Fail
+ --     | otherwise =
+ --          do classEnv <- getClassEnvironment
+ --             syns     <- getTypeSynonyms
+ --             vertices <- verticesInGroupOf i
+ --
+ --             -- vertices to inspect
+ --             let constants  = [ (vid, TCon s) | (vid, (VCon s, _)) <- vertices ]
+ --             applys <- let f i' = do tp <- typeFromTermGraph i'
+ --                                     return (i', tp)
+ --                       in mapM f [ i' | (i', (VApp _ _, _)) <- vertices ]
+ --
+ --             let f (vid, tp)
+ --                    | null errs = -- everything is okay: recursive call
+ --                         do let -- don't visit these vertices
+ --                                donts = S.fromList [ VertexId j | j <- ftv (map snd applys), j `notElem` ftv tp ]
+ --                            path'   <- allPathsListWithout history i [vid]
+ --                            simples <- simplePredicates reduced
+ --                            makeList (donts `S.union` newHistory) (path :+: path') simples
+ --
+ --                    | otherwise = -- this is an error path
+ --                         do path' <- allPathsListWithout history i [vid]
+ --                            return (path :+: path')
+ --
+ --                  where (reduced, errs) = contextReduction syns classEnv [Predicate pClass tp]
+ --                        newHistory      = S.fromList (map fst vertices) `S.union` history
+ --
+ --             xs <- mapM f (constants ++ applys)
+ --             return (altList xs)

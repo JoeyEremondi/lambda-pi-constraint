@@ -2,7 +2,7 @@
            FunctionalDependencies, FlexibleInstances, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
@@ -19,7 +19,7 @@ import Top.Constraint.Information
 import Data.Function
 import Data.List (intersect, sortBy, partition, groupBy)
 import qualified Data.Map as M
-
+{-
 ------------------------------------------------------------------------
 -- (I)  Class name and (dedicated) deselect function
 
@@ -31,21 +31,21 @@ deTI = deselectFor ClassTI
 ------------------------------------------------------------------------
 -- (II)  Type class declaration
 
-class Monad m => HasTI m info | m -> info where  
+class Monad m => HasTI m info | m -> info where
 
    -- unique counter
    getUnique           :: m Int
-   setUnique           :: Int -> m ()  
+   setUnique           :: Int -> m ()
    -- type synonyms
    setTypeSynonyms     :: OrderedTypeSynonyms -> m ()
-   getTypeSynonyms     :: m OrderedTypeSynonyms 
+   getTypeSynonyms     :: m OrderedTypeSynonyms
    -- skolem variables
-   getSkolems          :: m [([Int], info, Tps)] 
-   setSkolems          :: [([Int], info, Tps)] -> m ()  
+   getSkolems          :: m [([Int], info, Tps)]
+   setSkolems          :: [([Int], info, Tps)] -> m ()
    -- type scheme map
    allTypeSchemes   :: m (M.Map Int (Scheme Predicates))
    getTypeScheme    :: Int -> m (Scheme Predicates)
-   storeTypeScheme  :: Int -> Scheme Predicates -> m ()  
+   storeTypeScheme  :: Int -> Scheme Predicates -> m ()
 
 ------------------------------------------------------------------------
 -- (III)  Instance for solver monad
@@ -53,7 +53,7 @@ class Monad m => HasTI m info | m -> info where
 instance ( Monad m
          , Embedded ClassTI (s (StateFixT s m)) t
          , HasTI (Select t (StateFixT s m)) info
-         ) => 
+         ) =>
            HasTI (StateFixT s m) info where
 
    getUnique           = deTI getUnique
@@ -68,29 +68,29 @@ instance ( Monad m
    allTypeSchemes      = deTI allTypeSchemes
    getTypeScheme       = deTI . getTypeScheme
    storeTypeScheme i   = deTI . storeTypeScheme i
-   
+
 ------------------------------------------------------------------------
 -- (IV)  Additional functions
 
 nextUnique :: HasTI m info => m Int
-nextUnique = 
+nextUnique =
    do i <- getUnique
       setUnique (i+1)
       return i
 
 zipWithUniques :: HasTI m info => (Int -> a -> b) -> [a] -> m [b]
-zipWithUniques f as = 
+zipWithUniques f as =
    do i <- getUnique
       setUnique (i+length as)
-      return (zipWith f [i..] as) 
+      return (zipWith f [i..] as)
 {-
 addToProve :: HasTI m info => Predicate -> info -> m ()
-addToProve p info = 
+addToProve p info =
    do qm <- getQM
       putQM (qm { globalQualifiers = (p, info) : globalQualifiers qm })
 
 addToAssume :: HasTI m info => Predicate -> info -> m ()
-addToAssume p info = 
+addToAssume p info =
    do qm <- getQM
       putQM (qm { globalAssumptions = (p, info) : globalAssumptions qm })
 
@@ -100,13 +100,13 @@ generalizeWithPreds monos tp =
       let as = ftv tp \\ ftv monos
           ps = [ p | (p, _) <- globalQualifiers qm, any (`elem` as) (ftv p) ]
       return (generalize monos (ps .=>. tp))
-      
+
 type NeverDirective    info = (Predicate, info)
 type CloseDirective    info = (String, info)
 type DisjointDirective info = ([String], info)
 type DefaultDirective  info = (String, (Tps, info))
 
-data TypeClassDirectives info = TypeClassDirectives 
+data TypeClassDirectives info = TypeClassDirectives
    { neverDirectives    :: [NeverDirective info]
    , closeDirectives    :: [CloseDirective info]
    , disjointDirectives :: [DisjointDirective info]
@@ -114,7 +114,7 @@ data TypeClassDirectives info = TypeClassDirectives
    }
 
 instance Show info => Show (TypeClassDirectives info) where
-   show tcd = 
+   show tcd =
       let f title pf xs
              | null xs   = ""
              | otherwise = "\n   "++title++": "++concat (intersperse "; " (map pf xs))
@@ -125,15 +125,15 @@ instance Show info => Show (TypeClassDirectives info) where
       in f "never"    p1 (neverDirectives tcd)    ++
          f "close"    p2 (closeDirectives tcd)    ++
          f "disjoint" p3 (disjointDirectives tcd) ++
-         f "default"  p4 (defaultDirectives tcd) 
-         
+         f "default"  p4 (defaultDirectives tcd)
+
 instance Empty (TypeClassDirectives info) where
    empty = TypeClassDirectives { neverDirectives = [], closeDirectives = [], disjointDirectives = [], defaultDirectives = [] }
 
 addNeverDirective :: HasTI m info => NeverDirective info -> m ()
-addNeverDirective x = 
+addNeverDirective x =
    changeTCD (\s -> s { neverDirectives = x : neverDirectives s })
-  
+
 addCloseDirective :: HasTI m info => CloseDirective info -> m ()
 addCloseDirective x =
    changeTCD (\s -> s { closeDirectives = x : closeDirectives s })
@@ -145,28 +145,28 @@ addDisjointDirective x =
 addDefaultDirective :: HasTI m info => DefaultDirective info -> m ()
 addDefaultDirective x =
    changeTCD (\s -> s { defaultDirectives = x : defaultDirectives s }) -}
-      
+
 -- * Instantiation and skolemization
 
 addSkolem  :: HasTI m info => ([Int], info, Tps) -> m ()
-addSkolem x = 
+addSkolem x =
    do xs <- getSkolems
       setSkolems (x:xs)
-      
+
 instantiateM :: (HasTI m info, Substitutable a) => Forall a -> m a
 instantiateM fa =
    do unique <- getUnique
       let (newUnique, a) = instantiate unique fa
       setUnique newUnique
       return a
-      
+
 skolemizeTruly :: (HasTI m info, Substitutable a) => Forall a -> m a
 skolemizeTruly fa =
    do unique <- getUnique
       let (newUnique, a) = skolemize unique fa
       setUnique newUnique
       return a
-      
+
 skolemizeFaked :: (HasTI m info, Substitutable a) => info -> Tps -> Forall a -> m a
 skolemizeFaked info monos fa =
    do unique <- getUnique
@@ -180,23 +180,23 @@ getSkolemSubstitution :: HasTI m info => m MapSubstitution
 getSkolemSubstitution =
    do skcs <- getSkolems
       return $ listToSubstitution [ (i, makeSkolemConstant i) | (is, _, _) <- skcs, i <- is ]
-  
+
 -- |First, make the substitution consistent. Then check the skolem constants(?)
 makeConsistent :: (HasTI m info, HasBasic m info, HasSubst m info) => m ()
 makeConsistent = makeSubstConsistent -- >> checkSkolems
 
 checkSkolems :: (HasTI m info, HasSubst m info, HasBasic m info, TypeConstraintInfo info) => m ()
-checkSkolems = 
+checkSkolems =
    do xs    <- getSkolems
-      list1 <- let f (is, info, monos) = 
+      list1 <- let f (is, info, monos) =
                       do tps <- mapM findSubstForVar is
                          return (zip is tps, (info, monos))
                in mapM f xs
-      
+
       -- skolem constant versus type constant
       let (list2, errs) = partition (all (isTVar . snd) . fst) list1
       mapM_ (addLabeledError skolemVersusConstantLabel . fst . snd) errs
-      
+
       -- skolem constant versus a different skolem constant
       let problems = filter ((>1) . length)
                    . groupBy ((==) `on` fst)
@@ -221,10 +221,10 @@ checkSkolems =
       setSkolems new
 
 skolemVersusConstantLabel :: ErrorLabel
-skolemVersusConstantLabel = ErrorLabel "skolem versus constant" 
+skolemVersusConstantLabel = ErrorLabel "skolem versus constant"
 
 skolemVersusSkolemLabel :: ErrorLabel
-skolemVersusSkolemLabel = ErrorLabel "skolem versus skolem" 
+skolemVersusSkolemLabel = ErrorLabel "skolem versus skolem"
 
 escapingSkolemLabel :: ErrorLabel
 escapingSkolemLabel = ErrorLabel "escaping skolem"
@@ -239,33 +239,35 @@ findScheme = replaceSchemeVar
 ---------------------------------------------------------------------
 -- Global qualifier map
 {-
-data GlobalQM q info = 
+data GlobalQM q info =
    GlobalQM
       { globalQualifiers    :: [(q, info)]
       , globalGeneralizedQs :: [(q, info)]
       , globalAssumptions   :: [(q, info)]
       }
-     
+
 instance (Show qs, Show info) => Show (GlobalQM qs info) where
-   show qm = 
+   show qm =
       let f (s, sf)
              | null ps   = []
              | otherwise = ["   " ++ s ++ ": " ++ foldr1 (\x y -> x++", "++y) (map g ps)]
-            where ps = sf qm 
+            where ps = sf qm
           g (p, info) = show p ++ "{" ++ show info ++ "}"
-      in unlines $ concatMap f 
+      in unlines $ concatMap f
             [ ("qualifiers"            , globalQualifiers)
             , ("generalized qualifiers", globalGeneralizedQs)
             , ("assumptions"           , globalAssumptions)
             ]
- 
+
 instance Empty (GlobalQM qs info) where
    empty = GlobalQM { globalQualifiers = [], globalGeneralizedQs = [], globalAssumptions = [] }
-   
+
 instance Substitutable qs => Substitutable (GlobalQM qs info) where
-   sub |-> (GlobalQM as bs cs) = 
+   sub |-> (GlobalQM as bs cs) =
       let as' = [ (sub |-> a, info) | (a, info) <- as ]
           bs' = [ (sub |-> b, info) | (b, info) <- bs ]
           cs' = [ (sub |-> c, info) | (c, info) <- cs ]
       in GlobalQM as' bs' cs'
    ftv (GlobalQM as bs cs) = ftv (map fst $ as ++ bs ++ cs) -}
+
+-}

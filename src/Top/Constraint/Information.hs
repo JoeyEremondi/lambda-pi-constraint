@@ -13,6 +13,7 @@ module Top.Constraint.Information where
 import qualified PatternUnify.Tm as Tm
 import Top.Types
 
+{-
 instance TypeConstraintInfo ()
 instance PolyTypeConstraintInfo ()
 
@@ -49,3 +50,4 @@ class TypeConstraintInfo info => PolyTypeConstraintInfo info where
    -- default definition
    instantiatedTypeScheme _  = id
    skolemizedTypeScheme _    = id
+-}

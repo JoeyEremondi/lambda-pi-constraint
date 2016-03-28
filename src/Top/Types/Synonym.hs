@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  portable
@@ -8,21 +8,21 @@
 -- This module contains type synonyms to represent type synonyms. A collection
 -- of type synonyms can always be ordered, since (mutually) recursive type
 -- synonyms are not permitted. The ordering of type synonyms must be determined
--- to find a minimal number of unfold steps to make two types syntactically 
+-- to find a minimal number of unfold steps to make two types syntactically
 -- equivalent.
 --
 -----------------------------------------------------------------------------
 
-module Top.Types.Synonym where
+module Top.Types.Synonym () where
 
+import Data.Graph (buildG, scc)
+import qualified Data.Map as M
+import Data.Maybe
+import Data.Tree (flatten)
 import Top.Types.Primitive
 import Top.Types.Substitution hiding (lookupInt)
 import Utils (internalError)
-import Data.Maybe
-import Data.Graph (scc, buildG)
-import Data.Tree (flatten)
-import qualified Data.Map as M
-
+{-
 ----------------------------------------------------------------------
 -- * Type synonyms
 
@@ -30,7 +30,7 @@ import qualified Data.Map as M
 -- strings (the name of the type synonym) to pairs that have an int
 -- (the number of arguments of the type synonym) and a function.
 type TypeSynonyms        = M.Map String (Int, Tps -> Tp)
--- |An ordering of type synonyms maps a name of a type synonym to 
+-- |An ordering of type synonyms maps a name of a type synonym to
 -- a position in the ordering.
 type TypeSynonymOrdering = M.Map String Int
 -- |An (unordered) collection of type synonyms, together with an ordering.
@@ -69,7 +69,7 @@ getTypeSynonymOrdering synonyms =
                                       Nothing -> id
                       in foldr add es cs
                in M.foldrWithKey op [] synonyms
-       
+
        graph = buildG (0, M.size synonyms - 1) edges
        list  = map flatten (scc graph)
 
@@ -84,10 +84,10 @@ getTypeSynonymOrdering synonyms =
       (ordering, recursive)
 
 isPhantomTypeSynonym :: OrderedTypeSynonyms -> String -> Bool
-isPhantomTypeSynonym (_, xs) s = 
-   case M.lookup s xs of 
+isPhantomTypeSynonym (_, xs) s =
+   case M.lookup s xs of
       Nothing     -> False
-      Just (i, f) -> 
+      Just (i, f) ->
          let is   = take i [0..]
              tp   = f (map TVar is)
              free = ftv tp
@@ -109,7 +109,7 @@ expandTypeConstructor synonyms tp =
 
 -- |Fully expand the top-level type constructor.
 expandToplevelTC :: OrderedTypeSynonyms -> Tp -> Maybe Tp
-expandToplevelTC (_, synonyms) = 
+expandToplevelTC (_, synonyms) =
    fmap (expandTypeConstructor synonyms) . expandTypeConstructorOneStep synonyms
 
 -- |Try to expand the top-level type constructor one step.
@@ -140,3 +140,5 @@ expandOneStepOrdered (ordering, synonyms) (t1,t2) =
          (Just _ , Nothing) -> Just (expand t1, t2)
          (Nothing, Just _ ) -> Just (t1, expand t2)
          _                  -> Nothing
+
+-}

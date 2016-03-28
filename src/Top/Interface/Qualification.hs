@@ -17,7 +17,7 @@ import Top.Interface.Substitution
 import Top.Monad.Select
 import Top.Monad.StateFix
 import Top.Types hiding (contextReduction)
-
+{-
 ------------------------------------------------------------------------
 -- (I)  Class name and (dedicated) deselect function
 
@@ -125,3 +125,4 @@ improveQualifiersFix normal =
          _  -> do mapM_ (\(info, t1, t2) -> unifyTerms info t1 t2) improvements
                   makeSubstConsistent
                   improveQualifiersFix normal
+-}

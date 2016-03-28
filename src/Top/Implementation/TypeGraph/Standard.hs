@@ -15,7 +15,6 @@ import Data.List (nub)
 import qualified Data.Map as M
 import Data.Maybe
 import qualified PatternUnify.Tm as Tm
-import qualified PatternUnify.Tm as Tm
 import Top.Implementation.General
 import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.Class
