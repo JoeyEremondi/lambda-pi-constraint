@@ -16,6 +16,8 @@ import Top.Types
 import Top.Solver
 import Utils (internalError)
 
+import qualified PatternUnify.Tm as Tm
+
 -----------------------------------------------------------------------------
 
 type PathHeuristics info = Path (EdgeId, info) -> [Heuristic info]
@@ -87,9 +89,9 @@ info2ToEdgeNr (EdgeId _ _ i, _) = i
 -----------------------------------------------------------------------------
 
 class HasTwoTypes a where
-   getTwoTypes :: a -> (Tp, Tp)
+   getTwoTypes :: a -> (Tm.VAL, Tm.VAL)
 
-getSubstitutedTypes :: (HasTypeGraph m info, HasTwoTypes info) => info -> m (Maybe Tp, Maybe Tp)
+getSubstitutedTypes :: (HasTypeGraph m info, HasTwoTypes info) => info -> m (Maybe Tm.VAL, Maybe Tm.VAL)
 getSubstitutedTypes info =
    do let (t1,t2) = getTwoTypes info
       mt1 <- substituteTypeSafe t1
