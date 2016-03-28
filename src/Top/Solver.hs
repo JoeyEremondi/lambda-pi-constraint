@@ -1,13 +1,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
--- 
+--
 --   Maintainer   :  helium@cs.uu.nl
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
 -----------------------------------------------------------------------------
 
-module Top.Solver 
+module Top.Solver
    ( module Top.Solver
    , module Control.Monad.Writer
    ) where
@@ -24,6 +24,8 @@ import Top.Constraint
 import qualified Data.Map as M
 import Top.Constraint.Information
 import Control.Monad.Writer
+import qualified Unbound.Generics.LocallyNameless as Ln
+import qualified PatternUnify.Tm as Tm
 
 data ConstraintSolver constraint info = ConstraintSolver (SolveOptions -> [constraint] -> (SolveResult info, LogEntries))
 
@@ -37,12 +39,12 @@ solve options constraints (ConstraintSolver f) = f options constraints
 
 ---
 
-onlySolveConstraints :: 
-   ( HasTI m info
-   , HasBasic m info
+onlySolveConstraints ::
+   ( -- HasTI m info
+   HasBasic m info
    , HasSubst m info
-   , HasQual m info
-   , TypeConstraintInfo info
+   --, HasQual m info
+   --, TypeConstraintInfo info
    , Solvable constraint m
    , MonadState s m
    , SolveState s
@@ -50,81 +52,83 @@ onlySolveConstraints ::
    ) =>
      [constraint] -> m ()
 
-onlySolveConstraints cs = 
+onlySolveConstraints cs =
    do pushConstraints (liftConstraints cs)
       logState
       startSolving
-      makeConsistent
-      checkSkolems
-      ambiguities
+      -- makeConsistent
+      -- checkSkolems
+      -- ambiguities
       logState
 
-solveConstraints :: 
-   ( HasTI m info
-   , HasBasic m info
+solveConstraints ::
+   ( --HasTI m info
+   HasBasic m info
    , HasSubst m info
-   , HasQual m info
-   , TypeConstraintInfo info
+  --  , HasQual m info
+  --  , TypeConstraintInfo info
    , Solvable constraint m
    , MonadState s m
    , SolveState s
    , MonadWriter LogEntries m
+   , Ln.Fresh m
    ) =>
      SolveOptions ->
-     [constraint] -> 
+     [constraint] ->
      m (SolveResult info)
 
-solveConstraints options cs = 
+solveConstraints options cs =
    do initialize cs options
       onlySolveConstraints cs
       solveResult
- 
-solveResult :: 
+
+solveResult ::
    ( HasBasic m info
-   , HasTI m info
+   --, HasTI m info
    , HasSubst m info
-   , HasQual m info
-   , TypeConstraintInfo info
-   ) => 
-     m (SolveResult info)            
-solveResult = 
-   do uniqueAtEnd <- getUnique
+   , Ln.Fresh m
+  --  , HasQual m info
+  --  , TypeConstraintInfo info
+   ) =>
+     m (SolveResult info)
+solveResult =
+   do uniqueAtEnd <- Ln.fresh $ Ln.s2n "uniqueAtEnd"
       errs        <- getLabeledErrors
-      qs          <- allQualifiers
+      --qs          <- allQualifiers
       sub         <- fixpointSubst
-      ts          <- allTypeSchemes        
-      return (SolveResult uniqueAtEnd sub ts qs errs)
+      --ts          <- allTypeSchemes
+      return (SolveResult uniqueAtEnd sub {-ts qs-} errs)
 
 ----------------------------------------------------------------------
 -- Solve type constraints
 
-data SolveResult info =  
-   SolveResult { uniqueFromResult       :: Int
+data SolveResult info =
+   SolveResult { uniqueFromResult       :: Tm.Nom
                , substitutionFromResult :: FixpointSubstitution
-               , typeschemesFromResult  :: M.Map Int (Scheme Predicates)
-               , qualifiersFromResult   :: Predicates
+               --, typeschemesFromResult  :: M.Map Int (Scheme Predicates)
+               --, qualifiersFromResult   :: Predicates
                , errorsFromResult       :: [(info, ErrorLabel)]
                }
 
-instance Empty (SolveResult info) where 
-   empty = emptyResult 0
+instance Empty (SolveResult info) where
+   empty = emptyResult $ error "Empty inst"
 
-emptyResult :: Int -> SolveResult info
-emptyResult unique = SolveResult unique emptyFPS M.empty empty []
+emptyResult :: Tm.Nom -> SolveResult info
+emptyResult unique = SolveResult unique emptyFPS {-M.empty empty-} []
 
 combineResults :: SolveResult info -> SolveResult info -> SolveResult info
-combineResults (SolveResult _ s1 ts1 qs1 er1) (SolveResult unique s2 ts2 qs2 er2) = 
-   SolveResult unique (disjointFPS s1 s2) (ts1 `M.union` ts2) (qs1 ++ qs2) (er1++er2)
+combineResults (SolveResult _ s1 {-ts1 qs1-} er1) (SolveResult unique s2 {-ts2 qs2-} er2) =
+   SolveResult unique (disjointFPS s1 s2) {-(ts1 `M.union` ts2) (qs1 ++ qs2)-} (er1++er2)
 
---------------------------------------------------------------------------------  
+--------------------------------------------------------------------------------
 
-data SolveOptions = SolveOptions_ 
-   { 
+data SolveOptions = SolveOptions_
+   {
      -- initial values
      uniqueCounter    :: Int
-   , typeSynonyms     :: OrderedTypeSynonyms
-   , classEnvironment :: ClassEnvironment
-   
+   , typeSynonyms     :: Tm.Subs
+   --, classEnvironment :: ClassEnvironment
+
    -- optional settings
    , setStopAfterFirstError :: Bool -- see Basic
    , setCheckConditions     :: Bool -- see Basic
@@ -133,23 +137,23 @@ data SolveOptions = SolveOptions_
 solveOptions :: SolveOptions
 solveOptions = SolveOptions_
    { uniqueCounter          = -1
-   , typeSynonyms           = noOrderedTypeSynonyms
-   , classEnvironment       = standardClasses
+   , typeSynonyms           = (error "noOrdered") --noOrderedTypeSynonyms
+   --, classEnvironment       = standardClasses
    , setStopAfterFirstError = currentValue stopOption
    , setCheckConditions     = currentValue checkOption
-   } 
+   }
 
-initialize :: (HasBasic m info, HasQual m info, HasTI m info, Substitutable a) => a -> SolveOptions -> m ()
-initialize cs options = 
-   do setUnique           unique
-      setTypeSynonyms     (typeSynonyms options)
-      setClassEnvironment (classEnvironment options)
+initialize :: (HasBasic m info, {-HasQual m info, HasTI m info,-} Substitutable a) => a -> SolveOptions -> m ()
+initialize cs options =
+   do --setUnique           unique
+      --setTypeSynonyms     (typeSynonyms options)
+      --setClassEnvironment (classEnvironment options)
       setOption stopAfterFirstError (setStopAfterFirstError options)
       setOption checkConditions     (setCheckConditions options)
- where
-   unique
-      | uniqueCounter options < 0 = 1 + maximum (-1 : ftv cs) 
-      | otherwise                 = uniqueCounter options
+ -- where
+ --   unique
+ --      | uniqueCounter options < 0 = 1 + maximum (-1 : ftv cs)
+ --      | otherwise                 = uniqueCounter options
 
 ----------------------
 -- Basic Monad
@@ -176,7 +180,7 @@ instance Show LogEntry where
    show = msg
 
 instance Show LogEntries where
-   show (LogEntries f) = unlines (map show (f [])) 
+   show (LogEntries f) = unlines (map show (f []))
 
 logMsg :: MonadWriter LogEntries m => String -> m ()
 logMsg = logMsgPrio 5
@@ -186,9 +190,9 @@ logMsgPrio i s =
    let entry = LogEntry { priority = i, msg = s }
    in tell (LogEntries (entry:))
 
--- |Print the current state and add this as a debug message. 
+-- |Print the current state and add this as a debug message.
 logState :: (MonadState s m, SolveState s, MonadWriter LogEntries m) => m ()
-logState = 
+logState =
    do xs <- allStates
       ys <- allOptions
       let hline        = replicate 80 '-'
