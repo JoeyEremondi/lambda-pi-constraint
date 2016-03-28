@@ -23,8 +23,6 @@ import Top.Types
 import qualified Unbound.Generics.LocallyNameless as Ln
 import Utils (internalError)
 
-import qualified PatternUnify.Context as Ctx
-
 import Data.Foldable (foldlM)
 
 data StandardTypeGraph info = STG
@@ -307,17 +305,7 @@ addPossibleInconsistentGroup :: VertexId -> StandardTypeGraph info -> StandardTy
 addPossibleInconsistentGroup vid stg = stg { possibleErrors = vid : possibleErrors stg }
 
 
-addEqn
-  :: (Ln.Fresh m)
-  => info -> Ctx.Equation
-  -> StandardTypeGraph info
-  -> m (StandardTypeGraph info)
-addEqn info (Ctx.EQN _ v1 _ v2) stg = do
-    (var1, g1) <-  addTermGraph M.empty (Ln.s2n "node") v1 stg
-    (var2, g2) <-  addTermGraph M.empty (Ln.s2n "node") v2 stg
-    edgeNr <- Ln.fresh $ Ln.s2n "edge"
-    let ourEdge = EdgeId var1 var2 $ EdgeNrX edgeNr
-    return $ addEdge ourEdge info g2
+
 
 -- addTermGraphM :: (Ln.Fresh m) => Tm.Subs -> Tm.Nom -> Tm.VAL -> StandardTypeGraph info -> m (Tm.Nom, VertexId, StandardTypeGraph info)
 -- addTermGraphM synonyms unique tp stg =
@@ -367,3 +355,15 @@ setPathHeuristics f stg = stg {typegraphHeuristics = f}
 
 getPathHeuristics :: StandardTypeGraph info -> Path (EdgeId, info) -> [Heuristic info]
 getPathHeuristics = typegraphHeuristics -}
+
+addEqn
+  :: (Ln.Fresh m)
+  => info -> (Tm.VAL, Tm.VAL)
+  -> StandardTypeGraph info
+  -> m (StandardTypeGraph info)
+addEqn info (v1, v2) stg = do
+    (var1, g1) <-  addTermGraph M.empty (Ln.s2n "node") v1 stg
+    (var2, g2) <-  addTermGraph M.empty (Ln.s2n "node") v2 stg
+    edgeNr <- Ln.fresh $ Ln.s2n "edge"
+    let ourEdge = EdgeId var1 var2 $ EdgeNrX edgeNr
+    return $ addEdge ourEdge info g2

@@ -57,11 +57,11 @@ solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
     (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
-       (runContextual (B0, map Right es, error "initial problem ID") $ do
+       (runContextual (B0, map Right es, error "initial problem ID", error "emptyGraph") $ do
           initialise
           ambulando [] Map.empty
           validate (const True))  --Make sure we don't crash
-    (lcx,rcx,lastProb) = ctx
+    (lcx,rcx,lastProb,finalGraph) = ctx
     allEntries = lcx ++ (Either.rights rcx)
     depGraph = problemDependenceGraph allEntries es
     leadingToList = initialsDependingOn depGraph (Maybe.catMaybes $ map getIdent es) [lastProb]
@@ -135,7 +135,7 @@ initialsDependingOn (pendGraph, vertToInfo, infoToVert) initialIdents targetIden
 
 
 getContextErrors :: [Entry] -> Context -> Either [(ProbId, Err)] ((), Context)
-getContextErrors startEntries cx@(lcx, rcx, _) = do
+getContextErrors startEntries cx@(lcx, rcx, _, _) = do
   let leftErrors = getErrorPairs (trail lcx)
       rightErrors = getErrorPairs (Either.rights rcx)
   case (leftErrors ++ rightErrors) of
@@ -172,7 +172,7 @@ runTest q es = do
                    putStrLn $ "Initial context:\n" ++
                                 render (runPretty (prettyEntries es))
 
-                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID") $
+                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID", error "typeGraph 2") $
                                        (do
                                          initialise
                                          ambulando [] Map.empty

@@ -42,6 +42,10 @@ import Debug.Trace (trace)
 
 import Data.List (union)
 
+import qualified Top.Implementation.TypeGraph.Standard as TG
+
+import qualified Top.Implementation.TypeGraph.ClassMonadic as CM
+
 data Dec = HOLE | DEFN VAL
   deriving (Show, Generic)
 
@@ -156,7 +160,7 @@ instance Pretty Entry where
 
 type ContextL  = Bwd Entry
 type ContextR  = [Either Subs Entry]
-type Context   = (ContextL, ContextR, ProbId)
+type Context   = (ContextL, ContextR, ProbId, TG.StandardTypeGraph ())
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -182,7 +186,7 @@ instance Pretty Param where
 type Params  = [(Nom, Param)]
 
 instance Pretty Context where
-    pretty (cl, cr, _) =  pair <$>  (prettyEntries (trail cl)) <*>
+    pretty (cl, cr, _, _) =  pair <$>  (prettyEntries (trail cl)) <*>
                                ( vcat <$> (mapM f cr) )
       where
         pair cl' cr' = cl' $+$ text "*" $+$ cr'
@@ -220,6 +224,14 @@ newtype Contextual a = Contextual { unContextual ::
                 MonadState Context, MonadReader Params,
                 MonadPlus, Alternative)
 
+
+instance CM.HasTG Contextual () where
+  withTypeGraph f = do
+    ourGraph <- getGraph
+    let (ret, newGraph) = f ourGraph
+    setGraph newGraph
+    return ret
+
 ctrace :: String -> Contextual ()
 ctrace s = do
     cx    <- get
@@ -232,10 +244,10 @@ runContextual cx =
    runIdentity . flip runStateT cx . runFreshMT . runExceptT . flip runReaderT [] . unContextual
 
 modifyL :: (ContextL -> ContextL) -> Contextual ()
-modifyL f = modify (\ (x, y, pid) -> (f x, y, pid))
+modifyL f = modify (\ (x, y, pid, gr) -> (f x, y, pid, gr))
 
 modifyR :: (ContextR -> ContextR) -> Contextual ()
-modifyR f = modify (\ (x, y, pid) -> (x, f y, pid))
+modifyR f = modify (\ (x, y, pid, gr) -> (x, f y, pid, gr))
 
 pushL :: Entry -> Contextual ()
 pushL e = --trace ("Push left " ++ prettyString e) $
@@ -248,7 +260,10 @@ pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
   modifyR (Right e :)
 
 setProblem :: ProbId -> Contextual ()
-setProblem pid = modify (\ (x, y, _) -> (x, y, pid))
+setProblem pid = modify (\ (x, y, _, z) -> (x, y, pid, z))
+
+setGraph :: TG.StandardTypeGraph () -> Contextual ()
+setGraph g = modify (\ (x, y, z, _) -> (x, y, z, g))
 
 pushSubs :: Subs -> Contextual ()
 pushSubs n   =
@@ -273,10 +288,13 @@ popR = do
         []          -> return Nothing
 
 getL :: MonadState Context m => m ContextL
-getL = gets (\(x,_,_) -> x)
+getL = gets (\(x,_,_,_) -> x)
 
 getR :: Contextual ContextR
-getR = gets (\(_,x,_) -> x)
+getR = gets (\(_,x,_,_) -> x)
+
+getGraph :: Contextual (TG.StandardTypeGraph ())
+getGraph = gets (\(_,_,_,g) -> g)
 
 putL :: ContextL -> Contextual ()
 putL x = modifyL (const x)
@@ -352,3 +370,7 @@ metaValue x = look =<< getL
     look (cx  :< E y _ HOLE)  | x == y     = return $ meta x
                            | otherwise  = look cx
     look _ = undefined
+
+
+
+addEqn info (EQN _ v1 _ v2) stg = TG.addEqn info (v1, v2) stg
