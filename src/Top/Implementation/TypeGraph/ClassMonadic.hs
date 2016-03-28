@@ -23,10 +23,11 @@ import Top.Interface.Basic
 import Top.Interface.Qualification
 import Top.Interface.TypeInference
 import Top.Solver
+import qualified Unbound.Generics.LocallyNameless as Ln
 
-class (HasBasic m info, HasTI m info, HasQual m info, HasTG m info, MonadWriter LogEntries m, Show info) => HasTypeGraph m info | m -> info
+class (HasBasic m info, {-HasTI m info, HasQual m info,-} HasTG m info, MonadWriter LogEntries m, Show info) => HasTypeGraph m info | m -> info
 
-instance (HasBasic m info, HasTI m info, HasQual m info, HasTG m info, MonadWriter LogEntries m, Show info) => HasTypeGraph m info
+instance (HasBasic m info, {-HasTI m info, HasQual m info,-} HasTG m info, MonadWriter LogEntries m, Show info) => HasTypeGraph m info
 
 class Monad m => HasTG m info | m -> info where
    withTypeGraph :: (forall graph . TG.TypeGraph graph info => graph -> (a, graph)) -> m a
@@ -39,14 +40,14 @@ changeTypeGraph f = withTypeGraph (\g -> ((), f g))
 
 -- construct a type graph
 
-addTermGraph :: HasTypeGraph m info => Tm.VAL -> m VertexId
+addTermGraph :: (HasTypeGraph m info, Ln.Fresh m) => Tm.VAL -> m VertexId
 addTermGraph tp =
-   do unique   <- getUnique
-      synonyms <- getTypeSynonyms
-      (newUnique, vid) <- withTypeGraph
-         (\graph -> let (u, v, g) = TG.addTermGraph synonyms unique tp graph
-                    in ((u, v), g))
-      setUnique newUnique
+   do unique <- Ln.fresh $ Ln.s2n "addTermGraph"
+      --synonyms <- getTypeSynonyms
+      (vid) <- withTypeGraph
+         $ \graph -> Ln.runFreshM $ TG.addTermGraph M.empty (Ln.s2n "addTerm") tp graph
+
+      --setUnique newUnique
       return vid
 
 addVertex :: HasTypeGraph m info => VertexId -> VertexInfo -> m ()
@@ -56,7 +57,8 @@ addEdge :: HasTypeGraph m info => EdgeId -> info -> m ()
 addEdge edgeId info = changeTypeGraph (TG.addEdge edgeId info)
 
 addNewEdge :: HasTypeGraph m info => (VertexId, VertexId) -> info -> m ()
-addNewEdge pair info = changeTypeGraph (TG.addNewEdge pair info)
+addNewEdge pair info = do
+  changeTypeGraph (\gr -> Ln.runFreshM $ TG.addNewEdge pair info gr)
 
 -- deconstruct a type graph
 
@@ -71,7 +73,7 @@ verticesInGroupOf vid = useTypeGraph (TG.verticesInGroupOf vid)
 childrenInGroupOf :: HasTypeGraph m info => VertexId -> m ([ParentChild], [ParentChild])
 childrenInGroupOf vid = useTypeGraph (TG.childrenInGroupOf vid)
 
-constantsInGroupOf :: HasTypeGraph m info => VertexId -> m [String]
+constantsInGroupOf :: HasTypeGraph m info => VertexId -> m [Tm.Can]
 constantsInGroupOf vid = useTypeGraph (TG.constantsInGroupOf vid)
 
 representativeInGroupOf :: HasTypeGraph m info => VertexId -> m VertexId
@@ -91,24 +93,24 @@ allPathsListWithout :: HasTypeGraph m info => S.Set VertexId -> VertexId -> [Ver
 allPathsListWithout set v1 vs = useTypeGraph (TG.allPathsListWithout set v1 vs)
 
 -- substitution and term graph
-substituteVariable :: HasTypeGraph m info => Int -> m Tm.VAL
+substituteVariable :: HasTypeGraph m info => Tm.Nom -> m Tm.VAL
 substituteVariable i =
-   do synonyms <- getTypeSynonyms
+   do synonyms <- error "getTypeSynonyms1"
       useTypeGraph (TG.substituteVariable synonyms i)
 
 substituteType :: HasTypeGraph m info => Tm.VAL -> m Tm.VAL
 substituteType tp =
-   do synonyms <- getTypeSynonyms
+   do synonyms <- error "getTypeSynonyms2"
       useTypeGraph (TG.substituteType synonyms tp)
 
 substituteTypeSafe :: HasTypeGraph m info => Tm.VAL -> m (Maybe Tm.VAL)
 substituteTypeSafe tp =
-   do synonyms <- getTypeSynonyms
+   do synonyms <- error "getTypeSynonyms3"
       useTypeGraph (TG.substituteTypeSafe synonyms tp)
 
 makeSubstitution   :: HasTypeGraph m info => m [(VertexId, Tm.VAL)]
 makeSubstitution =
-   do synonyms <- getTypeSynonyms
+   do synonyms <- error "getTypeSynonyms4"
       useTypeGraph (TG.makeSubstitution synonyms)
 
 typeFromTermGraph :: HasTypeGraph m info => VertexId -> m Tm.VAL
@@ -127,7 +129,7 @@ unmarkPossibleErrors = changeTypeGraph TG.unmarkPossibleErrors
 ---------------------
 ------ EXTRA
 
-theUnifyTerms :: HasTypeGraph m info => info -> Tm.VAL -> Tm.VAL -> m ()
+theUnifyTerms :: (Ln.Fresh m, HasTypeGraph m info) => info -> Tm.VAL -> Tm.VAL -> m ()
 theUnifyTerms info t1 t2 =
    do v1  <- addTermGraph t1
       v2  <- addTermGraph t2
