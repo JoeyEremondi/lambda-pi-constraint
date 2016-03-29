@@ -21,7 +21,8 @@ import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              Param (..), ProbId (..), Problem (..),
                              ProblemState (..), addEqn, allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
-                             popR, pushL, pushR, setProblem, wrapProb, recordEqn)
+                             popR, pushL, pushR, recordEqn, setProblem,
+                             wrapProb)
 import qualified PatternUnify.Context as Ctx
 import PatternUnify.Kit (bind3, bind6, elem, notElem, pp)
 import PatternUnify.Tm
@@ -158,55 +159,60 @@ munify :: (Fresh m)
 munify = fmap Unify
 
 unify :: ProbId -> Equation -> Contextual ()
+unify n q  = do
+  recordEqn q
+  unify' n q
 --unify n q
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
-unify n q@(EQN (PI _A _B) f (PI _S _T) g) =
-  do setProblem n
-     x <- freshNom
-     let ( xL, xR ) = (N (Var x TwinL) [], N (Var x TwinR) [])
-     eq1 <-
-       (munify (eqn (_B $$ xL)
-                    (f $$ xL)
-                    (_T $$ xR)
-                    (g $$ xR)))
-     simplify n
-              (Unify q)
-              [Unify (EQN SET _A SET _S), allTwinsProb x _A _S eq1]
-unify n q@(EQN (SIG _A _B) t (SIG _C _D) w) =
-  do setProblem n
-     a <- t %% Hd
-     b <- t %% Tl
-     c <- w %% Hd
-     d <- w %% Tl
-     eq1 <-
-       munify (eqn (_B $$ a)
-                   (return b)
-                   (_D $$ c)
-                   (return d))
-     simplify n
-              (Unify q)
-              [Unify (EQN _A a _C c), eq1]
   where
-        -- >
-unify n q@(EQN _ (N (Meta _) _) _ (N (Meta _) _)) =
-  do
-    setProblem n
-    tryPrune n q $ tryPrune n (sym q) $ flexFlex n q
--- >
-unify n q@(EQN _ (N (Meta _) _) _ _) =
-  do
-    setProblem n
-    tryPrune n q $ flexRigid [] n q
--- >
-unify n q@(EQN _ _ _ (N (Meta _) _)) =
-  do
-    setProblem n
-    tryPrune n (sym q) $ flexRigid [] n (sym q)
--- >
-unify n q =
-  do
-    setProblem n
-    rigidRigid q >>= simplify n (Unify q) . map Unify
+  unify' :: ProbId -> Equation -> Contextual ()
+  unify' n q@(EQN (PI _A _B) f (PI _S _T) g) =
+    do setProblem n
+       x <- freshNom
+       let ( xL, xR ) = (N (Var x TwinL) [], N (Var x TwinR) [])
+       eq1 <-
+         (munify (eqn (_B $$ xL)
+                      (f $$ xL)
+                      (_T $$ xR)
+                      (g $$ xR)))
+       simplify n
+                (Unify q)
+                [Unify (EQN SET _A SET _S), allTwinsProb x _A _S eq1]
+  unify' n q@(EQN (SIG _A _B) t (SIG _C _D) w) =
+    do setProblem n
+       a <- t %% Hd
+       b <- t %% Tl
+       c <- w %% Hd
+       d <- w %% Tl
+       eq1 <-
+         munify (eqn (_B $$ a)
+                     (return b)
+                     (_D $$ c)
+                     (return d))
+       simplify n
+                (Unify q)
+                [Unify (EQN _A a _C c), eq1]
+    where
+          -- >
+  unify' n q@(EQN _ (N (Meta _) _) _ (N (Meta _) _)) =
+    do
+      setProblem n
+      tryPrune n q $ tryPrune n (sym q) $ flexFlex n q
+  -- >
+  unify' n q@(EQN _ (N (Meta _) _) _ _) =
+    do
+      setProblem n
+      tryPrune n q $ flexRigid [] n q
+  -- >
+  unify' n q@(EQN _ _ _ (N (Meta _) _)) =
+    do
+      setProblem n
+      tryPrune n (sym q) $ flexRigid [] n (sym q)
+  -- >
+  unify' n q =
+    do
+      setProblem n
+      rigidRigid q >>= simplify n (Unify q) . map Unify
 
 -- Here |sym| swaps the two sides of an equation:
 sym :: Equation -> Equation
@@ -227,7 +233,7 @@ rigidRigid :: Equation -> Contextual [Equation]
 rigidRigid eqn =
   do
     retEqns <- rigidRigid' eqn
-    forM retEqns recordEqn
+    --forM retEqns recordEqn --TODO only record in unify?
     return retEqns
     --TODO need derived edges?
   where
