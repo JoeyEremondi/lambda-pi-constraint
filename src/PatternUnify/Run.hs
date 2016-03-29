@@ -37,7 +37,10 @@ import Debug.Trace (trace)
 
 import qualified Data.Graph as Graph
 
+import qualified Top.Implementation.TypeGraph.ClassMonadic as CM
+import qualified Top.Implementation.TypeGraph.Standard as TG
 
+import qualified Top.Util.Empty as Empty
 
 -- The |test| function executes the constraint solving algorithm on the
 -- given metacontext.
@@ -57,7 +60,7 @@ solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
     (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
-       (runContextual (B0, map Right es, error "initial problem ID", error "emptyGraph") $ do
+       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty) $ do
           initialise
           ambulando [] Map.empty
           validate (const True))  --Make sure we don't crash
@@ -172,7 +175,7 @@ runTest q es = do
                    putStrLn $ "Initial context:\n" ++
                                 render (runPretty (prettyEntries es))
 
-                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID", error "typeGraph 2") $
+                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID", Empty.empty) $
                                        (do
                                          initialise
                                          ambulando [] Map.empty
