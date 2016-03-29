@@ -119,6 +119,8 @@ defineGlobal x _T v m =
      pushR (Left (Map.singleton x v))
      a <- m
      goLeft
+     --Add our final value to the type graph
+     recordEqn (EQN _T (meta x) _T v)
      return a
 
 define _Gam x _T v =
