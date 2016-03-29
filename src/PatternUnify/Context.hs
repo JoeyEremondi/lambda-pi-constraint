@@ -377,3 +377,9 @@ metaValue x = look =<< getL
 
 addEqn :: (Fresh m) => info -> Equation -> TG.StandardTypeGraph info -> m (TG.StandardTypeGraph info)
 addEqn info (EQN _ v1 _ v2) stg = TG.addEqn info (v1, v2) stg
+
+
+recordEqn eqn = do
+  gCurrent <- getGraph
+  newG <- addEqn () eqn gCurrent
+  setGraph newG

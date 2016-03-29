@@ -21,7 +21,7 @@ import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              Param (..), ProbId (..), Problem (..),
                              ProblemState (..), addEqn, allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
-                             popR, pushL, pushR, setProblem, wrapProb)
+                             popR, pushL, pushR, setProblem, wrapProb, recordEqn)
 import qualified PatternUnify.Context as Ctx
 import PatternUnify.Kit (bind3, bind6, elem, notElem, pp)
 import PatternUnify.Tm
@@ -212,6 +212,7 @@ unify n q =
 sym :: Equation -> Equation
 sym (EQN _S s _T t) = EQN _T t _S s
 
+
 -- \subsection{Rigid-rigid decomposition}
 -- \label{subsec:impl:rigid-rigid}
 -- A rigid-rigid equation (between two non-metavariable terms) can either
@@ -226,10 +227,7 @@ rigidRigid :: Equation -> Contextual [Equation]
 rigidRigid eqn =
   do
     retEqns <- rigidRigid' eqn
-    forM retEqns $ \eqn -> do
-      gCurrent <- Ctx.getGraph
-      newG <- Ctx.addEqn () eqn gCurrent
-      Ctx.setGraph newG
+    forM retEqns recordEqn
     return retEqns
     --TODO need derived edges?
   where
