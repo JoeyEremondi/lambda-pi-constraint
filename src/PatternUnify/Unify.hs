@@ -5,6 +5,7 @@
 
 module PatternUnify.Unify where
 
+import Control.Monad (forM)
 import Control.Monad.Except (catchError, throwError, when)
 import Control.Monad.Reader (ask)
 import Data.List ((\\))
@@ -18,13 +19,17 @@ import qualified Data.Set as Set
 import PatternUnify.Check (check, checkProb, equal, isReflexive, typecheck)
 import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              Param (..), ProbId (..), Problem (..),
-                             ProblemState (..), allProb, allTwinsProb,
+                             ProblemState (..), addEqn, allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
                              popR, pushL, pushR, setProblem, wrapProb)
+import qualified PatternUnify.Context as Ctx
 import PatternUnify.Kit (bind3, bind6, elem, notElem, pp)
 import PatternUnify.Tm
 import Unbound.Generics.LocallyNameless (Fresh, runFreshM, subst, substs,
                                          unbind)
+
+import qualified Top.Implementation.TypeGraph.ClassMonadic as CM
+import qualified Top.Implementation.TypeGraph.Standard as TG
 
 notSubsetOf :: Ord a
             => Set a -> Set a -> Bool
@@ -218,82 +223,92 @@ sym (EQN _S s _T t) = EQN _T t _S s
 -- %% excluding the $\eta$-expansion steps, which are handled by |unify|
 -- %% above.
 rigidRigid :: Equation -> Contextual [Equation]
-rigidRigid (EQN SET SET SET SET) = return []
--- >
-rigidRigid (EQN SET (PI _A _B) SET (PI _S _T)) =
-  return [EQN SET _A SET _S
-         ,EQN (_A --> SET)
-              _B
-              (_S --> SET)
-              _T]
--- >
-rigidRigid (EQN SET (SIG _A _B) SET (SIG _S _T)) =
-  return [EQN SET _A SET _S
-         ,EQN (_A --> SET)
-              _B
-              (_S --> SET)
-              _T]
--- >
-rigidRigid (EQN _S (N (Var x w) ds) _T (N (Var y w') es))
-  | x == y =
-    do _X <- lookupVar x w
-       _Y <- lookupVar y w'
-       (EQN SET _X SET _Y :) <$>
-         matchSpine _X
-                    (N (Var x w) [])
-                    ds
-                    _Y
-                    (N (Var y w') [])
-                    es
-rigidRigid (EQN SET Nat SET Nat) = return []
-rigidRigid (EQN SET (Fin n) SET (Fin n')) = return [EQN Nat n Nat n']
-rigidRigid (EQN SET (Vec a m) SET (Vec b n)) =
-  return [EQN SET a SET b, EQN Nat m Nat n]
---TODO need twins here?
-rigidRigid (EQN SET (Eq a x y) SET (Eq a' x' y')) =
-  return [EQN SET a SET a', EQN a x a' x', EQN a y a' y']
-rigidRigid (EQN Nat Zero Nat Zero) = return []
-rigidRigid (EQN Nat (Succ m) Nat (Succ n)) = return [EQN Nat m Nat n]
-rigidRigid (EQN (Fin m) (FZero n) (Fin m') (FZero n')) =
-  return [EQN Nat n Nat n', EQN Nat m Nat m', EQN Nat m Nat n]
---TODO need twins here?
-rigidRigid (EQN (Fin m) (FSucc n f) (Fin m') (FSucc n' f')) =
-  return [EQN Nat n Nat n'
-         ,EQN Nat m Nat m'
-         ,EQN Nat m Nat n
-         ,EQN (Fin n)
-              f
-              (Fin n)
-              f']
---TODO need to unify type indices of vectors?
-rigidRigid (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b')) =
-  return [EQN SET a SET a', EQN SET b SET b', EQN SET a' SET b']
---TODO need to unify type indices of vectors?
-rigidRigid (EQN (Vec a (Succ m)) (VCons a' (Succ m') h t) (Vec b (Succ n)) (VCons b' (Succ n') h' t')) =
-  return [EQN SET a SET a'
-         ,EQN SET b SET b'
-         ,EQN SET a' SET b'
-         ,EQN Nat m Nat m'
-         ,EQN Nat n Nat n'
-         ,EQN Nat m' Nat n'
-         ,EQN a h b h'
-         ,EQN (Vec a m)
-              t
-              (Vec b n)
-              t']
-rigidRigid (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z')) =
-  return [EQN SET a SET a'
-         ,EQN SET b SET b'
-         ,EQN SET a' SET b'
-         ,EQN a x b x'
-         ,EQN a y b y'
-         ,EQN a x a' z
-         ,EQN a y a' z
-         ,EQN b x' b' z'
-         ,EQN b y' b' z'
-         ,EQN a' z b' z']
--- >
-rigidRigid eq@(EQN t1 v1 t2 v2) = badRigidRigid eq
+rigidRigid eqn =
+  do
+    retEqns <- rigidRigid' eqn
+    forM retEqns $ \eqn -> do
+      gCurrent <- Ctx.getGraph
+      newG <- Ctx.addEqn () eqn gCurrent
+      Ctx.setGraph newG
+    return retEqns
+    --TODO need derived edges?
+  where
+    rigidRigid' (EQN SET SET SET SET) = return []
+    -- >
+    rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T)) =
+      return [EQN SET _A SET _S
+             ,EQN (_A --> SET)
+                  _B
+                  (_S --> SET)
+                  _T]
+    -- >
+    rigidRigid' (EQN SET (SIG _A _B) SET (SIG _S _T)) =
+      return [EQN SET _A SET _S
+             ,EQN (_A --> SET)
+                  _B
+                  (_S --> SET)
+                  _T]
+    -- >
+    rigidRigid' (EQN _S (N (Var x w) ds) _T (N (Var y w') es))
+      | x == y =
+        do _X <- lookupVar x w
+           _Y <- lookupVar y w'
+           (EQN SET _X SET _Y :) <$>
+             matchSpine _X
+                        (N (Var x w) [])
+                        ds
+                        _Y
+                        (N (Var y w') [])
+                        es
+    rigidRigid' (EQN SET Nat SET Nat) = return []
+    rigidRigid' (EQN SET (Fin n) SET (Fin n')) = return [EQN Nat n Nat n']
+    rigidRigid' (EQN SET (Vec a m) SET (Vec b n)) =
+      return [EQN SET a SET b, EQN Nat m Nat n]
+    --TODO need twins here?
+    rigidRigid' (EQN SET (Eq a x y) SET (Eq a' x' y')) =
+      return [EQN SET a SET a', EQN a x a' x', EQN a y a' y']
+    rigidRigid' (EQN Nat Zero Nat Zero) = return []
+    rigidRigid' (EQN Nat (Succ m) Nat (Succ n)) = return [EQN Nat m Nat n]
+    rigidRigid' (EQN (Fin m) (FZero n) (Fin m') (FZero n')) =
+      return [EQN Nat n Nat n', EQN Nat m Nat m', EQN Nat m Nat n]
+    --TODO need twins here?
+    rigidRigid' (EQN (Fin m) (FSucc n f) (Fin m') (FSucc n' f')) =
+      return [EQN Nat n Nat n'
+             ,EQN Nat m Nat m'
+             ,EQN Nat m Nat n
+             ,EQN (Fin n)
+                  f
+                  (Fin n)
+                  f']
+    --TODO need to unify type indices of vectors?
+    rigidRigid' (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b')) =
+      return [EQN SET a SET a', EQN SET b SET b', EQN SET a' SET b']
+    --TODO need to unify type indices of vectors?
+    rigidRigid' (EQN (Vec a (Succ m)) (VCons a' (Succ m') h t) (Vec b (Succ n)) (VCons b' (Succ n') h' t')) =
+      return [EQN SET a SET a'
+             ,EQN SET b SET b'
+             ,EQN SET a' SET b'
+             ,EQN Nat m Nat m'
+             ,EQN Nat n Nat n'
+             ,EQN Nat m' Nat n'
+             ,EQN a h b h'
+             ,EQN (Vec a m)
+                  t
+                  (Vec b n)
+                  t']
+    rigidRigid' (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z')) =
+      return [EQN SET a SET a'
+             ,EQN SET b SET b'
+             ,EQN SET a' SET b'
+             ,EQN a x b x'
+             ,EQN a y b y'
+             ,EQN a x a' z
+             ,EQN a y a' z
+             ,EQN b x' b' z'
+             ,EQN b y' b' z'
+             ,EQN a' z b' z']
+    -- >
+    rigidRigid' eq@(EQN t1 v1 t2 v2) = badRigidRigid eq
 
 badRigidRigid
   :: Equation -> Contextual [Equation]

@@ -46,6 +46,8 @@ import qualified Top.Implementation.TypeGraph.Standard as TG
 
 import qualified Top.Implementation.TypeGraph.ClassMonadic as CM
 
+type TypeGraph = TG.StandardTypeGraph ()
+
 data Dec = HOLE | DEFN VAL
   deriving (Show, Generic)
 
@@ -160,7 +162,7 @@ instance Pretty Entry where
 
 type ContextL  = Bwd Entry
 type ContextR  = [Either Subs Entry]
-type Context   = (ContextL, ContextR, ProbId, TG.StandardTypeGraph ())
+type Context   = (ContextL, ContextR, ProbId, TypeGraph)
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -226,9 +228,9 @@ newtype Contextual a = Contextual { unContextual ::
 
 
 instance CM.HasTG Contextual () where
-  withTypeGraph f = do
+  withTypeGraphM f = do
     ourGraph <- getGraph
-    let (ret, newGraph) = f ourGraph
+    (ret, newGraph) <- f ourGraph
     setGraph newGraph
     return ret
 
@@ -262,7 +264,7 @@ pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
 setProblem :: ProbId -> Contextual ()
 setProblem pid = modify (\ (x, y, _, z) -> (x, y, pid, z))
 
-setGraph :: TG.StandardTypeGraph () -> Contextual ()
+setGraph :: TypeGraph -> Contextual ()
 setGraph g = modify (\ (x, y, z, _) -> (x, y, z, g))
 
 pushSubs :: Subs -> Contextual ()
@@ -293,7 +295,7 @@ getL = gets (\(x,_,_,_) -> x)
 getR :: Contextual ContextR
 getR = gets (\(_,x,_,_) -> x)
 
-getGraph :: Contextual (TG.StandardTypeGraph ())
+getGraph :: Contextual (TypeGraph)
 getGraph = gets (\(_,_,_,g) -> g)
 
 putL :: ContextL -> Contextual ()
@@ -373,4 +375,5 @@ metaValue x = look =<< getL
 
 
 
+addEqn :: (Fresh m) => info -> Equation -> TG.StandardTypeGraph info -> m (TG.StandardTypeGraph info)
 addEqn info (EQN _ v1 _ v2) stg = TG.addEqn info (v1, v2) stg

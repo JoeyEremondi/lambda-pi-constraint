@@ -31,12 +31,18 @@ instance (HasBasic m info, {-HasTI m info, HasQual m info,-} HasTG m info, Monad
 
 class Monad m => HasTG m info | m -> info where
    withTypeGraph :: (forall graph . TG.TypeGraph graph info => graph -> (a, graph)) -> m a
+   withTypeGraph f = withTypeGraphM (return . f)
+   withTypeGraphM :: (forall graph . TG.TypeGraph graph info => graph -> m (a, graph)) -> m a
+
 
 useTypeGraph :: HasTG m info => (forall graph . TG.TypeGraph graph info => graph -> a) -> m a
 useTypeGraph f = withTypeGraph (\g -> (f g, g))
 
 changeTypeGraph :: HasTG m info => (forall graph . TG.TypeGraph graph info => graph -> graph ) -> m ()
 changeTypeGraph f = withTypeGraph (\g -> ((), f g))
+
+changeTypeGraphM :: HasTG m info => (forall graph . TG.TypeGraph graph info => graph -> m graph ) -> m ()
+changeTypeGraphM f = withTypeGraphM (\g -> (\fg -> ((), fg)) <$> f g)
 
 -- construct a type graph
 
