@@ -21,7 +21,7 @@ import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              Param (..), ProbId (..), Problem (..),
                              ProblemState (..), addEqn, allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
-                             popR, pushL, pushR, recordEqn, setProblem,
+                             popR, pushL, pushR, recordEntry, setProblem,
                              wrapProb)
 import qualified PatternUnify.Context as Ctx
 import PatternUnify.Kit (bind3, bind6, elem, notElem, pp)
@@ -120,7 +120,7 @@ defineGlobal x _T v m =
      a <- m
      goLeft
      --Add our final value to the type graph
-     recordEqn (EQN _T (meta x) _T v)
+     Ctx.recordEqn (EQN _T (meta x) _T v)
      return a
 
 define _Gam x _T v =
@@ -162,7 +162,7 @@ munify = fmap Unify
 
 unify :: ProbId -> Equation -> Contextual ()
 unify n q  = do
-  recordEqn q
+  --recordEqn q
   unify' n q
 --unify n q
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
@@ -814,14 +814,16 @@ instantiate d@( alpha, _T, f ) =
 -- parameter.
 solver :: ProbId -> Problem -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
-solver n (Unify q) =
+solver n p@(Unify q) =
+  Ctx.recordProblem n p >>
   setProblem n >>
   isReflexive q >>=
   \b ->
     if b
        then solved n q
        else unify n q `catchError` failed n q
-solver n (All p b) =
+solver n prob@(All p b) =
+  --Ctx.recordProblem n prob >> --TODO only record innermost?
   setProblem n >>
   do ( x, q ) <- unbind b
      --trace ("Solver forall unbind " ++ show (x,q)) $
@@ -953,13 +955,14 @@ ambulando ns theta =
       -- if right context is empty, stop
       Nothing                   --Make sure our final substitutions are applied
        ->
-        do modifyL (map (update [] theta))
+        do Ctx.modifyLM (mapM (update [] theta))
            return ()
       -- compose suspended substitutions
       Just (Left theta') -> ambulando ns (compSubs theta theta')
       -- process entries
-      Just (Right e) ->
-        case update ns theta e of
+      Just (Right e) -> do
+        updateVal <- update ns theta e
+        case updateVal of
           Prob n p Active ->
             pushR (Left theta) >> solver n p >> ambulando ns Map.empty
           Prob n p Solved ->
@@ -970,22 +973,29 @@ ambulando ns theta =
 -- Given a list of solved problems, a substitution and an entry, |update|
 -- returns a modified entry with the substitution applied and the problem
 -- state changed if appropriate.
-update :: [ProbId] -> Subs -> Entry -> Entry
+update :: [ProbId] -> Subs -> Entry -> Contextual Entry
 --update ns theta entry | trace ("UPDATE " ++ show ns ++ " " ++ show theta ++ " " ++ pp entry) False = error "update"
-update _ theta (Prob n p Blocked) = Prob n p' k
-  where p' = substs (Map.toList theta) p
-        k =
-          if p == p'
-             then Blocked
-             else Active
-update ns theta (Prob n p (Pending ys))
-  | null rs = Prob n p' Solved
-  | otherwise = Prob n p' (Pending rs)
-  where rs = ys \\ ns
-        p' = substs (Map.toList theta) p
-update _ _ e'@(Prob _ _ Solved) = e'
-update _ _ e'@(Prob _ _ (Failed _)) = e'
-update _ theta e' =
-  --trace ("UPDATE SUBS"  ++ pp e' ++ "\n   " ++ show theta ++ "\n\n") $
-  substs (Map.toList theta)
-         e'
+update pids subs e = do
+  let newE = update' pids subs e
+  --Record our substitutions, letting us get rid of function applications
+  Ctx.recordEntrySub e newE
+  return newE
+  where
+    update' :: [ProbId] -> Subs -> Entry -> Entry
+    update' _ theta (Prob n p Blocked) = Prob n p' k
+      where p' = substs (Map.toList theta) p
+            k =
+              if p == p'
+                 then Blocked
+                 else Active
+    update' ns theta (Prob n p (Pending ys))
+      | null rs = Prob n p' Solved
+      | otherwise = Prob n p' (Pending rs)
+      where rs = ys \\ ns
+            p' = substs (Map.toList theta) p
+    update' _ _ e'@(Prob _ _ Solved) = e'
+    update' _ _ e'@(Prob _ _ (Failed _)) = e'
+    update' _ theta e' =
+      --trace ("UPDATE SUBS"  ++ pp e' ++ "\n   " ++ show theta ++ "\n\n") $
+      substs (Map.toList theta)
+             e'

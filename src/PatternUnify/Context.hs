@@ -248,6 +248,12 @@ runContextual cx =
 modifyL :: (ContextL -> ContextL) -> Contextual ()
 modifyL f = modify (\ (x, y, pid, gr) -> (f x, y, pid, gr))
 
+modifyLM :: (ContextL -> Contextual ContextL) -> Contextual ()
+modifyLM f = do
+  (x, y, pid, gr) <- get
+  fx <- f x
+  put (fx, y, pid, gr)
+
 modifyR :: (ContextR -> ContextR) -> Contextual ()
 modifyR f = modify (\ (x, y, pid, gr) -> (x, f y, pid, gr))
 
@@ -397,7 +403,36 @@ recordProblem (ProbId pid) prob = recordProblem' prob 0
           newProb = substs [(nm, var newVar)] prob
       recordProblem' newProb (i+1)
 
+--TODO do we need this? record problem substs?
 recordEntry :: Entry -> Contextual ()
 recordEntry (E nm tp HOLE) = return ()
 recordEntry (E nm tp (DEFN dec)) = recordEqn (EQN tp (meta nm) tp dec)
 recordEntry (Prob pid prob st) = recordProblem pid prob --TODO look at state?
+
+--After we substitute new values, we record the equalities between the subsituted values
+--This lets us get eliminate Function Application edges in our graph
+recordEntrySub :: Entry -> Entry -> Contextual ()
+recordEntrySub (E nm1 tp1 HOLE) (E nm2 tp2 HOLE) = return () --TODO will ever change?
+recordEntrySub (E _ tp1 (DEFN dec1)) (E _ tp2 (DEFN dec2)) =
+  recordEqn (EQN tp1 dec1 tp2 dec2)
+recordEntrySub (Prob pid prob _) (Prob _ prob2 _) =
+  recordProblemSub pid prob prob2
+
+--Decompose the problems in parallel, creating matching
+--names for their quantified variables
+recordProblemSub :: ProbId -> Problem -> Problem -> Contextual ()
+recordProblemSub (ProbId pid) prob1 prob2 = helper' prob1 prob2 0
+  where
+    helper' (Unify (EQN t1 v1 t2 v2)) (Unify (EQN t1' v1' t2' v2')) _ = do
+      recordEqn $ EQN t1 v1 t1' v1'
+      recordEqn $ EQN t2 v2 t2' v2'
+    helper' (All tp bnd1) (All _ bnd2) i = do
+      (nm1, prob1) <- unbind bnd1
+      (nm2, prob2) <- unbind bnd2
+      --Create a unique (but not fresh) name for our quanitified variable
+      --in the scope of this problem
+      let newVarBase = name2String pid ++ "_quant"
+          newVar = makeName newVarBase i
+          newProb1 = substs [(nm1, var newVar)] prob1
+          newProb2 = substs [(nm2, var newVar)] prob2
+      helper' newProb1 newProb2 (i+1)
