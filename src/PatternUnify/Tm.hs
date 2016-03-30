@@ -210,7 +210,7 @@ instance Pretty VAL where
 --  pretty (N h []) = pretty h
   pretty (N h as) = do
     h' <- pretty h
-    elimsText <- prettyElims h' as
+    let elimsText = prettyElims h' as
     wrapDoc AppSize elimsText
     -- (\h' as' -> h' <+> hsep as') <$> pretty h <*> mapM (prettyAt ArgSize) as
   -- pretty Nat = return $ text "Nat"
@@ -244,15 +244,21 @@ instance Pretty VAL where
     wrapDoc AppSize $
     (\c' as' -> c' <+> hsep as') <$> pretty c <*> mapM (\a -> maybePar a <$> (prettyAt ArgSize a)) as
 
-pretytElims :: (Monad m) => Doc -> [Elim] -> m Doc
-pretytElims hdText [] = return hdText
-prettyElims hdText (A arg : rest) = do
-  arg' <- pretty arg --TODO parens?
-  prettyElims (hdText <+> arg' ) rest
-prettyElims hdText (Elim can args : rest ) = do
-  can' <- pretty can
-  args' <- mapM pretty args
-  prettyElims ((parens $ can' <+> hsep args') <+> hdText) rest
+--prettyElims :: (Monad m) => Doc -> [Elim] -> m Doc
+--prettyElims :: (Monad m) => Doc -> [Elim] -> m Doc
+prettyElims hdText elims =
+  case elims of
+    [] ->
+      return hdText
+    (A arg : rest) -> do
+      arg' <- pretty arg --TODO parens?
+      prettyElims (hdText <+> arg' ) rest
+    (Elim can args : rest ) -> do
+      can' <- pretty can
+      args' <- mapM pretty args
+      prettyElims ((parens $ can' <+> hsep args') <+> hdText) rest
+--prettyElims hdText elims = error $ "Bad pretty elims " ++ show hdText ++ " " ++ show elims
+
 
 prettyNat x = helper x 0 id where
   helper Zero count pfn = return $ text (show count)
