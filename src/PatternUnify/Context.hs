@@ -378,8 +378,26 @@ metaValue x = look =<< getL
 addEqn :: (Fresh m) => info -> Equation -> TG.StandardTypeGraph info -> m (TG.StandardTypeGraph info)
 addEqn info (EQN _ v1 _ v2) stg = TG.addEqn info (v1, v2) stg
 
-
+recordEqn :: Equation -> Contextual ()
 recordEqn eqn = do
   gCurrent <- getGraph
   newG <- addEqn () eqn gCurrent
   setGraph newG
+
+recordProblem :: ProbId -> Problem -> Contextual ()
+recordProblem (ProbId pid) prob = recordProblem' prob 0
+  where
+    recordProblem' (Unify q) _ = recordEqn q
+    recordProblem' (All tp bnd) i = do
+      (nm, prob) <- unbind bnd
+      --Create a unique (but not fresh) name for our quanitified variable
+      --in the scope of this problem
+      let newVarBase = name2String pid ++ "_quant"
+          newVar = makeName newVarBase i
+          newProb = substs [(nm, var newVar)] prob
+      recordProblem' newProb (i+1)
+
+recordEntry :: Entry -> Contextual ()
+recordEntry (E nm tp HOLE) = return ()
+recordEntry (E nm tp (DEFN dec)) = recordEqn (EQN tp (meta nm) tp dec)
+recordEntry (Prob pid prob st) = recordProblem pid prob --TODO look at state?
