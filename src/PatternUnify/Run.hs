@@ -42,6 +42,9 @@ import qualified Top.Implementation.TypeGraph.Standard as TG
 
 import qualified Top.Util.Empty as Empty
 
+import Top.Implementation.TypeGraph.ApplyHeuristics
+import Top.Implementation.TypeGraph.DefaultHeuristics
+
 -- The |test| function executes the constraint solving algorithm on the
 -- given metacontext.
 
@@ -60,11 +63,15 @@ solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
     (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
-       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty) $ do
+       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, "") $ do
           initialise
           ambulando [] Map.empty
-          validate (const True))  --Make sure we don't crash
-    (lcx,rcx,lastProb,finalGraph) = ctx
+          validResult <- validate (const True)
+          badEdges <- applyHeuristics defaultHeuristics
+          setMsg $ show badEdges
+          return validResult
+          )  --Make sure we don't crash
+    (lcx,rcx,lastProb,finalGraph,finalStr) = ctx
     allEntries = lcx ++ (Either.rights rcx)
     depGraph = problemDependenceGraph allEntries es
     leadingToList = initialsDependingOn depGraph (Maybe.catMaybes $ map getIdent es) [lastProb]
@@ -73,7 +80,9 @@ solveEntries !es  =
       (i:_) -> i
     --errString err = "ERROR " ++ err -- ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     resultString = case result of
-      Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
+      Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++
+        initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
+        ++ "\nErrorGraph " ++ finalStr
       Right _ -> render $ runPretty $ pretty ctx
   in --trace ("\n\n=============\nFinal\n" ++ resultString) $
     case result of
@@ -138,7 +147,7 @@ initialsDependingOn (pendGraph, vertToInfo, infoToVert) initialIdents targetIden
 
 
 getContextErrors :: [Entry] -> Context -> Either [(ProbId, Err)] ((), Context)
-getContextErrors startEntries cx@(lcx, rcx, _, _) = do
+getContextErrors startEntries cx@(lcx, rcx, _, _,_) = do
   let leftErrors = getErrorPairs (trail lcx)
       rightErrors = getErrorPairs (Either.rights rcx)
   case (leftErrors ++ rightErrors) of
@@ -175,7 +184,7 @@ runTest q es = do
                    putStrLn $ "Initial context:\n" ++
                                 render (runPretty (prettyEntries es))
 
-                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID", Empty.empty) $
+                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID", Empty.empty, "") $
                                        (do
                                          initialise
                                          ambulando [] Map.empty
