@@ -152,14 +152,14 @@ constantClashPaths (first:rest) =
   pathInGroup :: HasTypeGraph m info => [(VertexId, VertexInfo)] -> m [TypeGraphPath info]
   pathInGroup = errorPath . groupTheConstants . getConstants
 
-  getConstants :: [(VertexId, VertexInfo)] -> [(VertexId, Tm.Can)]
+  getConstants :: [(VertexId, VertexInfo)] -> [(VertexId, Constant)]
   getConstants vertices =
      [ (i, s  ) | (i, (VCon s  , _)) <- vertices ] ++
-     [ (i, "@") | (i, (VApp _ _, _)) <- vertices ]
+     [ (i, CApp) | (i, (VApp _ _, _)) <- vertices ]
 
   -- lists of vertex numbers with the same type constant
   -- (all vertices are in the same equivalence group)
-  groupTheConstants :: [(VertexId, Tm.Can)] -> [[VertexId]]
+  groupTheConstants :: [(VertexId, Constant)] -> [[VertexId]]
   groupTheConstants =
      sortBy (compare `on` length)
      .  map (map fst)
