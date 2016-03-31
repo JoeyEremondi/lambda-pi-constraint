@@ -119,7 +119,7 @@ splitGroup eqgroup =
 ----------------------------------------------------------------------
 -- * Interrogating an equivalence group
 
-constants :: EquivalenceGroup info -> [Tm.Can]
+constants :: EquivalenceGroup info -> [Constant]
 constants eqgroup =
    nub [ s | (_, (VCon s, _)) <- vertices eqgroup ]
 
@@ -200,7 +200,11 @@ typeOfGroup synonyms eqgroup
    | not (null allConstants) && not (null allApplies)  =  Nothing
 
    | not (null allOriginals)  =  Just (theBestType synonyms allOriginals)
-   | not (null allConstants)  =  Just (Tm.C (head allConstants) []) --TODO is this poorly typed?
+   | not (null allConstants)  =  case allConstants of
+     [] -> Nothing
+     (Con c:_) -> Just (Tm.C c []) --TODO is this poorly typed?
+     (ConElim c:_) -> error "conElim group type"--TODO is this poorly typed?
+     (CApp : _ ) -> error "App group type"
    | not (null allApplies)    =  Just $  let (VertexId  l, VertexId r) = head allApplies
                                          in ( runFreshM $ (Tm.var l) Tm.$$ (Tm.var r))
    | otherwise                =  Just (Tm.var (head allVariables))

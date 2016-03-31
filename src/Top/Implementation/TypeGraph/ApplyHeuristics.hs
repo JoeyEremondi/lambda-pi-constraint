@@ -155,7 +155,7 @@ constantClashPaths (first:rest) =
   getConstants :: [(VertexId, VertexInfo)] -> [(VertexId, Tm.Can)]
   getConstants vertices =
      [ (i, s  ) | (i, (VCon s  , _)) <- vertices ] ++
-     error "getConst @ "--[ (i, "@") | (i, (VApp _ _, _)) <- vertices ]
+     [ (i, "@") | (i, (VApp _ _, _)) <- vertices ]
 
   -- lists of vertex numbers with the same type constant
   -- (all vertices are in the same equivalence group)

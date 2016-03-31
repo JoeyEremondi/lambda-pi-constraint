@@ -52,7 +52,7 @@ instance Show (StandardTypeGraph info) where
 addElim :: (Ln.Fresh m, TypeGraph graph info) => Tm.Subs -> Maybe Tm.VAL -> Tm.Nom -> Tm.Elim -> graph -> m (VertexId, graph)
 addElim subs original unique (Tm.Elim can args) g0 = do
   let vinit = VertexId unique
-  let initVal = (vinit, addVertex vinit (VConElim can, original) g0)
+  let initVal = (vinit, addVertex vinit (VCon $ ConElim can, original) g0)
   let
     foldFn (vlast, glast) ctorArg = do
       (vnew, subGraph) <- addTermGraph subs unique ctorArg glast
@@ -89,7 +89,7 @@ instance TypeGraph (StandardTypeGraph info) info where
                    fresh1 <- Ln.fresh unique
                    let
                        vinit = VertexId unique
-                       initVal = (vinit, addVertex vinit (VCon ctor, original) stg)
+                       initVal = (vinit, addVertex vinit (VCon $ Con ctor, original) stg)
                        foldFn (vlast, glast) ctorArg = do
                          (vnew, subGraph) <- addTermGraph synonyms unique ctorArg glast
                          vid <- VertexId <$> Ln.fresh unique
@@ -112,11 +112,12 @@ instance TypeGraph (StandardTypeGraph info) info where
                   foldlM foldFn initVal elims
                Tm.L bnd -> do
                   (nm, body) <- Ln.unbind bnd
-                  (vbody, subGraph) <- addTermGraph synonyms unique body stg
+                  (vbody, subGraph1) <- addTermGraph synonyms unique body stg
+                  (vparam, subGraph2) <- addTermGraph synonyms unique (Tm.var nm) subGraph1
                   vid <- VertexId <$> Ln.fresh unique
                   return
                    ( vid
-                   , addVertex vid (VLam nm vbody, original) subGraph)
+                   , addVertex vid (VLam nm vbody, original) subGraph2)
 
 
 
@@ -176,7 +177,8 @@ instance TypeGraph (StandardTypeGraph info) info where
 
    typeFromTermGraph vid stg =
       case [ tp | (x, (tp, _)) <- verticesInGroupOf vid stg, vid == x ] of
-         [VCon s]   -> Tm.C s []
+         [VCon (Con s)]   -> Tm.C s []
+         [VCon (ConElim s)]   -> error "ConElim from term graph"
          [VApp a b] ->
            case typeFromTermGraph a stg of
              (Tm.C ctor args) ->
@@ -291,7 +293,7 @@ maybeGetGroupOf vid stg =
 
 getGroupOf :: VertexId -> StandardTypeGraph info -> EquivalenceGroup info
 getGroupOf vid =
-   let err = internalError "Top.TypeGraph.Standard" "getGroupOf" "the function getGroupOf does no longer create an empty group if the vertexId doesn't exist"
+   let err = internalError "Top.TypeGraph.Standard" "getGroupOf" ("the function getGroupOf does no longer create an empty group if the vertexId " ++ show vid ++ " doesn't exist")
    in fromMaybe err . maybeGetGroupOf vid
 
 getAllGroups :: StandardTypeGraph info -> [EquivalenceGroup info]
@@ -370,7 +372,7 @@ addEqn
   -> m (StandardTypeGraph info)
 addEqn info (v1, v2) stg = do
     (var1, g1) <-  addTermGraph M.empty (Ln.s2n "node") v1 stg
-    (var2, g2) <-  addTermGraph M.empty (Ln.s2n "node") v2 stg
-    edgeNr <- Ln.fresh $ Ln.s2n "edge"
-    let ourEdge = EdgeId var1 var2 $ EdgeNrX edgeNr
-    return $ addEdge ourEdge info g2
+    (var2, g2) <-  addTermGraph M.empty (Ln.s2n "node") v2 g1
+    --edgeNr <- Ln.fresh $ Ln.s2n "edge"
+    --let ourEdge = EdgeId var1 var2 $ EdgeNrX edgeNr
+    addNewEdge (var1, var2) info g2

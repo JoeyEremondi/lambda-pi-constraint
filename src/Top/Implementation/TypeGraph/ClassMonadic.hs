@@ -79,7 +79,7 @@ verticesInGroupOf vid = useTypeGraph (TG.verticesInGroupOf vid)
 childrenInGroupOf :: HasTypeGraph m info => VertexId -> m ([ParentChild], [ParentChild])
 childrenInGroupOf vid = useTypeGraph (TG.childrenInGroupOf vid)
 
-constantsInGroupOf :: HasTypeGraph m info => VertexId -> m [Tm.Can]
+constantsInGroupOf :: HasTypeGraph m info => VertexId -> m [Constant]
 constantsInGroupOf vid = useTypeGraph (TG.constantsInGroupOf vid)
 
 representativeInGroupOf :: HasTypeGraph m info => VertexId -> m VertexId
