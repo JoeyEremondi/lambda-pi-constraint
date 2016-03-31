@@ -110,6 +110,13 @@ instance TypeGraph (StandardTypeGraph info) info where
                          ( vid
                          , addVertex vid (VElim vlast vnew, original) subGraph)
                   foldlM foldFn initVal elims
+               Tm.L bnd -> do
+                  (nm, body) <- Ln.unbind bnd
+                  (vbody, subGraph) <- addTermGraph synonyms unique body stg
+                  vid <- VertexId <$> Ln.fresh unique
+                  return
+                   ( vid
+                   , addVertex vid (VLam nm vbody, original) subGraph)
 
 
 

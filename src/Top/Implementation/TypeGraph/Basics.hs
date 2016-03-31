@@ -20,7 +20,7 @@ import qualified Unbound.Generics.LocallyNameless as Ln
 
 newtype VertexId = VertexId Tm.Nom deriving (Eq, Ord)
 type VertexInfo  = (VertexKind, Maybe Tm.VAL)
-data VertexKind  = VVar | VSourceVar Tm.Nom | VCon Tm.Can | VApp VertexId VertexId | VConElim Tm.CanElim | VElim VertexId VertexId
+data VertexKind  = VVar | VSourceVar Tm.Nom | VCon Tm.Can | VLam Tm.Nom VertexId | VApp VertexId VertexId | VConElim Tm.CanElim | VElim VertexId VertexId
    deriving (Show, Eq, Ord)
 
 instance Show VertexId where
