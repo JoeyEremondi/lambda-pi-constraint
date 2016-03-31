@@ -79,15 +79,18 @@ solveEntries !es  =
       [] -> lastProb
       (i:_) -> i
     --errString err = "ERROR " ++ err -- ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
-    resultString = case result of
-      Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++
-        initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
-        ++ "\nErrorGraph " ++ finalStr
-      Right _ -> render $ runPretty $ pretty ctx
+    -- resultString = case result of
+    --   Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++
+    --     initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
+    --     ++ "\nErrorGraph " ++ finalStr
+    --   Right _ -> render $ runPretty $ pretty ctx
   in --trace ("\n\n=============\nFinal\n" ++ resultString) $
     case result of
-      Left err -> Left [(initLoc, err)]
-      Right _ -> getContextErrors es ctx
+      Left err -> Left [(initLoc, err ++ "\nErrorGraph " ++ finalStr)]
+      Right _ ->
+        case getContextErrors es ctx of
+          Left errList -> Left $ map (\(loc, err) -> (loc, err ++ "\nErrorGraph " ++ finalStr)) errList
+          Right x -> Right x
 
 
 
