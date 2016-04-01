@@ -200,8 +200,6 @@ instance TypeGraph (StandardTypeGraph info) info where
      let
        eqGroups = M.elems $ equivalenceGroupMap g
        nodePairs = concatMap vertices eqGroups
-       nodeNames = map fst nodePairs
-       nodeMap = trace ("Dot nodes " ++ show nodePairs) $ M.fromList $ zip nodeNames $ zip  [1..] (map snd nodePairs)
        theEdges = [(v1, v2) | (EdgeId v1 v2 _,_) <- concatMap (edges) eqGroups]
 
        dotLabel :: VertexId -> VertexInfo -> (String)
@@ -219,22 +217,19 @@ instance TypeGraph (StandardTypeGraph info) info where
        dotEdges vid ((VSourceVar k),_) = ("")
        dotEdges vid ((VCon k),_) = ("")
        dotEdges vid ((VLam k1 k2),_) =
-         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1) ++ " [label = \"L\"];//1\n"
-           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ " [label = \"R\"];//2\n")
+         (show vid ++ " -> " ++ show k1 ++ " [label = \"L\"];//1\n"
+           ++ show vid ++ " -> " ++ show k2 ++ " [label = \"R\"];//2\n")
        dotEdges vid ((VApp k1 k2),_) =
-         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1)  ++ " [label = \"L\"];//3\n"
-           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ " [label = \"R\"];//4\n")
+         (show vid ++ " -> " ++ show k1  ++ " [label = \"L\"];//3\n"
+           ++ show vid ++ " -> " ++ show k2 ++ " [label = \"R\"];//4\n")
        dotEdges vid ((VElim k1 k2),_) =
-         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1) ++ " [label = \"L\"];//5\n"
-           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ " [label = \"R\"];//6\n")
+         (show vid ++ " -> " ++ show k1 ++ " [label = \"L\"];//5\n"
+           ++ show vid ++ " -> " ++ show k2 ++ " [label = \"R\"];//6\n")
 
-       (termEdges) = map  (uncurry dotEdges) nodePairs
-
-       showInt :: Int -> String
-       showInt = show
+       termEdges = map (uncurry dotEdges) nodePairs
 
        nodeDecls =
-        [showInt num ++ " [label = \"" ++ dotLabel v vinfo ++ "\" ];\n" | (v, (num, vinfo)) <- M.toList nodeMap ]
+        [show v ++ " [label = \"" ++ dotLabel v vinfo ++ "\" ];\n" | (v, vinfo) <- nodePairs ]
         --[show num ++ " [label = \"" ++ s ++ "\" ];\n" | s <- termNames ]
        edgeDecls =
           [show n1 ++ " -> " ++ show n2 ++ " [dir=none] ;\n" | (n1, n2) <- theEdges ]
