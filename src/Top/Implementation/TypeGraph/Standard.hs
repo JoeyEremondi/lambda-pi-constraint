@@ -117,7 +117,7 @@ instance TypeGraph (StandardTypeGraph info) info where
                   vid <- VertexId <$> Ln.fresh unique
                   return
                    ( vid
-                   , addVertex vid (VLam nm vbody, original) subGraph2)
+                   , addVertex vid (VLam vparam vbody, original) subGraph2)
 
 
 
@@ -193,6 +193,51 @@ instance TypeGraph (StandardTypeGraph info) info where
 
    unmarkPossibleErrors =
       setPossibleInconsistentGroups []
+
+   toDot g =
+     let
+       nodeNames = M.keys $ referenceMap g
+       nodePairs = nub $ [pr | nnm <- nodeNames, pr <- verticesInGroupOf nnm g]
+       nodeMap = M.fromList $ zip nodeNames $ zip  [1..] (map snd nodePairs)
+       edges = nub [(fst $ nodeMap M.! v1, fst $ nodeMap M.! v2) | v <- nodeNames, (EdgeId v1 v2 _, _) <- edgesFrom v g]
+
+       dotLabel :: VertexId -> VertexInfo -> (String)
+       dotLabel vid (VVar,_) = "Meta " ++ show vid
+       dotLabel vid ((VSourceVar k),_) = "SourceVar " ++ show k
+       dotLabel vid ((VCon k),_) = show k
+       dotLabel vid (VApp _ _, Just tm) = "App " ++ show vid ++ " " ++ Tm.prettyString tm
+       dotLabel vid (VLam _ _, Just tm) = "Lam " ++ show vid ++ " " ++ Tm.prettyString tm
+       dotLabel vid (VElim _ _, Just tm) = "Elim " ++ show vid ++ " " ++ Tm.prettyString tm
+
+       dotLabel vid _ = show vid
+
+       dotEdges :: VertexId -> VertexInfo -> (String)
+       dotEdges vid (VVar,_) = ("")
+       dotEdges vid ((VSourceVar k),_) = ("")
+       dotEdges vid ((VCon k),_) = ("")
+       dotEdges vid ((VLam k1 k2),_) =
+         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1) ++ "[label = \"L\"];//1\n"
+           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ "[label = \"R\"];//2\n")
+       dotEdges vid ((VApp k1 k2),_) =
+         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1)  ++ "[label = \"L\"];//3\n"
+           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ "[label = \"R\"];//4\n")
+       dotEdges vid ((VElim k1 k2),_) =
+         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1) ++ "[label = \"L\"];//5\n"
+           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ "[label = \"R\"];//6\n")
+
+       (termEdges) = map  (uncurry dotEdges) nodePairs
+
+       showInt :: Int -> String
+       showInt = show
+
+       nodeDecls =
+        [showInt num ++ " [label = \"" ++ dotLabel v vinfo ++ "\" ];\n" | (v, (num, vinfo)) <- M.toList nodeMap ]
+        --[show num ++ " [label = \"" ++ s ++ "\" ];\n" | s <- termNames ]
+       edgeDecls =
+          [show n1 ++ " -- " ++ show n2 ++ " ;\n" | (n1, n2) <- edges ]
+
+
+     in "digraph G\n{\n" ++ concat (nodeDecls) ++ concat (edgeDecls ++ termEdges) ++ "\n}"
 
 -- Helper functions
 combineClasses :: [VertexId] -> StandardTypeGraph info -> StandardTypeGraph info

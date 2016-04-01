@@ -55,6 +55,8 @@ class TypeGraph graph info | graph -> info where
    getMarkedPossibleErrors :: graph -> [VertexId]
    unmarkPossibleErrors    :: graph -> graph
 
+   toDot :: graph -> String
+
    -------------------------------------------
    -- default definitions
 

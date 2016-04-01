@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS -Wall #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
 --
@@ -16,6 +17,8 @@ import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
 import Top.Solver
+
+import Debug.Trace (trace)
 
 -----------------------------------------------------------------------------
 
@@ -43,28 +46,28 @@ highParticipation :: Show info => Double -> Path (EdgeId, info) -> Heuristic inf
 highParticipation ratio path =
    Heuristic (Filter ("Participation ratio [ratio="++show ratio++"]") selectTheBest)
  where
-   selectTheBest es =
-      let (nrOfPaths, fm)   = participationMap (mapPath (\(EdgeId _ _ cnr,_) -> cnr) path)
-          participationList = M.filterWithKey p fm
-          p cnr _    = cnr `elem` activeCNrs
-          activeCNrs = [ cnr | (EdgeId _ _ cnr, _) <- es ]
-          maxInList  = maximum (M.elems participationList)
+   selectTheBest es = trace "selectTheBest" $
+      let (nrOfPaths, fm)   = trace "stb 1" $ participationMap (mapPath (\(EdgeId _ _ cnr,_) -> cnr) path)
+          participationList = trace "stb 2" $ M.filterWithKey p fm
+          p cnr _    = trace "stb 3" $ cnr `elem` activeCNrs
+          activeCNrs = trace "stb 4" $ [ cnr | (EdgeId _ _ cnr, _) <- es ]
+          maxInList  = trace "stb 5" $ maximum (M.elems participationList)
           limit     -- test if one edge can solve it completely
              | maxInList == nrOfPaths = maxInList
              | otherwise              = round (fromIntegral maxInList * ratio) `max` 1
-          goodCNrs   = M.keys (M.filter (>= limit) participationList)
-          bestEdges  = filter (\(EdgeId _ _ cnr,_) -> cnr `elem` goodCNrs) es
+          goodCNrs   = trace "stb 6" $ M.keys (M.filter (>= limit) participationList)
+          bestEdges  = trace "stb 7" $ filter (\(EdgeId _ _ cnr,_) -> cnr `elem` goodCNrs) es
 
           -- prints a nice report
-          mymsg  = unlines ("" : title : replicate 50 '-' : map f es)
+          mymsg  = trace "stb 8" $ unlines ("" : title : replicate 50 '-' : map f es)
           title  = "cnr  edge          ratio   info"
-          f (edgeID@(EdgeId _ _ cnr),info) =
+          f (edgeID@(EdgeId _ _ cnr),info) = trace "select best f" $
              take 5  (show cnr++(if cnr `elem` goodCNrs then "*" else "")++repeat ' ') ++
              take 14 (show edgeID++repeat ' ') ++
              take 8  (show (M.findWithDefault 0 cnr fm * 100 `div` nrOfPaths)++"%"++repeat ' ') ++
              "{"++show info++"}"
-      in do logMsg mymsg
-            return bestEdges
+      in do trace "stb 10" $ logMsg mymsg
+            trace ("STB edges " ++ show bestEdges) $ return bestEdges
 
 -- |Select the "latest" constraint
 firstComeFirstBlamed :: Heuristic info

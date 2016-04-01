@@ -37,6 +37,7 @@ import Debug.Trace (trace)
 
 import qualified Data.Graph as Graph
 
+import qualified Top.Implementation.TypeGraph.Class as TC
 import qualified Top.Implementation.TypeGraph.ClassMonadic as CM
 import qualified Top.Implementation.TypeGraph.Standard as TG
 
@@ -44,6 +45,8 @@ import qualified Top.Util.Empty as Empty
 
 import Top.Implementation.TypeGraph.ApplyHeuristics
 import Top.Implementation.TypeGraph.DefaultHeuristics
+
+import System.IO.Unsafe (unsafePerformIO)
 
 -- The |test| function executes the constraint solving algorithm on the
 -- given metacontext.
@@ -66,12 +69,15 @@ solveEntries !es  =
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, "") $ do
           initialise
           ambulando [] Map.empty
-          validResult <- validate (const True)
-          badEdges <- applyHeuristics defaultHeuristics
-          setMsg $ show badEdges
+          validResult <- trace "Validating" $ validate (const True)
+          badEdges <- return [1] --trace "Getting bad edges" $ applyHeuristics defaultHeuristics
+          trace "Set badEdges" $ setMsg $ show badEdges
           return validResult
           )  --Make sure we don't crash
-    (lcx,rcx,lastProb,finalGraph,finalStr) = ctx
+    (lcx,rcx,lastProb,finalGraph,finalStr) = trace "wrote file" $ unsafePerformIO $ do
+        let g = (\(_,_,_,g,_) -> g) ctx
+        writeFile "out.dot" (TC.toDot g)
+        return ctx
     allEntries = lcx ++ (Either.rights rcx)
     depGraph = problemDependenceGraph allEntries es
     leadingToList = initialsDependingOn depGraph (Maybe.catMaybes $ map getIdent es) [lastProb]
