@@ -1,1 +1,1 @@
-let x = 3 :: Nat -> Nat
+let x = 3 :: *

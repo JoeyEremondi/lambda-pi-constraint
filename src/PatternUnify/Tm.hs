@@ -269,8 +269,8 @@ prettyNat x = helper x 0 id where
 
 instance Pretty Can where
   pretty Set = return $ text "*"
-  pretty Pi = error "Pi special case"
-  pretty Sig = error "Sigma special case"
+  pretty Pi = return $ text "Pi"
+  pretty Sig = return $ text "Sigma"
   pretty Pair = return $ text "Pair"
   pretty CNat = return $ text "Nat"
   pretty CZero = return $ text "Zero"

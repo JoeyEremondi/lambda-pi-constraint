@@ -394,6 +394,8 @@ metaValue x = look =<< getL
 
 
 addEqn :: (Fresh m) => info -> Equation -> TG.StandardTypeGraph info -> m (TG.StandardTypeGraph info)
+--Avoid polluting our graph with a bunch of reflexive equations
+addEqn info eqn@(EQN _ v1 _ v2) stg | v1 == v2 = return stg
 addEqn info eqn@(EQN _ v1 _ v2) stg = trace ("Adding equation to graph " ++ show eqn) $ TG.addEqn info (v1, v2) stg
 
 recordEqn :: Equation -> Contextual ()

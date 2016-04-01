@@ -25,6 +25,8 @@ import Utils (internalError)
 
 import Data.Foldable (foldlM)
 
+import Debug.Trace (trace)
+
 data StandardTypeGraph info = STG
    { referenceMap            :: M.Map VertexId Int{- group number -}
    , equivalenceGroupMap     :: M.Map Int (EquivalenceGroup info)
@@ -64,7 +66,7 @@ addElim subs original unique (Tm.Elim can args) g0 = do
 
 addHead :: (Ln.Fresh m, TypeGraph graph info) => Maybe Tm.VAL -> Tm.Nom -> Tm.Head -> graph -> m (VertexId, graph)
 addHead original unique (Tm.Var nm _) stg = do--TODO handle twins?
-  let vinit = VertexId unique
+  vinit <- VertexId <$> Ln.fresh unique
   --ourFresh <- Ln.fresh unique
   return (vinit, addVertex vinit (VSourceVar nm, original) stg)
 --Metavariables are indexed by their names
@@ -72,7 +74,7 @@ addHead original unique (Tm.Meta nm) stg =
   let
     vinit = VertexId nm
   in
-    return (vinit, addVertex vinit (VSourceVar nm, original) stg)
+    return (vinit, addVertex vinit (VVar, original) stg)
 
 
 instance TypeGraph (StandardTypeGraph info) info where
@@ -87,8 +89,9 @@ instance TypeGraph (StandardTypeGraph info) info where
          in case newtp of
                Tm.C ctor args -> do
                    fresh1 <- Ln.fresh unique
+                   vinit <- VertexId <$> Ln.fresh unique
                    let
-                       vinit = VertexId unique
+
                        initVal = (vinit, addVertex vinit (VCon $ Con ctor, original) stg)
                        foldFn (vlast, glast) ctorArg = do
                          (vnew, subGraph) <- addTermGraph synonyms unique ctorArg glast
@@ -100,12 +103,11 @@ instance TypeGraph (StandardTypeGraph info) info where
 
                 --Insert function application
                Tm.N hd elims -> do
-                  let vinit = VertexId unique
+                  vinit <- VertexId <$> Ln.fresh unique
                   initVal <- addHead original unique hd stg
                   let foldFn (vlast, glast) elim = do
                         (vnew, subGraph) <- addElim synonyms original unique elim glast
-                        unew <- Ln.fresh unique
-                        let vid = VertexId unew
+                        vid <-  VertexId <$> Ln.fresh unique
                         return
                          ( vid
                          , addVertex vid (VElim vlast vnew, original) subGraph)
@@ -196,10 +198,11 @@ instance TypeGraph (StandardTypeGraph info) info where
 
    toDot g =
      let
-       nodeNames = M.keys $ referenceMap g
-       nodePairs = nub $ [pr | nnm <- nodeNames, pr <- verticesInGroupOf nnm g]
-       nodeMap = M.fromList $ zip nodeNames $ zip  [1..] (map snd nodePairs)
-       edges = nub [(fst $ nodeMap M.! v1, fst $ nodeMap M.! v2) | v <- nodeNames, (EdgeId v1 v2 _, _) <- edgesFrom v g]
+       eqGroups = M.elems $ equivalenceGroupMap g
+       nodePairs = concatMap vertices eqGroups
+       nodeNames = map fst nodePairs
+       nodeMap = trace ("Dot nodes " ++ show nodePairs) $ M.fromList $ zip nodeNames $ zip  [1..] (map snd nodePairs)
+       theEdges = [(v1, v2) | (EdgeId v1 v2 _,_) <- concatMap (edges) eqGroups]
 
        dotLabel :: VertexId -> VertexInfo -> (String)
        dotLabel vid (VVar,_) = "Meta " ++ show vid
@@ -216,14 +219,14 @@ instance TypeGraph (StandardTypeGraph info) info where
        dotEdges vid ((VSourceVar k),_) = ("")
        dotEdges vid ((VCon k),_) = ("")
        dotEdges vid ((VLam k1 k2),_) =
-         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1) ++ "[label = \"L\"];//1\n"
-           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ "[label = \"R\"];//2\n")
+         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1) ++ " [label = \"L\"];//1\n"
+           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ " [label = \"R\"];//2\n")
        dotEdges vid ((VApp k1 k2),_) =
-         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1)  ++ "[label = \"L\"];//3\n"
-           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ "[label = \"R\"];//4\n")
+         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1)  ++ " [label = \"L\"];//3\n"
+           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ " [label = \"R\"];//4\n")
        dotEdges vid ((VElim k1 k2),_) =
-         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1) ++ "[label = \"L\"];//5\n"
-           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ "[label = \"R\"];//6\n")
+         (show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k1) ++ " [label = \"L\"];//5\n"
+           ++ show (fst $ nodeMap M.! vid) ++ " -> " ++ show (fst $ nodeMap M.! k2) ++ " [label = \"R\"];//6\n")
 
        (termEdges) = map  (uncurry dotEdges) nodePairs
 
@@ -234,7 +237,7 @@ instance TypeGraph (StandardTypeGraph info) info where
         [showInt num ++ " [label = \"" ++ dotLabel v vinfo ++ "\" ];\n" | (v, (num, vinfo)) <- M.toList nodeMap ]
         --[show num ++ " [label = \"" ++ s ++ "\" ];\n" | s <- termNames ]
        edgeDecls =
-          [show n1 ++ " -- " ++ show n2 ++ " ;\n" | (n1, n2) <- edges ]
+          [show n1 ++ " -> " ++ show n2 ++ " [dir=none] ;\n" | (n1, n2) <- theEdges ]
 
 
      in "digraph G\n{\n" ++ concat (nodeDecls) ++ concat (edgeDecls ++ termEdges) ++ "\n}"
