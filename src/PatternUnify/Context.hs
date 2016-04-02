@@ -242,6 +242,9 @@ instance CM.HasTG Contextual () where
 instance Basic.HasBasic Contextual () where
 
 instance Writer.MonadWriter LogEntries Contextual where
+  tell entries = trace ("LOG " ++ show entries) $ return ()
+  listen = error "Contextual writer listen"
+  pass = error "Contextual writer pass"
 
 ctrace :: String -> Contextual ()
 ctrace s = do

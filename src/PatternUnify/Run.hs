@@ -70,7 +70,7 @@ solveEntries !es  =
           initialise
           ambulando [] Map.empty
           validResult <- trace "Validating" $ validate (const True)
-          badEdges <- return [1] --trace "Getting bad edges" $ applyHeuristics defaultHeuristics
+          badEdges <- trace "Getting bad edges" $ applyHeuristics defaultHeuristics
           trace "Set badEdges" $ setMsg $ show badEdges
           return validResult
           )  --Make sure we don't crash

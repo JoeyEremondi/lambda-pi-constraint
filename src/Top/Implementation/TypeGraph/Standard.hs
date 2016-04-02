@@ -68,7 +68,7 @@ addHead :: (Ln.Fresh m, TypeGraph graph info) => Maybe Tm.VAL -> Tm.Nom -> Tm.He
 addHead original unique (Tm.Var nm _) stg = do--TODO handle twins?
   vinit <- VertexId <$> Ln.fresh unique
   --ourFresh <- Ln.fresh unique
-  return (vinit, addVertex vinit (VSourceVar nm, original) stg)
+  return (vinit, addVertex vinit (VCon $ BoundVar nm, original) stg)
 --Metavariables are indexed by their names
 addHead original unique (Tm.Meta nm) stg =
   let
@@ -204,7 +204,6 @@ instance TypeGraph (StandardTypeGraph info) info where
 
        dotLabel :: VertexId -> VertexInfo -> (String)
        dotLabel vid (VVar,_) = "Meta " ++ show vid
-       dotLabel vid ((VSourceVar k),_) = "SourceVar " ++ show k
        dotLabel vid ((VCon k),_) = show k
        dotLabel vid (VApp _ _, Just tm) = "App " ++ show vid ++ " " ++ Tm.prettyString tm
        dotLabel vid (VLam _ _, Just tm) = "Lam " ++ show vid ++ " " ++ Tm.prettyString tm
@@ -214,22 +213,21 @@ instance TypeGraph (StandardTypeGraph info) info where
 
        dotEdges :: VertexId -> VertexInfo -> (String)
        dotEdges vid (VVar,_) = ("")
-       dotEdges vid ((VSourceVar k),_) = ("")
        dotEdges vid ((VCon k),_) = ("")
        dotEdges vid ((VLam k1 k2),_) =
-         (show vid ++ " -> " ++ show k1 ++ " [label = \"L\"];//1\n"
-           ++ show vid ++ " -> " ++ show k2 ++ " [label = \"R\"];//2\n")
+         (show vid ++ " -> " ++ show k1 ++ " [style = dashed, label = \"L\"];//1\n"
+           ++ show vid ++ " -> " ++ show k2 ++ " [style = dashed, label = \"R\"];//2\n")
        dotEdges vid ((VApp k1 k2),_) =
-         (show vid ++ " -> " ++ show k1  ++ " [label = \"L\"];//3\n"
-           ++ show vid ++ " -> " ++ show k2 ++ " [label = \"R\"];//4\n")
+         (show vid ++ " -> " ++ show k1  ++ " [style = dashed, label = \"L\"];//3\n"
+           ++ show vid ++ " -> " ++ show k2 ++ " [style = dashed, label = \"R\"];//4\n")
        dotEdges vid ((VElim k1 k2),_) =
-         (show vid ++ " -> " ++ show k1 ++ " [label = \"L\"];//5\n"
-           ++ show vid ++ " -> " ++ show k2 ++ " [label = \"R\"];//6\n")
+         (show vid ++ " -> " ++ show k1 ++ " [style = dashed, label = \"L\"];//5\n"
+           ++ show vid ++ " -> " ++ show k2 ++ " [style = dashed, label = \"R\"];//6\n")
 
        termEdges = map (uncurry dotEdges) nodePairs
 
        nodeDecls =
-        [show v ++ " [label = \"" ++ dotLabel v vinfo ++ "\" ];\n" | (v, vinfo) <- nodePairs ]
+        [show v ++ " [label = \"" ++ show v ++ ": " ++ dotLabel v vinfo ++ "\" ];\n" | (v, vinfo) <- nodePairs ]
         --[show num ++ " [label = \"" ++ s ++ "\" ];\n" | s <- termNames ]
        edgeDecls =
           [show n1 ++ " -> " ++ show n2 ++ " [dir=none] ;\n" | (n1, n2) <- theEdges ]

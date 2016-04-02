@@ -18,12 +18,12 @@ import qualified Unbound.Generics.LocallyNameless as Ln
 
 -----------------------------------------------------------------------------------------
 
-data Constant = Con Tm.Can | ConElim Tm.CanElim | CApp
+data Constant = Con Tm.Can | ConElim Tm.CanElim | CApp | BoundVar Tm.Nom
   deriving (Eq, Ord, Show)
 
 newtype VertexId = VertexId Tm.Nom deriving (Eq, Ord)
 type VertexInfo  = (VertexKind, Maybe Tm.VAL)
-data VertexKind  = VVar | VSourceVar Tm.Nom | VCon Constant | VLam VertexId VertexId | VApp VertexId VertexId | VElim VertexId VertexId
+data VertexKind  = VVar | VCon Constant | VLam VertexId VertexId | VApp VertexId VertexId | VElim VertexId VertexId
    deriving (Show, Eq, Ord)
 
 instance Show VertexId where
