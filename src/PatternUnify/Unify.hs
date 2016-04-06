@@ -601,7 +601,7 @@ flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) _) =
          case e of
            E gamma _T HOLE
              | gamma == alpha && gamma == beta ->
-               block n q >> tryIntersect alpha _T ds es
+               block n q >> tryIntersect (Just n) alpha _T ds es
              | gamma == alpha ->
                tryInvert n
                          q
@@ -640,14 +640,14 @@ flexFlex _ q = throwError $ "flexFlex: " ++ show q
 -- metavariable and solves the old one. Otherwise, it leaves the old
 -- metavariable in the context.
 tryIntersect
-  :: Nom -> Type -> [Elim] -> [Elim] -> Contextual ()
-tryIntersect alpha _T ds es =
+  :: (Maybe ProbId) -> Nom -> Type -> [Elim] -> [Elim] -> Contextual ()
+tryIntersect pid alpha _T ds es =
   case (toVars ds, toVars es) of
     ( Just xs, Just ys ) ->
       intersect [] [] _T xs ys >>=
       \m ->
         case m of --TODO intersect creator?
-          Just ( _U, f ) -> hole [] _U $ \beta -> define Nothing [] alpha _T (f beta)
+          Just ( _U, f ) -> hole [] _U $ \beta -> define pid [] alpha _T (f beta)
           Nothing -> pushL (E alpha _T HOLE)
     _ -> pushL (E alpha _T HOLE)
 
@@ -706,7 +706,7 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t _) k =
            fvs ds
      u <- prune (potentials \\ freesToIgnore) t
      case u of
-       d:_ -> active n q >> instantiate d
+       d:_ -> active n q >> instantiate (Just n) d
        [] -> k
 -- %if False
 tryPrune n q _ = do
@@ -809,14 +809,14 @@ pruneSpine _ _ _ _ _ = return Nothing
 -- left through the context until we find the relevant metavariable, then
 -- creating a new metavariable and solving the old one.
 instantiate
-  :: ( Nom, Type, VAL -> VAL ) -> Contextual ()
-instantiate d@( alpha, _T, f ) =
+  :: (Maybe ProbId) -> ( Nom, Type, VAL -> VAL ) -> Contextual ()
+instantiate pid d@( alpha, _T, f ) =
   popL >>=
   \e ->
     case e of
       E beta _U HOLE
-        | alpha == beta -> hole [] _T $ \t -> define Nothing [] beta _U (f t)
-      _ -> pushR (Right e) >> instantiate d
+        | alpha == beta -> hole [] _T $ \t -> define pid [] beta _U (f t)
+      _ -> pushR (Right e) >> instantiate pid d
 
 -- \subsection{Metavariable and problem simplification}
 -- \label{subsec:impl:simplification}
@@ -868,8 +868,8 @@ solver n prob@(All p b) =
 -- simplified, it appends it to the (left) context.
 --TODO lower for elim cases?
 lower
-  :: [( Nom, Type )] -> Nom -> Type -> Contextual ()
-lower _Phi alpha (SIG _S _T) =
+  :: (Maybe ProbId) -> [( Nom, Type )] -> Nom -> Type -> Contextual ()
+lower pid _Phi alpha (SIG _S _T) =
   hole _Phi _S $
   \s ->
     bind3 hole
@@ -877,26 +877,26 @@ lower _Phi alpha (SIG _S _T) =
           (_T $$ s) $
     return $
     \t ->
-      define Nothing _Phi
+      define pid _Phi
              alpha
              (SIG _S _T)
              (PAIR s t)
 -- >
-lower _Phi alpha (PI _S _T) =
+lower pid _Phi alpha (PI _S _T) =
   do x <- freshNom
      ourApp1 <- (_T $$ var x)
      splitSig [] x _S >>=
-       maybe (lower (_Phi ++ [(x, _S)]) alpha ourApp1)
+       maybe (lower pid (_Phi ++ [(x, _S)]) alpha ourApp1)
              (\( y, _A, z, _B, s, ( u, v ) ) ->
                 do ourApp2 <- (_T $$ s)
                    hole _Phi (_Pi y _A (_Pi z _B ourApp2)) $
                      \w ->
                        do ourApp3 <- (w $$$ [u, v])
-                          define Nothing _Phi
+                          define pid _Phi
                                  alpha
                                  (PI _S _T)
                                  (lam x ourApp3))
-lower _Phi alpha _T = pushL (E alpha (_Pis _Phi _T) HOLE)
+lower pid _Phi alpha _T = pushL (E alpha (_Pis _Phi _T) HOLE)
 
 -- Both |solver| and |lower| above need to split $\Sigma$-types (possibly
 -- underneath a bunch of parameters) into their components.  For example,
@@ -981,7 +981,7 @@ ambulando ns theta =
             pushR (Left theta) >> solver n p >> ambulando ns Map.empty
           Prob n p Solved ->
             pushL (Prob n p Solved) >> ambulando (n : ns) theta
-          E alpha _T HOLE -> lower [] alpha _T >> ambulando ns theta
+          E alpha _T HOLE -> lower Nothing [] alpha _T >> ambulando ns theta
           e' -> pushL e' >> ambulando ns theta
 
 -- Given a list of solved problems, a substitution and an entry, |update|
