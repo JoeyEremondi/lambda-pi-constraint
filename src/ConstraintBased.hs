@@ -40,7 +40,7 @@ checker (valNameEnv, typeContext) term =
   let
     toPos (reg, err) = case reg of
       BuiltinRegion -> (Nothing, err)
-      (SourceRegion pos) -> (Just pos, err)
+      pos@(SourceRegion _ _ _) -> (Just pos, err)
     (typeGlobals, typeLocals) = splitContext typeContext
     (valGlobals, valLocals) = splitContext  valNameEnv
     genResult =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term

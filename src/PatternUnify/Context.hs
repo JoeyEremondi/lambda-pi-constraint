@@ -53,12 +53,18 @@ import qualified Top.Implementation.TypeGraph.ApplyHeuristics as Heur
 
 import Top.Solver (LogEntries)
 
+import Common (Region)
+import Text.Parsec (SourcePos)
+
 type BadEdges = [Heur.ErrorInfo ConstraintInfo]
 
 type TypeGraph = TG.StandardTypeGraph ConstraintInfo
 
 data Dec = HOLE | DEFN VAL
   deriving (Show, Generic)
+
+instance Alpha Region
+instance Subst VAL Region
 
 instance Alpha Dec
 instance Subst VAL Dec
@@ -69,7 +75,7 @@ instance Occurs Dec where
     frees _       HOLE      = []
     frees isMeta  (DEFN t)  = frees isMeta t
 
-data EqnInfo = Initial | CreatedBy ProbId
+data EqnInfo = Initial Region | CreatedBy ProbId
   deriving (Eq, Show, Generic)
 
 data Equation = EQN Type VAL Type VAL EqnInfo

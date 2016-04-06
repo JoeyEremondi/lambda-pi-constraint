@@ -112,7 +112,9 @@ solveConstraintM cm =
 
   in
     case ret of
-      Left solverErrs -> Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) (mkErrorPairs solverErrs)
+      Left (Run.ErrorResult ctx solverErrs) ->
+        Left $ mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx)
+        --Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) (mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx) )
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
       Right (_, unsolved, _) ->
         Left $ case (filter (\(nom, _) -> nom `elem` (sourceMetas cstate)) unsolved ) of
@@ -121,7 +123,8 @@ solveConstraintM cm =
             filter (\(nom, _) -> Map.member nom $ metaLocations cstate) unsolved
           sms -> map (unsolvedMsg (sourceMetas cstate) (metaLocations cstate)) sms
 
-mkErrorPairs solverErrs = error "TODO solver errs"
+mkErrorPairs :: [Run.SolverErr] -> UC.ContextL -> [(Common.Region, String)]
+mkErrorPairs solverErrs finalEntries = error "TODO solver errs"
 
 unsolvedMsg :: [Tm.Nom] -> Map.Map Tm.Nom Common.Region -> (Tm.Nom, Maybe Tm.VAL) -> (Common.Region, String)
 unsolvedMsg sourceMetas metaSources (nm,_) | not (nm `elem` sourceMetas) =
@@ -378,7 +381,7 @@ fresh reg env tp = do
     declareWithNom reg env tp ourNom
 
 
-declareWithNom :: t -> WholeEnv -> Tm.Type -> Tm.Nom -> ConstraintM Tm.VAL
+declareWithNom :: Common.Region -> WholeEnv -> Tm.Type -> Tm.Nom -> ConstraintM Tm.VAL
 declareWithNom reg env tp ourNom = do
   let
     extendArrow (i,t) arrowSoFar =
@@ -396,7 +399,7 @@ declareWithNom reg env tp ourNom = do
         --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
           Tm.Meta ourNom
   let ourEntry = --trace ("Made fresh meta app " ++ Run.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
-        UC.E ourNom lambdaType UC.HOLE UC.Initial
+        UC.E ourNom lambdaType UC.HOLE $ UC.Initial reg
   addConstr $ Constraint Common.startRegion ourEntry
   return $ applyEnvToNom ourNom env
 
@@ -408,11 +411,11 @@ applyEnvToNom ourNom env =
   in
     Tm.N ourHead ourElims
 
-freshTopLevel ::Tm.VAL -> ConstraintM Tm.Nom
+freshTopLevel :: Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
     ourNom <- freshNom "topLevel"
     let ourEntry =
-          UC.E ourNom tp UC.HOLE UC.Initial
+          UC.E ourNom tp UC.HOLE $ UC.Initial Common.BuiltinRegion
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNom
 
@@ -421,7 +424,7 @@ unify reg v1 v2 tp env = do
     probId <- UC.ProbId <$> freshNom ("??_" ++ Common.regionName reg ++ "_")
     --TODO right to reverse?
     let currentQuants = reverse $ typeEnv env
-        prob = UC.Unify $ UC.EQN tp v1 tp v2 (UC.Initial)
+        prob = UC.Unify $ UC.EQN tp v1 tp v2 (UC.Initial reg)
     let newCon = --trace ("**WRAP " ++ Tm.prettyString prob ++ " QUANTS " ++ show currentQuants ) $
           wrapProblemForalls currentQuants env prob
     let ourEntry = UC.Prob probId newCon UC.Active

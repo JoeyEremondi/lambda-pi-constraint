@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE PatternSynonyms   #-}
 module Common where
@@ -8,13 +9,15 @@ import Control.Monad.Except
 import Data.Char
 import Data.List
 
-import Text.PrettyPrint.HughesPJ hiding (parens)
+import Text.PrettyPrint.HughesPJ hiding (SourcePos, parens, sourceColumn,
+                                  sourceLine)
 import qualified Text.PrettyPrint.HughesPJ as PP
 
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Pos as Pos
 import Text.Parsec.Token
-import Text.ParserCombinators.Parsec hiding (State, parse)
+import Text.ParserCombinators.Parsec hiding (SourcePos, State, parse,
+                                      sourceColumn, sourceLine)
 import Text.ParserCombinators.Parsec.Error
 import Text.ParserCombinators.Parsec.Language
 
@@ -26,39 +29,48 @@ import Control.Monad.Identity (Identity, runIdentity)
 
 import qualified PatternUnify.Tm as Tm
 
+import GHC.Generics
+
 data Region =
-  SourceRegion SourcePos
+  SourceRegion
+    { regionFile   :: String
+    , regionLine   :: Int
+    , regionColumn :: Int }
   | BuiltinRegion
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
+
+
 
 prettySource :: Region -> String
-prettySource (SourceRegion pos) =
-   prettyPos pos
+prettySource pos@(SourceRegion _ _ _) =
+   (regionName pos) ++ ": " ++ (show $ regionLine pos) ++ "," ++ (show $ regionColumn pos)
 prettySource s = "builtin:"
 
-prettyPos pos = (sourceName pos) ++ ": " ++ (show $ sourceLine pos) ++ "," ++ (show $ sourceColumn pos)
 
 regionName BuiltinRegion = "builtin"
-regionName (SourceRegion pos) = --TODO multiFile
-  (show (sourceLine pos))
-  ++ "_" ++ show (sourceColumn pos)
+regionName pos@(SourceRegion _ _ _) = --TODO multiFile
+  (show (regionLine pos))
+  ++ "_" ++ show (regionColumn pos)
 
 compactRegion :: Region -> String
-compactRegion (SourceRegion pos) = (show $ sourceLine pos) ++ "," ++ (show $ sourceColumn pos)
+compactRegion pos@(SourceRegion _ _ _) = (show $ regionLine pos) ++ "," ++ (show $ regionColumn pos)
 compactRegion _ = "0,0"
 
 data Located a = L {region :: Region, contents :: a}
   deriving (Eq, Ord, Show)
 
-type LPParser = P.ParsecT String SourcePos Identity
+type LPParser = P.ParsecT String P.SourcePos Identity
 
-startRegion = SourceRegion $ Pos.initialPos ""
+startRegion = SourceRegion "" 0 0
 
 catch = catchIOError
 
 builtin x = L BuiltinRegion x
 
-getRegion = SourceRegion `fmap` getPosition
+getRegion = mkSrcRegion `fmap` getPosition
+
+mkSrcRegion spos =
+      SourceRegion (P.sourceName spos) (P.sourceLine spos) (P.sourceColumn spos)
 
 
 simplyTyped = makeTokenParser (haskellStyle { identStart = letter {-<|> P.char '_'-},
@@ -83,7 +95,7 @@ parseIO f p x =
                   Right r -> return (Just r)
 
 
-parseSimple :: String -> LPParser a -> String -> Either [(Maybe SourcePos, String)] a
+parseSimple :: String -> LPParser a -> String -> Either [(Maybe Region, String)] a
 parseSimple fileName p x =
   let
     --doParse :: LPParser Int
@@ -94,7 +106,7 @@ parseSimple fileName p x =
       return x
   in
     case runIdentity $ P.runParserT doParse (Pos.initialPos "") fileName x of
-                  Left e  -> Left [(Just $ errorPos e, show e)]
+                  Left e  -> Left [(Just $ mkSrcRegion $ errorPos e, show e)]
                   Right r -> Right r
 
 vars :: [String]
@@ -593,7 +605,7 @@ makeOutText int i y v subs =
 iinfer :: Interpreter i c v t tinf inf -> NameEnv v -> Ctx inf -> i -> IO (Maybe (t, v, [(Region, v)]))
 iinfer int d g t =
   case iitype int d g t of
-    Left errs -> (forM errs $ \(pos, e) -> putStrLn ("ERROR: " ++ (maybe "<builtin>" prettyPos pos) ++ " " ++ e)) >> return Nothing
+    Left errs -> (forM errs $ \(pos, e) -> putStrLn ("ERROR: " ++ (maybe "<builtin>" prettySource pos) ++ " " ++ e)) >> return Nothing
     Right v -> return (Just v)
 
 handleStmt :: Interpreter i c v t tinf inf
@@ -659,7 +671,7 @@ data Name
 
 
 
-type Result a = Either [(Maybe SourcePos, String)] a
+type Result a = Either [(Maybe Region, String)] a
 
 
 type CTerm_ = Located CTerm_'

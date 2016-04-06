@@ -61,9 +61,15 @@ test = runTest (const True)
 initialise :: Contextual ()
 initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 
+data ErrorResult =
+  ErrorResult
+  { errorContext :: Context
+  , solverErrs   :: [SolverErr]
+  }
+
 data SolverErr = StringErr (ProbId, String) | GraphErr [ErrorInfo ConstraintInfo]
 
-solveEntries :: [Entry] -> Either [SolverErr] ((), Context)
+solveEntries :: [Entry] -> Either ErrorResult ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
@@ -94,13 +100,13 @@ solveEntries !es  =
     --   Right _ -> render $ runPretty $ pretty ctx
   in --trace ("\n\n=============\nFinal\n" ++ resultString) $
     case (finalBadEdges, result) of
-      ([], Left err) -> Left [StringErr (initLoc, err)]
+      ([], Left err) -> Left $ ErrorResult ctx [StringErr (initLoc, err)]
       ([], Right _) ->
         case getContextErrors es ctx of
-          Left errList -> Left $ map (\(loc, err) -> StringErr (loc, err)) errList
+          Left errList -> Left $ ErrorResult ctx $ map (\(loc, err) -> StringErr (loc, err)) errList
           Right x -> Right x
       (edgeList, _) ->
-        Left $ [GraphErr edgeList]
+        Left $ ErrorResult ctx [GraphErr edgeList]
 
 
 
