@@ -24,7 +24,7 @@ import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              popR, pushL, pushR, setProblem,
                              wrapProb)
 import qualified PatternUnify.Context as Ctx
-import PatternUnify.Kit (bind3, bind6, elem, notElem, pp)
+import PatternUnify.Kit (bind3, bind6, bind7, elem, notElem, pp)
 import PatternUnify.Tm
 import Unbound.Generics.LocallyNameless (Fresh, runFreshM, subst, substs,
                                          unbind)
@@ -99,7 +99,7 @@ goLeft = popL >>= pushR . Right
 hole
   :: [( Nom, Type )] -> Type -> (VAL -> Contextual a) -> Contextual a
 define
-  :: [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
+  :: (Maybe ProbId) -> [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
 hole _Gam _T f =
   do check SET (_Pis _Gam _T) `catchError`
        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
@@ -110,8 +110,8 @@ hole _Gam _T f =
      return a
 
 defineGlobal
-  :: Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal x _T v m =
+  :: (Maybe ProbId) -> Nom -> Type -> VAL -> Contextual a -> Contextual a
+defineGlobal pid x _T v m =
   do check _T v `catchError`
        (throwError .
         (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -120,11 +120,11 @@ defineGlobal x _T v m =
      a <- m
      goLeft
      --Add our final value to the type graph
-     Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v)
+     Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v pid)
      return a
 
-define _Gam x _T v =
-  defineGlobal x
+define pid _Gam x _T v =
+  defineGlobal pid x
                (_Pis _Gam _T)
                (lams' _Gam v)
                (return ())
@@ -148,13 +148,14 @@ define _Gam x _T v =
 -- constructors.
 eqn
   :: (Fresh m)
-  => m Type -> m VAL -> m Type -> m VAL -> m Equation
-eqn ma mx mb my =
+  => m Type -> m VAL -> m Type -> m VAL -> m (Maybe ProbId) -> m Equation
+eqn ma mx mb my mpid =
   do a <- ma
      b <- mb
      x <- mx
      y <- my
-     return $ EQN a x b y
+     pid <- mpid
+     return $ EQN a x b y pid --TODO keep probId?
 
 munify :: (Fresh m)
        => m Equation -> m Problem
@@ -168,7 +169,7 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
-  unify' n q@(EQN (PI _A _B) f (PI _S _T) g) =
+  unify' n q@(EQN (PI _A _B) f (PI _S _T) g pid) =
     do setProblem n
        x <- freshNom
        let ( xL, xR ) = (N (Var x TwinL) [], N (Var x TwinR) [])
@@ -176,11 +177,12 @@ unify n q  = do
          (munify (eqn (_B $$ xL)
                       (f $$ xL)
                       (_T $$ xR)
-                      (g $$ xR)))
+                      (g $$ xR)
+                      (return $ Just n)))
        simplify n
                 (Unify q)
-                [Unify (EQN SET _A SET _S), allTwinsProb x _A _S eq1]
-  unify' n q@(EQN (SIG _A _B) t (SIG _C _D) w) =
+                [Unify (EQN SET _A SET _S pid), allTwinsProb x _A _S eq1]
+  unify' n q@(EQN (SIG _A _B) t (SIG _C _D) w pid) =
     do setProblem n
        a <- t %% Hd
        b <- t %% Tl
@@ -190,23 +192,24 @@ unify n q  = do
          munify (eqn (_B $$ a)
                      (return b)
                      (_D $$ c)
-                     (return d))
+                     (return d)
+                     (return $ Just n))
        simplify n
                 (Unify q)
-                [Unify (EQN _A a _C c), eq1]
+                [Unify (EQN _A a _C c pid), eq1]
     where
           -- >
-  unify' n q@(EQN _ (N (Meta _) _) _ (N (Meta _) _)) =
+  unify' n q@(EQN _ (N (Meta _) _) _ (N (Meta _) _) pid) =
     do
       setProblem n
       tryPrune n q $ tryPrune n (sym q) $ flexFlex n q
   -- >
-  unify' n q@(EQN _ (N (Meta _) _) _ _) =
+  unify' n q@(EQN _ (N (Meta _) _) _ _ pid) =
     do
       setProblem n
       tryPrune n q $ flexRigid [] n q
   -- >
-  unify' n q@(EQN _ _ _ (N (Meta _) _)) =
+  unify' n q@(EQN _ _ _ (N (Meta _) _) pid) =
     do
       setProblem n
       tryPrune n (sym q) $ flexRigid [] n (sym q)
@@ -214,11 +217,11 @@ unify n q  = do
   unify' n q =
     do
       setProblem n
-      rigidRigid q >>= simplify n (Unify q) . map Unify
+      rigidRigid (Just n) q >>= simplify n (Unify q) . map Unify
 
 -- Here |sym| swaps the two sides of an equation:
 sym :: Equation -> Equation
-sym (EQN _S s _T t) = EQN _T t _S s
+sym (EQN _S s _T t pid) = EQN _T t _S s pid
 
 
 -- \subsection{Rigid-rigid decomposition}
@@ -231,94 +234,94 @@ sym (EQN _S s _T t) = EQN _T t _S s
 -- %% function implements the steps shown in Figure~\ref{fig:decompose}.
 -- %% excluding the $\eta$-expansion steps, which are handled by |unify|
 -- %% above.
-rigidRigid :: Equation -> Contextual [Equation]
-rigidRigid eqn =
+rigidRigid :: (Maybe ProbId) -> Equation -> Contextual [Equation]
+rigidRigid pid eqn =
   do
     retEqns <- rigidRigid' eqn
     --forM retEqns recordEqn --TODO only record in unify?
     return retEqns
     --TODO need derived edges?
   where
-    rigidRigid' (EQN SET SET SET SET) = return []
+    rigidRigid' (EQN SET SET SET SET _) = return []
     -- >
-    rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T)) =
-      return [EQN SET _A SET _S
+    rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T) _) =
+      return [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B
                   (_S --> SET)
-                  _T]
+                  _T pid]
     -- >
-    rigidRigid' (EQN SET (SIG _A _B) SET (SIG _S _T)) =
-      return [EQN SET _A SET _S
+    rigidRigid' (EQN SET (SIG _A _B) SET (SIG _S _T) _) =
+      return [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B
                   (_S --> SET)
-                  _T]
+                  _T pid]
     -- >
-    rigidRigid' (EQN _S (N (Var x w) ds) _T (N (Var y w') es))
+    rigidRigid' (EQN _S (N (Var x w) ds) _T (N (Var y w') es) _)
       | x == y =
         do _X <- lookupVar x w
            _Y <- lookupVar y w'
-           (EQN SET _X SET _Y :) <$>
-             matchSpine _X
+           (EQN SET _X SET _Y pid :) <$>
+             matchSpine pid _X
                         (N (Var x w) [])
                         ds
                         _Y
                         (N (Var y w') [])
                         es
-    rigidRigid' (EQN SET Nat SET Nat) = return []
-    rigidRigid' (EQN SET (Fin n) SET (Fin n')) = return [EQN Nat n Nat n']
-    rigidRigid' (EQN SET (Vec a m) SET (Vec b n)) =
-      return [EQN SET a SET b, EQN Nat m Nat n]
+    rigidRigid' (EQN SET Nat SET Nat _) = return []
+    rigidRigid' (EQN SET (Fin n) SET (Fin n') _) = return [EQN Nat n Nat n' pid]
+    rigidRigid' (EQN SET (Vec a m) SET (Vec b n) _) =
+      return [EQN SET a SET b pid, EQN Nat m Nat n pid]
     --TODO need twins here?
-    rigidRigid' (EQN SET (Eq a x y) SET (Eq a' x' y')) =
-      return [EQN SET a SET a', EQN a x a' x', EQN a y a' y']
-    rigidRigid' (EQN Nat Zero Nat Zero) = return []
-    rigidRigid' (EQN Nat (Succ m) Nat (Succ n)) = return [EQN Nat m Nat n]
-    rigidRigid' (EQN (Fin m) (FZero n) (Fin m') (FZero n')) =
-      return [EQN Nat n Nat n', EQN Nat m Nat m', EQN Nat m Nat n]
+    rigidRigid' (EQN SET (Eq a x y) SET (Eq a' x' y') _) =
+      return [EQN SET a SET a' pid, EQN a x a' x' pid, EQN a y a' y' pid]
+    rigidRigid' (EQN Nat Zero Nat Zero _) = return []
+    rigidRigid' (EQN Nat (Succ m) Nat (Succ n) _) = return [EQN Nat m Nat n pid]
+    rigidRigid' (EQN (Fin m) (FZero n) (Fin m') (FZero n') _) =
+      return [EQN Nat n Nat n' pid, EQN Nat m Nat m' pid, EQN Nat m Nat n pid]
     --TODO need twins here?
-    rigidRigid' (EQN (Fin m) (FSucc n f) (Fin m') (FSucc n' f')) =
-      return [EQN Nat n Nat n'
-             ,EQN Nat m Nat m'
-             ,EQN Nat m Nat n
+    rigidRigid' (EQN (Fin m) (FSucc n f) (Fin m') (FSucc n' f') _) =
+      return [EQN Nat n Nat n' pid
+             ,EQN Nat m Nat m' pid
+             ,EQN Nat m Nat n pid
              ,EQN (Fin n)
                   f
                   (Fin n)
-                  f']
+                  f' pid]
     --TODO need to unify type indices of vectors?
-    rigidRigid' (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b')) =
-      return [EQN SET a SET a', EQN SET b SET b', EQN SET a' SET b']
+    rigidRigid' (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b') _) =
+      return [EQN SET a SET a' pid, EQN SET b SET b' pid, EQN SET a' SET b' pid]
     --TODO need to unify type indices of vectors?
-    rigidRigid' (EQN (Vec a (Succ m)) (VCons a' (Succ m') h t) (Vec b (Succ n)) (VCons b' (Succ n') h' t')) =
-      return [EQN SET a SET a'
-             ,EQN SET b SET b'
-             ,EQN SET a' SET b'
-             ,EQN Nat m Nat m'
-             ,EQN Nat n Nat n'
-             ,EQN Nat m' Nat n'
-             ,EQN a h b h'
+    rigidRigid' (EQN (Vec a (Succ m)) (VCons a' (Succ m') h t) (Vec b (Succ n)) (VCons b' (Succ n') h' t') _) =
+      return [EQN SET a SET a' pid
+             ,EQN SET b SET b' pid
+             ,EQN SET a' SET b' pid
+             ,EQN Nat m Nat m' pid
+             ,EQN Nat n Nat n' pid
+             ,EQN Nat m' Nat n' pid
+             ,EQN a h b h' pid
              ,EQN (Vec a m)
                   t
                   (Vec b n)
-                  t']
-    rigidRigid' (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z')) =
-      return [EQN SET a SET a'
-             ,EQN SET b SET b'
-             ,EQN SET a' SET b'
-             ,EQN a x b x'
-             ,EQN a y b y'
-             ,EQN a x a' z
-             ,EQN a y a' z
-             ,EQN b x' b' z'
-             ,EQN b y' b' z'
-             ,EQN a' z b' z']
+                  t' pid]
+    rigidRigid' (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z') _) =
+      return [EQN SET a SET a' pid
+             ,EQN SET b SET b' pid
+             ,EQN SET a' SET b' pid
+             ,EQN a x b x' pid
+             ,EQN a y b y' pid
+             ,EQN a x a' z pid
+             ,EQN a y a' z pid
+             ,EQN b x' b' z' pid
+             ,EQN b y' b' z' pid
+             ,EQN a' z b' z' pid]
     -- >
-    rigidRigid' eq@(EQN t1 v1 t2 v2) = badRigidRigid eq
+    rigidRigid' eq@(EQN t1 v1 t2 v2 _) = badRigidRigid eq
 
 badRigidRigid
   :: Equation -> Contextual [Equation]
-badRigidRigid (EQN t1 v1 t2 v2) =
+badRigidRigid (EQN t1 v1 t2 v2 _) =
   throwError $
   "Cannot rigidly match (" ++
   prettyString v1 ++
@@ -334,36 +337,37 @@ badRigidRigid (EQN t1 v1 t2 v2) =
 -- $[[x : Pi a : A . B a -> C]]$ then the constraint $[[x s t == x u v]]$
 -- will decompose into
 -- $[[(s : A) == (u : A) && (t : B s) == (v : B u)]]$.
-matchSpine :: Type
+matchSpine :: (Maybe ProbId)
+           -> Type
            -> VAL
            -> [Elim]
            -> Type
            -> VAL
            -> [Elim]
            -> Contextual [Equation]
-matchSpine (PI _A _B) u (A a:ds) (PI _S _T) v (A s:es) =
-  (EQN _A a _S s :) <$>
-  bind6 matchSpine
+matchSpine pid (PI _A _B) u (A a:ds) (PI _S _T) v (A s:es) =
+  (EQN _A a _S s pid :) <$> --TODO pid here?
+  bind7 matchSpine (return pid)
         (_B $$ a)
         (u $$ a)
         (return ds)
         (_T $$ s)
         (v $$ s)
         (return es)
-matchSpine (SIG _A _B) u (Hd:ds) (SIG _S _T) v (Hd:es) =
-  bind6 matchSpine
+matchSpine pid (SIG _A _B) u (Hd:ds) (SIG _S _T) v (Hd:es) =
+  bind7 matchSpine (return pid)
         (return _A)
         (u %% Hd)
         (return ds)
         (return _S)
         (v %% Hd)
         (return es)
-matchSpine (SIG _A _B) u (Tl:ds) (SIG _S _T) v (Tl:es) =
+matchSpine pid (SIG _A _B) u (Tl:ds) (SIG _S _T) v (Tl:es) =
   do a <- u %% Hd
      b <- u %% Tl
      s <- v %% Hd
      t <- v %% Tl
-     bind6 matchSpine
+     bind7 matchSpine (return pid)
            (_B $$ a)
            (return b)
            (return ds)
@@ -371,24 +375,27 @@ matchSpine (SIG _A _B) u (Tl:ds) (SIG _S _T) v (Tl:es) =
            (return t)
            (return es)
 --Match datatype eliminators
-matchSpine Nat u (elim1@(NatElim m mz ms):ds) Nat v (elim2@(NatElim m' mz' ms'):es) =
+matchSpine pid Nat u (elim1@(NatElim m mz ms):ds) Nat v (elim2@(NatElim m' mz' ms'):es) =
   do let eq1 =
            EQN (Nat --> SET)
                m
                (Nat --> SET)
                m'
+               pid
      eq2 <-
        eqn (m $$ Zero)
            (return mz)
            (m' $$ Zero)
            (return mz')
+           (return pid)
      eq3 <-
        eqn (msVType m)
            (return ms)
            (msVType m')
            (return ms')
+           (return pid)
      rest <-
-       bind6 matchSpine
+       bind7 matchSpine (return pid)
              (m $$ u)
              (u %% elim1)
              (return ds)
@@ -396,27 +403,29 @@ matchSpine Nat u (elim1@(NatElim m mz ms):ds) Nat v (elim2@(NatElim m' mz' ms'):
              (v %% elim2)
              (return es)
      return $ [eq1, eq2, eq3] ++ rest
-matchSpine (Fin ni) u (elim1@(FinElim m mz ms n):ds) (Fin ni') v (elim2@(FinElim m' mz' ms' n'):es) =
+matchSpine pid (Fin ni) u (elim1@(FinElim m mz ms n):ds) (Fin ni') v (elim2@(FinElim m' mz' ms' n'):es) =
   do let eq1 =
            EQN (finmType)
                m
                (finmType)
-               m'
+               m' pid
      eq2 <-
        eqn (finmzVType m)
            (return mz)
            (finmzVType m')
            (return mz')
+           (return pid)
      eq3 <-
        eqn (finmsVType m)
            (return ms)
            (finmsVType m')
            (return ms')
-     let eq4 = EQN (Nat) n Nat n'
-     let eq5 = EQN (Nat) ni Nat ni'
-     let eq6 = EQN (Nat) n Nat ni
+           (return pid)
+     let eq4 = EQN (Nat) n Nat n' pid
+     let eq5 = EQN (Nat) ni Nat ni' pid
+     let eq6 = EQN (Nat) n Nat ni pid
      rest <-
-       bind6 matchSpine
+       bind7 matchSpine (return pid)
              (m $$$ [n, u])
              (u %% elim1)
              (return ds)
@@ -424,31 +433,34 @@ matchSpine (Fin ni) u (elim1@(FinElim m mz ms n):ds) (Fin ni') v (elim2@(FinElim
              (v %% elim2)
              (return es)
      return $ [eq1, eq2, eq3, eq4, eq5, eq6] ++ rest
-matchSpine (Vec a len) u (elim1@(VecElim b motive mn mc n):ds) (Vec a' len') v (elim2@(VecElim b' motive' mn' mc' n'):es) =
-  do let eq1 = EQN SET a SET a'
-     let eq2 = EQN SET b SET b'
-     let eq3 = EQN SET a' SET b'
-     let eq4 = EQN Nat len Nat len'
-     let eq5 = EQN Nat len Nat n
-     let eq6 = EQN Nat len' Nat n'
+matchSpine pid (Vec a len) u (elim1@(VecElim b motive mn mc n):ds) (Vec a' len') v (elim2@(VecElim b' motive' mn' mc' n'):es) =
+  do let eq1 = EQN SET a SET a' pid
+     let eq2 = EQN SET b SET b' pid
+     let eq3 = EQN SET a' SET b' pid
+     let eq4 = EQN Nat len Nat len' pid
+     let eq5 = EQN Nat len Nat n pid
+     let eq6 = EQN Nat len' Nat n' pid
      eq7 <-
        eqn (vmVType b)
            (return motive)
            (vmVType b')
            (return motive')
+           (return pid)
      eq8 <-
        eqn (mnVType b motive)
            (return mn)
            (mnVType b' motive')
            (return mn')
+           (return pid)
      eq9 <-
        eqn (mcVType b motive)
            (return mc)
            (mcVType b' motive')
            (return mc')
-     let eq10 = EQN Nat n Nat n'
+           (return pid)
+     let eq10 = EQN Nat n Nat n' pid
      rest <-
-       bind6 matchSpine
+       bind7 matchSpine (return pid)
              (vResultVType motive n u)
              (u %% elim1)
              (return ds)
@@ -456,24 +468,26 @@ matchSpine (Vec a len) u (elim1@(VecElim b motive mn mc n):ds) (Vec a' len') v (
              (v %% elim2)
              (return es)
      return $ [eq1, eq2, eq3, eq4, eq5, eq6, eq7, eq8, eq9, eq10] ++ rest
-matchSpine (Eq a w x) u (elim1@(EqElim b m mr y z):ds) (Eq a' w' x') v (elim2@(EqElim b' m' mr' y' z'):es) =
-  do let eq1 = EQN SET a SET a'
-     let eq2 = EQN SET b SET b'
-     let eq3 = EQN SET a' SET b'
+matchSpine pid (Eq a w x) u (elim1@(EqElim b m mr y z):ds) (Eq a' w' x') v (elim2@(EqElim b' m' mr' y' z'):es) =
+  do let eq1 = EQN SET a SET a' pid
+     let eq2 = EQN SET b SET b' pid
+     let eq3 = EQN SET a' SET b' pid
      eq4 <-
        eqn (eqmVType b)
            (return m)
            (eqmVType b')
            (return m')
+           (return pid)
      eq5 <-
        eqn (eqmrVType b m)
            (return mr)
            (eqmrVType b' m')
            (return mr')
-     let eq6 = EQN b y b' y'
-     let eq7 = EQN b z b' z'
+           (return pid)
+     let eq6 = EQN b y b' y' pid
+     let eq7 = EQN b z b' z' pid
      rest <-
-       bind6 matchSpine
+       bind7 matchSpine (return pid)
              (eqResultVType m y z u)
              (u %% elim1)
              (return ds)
@@ -481,8 +495,8 @@ matchSpine (Eq a w x) u (elim1@(EqElim b m mr y z):ds) (Eq a' w' x') v (elim2@(E
              (v %% elim2)
              (return es)
      return $ [eq1, eq2, eq3, eq4, eq5, eq6, eq7] ++ rest
-matchSpine _ _ [] _ _ [] = return []
-matchSpine t hd spn t' hd' spn' =
+matchSpine _ _ _ [] _ _ [] = return []
+matchSpine _ t hd spn t' hd' spn' =
   throwError $
   "Cannot match (" ++
   (pp hd) ++
@@ -505,7 +519,7 @@ matchSpine t hd spn t' hd' spn' =
 -- subsection~\ref{subsec:spec:flex-rigid}.
 flexRigid
   :: [Entry] -> ProbId -> Equation -> Contextual ()
-flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _) =
+flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ _) =
   setProblem n >>
   do _Gam <- ask
      popL >>=
@@ -531,13 +545,13 @@ flexRigid _ n q = throwError $ "flexRigid: " ++ show q
 -- solution, it runs the continuation.
 tryInvert
   :: ProbId -> Equation -> Type -> Contextual () -> Contextual ()
-tryInvert n q@(EQN _ (N (Meta alpha) es) _ s) _T k =
+tryInvert n q@(EQN _ (N (Meta alpha) es) _ s _) _T k =
   setProblem n >>
   invert alpha _T es s >>=
   \m ->
     case m of
       Nothing -> k
-      Just v -> active n q >> define [] alpha _T v
+      Just v -> active n q >> define (Just n) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
 
@@ -579,7 +593,7 @@ invert alpha _T es t =
 -- Figure~\ref{fig:flex-flex}, as described in
 -- subsection~\ref{subsec:spec:flex-flex}.
 flexFlex :: ProbId -> Equation -> Contextual ()
-flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es)) =
+flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) _) =
   setProblem n >>
   do _Gam <- ask
      popL >>=
@@ -632,8 +646,8 @@ tryIntersect alpha _T ds es =
     ( Just xs, Just ys ) ->
       intersect [] [] _T xs ys >>=
       \m ->
-        case m of
-          Just ( _U, f ) -> hole [] _U $ \beta -> define [] alpha _T (f beta)
+        case m of --TODO intersect creator?
+          Just ( _U, f ) -> hole [] _U $ \beta -> define Nothing [] alpha _T (f beta)
           Nothing -> pushL (E alpha _T HOLE)
     _ -> pushL (E alpha _T HOLE)
 
@@ -683,7 +697,7 @@ tryPrune
   :: ProbId -> Equation -> Contextual () -> Contextual ()
 --tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k
 --  | trace ("TryPrune " ++ show n ++ " " ++ pp q) False = error "tryPrune"
-tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k =
+tryPrune n q@(EQN _ (N (Meta _) ds) _ t _) k =
   setProblem n >>
   do _Gam <- ask
      let potentials = vars _Gam
@@ -801,7 +815,7 @@ instantiate d@( alpha, _T, f ) =
   \e ->
     case e of
       E beta _U HOLE
-        | alpha == beta -> hole [] _T $ \t -> define [] beta _U (f t)
+        | alpha == beta -> hole [] _T $ \t -> define Nothing [] beta _U (f t)
       _ -> pushR (Right e) >> instantiate d
 
 -- \subsection{Metavariable and problem simplification}
@@ -863,7 +877,7 @@ lower _Phi alpha (SIG _S _T) =
           (_T $$ s) $
     return $
     \t ->
-      define _Phi
+      define Nothing _Phi
              alpha
              (SIG _S _T)
              (PAIR s t)
@@ -878,7 +892,7 @@ lower _Phi alpha (PI _S _T) =
                    hole _Phi (_Pi y _A (_Pi z _B ourApp2)) $
                      \w ->
                        do ourApp3 <- (w $$$ [u, v])
-                          define _Phi
+                          define Nothing _Phi
                                  alpha
                                  (PI _S _T)
                                  (lam x ourApp3))

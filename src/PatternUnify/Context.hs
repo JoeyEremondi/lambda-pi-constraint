@@ -65,18 +65,18 @@ instance Occurs Dec where
     frees _       HOLE      = []
     frees isMeta  (DEFN t)  = frees isMeta t
 
-data Equation = EQN Type VAL Type VAL
+data Equation = EQN Type VAL Type VAL (Maybe ProbId)
   deriving (Show, Generic)
 
 instance Alpha Equation
 instance Subst VAL Equation
 
 instance Occurs Equation where
-    occurrence xs (EQN _S s _T t) = occurrence xs [_S, s, _T, t]
-    frees isMeta (EQN _S s _T t) = frees isMeta [_S, s, _T, t]
+    occurrence xs (EQN _S s _T t _) = occurrence xs [_S, s, _T, t]
+    frees isMeta (EQN _S s _T t _) = frees isMeta [_S, s, _T, t]
 
 instance Pretty Equation where
-  pretty (EQN _S s _T t) =  f <$> (pretty _S) <*> (pretty s) <*> (pretty _T) <*> (prettyVal t)
+  pretty (EQN _S s _T t _) =  f <$> (pretty _S) <*> (pretty s) <*> (pretty _T) <*> (prettyVal t)
       where f _S' s' _T' t' = parens (s' <+> colon <+> _S') <+>
                                   text "===" <+> parens (t' <+> colon <+> _T')
             prettyVal :: (Applicative m, LFresh m, MonadReader Size m) => VAL -> m Doc
@@ -406,8 +406,8 @@ metaValue x = look =<< getL
 
 addEqn :: (Fresh m) => info -> Equation -> TG.StandardTypeGraph info -> m (TG.StandardTypeGraph info)
 --Avoid polluting our graph with a bunch of reflexive equations
-addEqn info eqn@(EQN _ v1 _ v2) stg | v1 == v2 = return stg
-addEqn info eqn@(EQN _ v1 _ v2) stg = trace ("Adding equation to graph " ++ show eqn) $ TG.addEqn info (v1, v2) stg
+addEqn info eqn@(EQN _ v1 _ v2 _) stg | v1 == v2 = return stg
+addEqn info eqn@(EQN _ v1 _ v2 _) stg = trace ("Adding equation to graph " ++ show eqn) $ TG.addEqn info (v1, v2) stg
 
 recordEqn :: ConstraintInfo -> Equation -> Contextual ()
 recordEqn cinfo eqn = do
@@ -439,7 +439,7 @@ recordProblem info (ProbId pid) prob = recordProblem' prob 0
 recordEntrySub :: Entry -> Entry -> Contextual ()
 recordEntrySub (E nm1 tp1 HOLE) (E nm2 tp2 HOLE) = return () --TODO will ever change?
 recordEntrySub (E nm tp1 (DEFN dec1)) (E _ tp2 (DEFN dec2)) =
-  recordEqn (DefnUpdate nm) (EQN tp1 dec1 tp2 dec2)
+  recordEqn (DefnUpdate nm) (EQN tp1 dec1 tp2 dec2 (Just $ ProbId nm))
 recordEntrySub (Prob pid prob _) (Prob _ prob2 _) =
   recordProblemSub pid prob prob2
 
@@ -448,9 +448,9 @@ recordEntrySub (Prob pid prob _) (Prob _ prob2 _) =
 recordProblemSub :: ProbId -> Problem -> Problem -> Contextual ()
 recordProblemSub (ProbId pid) prob1 prob2 = helper' prob1 prob2 0
   where
-    helper' (Unify (EQN t1 v1 t2 v2)) (Unify (EQN t1' v1' t2' v2')) _ = do
-      recordEqn (ProbUpdate $ ProbId pid) $ EQN t1 v1 t1' v1'
-      recordEqn (ProbUpdate $ ProbId pid) $ EQN t2 v2 t2' v2'
+    helper' (Unify (EQN t1 v1 t2 v2 _)) (Unify (EQN t1' v1' t2' v2' creator)) _ = do
+      recordEqn (ProbUpdate $ ProbId pid) $ EQN t1 v1 t1' v1' creator
+      recordEqn (ProbUpdate $ ProbId pid) $ EQN t2 v2 t2' v2' creator
     helper' (All tp bnd1) (All _ bnd2) i = do
       (nm1, prob1) <- unbind bnd1
       (nm2, prob2) <- unbind bnd2

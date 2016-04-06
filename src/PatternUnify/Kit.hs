@@ -37,6 +37,7 @@ module PatternUnify.Kit  (  bool
             , bind4
             , bind5
             , bind6
+            , bind7
             ) where
 
 
@@ -162,3 +163,15 @@ bind6 f ma mb mc md me mf = do
   e <- me
   ff <- mf
   f a b c d e ff
+
+
+bind7 :: (Monad m) => (t -> t1 -> t2 -> t3 -> t4 -> t5 -> t6 -> m b) -> m t -> m t1 -> m t2 -> m t3 -> m t4 -> m t5 -> m t6 -> m b
+bind7 f ma mb mc md me mf mg = do
+  a <- ma
+  b <- mb
+  c <- mc
+  d <- md
+  e <- me
+  ff <- mf
+  g <- mg
+  f a b c d e ff g

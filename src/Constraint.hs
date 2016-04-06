@@ -419,7 +419,7 @@ unify reg v1 v2 tp env = do
     probId <- UC.ProbId <$> freshNom ("??_" ++ Common.regionName reg ++ "_")
     --TODO right to reverse?
     let currentQuants = reverse $ typeEnv env
-        prob = UC.Unify $ UC.EQN tp v1 tp v2
+        prob = UC.Unify $ UC.EQN tp v1 tp v2 (Just probId)
     let newCon = --trace ("**WRAP " ++ Tm.prettyString prob ++ " QUANTS " ++ show currentQuants ) $
           wrapProblemForalls currentQuants env prob
     let ourEntry = UC.Prob probId newCon UC.Active
