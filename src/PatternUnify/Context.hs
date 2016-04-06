@@ -49,7 +49,11 @@ import qualified Top.Interface.Basic as Basic
 
 import qualified Top.Implementation.TypeGraph.ClassMonadic as CM
 
+import qualified Top.Implementation.TypeGraph.ApplyHeuristics as Heur
+
 import Top.Solver (LogEntries)
+
+type BadEdges = [Heur.ErrorInfo ConstraintInfo]
 
 type TypeGraph = TG.StandardTypeGraph ConstraintInfo
 
@@ -175,7 +179,7 @@ instance Pretty Entry where
 
 type ContextL  = Bwd Entry
 type ContextR  = [Either Subs Entry]
-type Context   = (ContextL, ContextR, ProbId, TypeGraph, String)
+type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges)
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -293,7 +297,7 @@ setProblem pid = modify (\ (x, y, _, z, s) -> (x, y, pid, z, s))
 setGraph :: TypeGraph -> Contextual ()
 setGraph g = modify (\ (x, y, z, _, s) -> (x, y, z, g, s))
 
-setMsg :: String -> Contextual ()
+setMsg :: BadEdges -> Contextual ()
 setMsg s = modify (\(x,y,z,g,_) -> (x,y,z,g,s))
 
 pushSubs :: Subs -> Contextual ()

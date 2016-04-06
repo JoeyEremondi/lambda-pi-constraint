@@ -61,20 +61,22 @@ test = runTest (const True)
 initialise :: Contextual ()
 initialise = (fresh (s2n "init") :: Contextual (Name VAL)) >> return ()
 
-solveEntries :: [Entry] -> Either [(ProbId, Err)] ((), Context)
+data SolverErr = StringErr (ProbId, String) | GraphErr [ErrorInfo ConstraintInfo]
+
+solveEntries :: [Entry] -> Either [SolverErr] ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
     (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
-       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, "") $ do
+       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
           initialise
           ambulando [] Map.empty
           validResult <- trace "Validating" $ validate (const True)
           badEdges <- trace "Getting bad edges" $ applyHeuristics defaultHeuristics
-          trace "Set badEdges" $ setMsg $ show badEdges
-          return validResult
+          trace "Set badEdges" $ setMsg  badEdges
+          return badEdges
           )  --Make sure we don't crash
-    (lcx,rcx,lastProb,finalGraph,finalStr) = trace "wrote file" $ unsafePerformIO $ do
+    (lcx,rcx,lastProb,_,finalBadEdges) = trace "wrote file" $ unsafePerformIO $ do
         let g = (\(_,_,_,g,_) -> g) ctx
         writeFile "out.dot" (TC.toDot g)
         return ctx
@@ -91,13 +93,14 @@ solveEntries !es  =
     --     ++ "\nErrorGraph " ++ finalStr
     --   Right _ -> render $ runPretty $ pretty ctx
   in --trace ("\n\n=============\nFinal\n" ++ resultString) $
-    case result of
-      Left err -> Left [(initLoc, err ++ "\nErrorGraph " ++ finalStr)]
-      Right _ ->
+    case (finalBadEdges, result) of
+      ([], Left err) -> Left [StringErr (initLoc, err)]
+      ([], Right _) ->
         case getContextErrors es ctx of
-          Left errList -> Left $ map (\(loc, err) -> (loc, err ++ "\nErrorGraph " ++ finalStr)) errList
+          Left errList -> Left $ map (\(loc, err) -> StringErr (loc, err)) errList
           Right x -> Right x
-
+      (edgeList, _) ->
+        Left $ [GraphErr edgeList]
 
 
 
@@ -193,7 +196,7 @@ runTest q es = do
                    putStrLn $ "Initial context:\n" ++
                                 render (runPretty (prettyEntries es))
 
-                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID", Empty.empty, "") $
+                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $
                                        (do
                                          initialise
                                          ambulando [] Map.empty
