@@ -51,7 +51,7 @@ import qualified Top.Implementation.TypeGraph.ClassMonadic as CM
 
 import Top.Solver (LogEntries)
 
-type TypeGraph = TG.StandardTypeGraph ()
+type TypeGraph = TG.StandardTypeGraph ConstraintInfo
 
 data Dec = HOLE | DEFN VAL
   deriving (Show, Generic)
@@ -81,6 +81,14 @@ instance Pretty Equation where
                                   text "===" <+> parens (t' <+> colon <+> _T')
             prettyVal :: (Applicative m, LFresh m, MonadReader Size m) => VAL -> m Doc
             prettyVal v = pretty v
+
+data ConstraintInfo =
+  InitConstr ProbId
+  | DefnUpdate Nom
+  | ProbUpdate ProbId
+  | DefineMeta Nom
+  | DerivedEqn ProbId
+  deriving (Eq, Show, Generic)
 
 data Problem  =  Unify Equation
               |  All Param (Bind Nom Problem)
@@ -232,14 +240,14 @@ newtype Contextual a = Contextual { unContextual ::
                 MonadPlus, Alternative)
 
 
-instance CM.HasTG Contextual () where
+instance CM.HasTG Contextual ConstraintInfo where
   withTypeGraphM f = do
     ourGraph <- getGraph
     (ret, newGraph) <- f ourGraph
     setGraph newGraph
     return ret
 
-instance Basic.HasBasic Contextual () where
+instance Basic.HasBasic Contextual ConstraintInfo where
 
 instance Writer.MonadWriter LogEntries Contextual where
   tell entries = trace ("LOG " ++ show entries) $ return ()
@@ -401,16 +409,16 @@ addEqn :: (Fresh m) => info -> Equation -> TG.StandardTypeGraph info -> m (TG.St
 addEqn info eqn@(EQN _ v1 _ v2) stg | v1 == v2 = return stg
 addEqn info eqn@(EQN _ v1 _ v2) stg = trace ("Adding equation to graph " ++ show eqn) $ TG.addEqn info (v1, v2) stg
 
-recordEqn :: Equation -> Contextual ()
-recordEqn eqn = do
+recordEqn :: ConstraintInfo -> Equation -> Contextual ()
+recordEqn cinfo eqn = do
   gCurrent <- getGraph
-  newG <- addEqn () eqn gCurrent
+  newG <- addEqn cinfo eqn gCurrent
   setGraph newG
 
-recordProblem :: ProbId -> Problem -> Contextual ()
-recordProblem (ProbId pid) prob = recordProblem' prob 0
+recordProblem :: ConstraintInfo -> ProbId -> Problem -> Contextual ()
+recordProblem info (ProbId pid) prob = recordProblem' prob 0
   where
-    recordProblem' (Unify q) _ = recordEqn q
+    recordProblem' (Unify q) _ = recordEqn info q
     recordProblem' (All tp bnd) i = do
       (nm, prob) <- unbind bnd
       --Create a unique (but not fresh) name for our quanitified variable
@@ -420,18 +428,18 @@ recordProblem (ProbId pid) prob = recordProblem' prob 0
           newProb = substs [(nm, var newVar)] prob
       recordProblem' newProb (i+1)
 
---TODO do we need this? record problem substs?
-recordEntry :: Entry -> Contextual ()
-recordEntry (E nm tp HOLE) = return ()
-recordEntry (E nm tp (DEFN dec)) = recordEqn (EQN tp (meta nm) tp dec)
-recordEntry (Prob pid prob st) = recordProblem pid prob --TODO look at state?
+-- --TODO do we need this? record problem substs?
+-- recordEntry :: Entry -> Contextual ()
+-- recordEntry (E nm tp HOLE) = return ()
+-- recordEntry (E nm tp (DEFN dec)) = recordEqn _ (EQN tp (meta nm) tp dec)
+-- recordEntry (Prob pid prob st) = recordProblem pid prob --TODO look at state?
 
 --After we substitute new values, we record the equalities between the subsituted values
 --This lets us get eliminate Function Application edges in our graph
 recordEntrySub :: Entry -> Entry -> Contextual ()
 recordEntrySub (E nm1 tp1 HOLE) (E nm2 tp2 HOLE) = return () --TODO will ever change?
-recordEntrySub (E _ tp1 (DEFN dec1)) (E _ tp2 (DEFN dec2)) =
-  recordEqn (EQN tp1 dec1 tp2 dec2)
+recordEntrySub (E nm tp1 (DEFN dec1)) (E _ tp2 (DEFN dec2)) =
+  recordEqn (DefnUpdate nm) (EQN tp1 dec1 tp2 dec2)
 recordEntrySub (Prob pid prob _) (Prob _ prob2 _) =
   recordProblemSub pid prob prob2
 
@@ -441,8 +449,8 @@ recordProblemSub :: ProbId -> Problem -> Problem -> Contextual ()
 recordProblemSub (ProbId pid) prob1 prob2 = helper' prob1 prob2 0
   where
     helper' (Unify (EQN t1 v1 t2 v2)) (Unify (EQN t1' v1' t2' v2')) _ = do
-      recordEqn $ EQN t1 v1 t1' v1'
-      recordEqn $ EQN t2 v2 t2' v2'
+      recordEqn (ProbUpdate $ ProbId pid) $ EQN t1 v1 t1' v1'
+      recordEqn (ProbUpdate $ ProbId pid) $ EQN t2 v2 t2' v2'
     helper' (All tp bnd1) (All _ bnd2) i = do
       (nm1, prob1) <- unbind bnd1
       (nm2, prob2) <- unbind bnd2

@@ -21,7 +21,7 @@ import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              Param (..), ProbId (..), Problem (..),
                              ProblemState (..), addEqn, allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
-                             popR, pushL, pushR, recordEntry, setProblem,
+                             popR, pushL, pushR, setProblem,
                              wrapProb)
 import qualified PatternUnify.Context as Ctx
 import PatternUnify.Kit (bind3, bind6, elem, notElem, pp)
@@ -120,7 +120,7 @@ defineGlobal x _T v m =
      a <- m
      goLeft
      --Add our final value to the type graph
-     Ctx.recordEqn (EQN _T (meta x) _T v)
+     Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v)
      return a
 
 define _Gam x _T v =
@@ -815,7 +815,7 @@ instantiate d@( alpha, _T, f ) =
 solver :: ProbId -> Problem -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
 solver n p@(Unify q) =
-  Ctx.recordProblem n p >>
+  Ctx.recordProblem (Ctx.DerivedEqn n) n p >>
   setProblem n >>
   isReflexive q >>=
   \b ->
