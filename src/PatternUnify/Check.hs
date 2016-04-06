@@ -395,7 +395,7 @@ isReflexive eqn@(EQN _S s _T t _) = --trace ("IsRelexive " ++ pp eqn) $
 checkProb :: ProbId -> ProblemState -> Problem -> Contextual ()
 --checkProb ident st p | trace ("@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False =
     --error "checkProb"
-checkProb ident st p@(Unify (EQN _S s _T t _)) = do
+checkProb ident st p@(Unify (EQN _S s _T t info)) = do
    setProblem ident
    currentSubs <- metaSubs
    !_SVal <-  eval currentSubs _S
@@ -407,7 +407,7 @@ checkProb ident st p@(Unify (EQN _S s _T t _)) = do
    tVal <- eval currentSubs t
    check _TVal tVal
    if st == Solved
-       then do  eq <- isReflexive (EQN _SVal sVal _TVal tVal Nothing)
+       then do  eq <- isReflexive (EQN _SVal sVal _TVal tVal info)
                 unless eq $ throwError $ "checkProb: not unified " ++ pp p
        else return ()
 checkProb ident st (All (P _T) b) = do
@@ -442,14 +442,14 @@ validate q = local (const []) $ do
     help B0 = return ()
     --TODO why is this so slow?
     --help (_Del :< E x _ _) | any (x `occursIn`) _Del = throwError "validate: dependency error"
-    help (_Del :< E _ _T HOLE)      = do
+    help (_Del :< E _ _T HOLE _)      = do
                                           putL _Del
                                           check SET _T
                                           help _Del
-    help (_Del :< E _ _T (DEFN v))  = do  putL _Del
-                                          check SET _T
-                                          check _T v
-                                          help _Del
+    help (_Del :< E _ _T (DEFN v) _)  = do  putL _Del
+                                            check SET _T
+                                            check _T v
+                                            help _Del
     help (_Del :< Prob ident p st)      = do
                                           checkProb ident st p
                                           unless (q st) $ throwError "validate: bad state"

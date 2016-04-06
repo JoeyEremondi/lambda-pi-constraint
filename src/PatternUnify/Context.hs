@@ -69,11 +69,16 @@ instance Occurs Dec where
     frees _       HOLE      = []
     frees isMeta  (DEFN t)  = frees isMeta t
 
-data Equation = EQN Type VAL Type VAL (Maybe ProbId)
+data EqnInfo = Initial | CreatedBy ProbId
+  deriving (Eq, Show, Generic)
+
+data Equation = EQN Type VAL Type VAL EqnInfo
   deriving (Show, Generic)
 
 instance Alpha Equation
+instance Alpha EqnInfo
 instance Subst VAL Equation
+instance Subst VAL EqnInfo
 
 instance Occurs Equation where
     occurrence xs (EQN _S s _T t _) = occurrence xs [_S, s, _T, t]
@@ -156,7 +161,7 @@ instance Pretty ProblemState where
     pretty (Failed e)    = return $ text $ "FAILED: " ++ e
 
 
-data Entry  =  E Nom Type Dec
+data Entry  =  E Nom Type Dec EqnInfo
             |  Prob ProbId Problem ProblemState
   deriving (Show, Generic)
 
@@ -164,14 +169,14 @@ instance Alpha Entry
 instance Subst VAL Entry
 
 instance Occurs Entry where
-    occurrence xs (E _ _T d)    = max (occurrence xs _T) (occurrence xs d)
+    occurrence xs (E _ _T d _)    = max (occurrence xs _T) (occurrence xs d)
     occurrence xs (Prob _ p _)  = occurrence xs p
-    frees isMeta (E _ _T d)     = union (frees isMeta _T) (frees isMeta d)
+    frees isMeta (E _ _T d _)     = union (frees isMeta _T) (frees isMeta d)
     frees isMeta (Prob _ p _)   = frees isMeta p
 
 instance Pretty Entry where
-    pretty (E x _T HOLE)  = (between (text "? :")) <$> (pretty x) <*> (pretty _T)
-    pretty (E x _T (DEFN d))  = (\ d' -> between (text ":=" <+> d' <+> text ":")) <$>
+    pretty (E x _T HOLE _)  = (between (text "? :")) <$> (pretty x) <*> (pretty _T)
+    pretty (E x _T (DEFN d) _)  = (\ d' -> between (text ":=" <+> d' <+> text ":")) <$>
                                    (prettyAt PiSize d) <*> (pretty x) <*> (prettyAt PiSize _T)
     pretty (Prob x p s) =  (between (text "<=")) <$> ( (between (text "?? :")) <$> (pretty x) <*> (pretty p) ) <*> (pretty s)
 
@@ -363,7 +368,7 @@ lookupMeta x = look =<< getL
   where
     --look :: Monad m => ContextL -> m Type
     look B0 = throwError $ "lookupMeta: missing " ++ show x
-    look (cx  :< E y t _)  | x == y     = return t
+    look (cx  :< E y t _ _)  | x == y     = return t
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx
     look _ = undefined
@@ -377,7 +382,7 @@ metaSubs = do
 
 
 maybeSub :: Entry -> Maybe (Nom, VAL)
-maybeSub (E y _ (DEFN val)) = Just (y,val)
+maybeSub (E y _ (DEFN val) _) = Just (y,val)
 maybeSub _ = Nothing
 
 getUnsolvedAndSolved :: [Entry] -> ([(Nom, Maybe VAL)], Subs)
@@ -387,11 +392,11 @@ getUnsolvedAndSolved (entry : rest) =
     (uns, solved) = getUnsolvedAndSolved rest
   in
     case entry of
-      E y _ (DEFN val) ->
+      E y _ (DEFN val) _ ->
         case fmvs val of
           [] -> (uns, Map.insert y val solved)
           _ -> ((y, Just val) : uns, solved)
-      E y _ HOLE -> ((y, Nothing) : uns,solved)
+      E y _ HOLE _ -> ((y, Nothing) : uns,solved)
       _ -> (uns, solved)
 
 metaValue :: MonadState Context m => Nom -> m VAL
@@ -399,10 +404,10 @@ metaValue x = look =<< getL
   where
     look :: Monad m => ContextL -> m Type
     look B0 = fail $ "metaValue: missing " ++ show x
-    look (cx  :< E y _ (DEFN val))  | x == y     = return val
+    look (cx  :< E y _ (DEFN val) _)  | x == y     = return val
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx
-    look (cx  :< E y _ HOLE)  | x == y     = return $ meta x
+    look (cx  :< E y _ HOLE _)  | x == y     = return $ meta x
                            | otherwise  = look cx
     look _ = undefined
 
@@ -441,9 +446,9 @@ recordProblem info (ProbId pid) prob = recordProblem' prob 0
 --After we substitute new values, we record the equalities between the subsituted values
 --This lets us get eliminate Function Application edges in our graph
 recordEntrySub :: Entry -> Entry -> Contextual ()
-recordEntrySub (E nm1 tp1 HOLE) (E nm2 tp2 HOLE) = return () --TODO will ever change?
-recordEntrySub (E nm tp1 (DEFN dec1)) (E _ tp2 (DEFN dec2)) =
-  recordEqn (DefnUpdate nm) (EQN tp1 dec1 tp2 dec2 (Just $ ProbId nm))
+recordEntrySub (E nm1 tp1 HOLE _) (E nm2 tp2 HOLE _) = return () --TODO will ever change?
+recordEntrySub (E alpha tp1 (DEFN dec1) _) (E _ tp2 (DEFN dec2) info) =
+  recordEqn (DefnUpdate alpha) (EQN tp1 dec1 tp2 dec2 info)
 recordEntrySub (Prob pid prob _) (Prob _ prob2 _) =
   recordProblemSub pid prob prob2
 

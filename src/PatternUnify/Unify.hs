@@ -22,9 +22,9 @@ import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              ProblemState (..), addEqn, allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
                              popR, pushL, pushR, setProblem,
-                             wrapProb)
+                             wrapProb, EqnInfo(..))
 import qualified PatternUnify.Context as Ctx
-import PatternUnify.Kit (bind3, bind6, bind7, elem, notElem, pp)
+import PatternUnify.Kit (bind3, bind4, bind6, bind7, elem, notElem, pp)
 import PatternUnify.Tm
 import Unbound.Generics.LocallyNameless (Fresh, runFreshM, subst, substs,
                                          unbind)
@@ -97,25 +97,25 @@ goLeft :: Contextual ()
 goLeft = popL >>= pushR . Right
 
 hole
-  :: [( Nom, Type )] -> Type -> (VAL -> Contextual a) -> Contextual a
+  :: EqnInfo -> [( Nom, Type )] -> Type -> (VAL -> Contextual a) -> Contextual a
 define
-  :: (Maybe ProbId) -> [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
-hole _Gam _T f =
+  :: EqnInfo -> [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
+hole info _Gam _T f =
   do check SET (_Pis _Gam _T) `catchError`
        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
      x <- freshNom
-     pushL $ E x (_Pis _Gam _T) HOLE
+     pushL $ E x (_Pis _Gam _T) HOLE info
      a <- f =<< (N (Meta x) [] $*$ _Gam)
      goLeft
      return a
 
 defineGlobal
-  :: (Maybe ProbId) -> Nom -> Type -> VAL -> Contextual a -> Contextual a
+  :: EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
 defineGlobal pid x _T v m =
   do check _T v `catchError`
        (throwError .
         (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
-     pushL $ E x _T (DEFN v)
+     pushL $ E x _T (DEFN v) pid
      pushR (Left (Map.singleton x v))
      a <- m
      goLeft
@@ -148,7 +148,7 @@ define pid _Gam x _T v =
 -- constructors.
 eqn
   :: (Fresh m)
-  => m Type -> m VAL -> m Type -> m VAL -> m (Maybe ProbId) -> m Equation
+  => m Type -> m VAL -> m Type -> m VAL -> m EqnInfo -> m Equation
 eqn ma mx mb my mpid =
   do a <- ma
      b <- mb
@@ -178,7 +178,7 @@ unify n q  = do
                       (f $$ xL)
                       (_T $$ xR)
                       (g $$ xR)
-                      (return $ Just n)))
+                      (return $ CreatedBy n)))
        simplify n
                 (Unify q)
                 [Unify (EQN SET _A SET _S pid), allTwinsProb x _A _S eq1]
@@ -193,7 +193,7 @@ unify n q  = do
                      (return b)
                      (_D $$ c)
                      (return d)
-                     (return $ Just n))
+                     (return $ CreatedBy n))
        simplify n
                 (Unify q)
                 [Unify (EQN _A a _C c pid), eq1]
@@ -217,7 +217,7 @@ unify n q  = do
   unify' n q =
     do
       setProblem n
-      rigidRigid (Just n) q >>= simplify n (Unify q) . map Unify
+      rigidRigid (CreatedBy n) q >>= simplify n (Unify q) . map Unify
 
 -- Here |sym| swaps the two sides of an equation:
 sym :: Equation -> Equation
@@ -234,7 +234,7 @@ sym (EQN _S s _T t pid) = EQN _T t _S s pid
 -- %% function implements the steps shown in Figure~\ref{fig:decompose}.
 -- %% excluding the $\eta$-expansion steps, which are handled by |unify|
 -- %% above.
-rigidRigid :: (Maybe ProbId) -> Equation -> Contextual [Equation]
+rigidRigid :: EqnInfo -> Equation -> Contextual [Equation]
 rigidRigid pid eqn =
   do
     retEqns <- rigidRigid' eqn
@@ -337,7 +337,7 @@ badRigidRigid (EQN t1 v1 t2 v2 _) =
 -- $[[x : Pi a : A . B a -> C]]$ then the constraint $[[x s t == x u v]]$
 -- will decompose into
 -- $[[(s : A) == (u : A) && (t : B s) == (v : B u)]]$.
-matchSpine :: (Maybe ProbId)
+matchSpine :: EqnInfo
            -> Type
            -> VAL
            -> [Elim]
@@ -525,7 +525,7 @@ flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ _) =
      popL >>=
        \e ->
          case e of
-           E beta _T HOLE
+           E beta _T HOLE (CreatedBy n)
              | alpha == beta && alpha `elem` fmvs _Xi ->
                pushL e >> mapM_ pushL _Xi >> block n q
              | alpha == beta ->
@@ -551,7 +551,7 @@ tryInvert n q@(EQN _ (N (Meta alpha) es) _ s _) _T k =
   \m ->
     case m of
       Nothing -> k
-      Just v -> active n q >> define (Just n) [] alpha _T v
+      Just v -> active n q >> define (CreatedBy n) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
 
@@ -599,9 +599,9 @@ flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) _) =
      popL >>=
        \e ->
          case e of
-           E gamma _T HOLE
+           E gamma _T HOLE _
              | gamma == alpha && gamma == beta ->
-               block n q >> tryIntersect (Just n) alpha _T ds es
+               block n q >> tryIntersect (CreatedBy n) alpha _T ds es
              | gamma == alpha ->
                tryInvert n
                          q
@@ -640,16 +640,16 @@ flexFlex _ q = throwError $ "flexFlex: " ++ show q
 -- metavariable and solves the old one. Otherwise, it leaves the old
 -- metavariable in the context.
 tryIntersect
-  :: (Maybe ProbId) -> Nom -> Type -> [Elim] -> [Elim] -> Contextual ()
+  :: EqnInfo -> Nom -> Type -> [Elim] -> [Elim] -> Contextual ()
 tryIntersect pid alpha _T ds es =
   case (toVars ds, toVars es) of
     ( Just xs, Just ys ) ->
       intersect [] [] _T xs ys >>=
       \m ->
         case m of --TODO intersect creator?
-          Just ( _U, f ) -> hole [] _U $ \beta -> define pid [] alpha _T (f beta)
-          Nothing -> pushL (E alpha _T HOLE)
-    _ -> pushL (E alpha _T HOLE)
+          Just ( _U, f ) -> hole pid [] _U $ \beta -> define pid [] alpha _T (f beta)
+          Nothing -> pushL (E alpha _T HOLE pid)
+    _ -> pushL (E alpha _T HOLE pid)
 
 -- Given the type of $[[alpha]]$ and the two spines, |intersect| produces
 -- a type for $[[beta]]$ and a term with which to solve $[[alpha]]$ given
@@ -706,7 +706,7 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t _) k =
            fvs ds
      u <- prune (potentials \\ freesToIgnore) t
      case u of
-       d:_ -> active n q >> instantiate (Just n) d
+       d:_ -> active n q >> instantiate (CreatedBy n) d
        [] -> k
 -- %if False
 tryPrune n q _ = do
@@ -809,13 +809,13 @@ pruneSpine _ _ _ _ _ = return Nothing
 -- left through the context until we find the relevant metavariable, then
 -- creating a new metavariable and solving the old one.
 instantiate
-  :: (Maybe ProbId) -> ( Nom, Type, VAL -> VAL ) -> Contextual ()
+  :: EqnInfo -> ( Nom, Type, VAL -> VAL ) -> Contextual ()
 instantiate pid d@( alpha, _T, f ) =
   popL >>=
   \e ->
     case e of
-      E beta _U HOLE
-        | alpha == beta -> hole [] _T $ \t -> define pid [] beta _U (f t)
+      E beta _U HOLE pid
+        | alpha == beta -> hole pid [] _T $ \t -> define pid [] beta _U (f t)
       _ -> pushR (Right e) >> instantiate pid d
 
 -- \subsection{Metavariable and problem simplification}
@@ -868,11 +868,11 @@ solver n prob@(All p b) =
 -- simplified, it appends it to the (left) context.
 --TODO lower for elim cases?
 lower
-  :: (Maybe ProbId) -> [( Nom, Type )] -> Nom -> Type -> Contextual ()
+  :: EqnInfo -> [( Nom, Type )] -> Nom -> Type -> Contextual ()
 lower pid _Phi alpha (SIG _S _T) =
-  hole _Phi _S $
+  hole pid _Phi _S $
   \s ->
-    bind3 hole
+    bind4 hole (return pid)
           (return _Phi)
           (_T $$ s) $
     return $
@@ -889,14 +889,14 @@ lower pid _Phi alpha (PI _S _T) =
        maybe (lower pid (_Phi ++ [(x, _S)]) alpha ourApp1)
              (\( y, _A, z, _B, s, ( u, v ) ) ->
                 do ourApp2 <- (_T $$ s)
-                   hole _Phi (_Pi y _A (_Pi z _B ourApp2)) $
+                   hole pid _Phi (_Pi y _A (_Pi z _B ourApp2)) $
                      \w ->
                        do ourApp3 <- (w $$$ [u, v])
                           define pid _Phi
                                  alpha
                                  (PI _S _T)
                                  (lam x ourApp3))
-lower pid _Phi alpha _T = pushL (E alpha (_Pis _Phi _T) HOLE)
+lower pid _Phi alpha _T = pushL (E alpha (_Pis _Phi _T) HOLE pid)
 
 -- Both |solver| and |lower| above need to split $\Sigma$-types (possibly
 -- underneath a bunch of parameters) into their components.  For example,
@@ -981,7 +981,7 @@ ambulando ns theta =
             pushR (Left theta) >> solver n p >> ambulando ns Map.empty
           Prob n p Solved ->
             pushL (Prob n p Solved) >> ambulando (n : ns) theta
-          E alpha _T HOLE -> lower Nothing [] alpha _T >> ambulando ns theta
+          E alpha _T HOLE info -> lower info [] alpha _T >> ambulando ns theta
           e' -> pushL e' >> ambulando ns theta
 
 -- Given a list of solved problems, a substitution and an entry, |update|
