@@ -195,6 +195,21 @@ instance Pretty VAL where
               prettyHigh x <*>
               prettyHigh _S <*>
               prettyAt ArgSize _T
+
+  pretty (PI _S _T) =
+    wrapDoc PiSize $
+    ((\_S' _T' ->
+                maybePar _S _S' <+> text "->" <+> maybePar _T _T')) <$>
+            prettyHigh _S <*>
+            prettyAt ArgSize _T
+
+  pretty (SIG _S _T) =
+    wrapDoc PiSize $
+    ((\_S' _T' ->
+                text "Prod" <+> maybePar _S _S' <+> maybePar _T _T')) <$>
+            prettyHigh _S <*>
+            prettyAt ArgSize _T
+
   -- >
   pretty (L b) = wrapDoc LamSize $ (text "\\" <+>) <$> prettyLam b
     where prettyLam u =

@@ -131,7 +131,7 @@ mkErrorPair regionDict (Run.GraphErr edgeInfos) =
   ++ concatMap edgeMessage edgeInfos)
 
 edgeMessage (edgeId, edgeInfo) =
-  (Common.prettySource $ UC.infoRegion $ UC.edgeEqnInfo edgeInfo)
+  "  " ++ (Common.prettySource $ UC.infoRegion $ UC.edgeEqnInfo edgeInfo)
   ++ " " ++ constrStr ++ "\n"
   where
     constrStr = case (UC.edgeType edgeInfo) of
