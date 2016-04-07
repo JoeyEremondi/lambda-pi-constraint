@@ -39,7 +39,7 @@ import Unbound.Generics.LocallyNameless.Unsafe (unsafeUnbind)
 import PatternUnify.Kit
 import PatternUnify.Tm
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 import Data.List (union)
 
@@ -75,8 +75,11 @@ instance Occurs Dec where
     frees _       HOLE      = []
     frees isMeta  (DEFN t)  = frees isMeta t
 
-data EqnInfo = Initial Region | CreatedBy ProbId
+data EqnInfo = Initial Region | CreatedBy Region ProbId
   deriving (Eq, Show, Generic)
+
+infoRegion (Initial r) = r
+infoRegion (CreatedBy r _) = r
 
 data Equation = EQN Type VAL Type VAL EqnInfo
   deriving (Show, Generic)
@@ -97,12 +100,17 @@ instance Pretty Equation where
             prettyVal :: (Applicative m, LFresh m, MonadReader Size m) => VAL -> m Doc
             prettyVal v = pretty v
 
-data ConstraintInfo =
-  InitConstr ProbId
+data ConstraintInfo = ConstraintInfo
+  { edgeType    :: ConstraintType
+  , edgeEqnInfo :: EqnInfo
+  } deriving (Eq, Show, Generic)
+
+data ConstraintType =
+  InitConstr ProbId Problem
   | DefnUpdate Nom
   | ProbUpdate ProbId
   | DefineMeta Nom
-  | DerivedEqn ProbId
+  | DerivedEqn ProbId Problem
   deriving (Eq, Show, Generic)
 
 data Problem  =  Unify Equation
@@ -277,7 +285,8 @@ instance CM.HasTG Contextual ConstraintInfo where
 instance Basic.HasBasic Contextual ConstraintInfo where
 
 instance Writer.MonadWriter LogEntries Contextual where
-  tell entries = trace ("LOG " ++ show entries) $ return ()
+  tell entries = --trace ("LOG " ++ show entries) $
+    return ()
   listen = error "Contextual writer listen"
   pass = error "Contextual writer pass"
 
@@ -434,15 +443,17 @@ metaValue x = look =<< getL
 addEqn :: (Fresh m) => info -> Equation -> TG.StandardTypeGraph info -> m (TG.StandardTypeGraph info)
 --Avoid polluting our graph with a bunch of reflexive equations
 addEqn info eqn@(EQN _ v1 _ v2 _) stg | v1 == v2 = return stg
-addEqn info eqn@(EQN _ v1 _ v2 _) stg = trace ("Adding equation to graph " ++ show eqn) $ TG.addEqn info (v1, v2) stg
+addEqn info eqn@(EQN _ v1 _ v2 _) stg = --trace ("Adding equation to graph " ++ show eqn) $
+    TG.addEqn info (v1, v2) stg
 
-recordEqn :: ConstraintInfo -> Equation -> Contextual ()
-recordEqn cinfo eqn = do
+recordEqn :: ConstraintType -> Equation -> Contextual ()
+recordEqn ctype eqn@(EQN _ _ _ _ eqinfo) = do
   gCurrent <- getGraph
+  let cinfo = ConstraintInfo ctype eqinfo
   newG <- addEqn cinfo eqn gCurrent
   setGraph newG
 
-recordProblem :: ConstraintInfo -> ProbId -> Problem -> Contextual ()
+recordProblem :: ConstraintType -> ProbId -> Problem -> Contextual ()
 recordProblem info (ProbId pid) prob = recordProblem' prob 0
   where
     recordProblem' (Unify q) _ = recordEqn info q

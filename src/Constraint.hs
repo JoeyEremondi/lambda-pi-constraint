@@ -113,7 +113,7 @@ solveConstraintM cm =
   in
     case ret of
       Left (Run.ErrorResult ctx solverErrs) ->
-        Left $ mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx)
+        Left $ map (mkErrorPair regionDict) solverErrs
         --Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) (mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx) )
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
       Right (_, unsolved, _) ->
@@ -123,8 +123,24 @@ solveConstraintM cm =
             filter (\(nom, _) -> Map.member nom $ metaLocations cstate) unsolved
           sms -> map (unsolvedMsg (sourceMetas cstate) (metaLocations cstate)) sms
 
-mkErrorPairs :: [Run.SolverErr] -> UC.ContextL -> [(Common.Region, String)]
-mkErrorPairs solverErrs finalEntries = error "TODO solver errs"
+--mkErrorPair :: Run.SolverErr -> (Common.Region, String)
+mkErrorPair regionDict (Run.StringErr (UC.ProbId ident, msg)) = (regionDict Map.! ident, msg)
+mkErrorPair regionDict (Run.GraphErr edgeInfos) =
+  (UC.infoRegion $ UC.edgeEqnInfo $ snd $ head edgeInfos,
+  "Cannot solve the following constraints:\n"
+  ++ concatMap edgeMessage edgeInfos)
+
+edgeMessage (edgeId, edgeInfo) =
+  (Common.prettySource $ UC.infoRegion $ UC.edgeEqnInfo edgeInfo)
+  ++ " " ++ constrStr ++ "\n"
+  where
+    constrStr = case (UC.edgeType edgeInfo) of
+      (UC.InitConstr _ prob) -> Tm.prettyString prob
+      (UC.DefnUpdate c) -> "TODO1"
+      (UC.ProbUpdate c) -> "TODO2"
+      (UC.DefineMeta c) -> "TODO3"
+      (UC.DerivedEqn _ prob) -> Tm.prettyString prob
+
 
 unsolvedMsg :: [Tm.Nom] -> Map.Map Tm.Nom Common.Region -> (Tm.Nom, Maybe Tm.VAL) -> (Common.Region, String)
 unsolvedMsg sourceMetas metaSources (nm,_) | not (nm `elem` sourceMetas) =

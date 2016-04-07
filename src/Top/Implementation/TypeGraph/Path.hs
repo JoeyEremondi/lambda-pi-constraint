@@ -14,7 +14,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import Utils (internalError)
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 ----------------------
 
@@ -78,7 +78,7 @@ mapPath f = changeStep (Step . f)
 changeStep :: (a -> Path b) -> Path a -> Path b
 changeStep f = rec
  where
-   rec path = trace "changeStep rec" $
+   rec path =
       case path of
          Step a  -> f a
          x :|: y -> rec x :|: rec y

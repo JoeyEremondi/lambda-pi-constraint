@@ -31,7 +31,7 @@ import qualified Data.Maybe as Maybe
 
 import qualified Data.Map as Map
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 --import qualified Unbound.Generics.LocallyNameless as LN
 
@@ -77,12 +77,12 @@ solveEntries !es  =
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
           initialise
           ambulando [] Map.empty
-          validResult <- trace "Validating" $ validate (const True)
-          badEdges <- trace "Getting bad edges" $ applyHeuristics defaultHeuristics
-          trace "Set badEdges" $ setMsg  badEdges
+          validResult <- validate (const True)
+          badEdges <- applyHeuristics defaultHeuristics
+          setMsg  badEdges
           return badEdges
           )  --Make sure we don't crash
-    (lcx,rcx,lastProb,_,finalBadEdges) = trace "wrote file" $ unsafePerformIO $ do
+    (lcx,rcx,lastProb,_,finalBadEdges) = unsafePerformIO $ do
         let g = (\(_,_,_,g,_) -> g) ctx
         writeFile "out.dot" (TC.toDot g)
         return ctx

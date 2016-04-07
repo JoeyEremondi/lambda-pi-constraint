@@ -43,7 +43,7 @@ data Region =
 
 prettySource :: Region -> String
 prettySource pos@(SourceRegion _ _ _) =
-   (regionName pos) ++ ": " ++ (show $ regionLine pos) ++ "," ++ (show $ regionColumn pos)
+   (regionFile pos) ++ ": " ++ (show $ regionLine pos) ++ "," ++ (show $ regionColumn pos)
 prettySource s = "builtin:"
 
 

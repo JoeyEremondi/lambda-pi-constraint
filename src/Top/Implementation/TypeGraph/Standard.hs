@@ -25,7 +25,7 @@ import Utils (internalError)
 
 import Data.Foldable (foldlM)
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 data StandardTypeGraph info = STG
    { referenceMap            :: M.Map VertexId Int{- group number -}

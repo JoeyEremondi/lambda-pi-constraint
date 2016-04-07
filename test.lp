@@ -1,33 +1,6 @@
-let Prod =
-  (\s t -> exists (x :: s) . t )
-  :: * -> * -> *
+let natIf =
+  (\_ x y n ->  natElim _ x (\ _ _ -> y) n ) :: forall (a :: *) . a -> a -> Nat -> a
 
--- addition of natural numbers
-let plus =
-  natElim
-    ( \ _ -> Nat -> Nat )           -- motive
-    ( \ n -> n )                    -- case for Zero
-    ( \ p rec n -> Succ (rec n) )   -- case for Succ
+let test = natIf _ 3 (3 , 3) 0
 
-let zeroes = ( 0 , 0 ) :: Prod Nat Nat
-
-let v1 = (fst zeroes) :: Nat
-
-let v2 = (snd zeroes) :: Nat
-
-let geq = (\ x y -> exists (z :: Nat) . Eq Nat x (plus y z) ) :: Nat -> Nat -> *
-
-let ident0 =
-  (\ x -> Refl Nat (plus 0 x))
-  :: forall (x :: Nat) . Eq Nat x (plus 0 x)
-
-let geq0 =
-  (\n -> (0 , ident0 n) )
-  :: forall (n :: Nat ) . geq n 0
-
-{-
-Should be:
-let geq0 =
-  (\n -> (n , ident0 n) )
-  :: forall (n :: Nat ) . geq n 0
--}
+let test = natIf _ (3 , 3) 3 0

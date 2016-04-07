@@ -15,7 +15,6 @@ import Data.Set (Set, isSubsetOf)
 import Prelude hiding (elem, notElem)
 --import qualified Data.List as List
 import qualified Data.Set as Set
---import Debug.Trace (trace)
 import PatternUnify.Check (check, checkProb, equal, isReflexive, typecheck)
 import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              Param (..), ProbId (..), Problem (..),
@@ -178,7 +177,7 @@ unify n q  = do
                       (f $$ xL)
                       (_T $$ xR)
                       (g $$ xR)
-                      (return $ CreatedBy n)))
+                      (return $ CreatedBy (Ctx.infoRegion pid) n)))
        simplify n
                 (Unify q)
                 [Unify (EQN SET _A SET _S pid), allTwinsProb x _A _S eq1]
@@ -193,7 +192,7 @@ unify n q  = do
                      (return b)
                      (_D $$ c)
                      (return d)
-                     (return $ CreatedBy n))
+                     (return $ CreatedBy (Ctx.infoRegion pid) n))
        simplify n
                 (Unify q)
                 [Unify (EQN _A a _C c pid), eq1]
@@ -214,10 +213,10 @@ unify n q  = do
       setProblem n
       tryPrune n (sym q) $ flexRigid [] n (sym q)
   -- >
-  unify' n q =
+  unify' n q@(EQN _ _ _ _ pid) =
     do
       setProblem n
-      rigidRigid (CreatedBy n) q >>= simplify n (Unify q) . map Unify
+      rigidRigid (CreatedBy (Ctx.infoRegion pid) n) q >>= simplify n (Unify q) . map Unify
 
 -- Here |sym| swaps the two sides of an equation:
 sym :: Equation -> Equation
@@ -519,13 +518,13 @@ matchSpine _ t hd spn t' hd' spn' =
 -- subsection~\ref{subsec:spec:flex-rigid}.
 flexRigid
   :: [Entry] -> ProbId -> Equation -> Contextual ()
-flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ _) =
+flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) =
   setProblem n >>
   do _Gam <- ask
      popL >>=
        \e ->
          case e of
-           E beta _T HOLE (CreatedBy n)
+           E beta _T HOLE info
              | alpha == beta && alpha `elem` fmvs _Xi ->
                pushL e >> mapM_ pushL _Xi >> block n q
              | alpha == beta ->
@@ -545,13 +544,13 @@ flexRigid _ n q = throwError $ "flexRigid: " ++ show q
 -- solution, it runs the continuation.
 tryInvert
   :: ProbId -> Equation -> Type -> Contextual () -> Contextual ()
-tryInvert n q@(EQN _ (N (Meta alpha) es) _ s _) _T k =
+tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k =
   setProblem n >>
   invert alpha _T es s >>=
   \m ->
     case m of
       Nothing -> k
-      Just v -> active n q >> define (CreatedBy n) [] alpha _T v
+      Just v -> active n q >> define (CreatedBy (Ctx.infoRegion info) n) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
 
@@ -593,7 +592,7 @@ invert alpha _T es t =
 -- Figure~\ref{fig:flex-flex}, as described in
 -- subsection~\ref{subsec:spec:flex-flex}.
 flexFlex :: ProbId -> Equation -> Contextual ()
-flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) _) =
+flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) info) =
   setProblem n >>
   do _Gam <- ask
      popL >>=
@@ -601,7 +600,7 @@ flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) _) =
          case e of
            E gamma _T HOLE _
              | gamma == alpha && gamma == beta ->
-               block n q >> tryIntersect (CreatedBy n) alpha _T ds es
+               block n q >> tryIntersect (CreatedBy (Ctx.infoRegion info) n) alpha _T ds es
              | gamma == alpha ->
                tryInvert n
                          q
@@ -697,7 +696,7 @@ tryPrune
   :: ProbId -> Equation -> Contextual () -> Contextual ()
 --tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k
 --  | trace ("TryPrune " ++ show n ++ " " ++ pp q) False = error "tryPrune"
-tryPrune n q@(EQN _ (N (Meta _) ds) _ t _) k =
+tryPrune n q@(EQN _ (N (Meta _) ds) _ t info) k =
   setProblem n >>
   do _Gam <- ask
      let potentials = vars _Gam
@@ -706,7 +705,7 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t _) k =
            fvs ds
      u <- prune (potentials \\ freesToIgnore) t
      case u of
-       d:_ -> active n q >> instantiate (CreatedBy n) d
+       d:_ -> active n q >> instantiate (CreatedBy (Ctx.infoRegion info) n) d
        [] -> k
 -- %if False
 tryPrune n q _ = do
@@ -829,7 +828,7 @@ instantiate pid d@( alpha, _T, f ) =
 solver :: ProbId -> Problem -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
 solver n p@(Unify q) =
-  Ctx.recordProblem (Ctx.DerivedEqn n) n p >>
+  Ctx.recordProblem (Ctx.DerivedEqn n p) n p >>
   setProblem n >>
   isReflexive q >>=
   \b ->

@@ -26,24 +26,24 @@ import Utils (internalError)
 
 import qualified PatternUnify.Tm as Tm
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 type ErrorInfo info = ([EdgeId], info)
 
 applyHeuristics :: HasTypeGraph m info => (Path (EdgeId, info) -> [Heuristic info]) -> m [ErrorInfo info]
-applyHeuristics heuristics = trace "ApplyHeuristics" $
-   let rec thePath = trace "ApplyHeuristics rec" $
+applyHeuristics heuristics =
+   let rec thePath =
           case simplifyPath thePath of
              Empty -> internalError "Top.TypeGraph.ApplyHeuristics" "applyHeuristics" "unexpected empty path"
              Fail  -> return []
              path  ->
-                do err <- trace "AH err" $ evalHeuristics path (heuristics path)
-                   let restPath = trace ("AH rest, err was " ++ show err) $
+                do err <- evalHeuristics path (heuristics path)
+                   let restPath =
                          changeStep (\t@(a,_) -> if a `elem` fst err then Fail else Step t) path
-                   errs <- trace "AH errs" $ rec restPath
-                   trace ("rec returning " ++ show (err : errs))  $ return (err : errs)
-   in trace "AH made rec" $
-      do errorPath <- trace "Getting all error paths" $ allErrorPaths
+                   errs <- rec restPath
+                   return (err : errs)
+   in
+      do errorPath <- allErrorPaths
          rec (removeSomeDuplicates info2ToEdgeNr errorPath)
 
 -- These functions are used to describe for a change due to a heuristic how it affected the error path
@@ -67,23 +67,23 @@ evalHeuristics path = rec edgesBegin
  where
    edgesBegin = nubBy eqInfo2 (steps path)
 
-   rec edges [] = trace "evalHeuristics rec1" $
+   rec edges [] =
       case edges of
          (edgeId@(EdgeId _ _ cnr), info) : _ ->
             do logMsg ("\n*** The selected constraint: " ++ show cnr ++ " ***\n")
                return ([edgeId], info)
          _ -> internalError "Top.TypeGraph.ApplyHeuristics" "evalHeuristics" "empty list"
 
-   rec edges (Heuristic heuristic:rest) = trace "evalHeuristics rec2" $
+   rec edges (Heuristic heuristic:rest) =
       case heuristic of
 
-         Filter name f ->  trace "Filter case" $
-            do edges' <- trace "Filter applying fn" $ f edges
+         Filter name f ->
+            do edges' <- f edges
                --logMsg (name ++ " (filter) " ++ shrunkAndFinalMsg edges edges')
                --logMsg ("   " ++ showSet [ i | (EdgeId _ _ i, _) <- edges' ])
-               trace ("Filter rec " ++ show edges') $ rec edges' rest
+               rec edges' rest
 
-         Voting selectors -> trace "Voting case" $
+         Voting selectors ->
             do logMsg ("Voting with "++show (length selectors) ++ " heuristics")
                results <- mapM (evalSelector edges) selectors
                let successList = [ (getSelectorName s, x) | (s, xs) <- zip selectors results, x <- xs ]
@@ -132,14 +132,14 @@ showSet as = "{" ++ f (map show as) ++ "}"
 
 allErrorPaths :: HasTypeGraph m info => m (Path (EdgeId, info))
 allErrorPaths =
-   do is      <- trace "AEP getMarkedPossibleErrors" $ getMarkedPossibleErrors
-      cGraph  <- trace "AEP child" $ childrenGraph is
-      let toCheck = trace "AEP toCheck" $ nub $ concat (is : [ [a,b] | ((a,b),_) <- cGraph ])
-      paths1  <- trace "AEP paths1" $ constantClashPaths toCheck
-      paths2  <- trace "AEP paths2" $ infiniteTypePaths cGraph
+   do is      <- getMarkedPossibleErrors
+      cGraph  <- childrenGraph is
+      let toCheck = nub $ concat (is : [ [a,b] | ((a,b),_) <- cGraph ])
+      paths1  <- constantClashPaths toCheck
+      paths2  <- infiniteTypePaths cGraph
       let errorPath = reduceNumberOfPaths (simplifyPath (altList (paths1 ++ paths2)))
       retVal <- expandPath errorPath
-      trace ("allPaths ret " ++ show retVal) $ return retVal
+      return retVal
 
 ----------------------------
 
@@ -281,17 +281,17 @@ allSubPathsList childList vertex targets = rec S.empty vertex
 
 expandPath :: HasTypeGraph m info => TypeGraphPath info -> m (Path (EdgeId, info))
 expandPath Fail = return Fail
-expandPath p = trace "expandPath" $
+expandPath p =
    do expandTable <-
          let impliedEdges = nub [ intPair (v1, v2) | (_, Implied _ (VertexId v1) (VertexId v2)) <- steps p ]
          in impliedEdgeTable impliedEdges
 
-      let convert history path = trace "expand convert" $
+      let convert history path =
              case path of
                 Empty -> Empty
                 Fail  -> Fail
-                p1 :+: p2 -> trace "convert sub 1" $ convert history p1 :+: convert history p2
-                p1 :|: p2 -> trace "convert sub 2" $ convert history p1 :|: convert history p2
+                p1 :+: p2 -> convert history p1 :+: convert history p2
+                p1 :|: p2 -> convert history p1 :|: convert history p2
                 Step (edge, edgeInfo) ->
                    case edgeInfo of
                       Initial info -> Step (edge, info)
@@ -299,11 +299,11 @@ expandPath p = trace "expandPath" $
                       Implied _ (VertexId v1) (VertexId v2)
                          | pair `S.member` history -> Empty
                          | otherwise ->
-                              trace "convert sub 3" $convert (S.insert pair history) (lookupPair expandTable pair)
+                              convert (S.insert pair history) (lookupPair expandTable pair)
                        where
                         pair = intPair (v1, v2)
       let ret = (convert S.empty p)
-      trace ("returning " ++ show ret) $ return ret
+      return ret
 
 impliedEdgeTable :: HasTypeGraph m info => [IntPair] -> m (PathMap info)
 impliedEdgeTable = insertPairs M.empty
