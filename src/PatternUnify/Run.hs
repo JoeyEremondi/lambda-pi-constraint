@@ -31,7 +31,7 @@ import qualified Data.Maybe as Maybe
 
 import qualified Data.Map as Map
 
---import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 --import qualified Unbound.Generics.LocallyNameless as LN
 
@@ -73,7 +73,7 @@ solveEntries :: [Entry] -> Either ErrorResult ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
+    (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
           initialise
           ambulando [] Map.empty

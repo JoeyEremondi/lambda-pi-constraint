@@ -112,7 +112,7 @@ hole info _Gam _T f =
 
 defineGlobal
   :: EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal pid x _T v m =
+defineGlobal pid x _T v m = trace ("Defining global " ++ show x ++ " := " ++ pp v ++ " : " ++ pp _T) $
   do check _T v `catchError`
        (throwError .
         (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
