@@ -34,7 +34,7 @@ import PatternUnify.Tm
 
 --import qualified Data.List as List
 
---import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 
 data Tel where
@@ -382,7 +382,7 @@ equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ====
 _S <-> _T = equal SET _S _T
 
 isReflexive :: Equation -> Contextual Bool
-isReflexive eqn@(EQN _S s _T t _) = --trace ("IsRelexive " ++ pp eqn) $
+isReflexive eqn@(EQN _S s _T t _) = trace ("IsRelexive " ++ pp eqn) $
   do
     vars <- ask
     eq <- --trace ("IsReflexive vars " ++ show vars) $

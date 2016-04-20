@@ -31,6 +31,8 @@ import Unbound.Generics.LocallyNameless (Fresh, runFreshM, subst, substs,
 import qualified Top.Implementation.TypeGraph.ClassMonadic as CM
 import qualified Top.Implementation.TypeGraph.Standard as TG
 
+import Debug.Trace (trace)
+
 notSubsetOf :: Ord a
             => Set a -> Set a -> Bool
 a `notSubsetOf` b = not (a `isSubsetOf` b)
@@ -697,6 +699,7 @@ tryPrune
 --tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k
 --  | trace ("TryPrune " ++ show n ++ " " ++ pp q) False = error "tryPrune"
 tryPrune n q@(EQN _ (N (Meta _) ds) _ t info) k =
+  trace ("tryPrune " ++ show n ++ ", " ++ pp q) $
   setProblem n >>
   do _Gam <- ask
      let potentials = vars _Gam
@@ -704,7 +707,7 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t info) k =
             =
            fvs ds
      u <- prune (potentials \\ freesToIgnore) t
-     case u of
+     trace ("Prune result " ++ show u) $ case u of
        d:_ -> active n q >> instantiate (CreatedBy (Ctx.infoRegion info) n) d
        [] -> k
 -- %if False

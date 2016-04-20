@@ -31,6 +31,8 @@ import qualified PatternUnify.Tm as Tm
 
 import GHC.Generics
 
+import qualified Unbound.Generics.LocallyNameless as Ln
+
 data Region =
   SourceRegion
     { regionFile   :: String
@@ -826,7 +828,7 @@ boundfree_ ii (Quote k)     =  builtin $ Bound_ ((ii - k - 1) `max` 0)
 boundfree_ ii x             =  builtin $ Free_ x
 
 instance Show (Tm.VAL -> Tm.VAL) where
-  show f = error "TODO show fn" -- "<<" ++ (show $ quote0_ $ VLam_ f) ++ ">>"
+  show f = Tm.prettyString (Tm.L $ Ln.bind (Ln.s2n "_arg") (f $ Tm.vv "_arg")) -- "<<" ++ (show $ quote0_ $ VLam_ f) ++ ">>"
 
 
 type Type_     =  Tm.VAL
