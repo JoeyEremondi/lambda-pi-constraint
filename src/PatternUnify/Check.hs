@@ -32,6 +32,8 @@ import PatternUnify.Context
 import PatternUnify.Kit
 import PatternUnify.Tm
 
+import qualified Data.List as List
+
 --import qualified Data.List as List
 
 import Debug.Trace (trace)
@@ -87,174 +89,239 @@ canTy (c, as) v = throwError $ "canTy: canonical type " ++ pp (C c as) ++
 
 
 typecheck :: Type -> VAL -> Contextual Bool
-typecheck _T t = (check _T t >> return True) `catchError`
-                     (\ _ -> return False)
+typecheck _T t = do
+  ret <- typecheck' _T t
+  oldRet <- oldTypecheck _T t
+  eqResult <- ((("EqSuccess: " ++) . pp) <$> equalize _T t t) `catchError` (\x -> return $ "EqFail " ++ x)
+  if ret == oldRet then
+    return ret
+  else
+    error ("Check " ++ pp t ++ " : " ++ pp _T ++ " should be " ++ show oldRet ++ ", is " ++ show ret
+    ++ "\nEqualize result: " ++ eqResult)
+  where
+    typecheck' _T t = (do
+      tequal <- equalize _T t t
+      cbottom <- containsBottom tequal
+      return $ case cbottom of
+        Nothing -> True
+        Just s -> trace ("Contained bottom with message " ++ s) $ False) `catchError` \s -> trace ("TC False: " ++ s) $ return False
 
-check :: Type -> VAL -> Contextual ()
-check (SET) (SET) = return ()
-check (SET) (Nat) = return ()
---check _T t | trace ("Checking " ++ pp _T ++ " ||| " ++ pp t ++ "\n** " ++ show (_T, t)) False = error "check"
+check _T t =
+  trace ("****Checking value " ++ pp t ++ " with type " ++ pp _T) $
+  do
+    tequal <- equalize _T t t
+    cbottom <- containsBottom tequal
+    case cbottom of
+       Nothing -> return ()
+       Just s -> error $ "Typechecking error for " ++ pp tequal
+        ++ "\n" ++ s --TODO nicer errors
 
-check (C c as)    (C v bs)  =  do
-                               tel <- canTy (c, as) v
-                               checkTel tel bs
+equalizeMany :: Type -> [VAL] -> Contextual VAL
+equalizeMany _T [t1,t2] = equalize _T t1 t2
+equalizeMany _T [t1] = equalize _T t1 t1
+equalizeMany _T (t1 : rest) = do
+  ttail <- equalizeMany _T rest
+  equalize _T t1 ttail
+equalizeMany _ [] = return $ {-VBot-} error "Cannot equalize 0 values"
 
-check (PI _S _T)  (L b)     =  do
-                               (x, t) <- unbind b
-                               appRes <- (_T $$ var x)
-                               inScope x (P _S) $ check appRes t
 
-check _T          (N u as)  = do
-                               vars <- ask
-                               _U   <- infer u
-                               _T'  <-
-                                  checkSpine _U (N u []) as
-                               eq   <- (_T <-> _T') --TODO make fail
-                               unless eq $ throwError $ "Inferred type " ++ pp _T' ++
-                                                  " of " ++ pp (N u as) ++
-                                                  " is not " ++ pp _T
-                                                  ++ " in env " ++ show vars
+equalize :: Type -> VAL -> VAL -> Contextual VAL
+--equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
 
-check (SET) (Nat) = return ()
-check (SET) (Fin n) = do
-  check Nat n
-  return ()
-check (SET) (Vec a n) = do
-  check SET a
-  check Nat n
-check (SET) (Eq a x y) = do
-  check SET a
-  check a x
-  check a y
+equalize (SET) (SET) (SET) = return SET
 
-check (Nat) Zero = return ()
-check Nat (Succ k) = check Nat k
+equalize (C c as)    (C v bs) _  =  do
+                               tel <- canTy (c, as) v --TODO source of bias?
+                               C v <$> equalizeTel tel as bs
 
-check (Fin (Succ n)) (FZero n') = do
-  check Nat n
-  check Nat n'
-  eq <- equal Nat n n'
-  unless eq $ throwError $ "check: FZero index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+-- equalize (PI _S _T)  (L b) (L b2)     =  do
+--                                (x, t) <- unbind b
+--                                (y, t2) <- unbind b2
+--                                appRes <- (_T $$ var x)
+--                                tf <- equalize appRes t t2
+--                                inScope x (P _S) $
+--                                  return $ L $ bind x t2 --TODO how to deal with var here?
+equalize (PI _U _V) f g = do
+    x <- fresh $ s2n "arg"
+    fx <- f $$ var x
+    gx <- g $$ var x
+    _Vx <- _V $$ var x
+    body <- equalize _Vx fx gx
+    return $ L $ bind x body
 
-check (Fin (Succ n)) (FSucc n' k) = do
-  check (Fin n) k
-  check Nat n
-  check Nat n'
-  eq <- equal Nat n n'
-  unless eq $ throwError $ "check: FSucc index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+equalize _T          (N u as) (N v as2) | u == v =
+  do
+     vars <- ask
+     _U   <- infer u
+     (as', _T')  <-
+        equalizeSpine _U (N u []) as as2
+     eq   <- (_T <-> _T') --TODO make fail
+     case eq of
+       True -> return $ N u as'
+       False ->
+         return $ {-VBot-} error $
+           "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
+           ++ "\nin value " ++ pp (N u as')
 
-check (Vec a Zero) (VNil a') = do
-  eq <- a <-> a'
-  check SET a
-  unless eq $ throwError $ "check: Nil index " ++ (pp a') ++ " does not match type index " ++ (pp a)
+equalize (SET) (Nat) Nat = return Nat
+equalize (SET) (Fin n) (Fin n2) = do
+  Fin <$> equalize Nat n n2
+equalize (SET) (Vec a n) (Vec a2 n2) =
+  Vec <$> equalize SET a a2 <*> equalize Nat n n2
+equalize (SET) (Eq a x y) (Eq a2 x2 y2) =
+  Eq
+  <$> equalize SET a a2
+  <*> equalize a x x2
+  <*> equalize a y y2
 
-check (Vec a (Succ n)) (VCons a' n' h t) = do
-  eq1 <- a <-> a'
-  eq2 <- equal Nat n n'
-  check SET a
-  check a h
-  check (Vec a n) t
-  check Nat n
-  unless eq1 $ throwError $ "check: Cons type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
-  unless eq2 $ throwError $ "check: Cons length index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+equalize (Nat) Zero Zero = return Zero
+equalize Nat (Succ k) (Succ k2) =
+  Succ <$> equalize Nat k k2
 
-check (Eq a x1 x2) (ERefl a' x) = do
-  eq1 <- a <-> a'
-  eq2 <- equal a x x1
-  eq3 <- equal a x x2
-  check SET a
-  check a x
-  unless eq1 $ throwError $ "check: Refl type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
-  unless eq2 $ throwError $ "check: Refl value index " ++ (pp x) ++ " does not match index in type " ++ (pp x1)
-  unless eq3 $ throwError $ "check: Refl value index " ++ (pp x) ++ " does not match second index in type " ++ (pp x2)
+equalize (Fin (Succ n)) (FZero n') (FZero n2) =
+  FZero <$> equalizeMany Nat [n,n2,n']
+  --unless eq $ throwError $ "equalize: FZero index " ++ (pp n') ++ " does not match type index " ++ (pp n)
 
-check _T          (C c as)  =  throwError $ "check: canonical inhabitant " ++ pp (C c as) ++
-                                      " of non-canonical type " ++ pp _T
+equalize (Fin (Succ n)) (FSucc n' k) (FSucc n2 k2) = do
+  FSucc <$> equalizeMany Nat [n, n', n2] <*> equalize (Fin n) k k2
+  --eq <- equal Nat n n'
+  --unless eq $ throwError $ "equalize: FSucc index " ++ (pp n') ++ " does not match type index " ++ (pp n)
 
-check _T          (L _)     =  throwError $ "check: lambda cannot inhabit " ++ pp _T
+equalize (Vec a Zero) (VNil a') (VNil a2) =
+  VNil <$> equalizeMany SET [a,a2,a']
 
-check _T          t     =  throwError $ "check: " ++ pp t ++ " cannot inhabit " ++ pp _T
+equalize (Vec a (Succ n)) (VCons a' n' h t) (VCons a2 n2 h2 t2) =
+  VCons <$> equalizeMany SET [a,a2,a'] <*> equalizeMany Nat [n,n',n2] <*> equalize a h h2 <*> equalize (Vec a n) t t2
+
+equalize (Eq a x y) (ERefl a1 x1) (ERefl a2 x2) =
+  ERefl <$> equalizeMany SET [a,a1,a2] <*> equalizeMany a [x,y,x1,x2]
+
+equalize _T t1 t2 =
+  trace ("Equalize Bottom " ++ pp _T ++ ", " ++ pp t1 ++ ", " ++ pp t2) $
+  return $ {-VBot-} error $
+    "Cannot equalize values " ++ pp t1 ++ ", " ++ pp t2 ++
+    "\nof type " ++ pp _T
+
+
 
 infer :: Head -> Contextual Type
 infer (Var x w)  = lookupVar x w
 infer (Meta x)   = lookupMeta x
 
 
+-- The |bindInScope| and |bindsInScope| helper operations introduce a
+-- binding or two and call the continuation with a variable of the given
+-- type in scope.
 
-checkTel :: Tel -> [VAL] -> Contextual ()
-checkTel Stop         []      = return ()
-checkTel (Ask _S _T)  (s:ss)  = do  check _S s
-                                    tel' <- supply _T s
-                                    checkTel tel' ss
-checkTel Stop         (_:_)   = throwError "Overapplied canonical constructor"
-checkTel (Ask _ _)    []      = throwError "Underapplied canonical constructor"
+-- bindInScope ::  Type -> Bind Nom VAL ->
+--                   (Nom -> VAL -> Contextual VAL) ->
+--                   Contextual (Bind Nom VAL)
+-- bindInScope _T b f = do  (x, b') <- unbind b
+--                          bind x <$> inScope x (P _T) (f x b')
+-- -- >
+-- bindsInScope ::  Type -> Bind Nom VAL -> Bind Nom VAL ->
+--                    (Nom -> VAL -> VAL -> Contextual VAL) ->
+--                    Contextual (Bind Nom VAL)
+-- bindsInScope _T a b f = do  Just (x, a', _, b') <- unbind2 a b
+--                             bind x <$> inScope x (P _T) (f x a' b')
 
 
-checkSpine :: Type -> VAL -> [Elim] -> Contextual Type
-checkSpine _T           _  []        = return _T
-checkSpine (PI _S _T)   u  (A s:ts)  = check _S s >>
-                                       bind3 checkSpine (_T $$ s) (u $$ s) (return ts)
-checkSpine (SIG _S _T)  u  (Hd:ts)   = bind3 checkSpine (return _S) (u %% Hd) (return ts)
-checkSpine (SIG _S _T)  u  (Tl:ts)   = bind3 checkSpine ((_T $$) =<< (u %% Hd)) (u %% Tl) (return ts)
+equalizeTel :: Tel -> [VAL] -> [VAL] -> Contextual [VAL]
+equalizeTel tel vals1 vals2 = equalizeTel' tel vals1 vals2 []
+  where
+    equalizeTel' Stop         [] [] accum      = return accum
+    equalizeTel' (Ask _S _T)  (s1:ss1) (s2:ss2) accum  =
+      do
+        sf <- equalize _S s1 s2
+        tel' <- supply _T sf
+        equalizeTel' tel' ss1 ss2 (accum ++ [sf])
+    equalizeTel' _ _ _ _ = return [{-VBot-} error "Bad equalize tel"] --TODO better tel matches
+    -- checkTel Stop         (_:_)   = throwError "Overapplied canonical constructor"
+    -- checkTel (Ask _ _)    []      = throwError "Underapplied canonical constructor"
 
-checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
-  check Nat u
-  check (Nat --> SET) m
-  bind2 check (m $$ Zero) $ return mz
-  bind2 check (msVType m) $ return ms
-  bind3 checkSpine (m $$ u) (u %% elim) $ return ts
 
-checkSpine (Fin n) u (elim@(FinElim m mz ms n') : ts) = do
-  eq <- equal Nat n n'
-  check (Fin n) u
-  check Nat n
-  check (finmType) m
-  bind2 check (finmzVType m) (return mz)
-  bind2 check (finmsVType m) (return ms)
-  unless eq $ throwError $ "Size index of given Finite " ++ pp n ++
-                     " does not match FinElim size index of " ++ pp n'
-  bind3 checkSpine (m $$$ [n, u]) (u %% elim) (return ts)
+equalizeSpine :: Type -> VAL -> [Elim] -> [Elim] -> Contextual ([Elim], Type)
+equalizeSpine _T u spine1 spine2 = equalizeSpine' _T u spine1 spine2 []
+  where
+    equalizeSpine' :: Type -> VAL -> [Elim] -> [Elim] -> [Elim] -> Contextual ([Elim], Type)
 
-checkSpine (Vec a' n') u (elim@(VecElim a m mn mc n) : ts) = do
-  check Nat n
-  check SET a
-  eq1 <- equal Nat n n'
-  eq2 <- equal SET a a'
-  check (Vec a n) u
-  bind2 check (vmVType a) (return m)
-  bind2 check (mnVType a m) (return mn)
-  bind2 check (mcVType a m) (return mc)
-  unless eq1 $ throwError $ "Size index of given Vec " ++ pp n' ++
-                     " does not match VecElim size index of " ++ pp n
-  unless eq2 $ throwError $ "Element type of given Vec " ++ pp a' ++
-                     " does not match VecElim element type of " ++ pp a
-  bind3 checkSpine (vResultVType m n u) (u %% elim) (return ts)
+    equalizeSpine' _T           u  [] [] accum = return (accum, _T)
 
-checkSpine (Eq a' x' y') u (elim@(EqElim a m mr x y) : ts) = do
-  check SET a
-  eq1 <- equal SET a a'
-  check a x
-  check a y
-  eq2 <- equal a x x'
-  eq3 <- equal a y y'
-  check (Eq a x y) u
-  bind2 check (eqmVType a) (return m)
-  bind2 check (eqmrVType a m) (return mr)
-  unless eq1 $ throwError $ "Type index of given Eq " ++ pp a' ++
-                     " does not match EqElim type index of " ++ pp a
-  unless eq2 $ throwError $ "First value index of given Eq " ++ pp x' ++
-                     " does not match EqElim value index of " ++ pp x
-  unless eq3 $ throwError $ "Second value index of given Eq " ++ pp y' ++
-                     " does not match EqElim value index of " ++ pp y
-  bind3 checkSpine (eqResultVType m x y u) (u %% elim) (return ts)
+    equalizeSpine' (PI _S _T)   u  (A s:ts)  (A s2:ts2) accum  = do
+      sf <- equalize _S s s2
+      uf <- equalize (PI _S _T) u u
+      bind5 equalizeSpine' (_T $$ sf) (uf $$ sf) (return ts) (return ts2)
+        (return $ accum ++ [A sf])
 
-checkSpine ty           _  (s:_)     = throwError $ "checkSpine: type " ++ pp ty
-                                           ++ " does not permit " ++ pp s
+    equalizeSpine' (SIG _S _T)  u  (Hd:ts) (Hd:ts2) accum   =
+      bind5 equalizeSpine' (return _S) (u %% Hd) (return ts) (return ts2) (return $ accum ++ [Hd])
+
+    equalizeSpine' (SIG _S _T)  u  (Tl:ts) (Tl:ts2) accum   =
+      bind5 equalizeSpine'
+        ((_T $$) =<< (u %% Hd)) (u %% Tl) (return ts) (return ts2)
+        (return $ accum ++ [Tl])
+
+    equalizeSpine' (Nat) u ((NatElim m mz ms) : ts) ((NatElim m2 mz2 ms2) : ts2) accum = do
+      uf <- equalize Nat u u --TODO check throughout if carry on equalize results
+      mf <- equalize (Nat --> SET) m m2
+      mzf <- bind3 equalize (mf $$ Zero) (return mz) (return mz2)
+      msf <- bind3 equalize (msVType mf) (return ms) (return ms2)
+      let elim = NatElim mf mzf msf
+      bind5 equalizeSpine' (mf $$ uf) (uf %% elim) (return ts) (return ts2)
+        (return $ accum ++ [elim])
+
+    equalizeSpine' (Fin n') u ((FinElim m mz ms n) : ts) ((FinElim m2 mz2 ms2 n2) : ts2) accum = do
+      nf <- equalizeMany Nat [n,n',n2]
+      mf <- equalize finmType m m2
+      elim <-
+        FinElim mf
+        <$> bind3 equalize (finmzVType mf) (return mz) (return mz2)
+        <*> bind3 equalize (finmsVType mf) (return ms) (return ms2)
+        <*> return nf
+      uf <- equalize (Fin nf) u u
+      bind5 equalizeSpine' (m $$$ [n, uf]) (uf %% elim) (return ts) (return ts2)
+        (return $ accum ++ [elim])
+
+    equalizeSpine' (Vec a' n') u ((VecElim a m mn mc n) : ts) ((VecElim a2 m2 mn2 mc2 n2) : ts2) accum = do
+      nf <- equalizeMany Nat [n,n2,n']
+      af <- equalizeMany SET [a,a2,a']
+      uf <- equalize (Vec af nf) u u
+      mf <- bind3 equalize (vmVType af) (return m) (return m2)
+      elim <-
+        VecElim af mf
+        <$> bind3 equalize (mnVType af mf) (return mn) (return mn2)
+        <*> bind3 equalize (mcVType af mf) (return mc) (return mc2)
+        <*> return nf
+      bind5 equalizeSpine' (vResultVType mf nf uf) (uf %% elim) (return ts) (return ts2)
+        (return $ accum ++ [elim])
+
+    equalizeSpine' (Eq a' x' y') u ((EqElim a m mr x y) : ts) ((EqElim a2 m2 mr2 x2 y2) : ts2) accum = do
+      af <- equalizeMany SET [a,a',a2]
+      xf <- equalizeMany a [x,x2,x']
+      yf <- equalizeMany a [y,y2,y']
+      mf <- bind3 equalize (eqmVType af) (return m) (return m2)
+      uf <- equalize (Eq a x y) u u
+      elim <-
+        EqElim af mf
+        <$> bind3 equalize (eqmrVType af mf) (return mr) (return mr2)
+        <*> return xf
+        <*> return yf
+      bind5 equalizeSpine' (eqResultVType mf xf yf uf) (uf %% elim) (return ts) (return ts2) (return $ accum ++ [elim])
+
+    equalizeSpine' ty u  (s:ts) (s2:ts2) accum     =
+      equalizeSpine'
+        ({-VBot-} error $ "Bad eliminator " ++ pp s ++ " for value " ++ pp u ++ " of type " ++ pp ty)
+        ({-VBot-} error $ "Bad eliminator " ++ pp s2 ++ " for value " ++ pp u ++ " of type " ++ pp ty)
+        ts ts2 (accum ++ [{-EBot-} error "TODO Elim 1"])
+    equalizeSpine' _ _ _ _ accum = error "TODO better equalizeSpine cases"
+      --throwError $ "equalizeSpine': type " ++ pp ty
+                                               -- ++ " does not permit " ++ pp s
 
 
 
 quote :: Type -> VAL -> Contextual VAL
 --quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
+--quote _ (VBot s) = return $ {-VBot-} error s
 quote (PI _S _T)   f         =  do
                                 x <- fresh (s2n "xq")
                                 lam x <$> inScope x (P _S)
@@ -308,7 +375,7 @@ quote (Eq a x y) (ERefl b z) =
   then throwError "Bad quote REFL"
   else ERefl <$> quote SET a <*> quote a x
 
-quote _T           t         = throwError $ "quote: type " ++ pp _T ++
+quote _T           t         = error $ "quote: type " ++ pp _T ++
                                        " does not accept " ++ pp t
 
 
@@ -382,7 +449,7 @@ equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ====
 _S <-> _T = equal SET _S _T
 
 isReflexive :: Equation -> Contextual Bool
-isReflexive eqn@(EQN _S s _T t _) = trace ("IsRelexive " ++ pp eqn) $
+isReflexive eqn@(EQN _S s _T t _) = --trace ("IsRelexive " ++ pp eqn) $
   do
     vars <- ask
     eq <- --trace ("IsReflexive vars " ++ show vars) $
@@ -390,6 +457,173 @@ isReflexive eqn@(EQN _S s _T t _) = trace ("IsRelexive " ++ pp eqn) $
     if eq  then  equal _S s t
            else  return False
 
+oldTypecheck :: Type -> VAL -> Contextual Bool
+oldTypecheck _T t = (oldCheck _T t >> return True) `catchError`
+                     (\ _ -> return False)
+
+
+oldCheck = check
+  where
+    check :: Type -> VAL -> Contextual ()
+    check (SET) (SET) = return ()
+    check (SET) (Nat) = return ()
+    --check _T t | trace ("Checking " ++ pp _T ++ " ||| " ++ pp t ++ "\n** " ++ show (_T, t)) False = error "check"
+
+    check (C c as)    (C v bs)  =  do
+                                   tel <- canTy (c, as) v
+                                   checkTel tel bs
+
+    check (PI _S _T)  (L b)     =  do
+                                   (x, t) <- unbind b
+                                   appRes <- (_T $$ var x)
+                                   inScope x (P _S) $ check appRes t
+
+    check _T          (N u as)  = do
+                                   vars <- ask
+                                   _U   <- infer u
+                                   _T'  <-
+                                      checkSpine _U (N u []) as
+                                   eq   <- (_T <-> _T') --TODO make fail
+                                   unless eq $ throwError $ "Inferred type " ++ pp _T' ++
+                                                      " of " ++ pp (N u as) ++
+                                                      " is not " ++ pp _T
+                                                      ++ " in env " ++ show vars
+
+    check (SET) (Nat) = return ()
+    check (SET) (Fin n) = do
+      check Nat n
+      return ()
+    check (SET) (Vec a n) = do
+      check SET a
+      check Nat n
+    check (SET) (Eq a x y) = do
+      check SET a
+      check a x
+      check a y
+
+    check (Nat) Zero = return ()
+    check Nat (Succ k) = check Nat k
+
+    check (Fin (Succ n)) (FZero n') = do
+      check Nat n
+      check Nat n'
+      eq <- equal Nat n n'
+      unless eq $ throwError $ "check: FZero index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+
+    check (Fin (Succ n)) (FSucc n' k) = do
+      check (Fin n) k
+      check Nat n
+      check Nat n'
+      eq <- equal Nat n n'
+      unless eq $ throwError $ "check: FSucc index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+
+    check (Vec a Zero) (VNil a') = do
+      eq <- a <-> a'
+      check SET a
+      unless eq $ throwError $ "check: Nil index " ++ (pp a') ++ " does not match type index " ++ (pp a)
+
+    check (Vec a (Succ n)) (VCons a' n' h t) = do
+      eq1 <- a <-> a'
+      eq2 <- equal Nat n n'
+      check SET a
+      check a h
+      check (Vec a n) t
+      check Nat n
+      unless eq1 $ throwError $ "check: Cons type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
+      unless eq2 $ throwError $ "check: Cons length index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+
+    check (Eq a x1 x2) (ERefl a' x) = do
+      eq1 <- a <-> a'
+      eq2 <- equal a x x1
+      eq3 <- equal a x x2
+      check SET a
+      check a x
+      unless eq1 $ throwError $ "check: Refl type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
+      unless eq2 $ throwError $ "check: Refl value index " ++ (pp x) ++ " does not match index in type " ++ (pp x1)
+      unless eq3 $ throwError $ "check: Refl value index " ++ (pp x) ++ " does not match second index in type " ++ (pp x2)
+
+    check _T          (C c as)  =  throwError $ "check: canonical inhabitant " ++ pp (C c as) ++
+                                          " of non-canonical type " ++ pp _T
+
+    check _T          (L _)     =  throwError $ "check: lambda cannot inhabit " ++ pp _T
+
+    check _T          t     =  throwError $ "check: " ++ pp t ++ " cannot inhabit " ++ pp _T
+
+    infer :: Head -> Contextual Type
+    infer (Var x w)  = lookupVar x w
+    infer (Meta x)   = lookupMeta x
+
+
+
+    checkTel :: Tel -> [VAL] -> Contextual ()
+    checkTel Stop         []      = return ()
+    checkTel (Ask _S _T)  (s:ss)  = do  check _S s
+                                        tel' <- supply _T s
+                                        checkTel tel' ss
+    checkTel Stop         (_:_)   = throwError "Overapplied canonical constructor"
+    checkTel (Ask _ _)    []      = throwError "Underapplied canonical constructor"
+
+
+    checkSpine :: Type -> VAL -> [Elim] -> Contextual Type
+    checkSpine _T           _  []        = return _T
+    checkSpine (PI _S _T)   u  (A s:ts)  = check _S s >>
+                                           bind3 checkSpine (_T $$ s) (u $$ s) (return ts)
+    checkSpine (SIG _S _T)  u  (Hd:ts)   = bind3 checkSpine (return _S) (u %% Hd) (return ts)
+    checkSpine (SIG _S _T)  u  (Tl:ts)   = bind3 checkSpine ((_T $$) =<< (u %% Hd)) (u %% Tl) (return ts)
+
+    checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
+      check Nat u
+      check (Nat --> SET) m
+      bind2 check (m $$ Zero) $ return mz
+      bind2 check (msVType m) $ return ms
+      bind3 checkSpine (m $$ u) (u %% elim) $ return ts
+
+    checkSpine (Fin n) u (elim@(FinElim m mz ms n') : ts) = do
+      eq <- equal Nat n n'
+      check (Fin n) u
+      check Nat n
+      check (finmType) m
+      bind2 check (finmzVType m) (return mz)
+      bind2 check (finmsVType m) (return ms)
+      unless eq $ throwError $ "Size index of given Finite " ++ pp n ++
+                         " does not match FinElim size index of " ++ pp n'
+      bind3 checkSpine (m $$$ [n, u]) (u %% elim) (return ts)
+
+    checkSpine (Vec a' n') u (elim@(VecElim a m mn mc n) : ts) = do
+      check Nat n
+      check SET a
+      eq1 <- equal Nat n n'
+      eq2 <- equal SET a a'
+      check (Vec a n) u
+      bind2 check (vmVType a) (return m)
+      bind2 check (mnVType a m) (return mn)
+      bind2 check (mcVType a m) (return mc)
+      unless eq1 $ throwError $ "Size index of given Vec " ++ pp n' ++
+                         " does not match VecElim size index of " ++ pp n
+      unless eq2 $ throwError $ "Element type of given Vec " ++ pp a' ++
+                         " does not match VecElim element type of " ++ pp a
+      bind3 checkSpine (vResultVType m n u) (u %% elim) (return ts)
+
+    checkSpine (Eq a' x' y') u (elim@(EqElim a m mr x y) : ts) = do
+      check SET a
+      eq1 <- equal SET a a'
+      check a x
+      check a y
+      eq2 <- equal a x x'
+      eq3 <- equal a y y'
+      check (Eq a x y) u
+      bind2 check (eqmVType a) (return m)
+      bind2 check (eqmrVType a m) (return mr)
+      unless eq1 $ throwError $ "Type index of given Eq " ++ pp a' ++
+                         " does not match EqElim type index of " ++ pp a
+      unless eq2 $ throwError $ "First value index of given Eq " ++ pp x' ++
+                         " does not match EqElim value index of " ++ pp x
+      unless eq3 $ throwError $ "Second value index of given Eq " ++ pp y' ++
+                         " does not match EqElim value index of " ++ pp y
+      bind3 checkSpine (eqResultVType m x y u) (u %% elim) (return ts)
+
+    checkSpine ty           _  (s:_)     = throwError $ "checkSpine: type " ++ pp ty
+                                               ++ " does not permit " ++ pp s
 
 
 checkProb :: ProbId -> ProblemState -> Problem -> Contextual ()
@@ -434,8 +668,8 @@ validate q = local (const []) $ do
     _Del' <- getR
     unless (null _Del') $ throwError "validate: not at far right"
     _Del <- getL
-    --trace ("Context before validating " ++ List.intercalate "\n" (map pp _Del)) $
-    help _Del --`catchError` (throwError . (++ ("\nwhen validating\n" ++ show (_Del, _Del'))))
+    trace ("Context before validating " ++ List.intercalate "\n" (map pp _Del)) $
+      help _Del --`catchError` (throwError . (++ ("\nwhen validating\n" ++ show (_Del, _Del'))))
     putL _Del
   where
     help :: ContextL -> Contextual ()

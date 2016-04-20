@@ -30,6 +30,9 @@ import Unbound.Generics.LocallyNameless
 import Unbound.Generics.LocallyNameless.Bind
 import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
 
+import qualified Data.List as List
+import qualified Data.Maybe as Maybe
+
 prettyString :: (Pretty a)
              => a -> String
 prettyString t = render $ runPretty $ pretty t
@@ -44,6 +47,7 @@ data VAL where
         L :: Bind Nom VAL -> VAL
         N :: Head -> [Elim] -> VAL
         C :: Can -> [VAL] -> VAL
+        --VBot :: String -> VAL
 --        Nat :: VAL
 --        Fin :: VAL -> VAL
 --        Vec :: VAL -> VAL -> VAL
@@ -89,7 +93,7 @@ data Head
   | Meta Nom
   deriving (Eq, Show, Generic)
 
-data Elim = Elim CanElim [VAL]
+data Elim = Elim CanElim [VAL] -- | EBot String
   deriving (Eq, Show, Generic)
 
 data CanElim =
@@ -170,6 +174,7 @@ maybePar tm = parens
 
 
 instance Pretty VAL where
+  --pretty (VBot s) = return $ text "⊥"
   pretty (PI _S (L b)) =
     lunbind b $
     \( x, _T ) ->
@@ -591,6 +596,27 @@ instance Occurs a => Occurs [a] where
 type Subs = Map.Map Nom VAL
 
 type SubsList = [( Nom, VAL )]
+
+joinErrors :: [Maybe String] -> Maybe String
+joinErrors [] = Nothing
+joinErrors l = (Just . (List.intercalate "\n") . Maybe.catMaybes) l
+
+
+containsBottom _ = return Nothing
+{-
+containsBottom :: (Fresh m) => VAL -> m (Maybe String)
+containsBottom (L v) = do
+  (x,b) <- unbind v
+  containsBottom b
+containsBottom (N v1 elims) = joinErrors <$> mapM elimContainsBottom elims
+containsBottom (C v1 args) = joinErrors <$> mapM containsBottom args
+--containsBottom (VBot s) = return $ Just s
+--containsBottom (Choice v1 v2) = joinErrors <$> mapM containsBottom [v1,v2]
+
+elimContainsBottom :: (Fresh m) => Elim -> m (Maybe String)
+elimContainsBottom (Elim v1 args) = joinErrors <$> mapM containsBottom args
+--elimContainsBottom (EBot s) = return $ Just s
+-}
 
 --Compose substitutions
 compSubs :: Subs -> Subs -> Subs --TODO this is pointless converting to list
