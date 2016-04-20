@@ -126,13 +126,27 @@ equalizeMany _ [] = return $ {-VBot-} error "Cannot equalize 0 values"
 
 
 equalize :: Type -> VAL -> VAL -> Contextual VAL
---equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
+equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
 
 equalize (SET) (SET) (SET) = return SET
 
-equalize (C c as)    (C v bs) _  =  do
+equalize _T          (N u as) (N v as2) | u == v =
+  trace ("Equalize neutral " ++ show u ++ " " ++ show (map pp as) ++ ", " ++ show (map pp as2)) $ do
+     vars <- ask
+     _U   <- infer u
+     (as', _T')  <- trace "" $
+        equalizeSpine _U (N u []) as as2
+     eq   <- trace ("Equalized spines " ++ show (map pp as') ++ " : " ++ pp _T') $ (_T <-> _T') --TODO make fail
+     case eq of
+       True -> return $ N u as'
+       False ->
+         return $ {-VBot-} error $
+           "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
+           ++ "\nin value " ++ pp (N u as')
+--TODO this seems very wrong
+equalize (C c as)   (C v bs) (C v2 bs2) | v == v2  =  do
                                tel <- canTy (c, as) v --TODO source of bias?
-                               C v <$> equalizeTel tel as bs
+                               C v <$> equalizeTel tel bs bs2
 
 -- equalize (PI _S _T)  (L b) (L b2)     =  do
 --                                (x, t) <- unbind b
@@ -142,26 +156,15 @@ equalize (C c as)    (C v bs) _  =  do
 --                                inScope x (P _S) $
 --                                  return $ L $ bind x t2 --TODO how to deal with var here?
 equalize (PI _U _V) f g = do
+    vars <- ask
     x <- fresh $ s2n "arg"
     fx <- f $$ var x
     gx <- g $$ var x
     _Vx <- _V $$ var x
-    body <- equalize _Vx fx gx
-    return $ L $ bind x body
+    body <- trace ("FN BODY " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx) $ localParams (++ [(x, P _U)]) $ equalize _Vx fx gx
+    trace ("FN RET " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx)  $ return $ L $ bind x body
 
-equalize _T          (N u as) (N v as2) | u == v =
-  do
-     vars <- ask
-     _U   <- infer u
-     (as', _T')  <-
-        equalizeSpine _U (N u []) as as2
-     eq   <- (_T <-> _T') --TODO make fail
-     case eq of
-       True -> return $ N u as'
-       False ->
-         return $ {-VBot-} error $
-           "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
-           ++ "\nin value " ++ pp (N u as')
+
 
 equalize (SET) (Nat) Nat = return Nat
 equalize (SET) (Fin n) (Fin n2) = do
@@ -205,7 +208,9 @@ equalize _T t1 t2 =
 
 
 infer :: Head -> Contextual Type
-infer (Var x w)  = lookupVar x w
+infer (Var x w)  = do
+  ret <- lookupVar x w
+  trace ("Looked up value " ++ pp ret ++ " for var " ++ show x) $ return ret
 infer (Meta x)   = lookupMeta x
 
 
