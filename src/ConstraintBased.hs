@@ -281,7 +281,11 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
               --Ensure that the annotation type and our inferred type unify
               --We have to evaluate ii $ our normal form
               --trace ("INF " ++ show e ++ "\nunifying " ++ show [tyAnnot, tyInferred] ++ "\nenv " ++ show g) $
-              unifySets reg tyAnnot tyInferred g
+              case (tyAnnot, tyInferred) of
+                --Get rid of a bunch of useless constraints
+                (Tm.SET, Tm.SET) -> return ()
+                _ ->
+                  unifySets reg tyInferred tyAnnot g
 
     --Special case when we have metavariable in type
     cType_' ii g (Lam_ body) fnTy = do
