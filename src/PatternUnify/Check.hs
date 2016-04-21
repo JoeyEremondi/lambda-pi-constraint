@@ -106,6 +106,11 @@ typecheck _T t = do
         Nothing -> True
         Just s -> trace ("Contained bottom with message " ++ s) $ False) `catchError` \s -> trace ("TC False: " ++ s) $ return False
 
+
+makeTypeSafe :: Type -> VAL -> Contextual VAL
+makeTypeSafe _T t = equalize _T t t
+
+
 check _T t =
   --trace ("****Checking value " ++ pp t ++ " with type " ++ pp _T) $
   do

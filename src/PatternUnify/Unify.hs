@@ -15,7 +15,7 @@ import Data.Set (Set, isSubsetOf)
 import Prelude hiding (elem, notElem)
 --import qualified Data.List as List
 import qualified Data.Set as Set
-import PatternUnify.Check (check, checkProb, equal, isReflexive, typecheck)
+import PatternUnify.Check (check, checkProb, equal, isReflexive, typecheck, makeTypeSafe)
 import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              Param (..), ProbId (..), Problem (..),
                              ProblemState (..), addEqn, allProb, allTwinsProb,
@@ -112,10 +112,12 @@ hole info _Gam _T f =
 
 defineGlobal
   :: EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal pid x _T v m = --trace ("Defining global " ++ show x ++ " := " ++ pp v ++ " : " ++ pp _T) $
-  do check _T v `catchError`
-       (throwError .
-        (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
+defineGlobal pid x _T vinit m = --trace ("Defining global " ++ show x ++ " := " ++ pp v ++ " : " ++ pp _T) $
+  do
+     v <- makeTypeSafe _T vinit
+     --check _T v `catchError`
+     --   (throwError .
+     --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
      pushL $ E x _T (DEFN v) pid
      pushR (Left (Map.singleton x v))
      a <- m
@@ -318,17 +320,22 @@ rigidRigid pid eqn =
              ,EQN b y' b' z' pid
              ,EQN a' z b' z' pid]
     -- >
-    rigidRigid' eq@(EQN t1 v1 t2 v2 _) = badRigidRigid eq
+    --Anything can rigidly match with Bottom
+    rigidRigid' (EQN _ (VBot _) _ _ _ ) = return []
+    rigidRigid' (EQN _ _ _ (VBot _) _) = return []
+    --Anything else, we should be able to catch in our type graph
+    rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return [] --badRigidRigid eq
 
-badRigidRigid
-  :: Equation -> Contextual [Equation]
-badRigidRigid (EQN t1 v1 t2 v2 _) =
-  throwError $
-  "Cannot rigidly match (" ++
-  prettyString v1 ++
-  " : " ++
-  prettyString t1 ++
-  ")  with (" ++ prettyString v2 ++ " : " ++ prettyString t2 ++ ")"
+
+-- badRigidRigid
+--   :: Equation -> Contextual [Equation]
+-- badRigidRigid (EQN t1 v1 t2 v2 _) =
+--   throwError $
+--   "Cannot rigidly match (" ++
+--   prettyString v1 ++
+--   " : " ++
+--   prettyString t1 ++
+--   ")  with (" ++ prettyString v2 ++ " : " ++ prettyString t2 ++ ")"
 
 -- When we have the same rigid variable (or twins) at the head on both
 -- sides, we proceed down the spine, demanding that projections are
@@ -707,7 +714,7 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t info) k =
             =
            fvs ds
      u <- prune (potentials \\ freesToIgnore) t
-     --trace ("Prune result " ++ show u) $ 
+     --trace ("Prune result " ++ show u) $
      case u of
        d:_ -> active n q >> instantiate (CreatedBy (Ctx.infoRegion info) n) d
        [] -> k
