@@ -47,7 +47,7 @@ data VAL where
         L :: Bind Nom VAL -> VAL
         N :: Head -> [Elim] -> VAL
         C :: Can -> [VAL] -> VAL
-        --VBot :: String -> VAL
+        VBot :: String -> VAL
 --        Nat :: VAL
 --        Fin :: VAL -> VAL
 --        Vec :: VAL -> VAL -> VAL
@@ -93,7 +93,7 @@ data Head
   | Meta Nom
   deriving (Eq, Show, Generic)
 
-data Elim = Elim CanElim [VAL] -- | EBot String
+data Elim = Elim CanElim [VAL]  | EBot String
   deriving (Eq, Show, Generic)
 
 data CanElim =
@@ -174,7 +174,7 @@ maybePar tm = parens
 
 
 instance Pretty VAL where
-  --pretty (VBot s) = return $ text "⊥"
+  pretty (VBot s) = return $ text "⊥"
   pretty (PI _S (L b)) =
     lunbind b $
     \( x, _T ) ->
@@ -273,6 +273,9 @@ prettyElims hdText elims =
     (A arg : rest) -> do
       arg' <- pretty arg --TODO parens?
       prettyElims (hdText <+> arg' ) rest
+    (EBot _ : rest) -> do
+      prettyElims (hdText <+> text "⊥" ) rest
+
     (Elim can args : rest ) -> do
       can' <- pretty can
       args' <- mapM pretty args
@@ -321,6 +324,7 @@ instance Pretty Elim where
   pretty (A a) = pretty a
   pretty (Elim can args) =
     (\can' as' -> can' <+> hsep as') <$> pretty can <*> mapM pretty args
+  pretty (EBot _) = return $ text "⊥"
 
 instance Pretty CanElim where
   pretty CA = error "Should not pretty A"

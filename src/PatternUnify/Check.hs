@@ -107,7 +107,7 @@ typecheck _T t = do
         Just s -> trace ("Contained bottom with message " ++ s) $ False) `catchError` \s -> trace ("TC False: " ++ s) $ return False
 
 check _T t =
-  trace ("****Checking value " ++ pp t ++ " with type " ++ pp _T) $
+  --trace ("****Checking value " ++ pp t ++ " with type " ++ pp _T) $
   do
     tequal <- equalize _T t t
     cbottom <- containsBottom tequal
@@ -122,28 +122,29 @@ equalizeMany _T [t1] = equalize _T t1 t1
 equalizeMany _T (t1 : rest) = do
   ttail <- equalizeMany _T rest
   equalize _T t1 ttail
-equalizeMany _ [] = return $ {-VBot-} error "Cannot equalize 0 values"
+equalizeMany _ [] = return $ VBot "Cannot equalize 0 values"
 
 
 equalize :: Type -> VAL -> VAL -> Contextual VAL
-equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
+--equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
 
 equalize (SET) (SET) (SET) = return SET
 
 equalize _T          (N u as) (N v as2) | u == v =
-  trace ("Equalize neutral " ++ show u ++ " " ++ show (map pp as) ++ ", " ++ show (map pp as2)) $ do
+  --trace ("Equalize neutral " ++ show u ++ " " ++ show (map pp as) ++ ", " ++ show (map pp as2)) $
+  do
      vars <- ask
      _U   <- infer u
-     (as', _T')  <- trace "" $
+     (as', _T')  <-
         equalizeSpine _U (N u []) as as2
-     eq   <- trace ("Equalized spines " ++ show (map pp as') ++ " : " ++ pp _T') $ (_T <-> _T') --TODO make fail
+     eq   <- --trace ("Equalized spines " ++ show (map pp as') ++ " : " ++ pp _T') $
+       (_T <-> _T') --TODO make fail
      case eq of
        True -> return $ N u as'
        False ->
-         return $ {-VBot-} error $
+         return $ VBot $
            "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
            ++ "\nin value " ++ pp (N u as')
---TODO this seems very wrong
 equalize (C c as)   (C v bs) (C v2 bs2) | v == v2  =  do
                                tel <- canTy (c, as) v --TODO source of bias?
                                C v <$> equalizeTel tel bs bs2
@@ -161,8 +162,10 @@ equalize (PI _U _V) f g = do
     fx <- f $$ var x
     gx <- g $$ var x
     _Vx <- _V $$ var x
-    body <- trace ("FN BODY " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx) $ localParams (++ [(x, P _U)]) $ equalize _Vx fx gx
-    trace ("FN RET " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx)  $ return $ L $ bind x body
+    body <- --trace ("FN BODY " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx) $
+      localParams (++ [(x, P _U)]) $ equalize _Vx fx gx
+    --trace ("FN RET " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx)  $
+    return $ L $ bind x body
 
 
 
@@ -200,17 +203,15 @@ equalize (Eq a x y) (ERefl a1 x1) (ERefl a2 x2) =
   ERefl <$> equalizeMany SET [a,a1,a2] <*> equalizeMany a [x,y,x1,x2]
 
 equalize _T t1 t2 =
-  trace ("Equalize Bottom " ++ pp _T ++ ", " ++ pp t1 ++ ", " ++ pp t2) $
-  return $ {-VBot-} error $
+  --trace ("Equalize Bottom " ++ pp _T ++ ", " ++ pp t1 ++ ", " ++ pp t2) $
+  return $ VBot $
     "Cannot equalize values " ++ pp t1 ++ ", " ++ pp t2 ++
     "\nof type " ++ pp _T
 
 
 
 infer :: Head -> Contextual Type
-infer (Var x w)  = do
-  ret <- lookupVar x w
-  trace ("Looked up value " ++ pp ret ++ " for var " ++ show x) $ return ret
+infer (Var x w)  = lookupVar x w
 infer (Meta x)   = lookupMeta x
 
 
@@ -240,7 +241,7 @@ equalizeTel tel vals1 vals2 = equalizeTel' tel vals1 vals2 []
         sf <- equalize _S s1 s2
         tel' <- supply _T sf
         equalizeTel' tel' ss1 ss2 (accum ++ [sf])
-    equalizeTel' _ _ _ _ = return [{-VBot-} error "Bad equalize tel"] --TODO better tel matches
+    equalizeTel' _ _ _ _ = return [VBot "Bad equalize tel"] --TODO better tel matches
     -- checkTel Stop         (_:_)   = throwError "Overapplied canonical constructor"
     -- checkTel (Ask _ _)    []      = throwError "Underapplied canonical constructor"
 
@@ -315,9 +316,9 @@ equalizeSpine _T u spine1 spine2 = equalizeSpine' _T u spine1 spine2 []
 
     equalizeSpine' ty u  (s:ts) (s2:ts2) accum     =
       equalizeSpine'
-        ({-VBot-} error $ "Bad eliminator " ++ pp s ++ " for value " ++ pp u ++ " of type " ++ pp ty)
-        ({-VBot-} error $ "Bad eliminator " ++ pp s2 ++ " for value " ++ pp u ++ " of type " ++ pp ty)
-        ts ts2 (accum ++ [{-EBot-} error "TODO Elim 1"])
+        (VBot $ "Bad eliminator " ++ pp s ++ " for value " ++ pp u ++ " of type " ++ pp ty)
+        (VBot $ "Bad eliminator " ++ pp s2 ++ " for value " ++ pp u ++ " of type " ++ pp ty)
+        ts ts2 (accum ++ [EBot "TODO Elim 1"])
     equalizeSpine' _ _ _ _ accum = error "TODO better equalizeSpine cases"
       --throwError $ "equalizeSpine': type " ++ pp ty
                                                -- ++ " does not permit " ++ pp s
@@ -326,7 +327,7 @@ equalizeSpine _T u spine1 spine2 = equalizeSpine' _T u spine1 spine2 []
 
 quote :: Type -> VAL -> Contextual VAL
 --quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
---quote _ (VBot s) = return $ {-VBot-} error s
+--quote _ (VBot s) = return $ VBot s
 quote (PI _S _T)   f         =  do
                                 x <- fresh (s2n "xq")
                                 lam x <$> inScope x (P _S)
