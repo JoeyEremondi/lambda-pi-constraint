@@ -622,6 +622,13 @@ elimContainsBottom (Elim v1 args) = joinErrors <$> mapM containsBottom args
 elimContainsBottom (EBot s) = return $ Just s
 
 
+isFirstOrder :: VAL -> Bool
+isFirstOrder (L _) = False
+isFirstOrder (N _ []) = True
+isFirstOrder (N _ _) = False
+isFirstOrder (C _ args) = List.and $ map isFirstOrder args
+isFirstOrder (VBot _) = True
+
 --Compose substitutions
 compSubs :: Subs -> Subs -> Subs --TODO this is pointless converting to list
 compSubs newDict oldDict =
