@@ -112,7 +112,7 @@ hole info _Gam _T f =
 
 defineGlobal
   :: EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal pid x _T v m = trace ("Defining global " ++ show x ++ " := " ++ pp v ++ " : " ++ pp _T) $
+defineGlobal pid x _T v m = --trace ("Defining global " ++ show x ++ " := " ++ pp v ++ " : " ++ pp _T) $
   do check _T v `catchError`
        (throwError .
         (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -699,7 +699,7 @@ tryPrune
 --tryPrune n q@(EQN _ (N (Meta _) ds) _ t) k
 --  | trace ("TryPrune " ++ show n ++ " " ++ pp q) False = error "tryPrune"
 tryPrune n q@(EQN _ (N (Meta _) ds) _ t info) k =
-  trace ("tryPrune " ++ show n ++ ", " ++ pp q) $
+  --trace ("tryPrune " ++ show n ++ ", " ++ pp q) $
   setProblem n >>
   do _Gam <- ask
      let potentials = vars _Gam
@@ -707,7 +707,8 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t info) k =
             =
            fvs ds
      u <- prune (potentials \\ freesToIgnore) t
-     trace ("Prune result " ++ show u) $ case u of
+     --trace ("Prune result " ++ show u) $ 
+     case u of
        d:_ -> active n q >> instantiate (CreatedBy (Ctx.infoRegion info) n) d
        [] -> k
 -- %if False
