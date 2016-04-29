@@ -75,11 +75,16 @@ instance Occurs Dec where
     frees _       HOLE      = []
     frees isMeta  (DEFN t)  = frees isMeta t
 
-data EqnInfo = Initial Region | CreatedBy Region ProbId
+data EqnInfo =
+  EqnInfo
+  { creationInfo :: CreationInfo
+  , infoRegion   :: Region
+  , isCF         :: IsCF
+  } deriving (Eq, Show, Generic)
+
+data CreationInfo = Initial | CreatedBy ProbId
   deriving (Eq, Show, Generic)
 
-infoRegion (Initial r) = r
-infoRegion (CreatedBy r _) = r
 
 data Equation = EQN Type VAL Type VAL EqnInfo
   deriving (Show, Generic)
@@ -166,6 +171,11 @@ data ProblemState = Blocked | Active | Pending [ProbId] | Solved | Failed Err
 
 instance Alpha ProblemState
 instance Subst VAL ProblemState
+instance Alpha IsCF
+instance Alpha CreationInfo
+instance Subst VAL IsCF
+instance Subst VAL CreationInfo
+
 
 instance Pretty ProblemState where
     pretty Blocked       = return $ text "BLOCKED"
@@ -174,6 +184,8 @@ instance Pretty ProblemState where
     pretty Solved        = return $ text "SOLVED"
     pretty (Failed e)    = return $ text $ "FAILED: " ++ e
 
+data IsCF = Factual | CounterFactual
+  deriving (Eq, Ord, Show, Generic)
 
 data Entry  =  E Nom Type Dec EqnInfo
             |  Prob ProbId Problem ProblemState

@@ -21,7 +21,7 @@ import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              ProblemState (..), addEqn, allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
                              popR, pushL, pushR, setProblem,
-                             wrapProb, EqnInfo(..))
+                             wrapProb, EqnInfo(..), CreationInfo(..), IsCF(..))
 import qualified PatternUnify.Context as Ctx
 import PatternUnify.Kit (bind3, bind4, bind6, bind7, elem, notElem, pp)
 import PatternUnify.Tm
@@ -176,7 +176,7 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
-  unify' n q@(EQN (PI _A _B) f (PI _S _T) g pid) =
+  unify' n q@(EQN (PI _A _B) f (PI _S _T) g info) =
     do setProblem n
        x <- freshNom
        let ( xL, xR ) = (N (Var x TwinL) [], N (Var x TwinR) [])
@@ -185,11 +185,11 @@ unify n q  = do
                       (f $$ xL)
                       (_T $$ xR)
                       (g $$ xR)
-                      (return $ CreatedBy (Ctx.infoRegion pid) n)))
+                      (return $ info {creationInfo = CreatedBy n})))
        simplify n
                 (Unify q)
-                [Unify (EQN SET _A SET _S pid), allTwinsProb x _A _S eq1]
-  unify' n q@(EQN (SIG _A _B) t (SIG _C _D) w pid) =
+                [Unify (EQN SET _A SET _S info), allTwinsProb x _A _S eq1]
+  unify' n q@(EQN (SIG _A _B) t (SIG _C _D) w info) =
     do setProblem n
        a <- t %% Hd
        b <- t %% Tl
@@ -200,31 +200,31 @@ unify n q  = do
                      (return b)
                      (_D $$ c)
                      (return d)
-                     (return $ CreatedBy (Ctx.infoRegion pid) n))
+                     (return $ info {creationInfo = CreatedBy n}))
        simplify n
                 (Unify q)
-                [Unify (EQN _A a _C c pid), eq1]
+                [Unify (EQN _A a _C c info), eq1]
     where
           -- >
-  unify' n q@(EQN _ (N (Meta _) _) _ (N (Meta _) _) pid) =
+  unify' n q@(EQN _ (N (Meta _) _) _ (N (Meta _) _) info) =
     do
       setProblem n
       tryPrune n q $ tryPrune n (sym q) $ flexFlex n q
   -- >
-  unify' n q@(EQN _ (N (Meta _) _) _ _ pid) =
+  unify' n q@(EQN _ (N (Meta _) _) _ _ info) =
     do
       setProblem n
       tryPrune n q $ flexRigid [] n q
   -- >
-  unify' n q@(EQN _ _ _ (N (Meta _) _) pid) =
+  unify' n q@(EQN _ _ _ (N (Meta _) _) info) =
     do
       setProblem n
       tryPrune n (sym q) $ flexRigid [] n (sym q)
   -- >
-  unify' n q@(EQN _ _ _ _ pid) =
+  unify' n q@(EQN _ _ _ _ info) =
     do
       setProblem n
-      rigidRigid (CreatedBy (Ctx.infoRegion pid) n) q >>= simplify n (Unify q) . map Unify
+      rigidRigid (info {creationInfo = CreatedBy n}) q >>= simplify n (Unify q) . map Unify
 
 -- Here |sym| swaps the two sides of an equation:
 sym :: Equation -> Equation
@@ -563,7 +563,7 @@ tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k =
   \m ->
     case m of
       Nothing -> k
-      Just v -> active n q >> define (CreatedBy (Ctx.infoRegion info) n) [] alpha _T v
+      Just v -> active n q >> define (info {creationInfo = CreatedBy n}) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
 
@@ -614,7 +614,7 @@ flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) info) =
          case e of
            E gamma _T HOLE _
              | gamma == alpha && gamma == beta ->
-               block n q >> tryIntersect (CreatedBy (Ctx.infoRegion info) n) alpha _T ds es
+               block n q >> tryIntersect (info {creationInfo = CreatedBy n}) alpha _T ds es
              | gamma == alpha ->
                tryInvert n
                          q
@@ -721,7 +721,7 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t info) k =
      u <- prune (potentials \\ freesToIgnore) t
      --trace ("Prune result " ++ show u) $
      case u of
-       d:_ -> active n q >> instantiate (CreatedBy (Ctx.infoRegion info) n) d
+       d:_ -> active n q >> instantiate (info {creationInfo = CreatedBy n}) d
        [] -> k
 -- %if False
 tryPrune n q _ = do
