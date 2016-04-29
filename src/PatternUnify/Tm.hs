@@ -627,6 +627,24 @@ elimContainsBottom (Elim v1 args) = joinErrors <$> mapM containsBottom args
 elimContainsBottom (EBot s) = return $ Just s
 
 
+flattenChoice :: (Fresh m) => VAL -> m VAL
+flattenChoice (L t) = do
+  (var, body) <- unbind t
+  newBody <- flattenChoice body
+  return $ L $ bind var newBody
+flattenChoice (N v elims) =
+  N v <$> mapM flattenChoiceElim elims
+flattenChoice (C t1 t2) =
+  C t1 <$> mapM flattenChoice t2
+flattenChoice (VBot t) = return $ VBot t
+flattenChoice (VChoice t1 t2) = flattenChoice t1
+
+flattenChoiceElim :: (Fresh m) => Elim -> m Elim
+flattenChoiceElim (Elim e1 e2) = Elim e1 <$> mapM flattenChoice e2
+flattenChoiceElim (EBot e) = return $ EBot e
+
+
+
 isFirstOrder :: VAL -> Bool
 isFirstOrder (L _) = False
 isFirstOrder (N _ []) = True

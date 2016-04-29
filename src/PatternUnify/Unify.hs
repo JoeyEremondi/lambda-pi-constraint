@@ -584,10 +584,11 @@ invert alpha _T es t =
      case toVars es of
        Just xs
          | o == Nothing && linearOn t xs ->
-           do b <- localParams (const []) $ typecheck _T (lams xs t)
+           do flatTm <- flattenChoice =<< lams xs t
+              b <- localParams (const []) $ typecheck _T flatTm
               return $
                 if b
-                   then Just (lams xs t)
+                   then Just flatTm
                    else Nothing
        _ -> return Nothing
 
