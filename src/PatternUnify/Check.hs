@@ -329,132 +329,14 @@ equalizeSpine _T u spine1 spine2 = equalizeSpine' _T u spine1 spine2 []
                                                -- ++ " does not permit " ++ pp s
 
 
-
-quote :: Type -> VAL -> Contextual VAL
---quote _T t | trace ("quote " ++ pp _T ++ " ||| " ++ pp t) False  = error "quote"
---quote _ (VBot s) = return $ VBot s
-quote (PI _S _T)   f         =  do
-                                x <- fresh (s2n "xq")
-                                lam x <$> inScope x (P _S)
-                                    (bind2 quote (_T $$ var x) (f $$ var x))
-
-quote (SIG _S _T)  v         =  PAIR <$> bind2 quote (return _S) (v %% Hd) <*>
-                                    bind2 quote ((_T $$) =<< (v %% Hd)) (v %% Tl)
-
-quote (C c as)     (C v bs)  = do  tel <- canTy (c, as) v
-                                   bs' <- quoteTel tel bs
-                                   return $ C v bs'
-
-quote _T           (N h as)  = do  _S <- infer h
-                                   quoteSpine _S (N h []) as
-
-quote SET Nat = return Nat
-quote SET (Fin n) = Fin <$> quote Nat n
-quote SET (Vec a n) = Vec <$> quote SET a <*> quote Nat n
-quote SET (Eq a x y) = Eq <$> quote SET a <*> quote a x <*> quote a y
-
-quote Nat Zero = return Zero
-quote Nat (Succ k) = Succ <$> quote Nat k
-
-quote (Fin (Succ n)) (FZero n') = do
-  if (n == n')
-  then FZero <$> quote Nat n
-  else throwError $ "bad Fin Zero " ++ pp n ++ " " ++ pp n'
-
-quote (Fin (Succ n)) (FSucc n' f) = do
-  if (n == n')
-  then FSucc <$> quote Nat n <*> quote (Fin n) f
-  else throwError "bad Fin Succ"
-
---TODO why not <->
-quote (Vec a _) (VNil b) =
-  if (a == b)
-  then VNil <$> quote SET a --TODO check equal?
-  else throwError "Bad quote NIL "
-quote (Vec a (Succ n)) (VCons b m h t) =
-  if (m /= n || a /= b)
-  then throwError "Bad quote CONS"
-  else VCons
-    <$> quote SET a
-    <*> quote Nat n
-    <*> quote a h
-    <*> quote (Vec a n) t
-
-
-quote (Eq a x y) (ERefl b z) =
-  if (x /= y && x /= z && a /= b)
-  then throwError "Bad quote REFL"
-  else ERefl <$> quote SET a <*> quote a x
-
-quote _T           t         = error $ "quote: type " ++ pp _T ++
-                                       " does not accept " ++ pp t
-
-
-quoteTel :: Tel -> [VAL] -> Contextual [VAL]
-quoteTel Stop         []      = return []
-quoteTel (Ask _S _T)  (s:ss)  = do  s'   <- quote _S s
-                                    tel  <- supply _T s
-                                    ss'  <- quoteTel tel ss
-                                    return $ s':ss'
-quoteTel _            _       = throwError "quoteTel: arity error"
-
-
---TODO what happens if given metavar?
-quoteSpine :: Type -> VAL -> [Elim] -> Contextual VAL
-quoteSpine _T           u []        =  return u
-quoteSpine (PI _S _T)   u (A s:as)  =  do
-                                       s' <- quote _S s
-                                       bind3 quoteSpine (_T $$ s') (u $$ s') (return as)
-quoteSpine (SIG _S _T)  u (Hd:as)   =  bind3 quoteSpine (return _S) (u %% Hd) (return as)
-quoteSpine (SIG _S _T)  u (Tl:as)   =  bind3 quoteSpine ((_T $$) =<< (u %% Hd)) (u %% Tl) (return as)
-
-quoteSpine (Nat) u ((NatElim m mz ms):as) = do
-  qm <- quote (Nat --> SET) m
-  qmz <- bind2 quote (m $$ Zero) (return mz)
-  qms <- bind2 quote (msVType m) (return ms)
-  let qElim = NatElim qm qmz qms
-  bind3 quoteSpine (qm $$ u) (u %% qElim) (return as)
-
-quoteSpine (Fin nf) u ((FinElim m mz ms n):as) = do
-  qm <- quote finmType m
-  qmz <- bind2 quote (finmzVType m) (return mz)
-  qms <- bind2 quote (finmsVType m) (return ms)
-  qn <- quote Nat n --TODO check n' and n equal?
-  let qElim = FinElim qm qmz qms qn
-  bind3 quoteSpine (qm $$$ [qn, u]) (u %% qElim) (return as)
-
-quoteSpine (Vec a' n') u ((VecElim a m mn mc n):as) = do
-  qa <- quote SET a
-  qm <- bind2 quote (vmVType a) (return m)
-  qmn <- bind2 quote (mnVType a m) (return mn)
-  qmc <- bind2 quote (mcVType a m) (return mc)
-  qn <- quote Nat n --TODO check n' and n equal?
-  let qElim = VecElim qa qm qmn qmc qn
-  bind3 quoteSpine (vResultVType m n u) (u %% qElim) (return as)
-
-quoteSpine (Eq a' x' y') u ((EqElim a m mr x y):as) = do
-  qa <- quote SET a
-  qm <- bind2 quote (eqmVType a) (return m)
-  qmr <- bind2 quote (eqmrVType a m) (return mr)
-  qx <- quote a x
-  qy <- quote a y
-  let qElim = EqElim qa qm qmr qx qy
-  bind3 quoteSpine (eqResultVType m x y u) (u %% qElim) (return as)
-
-
---TODO remove error
-quoteSpine _T           u (s:_)     =  error $ "quoteSpine: type " ++ pp _T ++
-                                               " of " ++ pp u ++
-                                               " does not permit " ++ pp s
-
-
-
 equal :: Type -> VAL -> VAL -> Contextual Bool
 equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ========= " ++ pp t) $
   do
-    s'   <- quote _T s
-    t'   <- quote _T t
-    return $ s' == t'
+    st <- equalize _T s t
+    cb <- containsBottom st
+    return $ case cb of
+      Nothing -> True
+      _ -> False
 
 (<->) :: Type -> Type -> Contextual Bool
 _S <-> _T = equal SET _S _T
