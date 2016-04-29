@@ -50,12 +50,6 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Common (Region (..), startRegion)
 
--- The |test| function executes the constraint solving algorithm on the
--- given metacontext.
-
-test :: [Entry] -> IO ()
-test = runTest (const True)
-
 
 -- Allocate a fresh name so the counter starts from 1, to avoid clashing
 -- with s2n (which generates names with index 0):
@@ -75,7 +69,7 @@ solveEntries :: [Entry] -> Either ErrorResult ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
+    (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
           initialise
           ambulando [] Map.empty
@@ -197,20 +191,3 @@ getContextErrors startEntries cx@(lcx, rcx, _, _,_) = do
 
         in
           failPaths
-
-
-
-runTest :: (ProblemState -> Bool) -> [Entry] -> IO ()
-runTest q es = do
-                   putStrLn $ "Raw context:\n" ++ show (map show es)
-                   putStrLn $ "Initial context:\n" ++
-                                render (runPretty (prettyEntries es))
-
-                   let (r,cx) = runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $
-                                       (do
-                                         initialise
-                                         ambulando [] Map.empty
-                                         validate q)
-                   case r of
-                       Left err  -> putStrLn $ "Error: " ++ err
-                       Right _  -> putStrLn $ "Final context:\n" ++ pp cx ++ "\n"
