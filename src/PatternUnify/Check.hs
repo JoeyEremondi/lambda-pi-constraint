@@ -207,6 +207,10 @@ equalize (Vec a (Succ n)) (VCons a' n' h t) (VCons a2 n2 h2 t2) =
 equalize (Eq a x y) (ERefl a1 x1) (ERefl a2 x2) =
   ERefl <$> equalizeMany SET [a,a1,a2] <*> equalizeMany a [x,y,x1,x2]
 
+--Choices are ordered, we equalize their parts
+equalize _T (VChoice s1 t1) (VChoice s2 t2) =
+  VChoice <$> equalize _T s1 s2 <*> equalize _T t1 t2
+
 equalize _T t1 t2 =
   --trace ("Equalize Bottom " ++ pp _T ++ ", " ++ pp t1 ++ ", " ++ pp t2) $
   return $ VBot $
