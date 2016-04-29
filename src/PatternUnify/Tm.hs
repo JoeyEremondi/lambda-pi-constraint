@@ -532,6 +532,7 @@ unions = concat
 instance Occurs VAL where
   occurrence xs (L (B _ b)) = occurrence xs b
   occurrence xs (C _ as) = occurrence xs as
+  occurrence xs (VChoice s t) = occurrence xs [s,t]
   occurrence xs (N (Var y _) as)
     | y `elem` xs = Just (Rigid Strong)
     | otherwise = weaken <$> occurrence xs as
@@ -543,6 +544,7 @@ instance Occurs VAL where
   --occurrence xs _ = Nothing --TODO occurrence cases
   frees isMeta (L (B _ t)) = frees isMeta t
   frees isMeta (C _ as) = unions (map (frees isMeta) as)
+  frees isMeta (VChoice s t) = unions (map (frees isMeta) [s,t])
   frees isMeta (N h es) = unions (map (frees isMeta) es) `union` x
     where x =
             case h of

@@ -89,17 +89,8 @@ canTy (c, as) v = throwError $ "canTy: canonical type " ++ pp (C c as) ++
 
 
 typecheck :: Type -> VAL -> Contextual Bool
-typecheck _T t = do
-  ret <- typecheck' _T t
-  oldRet <- oldTypecheck _T t
-  eqResult <- ((("EqSuccess: " ++) . pp) <$> equalize _T t t) `catchError` (\x -> return $ "EqFail " ++ x)
-  if ret == oldRet then
-    return ret
-  else
-    error ("Check " ++ pp t ++ " : " ++ pp _T ++ " should be " ++ show oldRet ++ ", is " ++ show ret
-    ++ "\nEqualize result: " ++ eqResult)
-  where
-    typecheck' _T t = (do
+typecheck _T t = 
+  (do
       tequal <- equalize _T t t
       cbottom <- containsBottom tequal
       return $ case cbottom of
@@ -149,6 +140,7 @@ equalize _T          (N u as) (N v as2) | u == v =
        False ->
          return $ VBot $
            "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
+           ++ "\n After inferring head type " ++ pp _U
            ++ "\nin value " ++ pp (N u as')
 equalize (C c as)   (C v bs) (C v2 bs2) | v == v2  =  do
                                tel <- canTy (c, as) v --TODO source of bias?
@@ -220,8 +212,8 @@ equalize _T t1 t2 =
 
 
 infer :: Head -> Contextual Type
-infer (Var x w)  = lookupVar x w
-infer (Meta x)   = lookupMeta x
+infer (Var x w)  = flattenChoice =<< lookupVar x w
+infer (Meta x)   = flattenChoice =<< lookupMeta x
 
 
 -- The |bindInScope| and |bindsInScope| helper operations introduce a
@@ -353,175 +345,6 @@ isReflexive eqn@(EQN _S s _T t _) = --trace ("IsRelexive " ++ pp eqn) $
       equal SET _S _T
     if eq  then  equal _S s t
            else  return False
-
-oldTypecheck :: Type -> VAL -> Contextual Bool
-oldTypecheck _T t = (oldCheck _T t >> return True) `catchError`
-                     (\ _ -> return False)
-
-
-oldCheck = check
-  where
-    check :: Type -> VAL -> Contextual ()
-    check (SET) (SET) = return ()
-    check (SET) (Nat) = return ()
-    --check _T t | trace ("Checking " ++ pp _T ++ " ||| " ++ pp t ++ "\n** " ++ show (_T, t)) False = error "check"
-
-    check (C c as)    (C v bs)  =  do
-                                   tel <- canTy (c, as) v
-                                   checkTel tel bs
-
-    check (PI _S _T)  (L b)     =  do
-                                   (x, t) <- unbind b
-                                   appRes <- (_T $$ var x)
-                                   inScope x (P _S) $ check appRes t
-
-    check _T          (N u as)  = do
-                                   vars <- ask
-                                   _U   <- infer u
-                                   _T'  <-
-                                      checkSpine _U (N u []) as
-                                   eq   <- (_T <-> _T') --TODO make fail
-                                   unless eq $ throwError $ "Inferred type " ++ pp _T' ++
-                                                      " of " ++ pp (N u as) ++
-                                                      " is not " ++ pp _T
-                                                      ++ " in env " ++ show vars
-
-    check (SET) (Nat) = return ()
-    check (SET) (Fin n) = do
-      check Nat n
-      return ()
-    check (SET) (Vec a n) = do
-      check SET a
-      check Nat n
-    check (SET) (Eq a x y) = do
-      check SET a
-      check a x
-      check a y
-
-    check (Nat) Zero = return ()
-    check Nat (Succ k) = check Nat k
-
-    check (Fin (Succ n)) (FZero n') = do
-      check Nat n
-      check Nat n'
-      eq <- equal Nat n n'
-      unless eq $ throwError $ "check: FZero index " ++ (pp n') ++ " does not match type index " ++ (pp n)
-
-    check (Fin (Succ n)) (FSucc n' k) = do
-      check (Fin n) k
-      check Nat n
-      check Nat n'
-      eq <- equal Nat n n'
-      unless eq $ throwError $ "check: FSucc index " ++ (pp n') ++ " does not match type index " ++ (pp n)
-
-    check (Vec a Zero) (VNil a') = do
-      eq <- a <-> a'
-      check SET a
-      unless eq $ throwError $ "check: Nil index " ++ (pp a') ++ " does not match type index " ++ (pp a)
-
-    check (Vec a (Succ n)) (VCons a' n' h t) = do
-      eq1 <- a <-> a'
-      eq2 <- equal Nat n n'
-      check SET a
-      check a h
-      check (Vec a n) t
-      check Nat n
-      unless eq1 $ throwError $ "check: Cons type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
-      unless eq2 $ throwError $ "check: Cons length index " ++ (pp n') ++ " does not match type index " ++ (pp n)
-
-    check (Eq a x1 x2) (ERefl a' x) = do
-      eq1 <- a <-> a'
-      eq2 <- equal a x x1
-      eq3 <- equal a x x2
-      check SET a
-      check a x
-      unless eq1 $ throwError $ "check: Refl type index " ++ (pp a') ++ " does not match type index " ++ (pp a)
-      unless eq2 $ throwError $ "check: Refl value index " ++ (pp x) ++ " does not match index in type " ++ (pp x1)
-      unless eq3 $ throwError $ "check: Refl value index " ++ (pp x) ++ " does not match second index in type " ++ (pp x2)
-
-    check _T          (C c as)  =  throwError $ "check: canonical inhabitant " ++ pp (C c as) ++
-                                          " of non-canonical type " ++ pp _T
-
-    check _T          (L _)     =  throwError $ "check: lambda cannot inhabit " ++ pp _T
-
-    check _T          t     =  throwError $ "check: " ++ pp t ++ " cannot inhabit " ++ pp _T
-
-    infer :: Head -> Contextual Type
-    infer (Var x w)  = flattenChoice =<< lookupVar x w
-    infer (Meta x)   = flattenChoice =<< lookupMeta x
-
-
-
-    checkTel :: Tel -> [VAL] -> Contextual ()
-    checkTel Stop         []      = return ()
-    checkTel (Ask _S _T)  (s:ss)  = do  check _S s
-                                        tel' <- supply _T s
-                                        checkTel tel' ss
-    checkTel Stop         (_:_)   = throwError "Overapplied canonical constructor"
-    checkTel (Ask _ _)    []      = throwError "Underapplied canonical constructor"
-
-
-    checkSpine :: Type -> VAL -> [Elim] -> Contextual Type
-    checkSpine _T           _  []        = return _T
-    checkSpine (PI _S _T)   u  (A s:ts)  = check _S s >>
-                                           bind3 checkSpine (_T $$ s) (u $$ s) (return ts)
-    checkSpine (SIG _S _T)  u  (Hd:ts)   = bind3 checkSpine (return _S) (u %% Hd) (return ts)
-    checkSpine (SIG _S _T)  u  (Tl:ts)   = bind3 checkSpine ((_T $$) =<< (u %% Hd)) (u %% Tl) (return ts)
-
-    checkSpine (Nat) u (elim@(NatElim m mz ms) : ts) = do
-      check Nat u
-      check (Nat --> SET) m
-      bind2 check (m $$ Zero) $ return mz
-      bind2 check (msVType m) $ return ms
-      bind3 checkSpine (m $$ u) (u %% elim) $ return ts
-
-    checkSpine (Fin n) u (elim@(FinElim m mz ms n') : ts) = do
-      eq <- equal Nat n n'
-      check (Fin n) u
-      check Nat n
-      check (finmType) m
-      bind2 check (finmzVType m) (return mz)
-      bind2 check (finmsVType m) (return ms)
-      unless eq $ throwError $ "Size index of given Finite " ++ pp n ++
-                         " does not match FinElim size index of " ++ pp n'
-      bind3 checkSpine (m $$$ [n, u]) (u %% elim) (return ts)
-
-    checkSpine (Vec a' n') u (elim@(VecElim a m mn mc n) : ts) = do
-      check Nat n
-      check SET a
-      eq1 <- equal Nat n n'
-      eq2 <- equal SET a a'
-      check (Vec a n) u
-      bind2 check (vmVType a) (return m)
-      bind2 check (mnVType a m) (return mn)
-      bind2 check (mcVType a m) (return mc)
-      unless eq1 $ throwError $ "Size index of given Vec " ++ pp n' ++
-                         " does not match VecElim size index of " ++ pp n
-      unless eq2 $ throwError $ "Element type of given Vec " ++ pp a' ++
-                         " does not match VecElim element type of " ++ pp a
-      bind3 checkSpine (vResultVType m n u) (u %% elim) (return ts)
-
-    checkSpine (Eq a' x' y') u (elim@(EqElim a m mr x y) : ts) = do
-      check SET a
-      eq1 <- equal SET a a'
-      check a x
-      check a y
-      eq2 <- equal a x x'
-      eq3 <- equal a y y'
-      check (Eq a x y) u
-      bind2 check (eqmVType a) (return m)
-      bind2 check (eqmrVType a m) (return mr)
-      unless eq1 $ throwError $ "Type index of given Eq " ++ pp a' ++
-                         " does not match EqElim type index of " ++ pp a
-      unless eq2 $ throwError $ "First value index of given Eq " ++ pp x' ++
-                         " does not match EqElim value index of " ++ pp x
-      unless eq3 $ throwError $ "Second value index of given Eq " ++ pp y' ++
-                         " does not match EqElim value index of " ++ pp y
-      bind3 checkSpine (eqResultVType m x y u) (u %% elim) (return ts)
-
-    checkSpine ty           _  (s:_)     = throwError $ "checkSpine: type " ++ pp ty
-                                               ++ " does not permit " ++ pp s
-
 
 checkProb :: ProbId -> ProblemState -> Problem -> Contextual ()
 --checkProb ident st p | trace ("@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False =
