@@ -113,11 +113,11 @@ hole info _Gam _T f =
 defineGlobal
   :: EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
 defineGlobal info x _T vinit m = --trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
-     hole (info {-isCF = CounterFactual-}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
+  do   --hole (info {-isCF = CounterFactual-}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
 
-     let v = trace ("Fresh choice var " ++ show freshVar) $ VChoice vsingle freshVar
+     let v = vinit --trace ("Fresh choice var " ++ show freshVar) $ VChoice vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -744,6 +744,7 @@ prune
   :: [Nom] -> VAL -> Contextual [( Nom, Type, VAL -> VAL )]
 --prune xs t | trace ("In Pruning " ++ (show xs) ++ " from " ++ pp t) False = error "prune"
 prune xs SET = return []
+prune xs (VChoice s t) = (++) <$> prune xs s <*> prune xs t
 prune xs Nat = return []
 prune xs (Fin n) = prune xs n
 prune xs (Vec a n) = (++) <$> prune xs a <*> prune xs n
