@@ -72,15 +72,15 @@ data ErrorResult =
 data SolverErr = StringErr (ProbId, Region, String) | GraphErr [ErrorInfo ConstraintInfo]
 
 solveEntries :: [Entry] -> Either ErrorResult ((), Context)
-solveEntries !es  = trace "SOLVE ENTRIES" $
+solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
+    (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
           initialise
-          trace "SOLVING..." $ ambulando [] Map.empty
-          validResult <- trace "VALIDATING..." $ validate (const True)
-          badEdges <- trace "GETTING BAD EDGES..." $ applyHeuristics defaultHeuristics
+          ambulando [] Map.empty
+          validResult <- validate (const True)
+          badEdges <- applyHeuristics defaultHeuristics
           setMsg  badEdges
           return badEdges
           )  --Make sure we don't crash

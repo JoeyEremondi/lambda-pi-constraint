@@ -607,6 +607,7 @@ makeOutText int i y v subs =
 iinfer :: Interpreter i c v t tinf inf -> NameEnv v -> Ctx inf -> i -> IO (Maybe (t, v, [(Region, v)]))
 iinfer int d g t =
   case iitype int d g t of
+    Left [] -> putStrLn "Returned Left with empty error list!" >> return Nothing
     Left errs -> (forM errs $ \(pos, e) -> putStrLn ("ERROR: " ++ (maybe "<builtin>" prettySource pos) ++ " " ++ e)) >> return Nothing
     Right v -> return (Just v)
 

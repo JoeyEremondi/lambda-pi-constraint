@@ -421,18 +421,22 @@ maybeSub :: Entry -> Maybe (Nom, VAL)
 maybeSub (E y _ (DEFN val) _) = Just (y,val)
 maybeSub _ = Nothing
 
-getUnsolvedAndSolved :: [Entry] -> ([(Nom, Maybe VAL)], Subs)
+--We only consider unsolved from the first elements of split defns
+--TODO is this right? What about fst nested in second?
+getUnsolvedAndSolved :: [Entry] -> ([(Nom, Region, Maybe VAL)], Subs)
 getUnsolvedAndSolved [] = return Map.empty
 getUnsolvedAndSolved (entry : rest) =
   let
     (uns, solved) = getUnsolvedAndSolved rest
   in
     case entry of
-      E y _ (DEFN val) _ ->
-        case fmvs val of
+      E y _ (DEFN valNotFlat) info | True{-isCF info == Factual-} ->
+        let
+          val = runFreshM $ flattenChoice valNotFlat
+        in case fmvs val of
           [] -> (uns, Map.insert y val solved)
-          _ -> ((y, Just val) : uns, solved)
-      E y _ HOLE _ -> ((y, Nothing) : uns,solved)
+          _ -> ((y, infoRegion info, Just val) : uns, solved)
+      E y _ HOLE info | True{-isCF info == Factual-} -> ((y, infoRegion info, Nothing) : uns, solved)
       _ -> (uns, solved)
 
 metaValue :: MonadState Context m => Nom -> m VAL

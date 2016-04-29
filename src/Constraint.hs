@@ -58,15 +58,15 @@ data ConstrainState =
   --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }
 
-getRegionDict :: [Constraint] -> Map.Map Tm.Nom Common.Region
-getRegionDict = foldr foldFun $ Map.singleton (LN.string2Name "builtinLoc") (Common.BuiltinRegion)
-  where
-    foldFun cstr dictSoFar =
-      case conEntry cstr of
-        (UC.Prob (UC.ProbId ident) _ _) ->
-          Map.insert ident (conRegion cstr) dictSoFar
-        _ ->
-          dictSoFar
+-- getRegionDict :: [Constraint] -> Map.Map Tm.Nom Common.Region
+-- getRegionDict = foldr foldFun $ Map.singleton (LN.string2Name "builtinLoc") (Common.BuiltinRegion)
+--   where
+--     foldFun cstr dictSoFar =
+--       case conEntry cstr of
+--         (UC.Prob (UC.ProbId ident) _ _) ->
+--           Map.insert ident (conRegion cstr) dictSoFar
+--         _ ->
+--           dictSoFar
 
 
 evalInEnv :: WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
@@ -107,21 +107,21 @@ solveConstraintM cm =
       (_, context@(cl, cr, probId, finalGraph,finalStr)) <- Run.solveEntries $ map conEntry constraints
       let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (cl)
       let finalType = evalState (UC.metaValue nom) context
-      let sourceSubs = Map.filterWithKey (\k _ -> k `elem` sourceMetas cstate) metaSubs
+      let sourceSubs = metaSubs
       return (finalType, unsolved, sourceSubs)
 
   in
     case ret of
+      Left (Run.ErrorResult ctx []) -> error "Left empty with Constraint ret solveResult"
       Left (Run.ErrorResult ctx solverErrs) ->
         Left $ map (mkErrorPair ) solverErrs
         --Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) (mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx) )
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
-      Right (_, unsolved, _) ->
-        Left $ case (filter (\(nom, _) -> nom `elem` (sourceMetas cstate)) unsolved ) of
+      Right (_, unsolved, _) -> --trace "solveConstraintM Right with unsolved" $
+        Left $ case (filter (\(nom,_, _) -> nom `elem` (sourceMetas cstate)) unsolved ) of
           [] ->
-            map (unsolvedMsg (sourceMetas cstate) (metaLocations cstate)) $
-            filter (\(nom, _) -> Map.member nom $ metaLocations cstate) unsolved
-          sms -> map (unsolvedMsg (sourceMetas cstate) (metaLocations cstate)) sms
+              map (unsolvedMsg (sourceMetas cstate) ) unsolved
+          sms -> map (unsolvedMsg (sourceMetas cstate) ) sms
 
 --mkErrorPair :: Run.SolverErr -> (Common.Region, String)
 mkErrorPair  (Run.StringErr (UC.ProbId ident, reg, msg)) = (reg, msg)
@@ -142,16 +142,16 @@ edgeMessage (edgeId, edgeInfo) =
       (UC.DerivedEqn _ prob) -> Tm.prettyString prob
 
 
-unsolvedMsg :: [Tm.Nom] -> Map.Map Tm.Nom Common.Region -> (Tm.Nom, Maybe Tm.VAL) -> (Common.Region, String)
-unsolvedMsg sourceMetas metaSources (nm,_) | not (nm `elem` sourceMetas) =
-  ( Maybe.fromMaybe Common.BuiltinRegion (Map.lookup nm metaSources)
+unsolvedMsg :: [Tm.Nom] -> (Tm.Nom, Common.Region, Maybe Tm.VAL) -> (Common.Region, String)
+unsolvedMsg sourceMetas (nm,reg,_) | not (nm `elem` sourceMetas) =
+  ( reg
   , "Could not infer type. Try adding type annotations, or report this as a bug.")
-unsolvedMsg sourceMetas metaSources (nm,Nothing) =
-  ( Maybe.fromMaybe Common.BuiltinRegion (Map.lookup nm metaSources)
+unsolvedMsg sourceMetas (nm,reg,Nothing) =
+  ( reg
   , "Could deduce no information about metavariable " ++ (drop 2 $ show nm)
   ++  ". Try adding type annotations, or giving explicit arguments.")
-unsolvedMsg sourceMetas metaSources (nm,(Just val)) =
-  (Maybe.fromMaybe Common.BuiltinRegion $ Map.lookup nm metaSources
+unsolvedMsg sourceMetas (nm,reg,(Just val)) =
+  (reg
   , "Metavariable " ++ (drop 2 $ show nm) ++ " has the form "
     ++ Tm.prettyString val
     ++ " for some unconstrained variables. Try adding an annotation or giving explicit arguments. "
