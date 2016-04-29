@@ -113,7 +113,7 @@ hole info _Gam _T f =
 defineGlobal
   :: EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
 defineGlobal info x _T vinit m = --trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
-  do --hole (info {-isCF = CounterFactual-}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
+  hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
 

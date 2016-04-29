@@ -442,13 +442,13 @@ getUnsolvedAndSolved (entry : rest) =
     (uns, solved) = getUnsolvedAndSolved rest
   in
     case entry of
-      E y _ (DEFN valNotFlat) info | True{-isCF info == Factual-} ->
+      E y _ (DEFN valNotFlat) info | isCF info == Factual ->
         let
           val = runFreshM $ flattenChoice valNotFlat
         in case fmvs val of
           [] -> (uns, Map.insert y val solved)
           _ -> ((y, infoRegion info, Just val) : uns, solved)
-      E y _ HOLE info | True{-isCF info == Factual-} -> ((y, infoRegion info, Nothing) : uns, solved)
+      E y _ HOLE info | isCF info == Factual -> ((y, infoRegion info, Nothing) : uns, solved)
       _ -> (uns, solved)
 
 metaValue :: MonadState Context m => Nom -> m VAL
