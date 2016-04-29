@@ -107,7 +107,7 @@ solveConstraintM cm =
       (_, context@(cl, cr, probId, finalGraph,finalStr)) <- Run.solveEntries $ map conEntry constraints
       let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (cl)
       let finalType = evalState (UC.metaValue nom) context
-      let sourceSubs = metaSubs
+      let sourceSubs = Map.filterWithKey (\k _ -> k `elem` sourceMetas cstate) metaSubs
       return (finalType, unsolved, sourceSubs)
 
   in
