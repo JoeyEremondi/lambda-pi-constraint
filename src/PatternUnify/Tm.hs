@@ -48,6 +48,7 @@ data VAL where
         N :: Head -> [Elim] -> VAL
         C :: Can -> [VAL] -> VAL
         VBot :: String -> VAL
+        VChoice :: VAL -> VAL -> VAL
 --        Nat :: VAL
 --        Fin :: VAL -> VAL
 --        Vec :: VAL -> VAL -> VAL
@@ -651,6 +652,9 @@ eval g (N u as) =
   do elims <- mapM (mapElimM (eval g)) as
      evalHead g u %%% elims
 eval g (C c as) = C c <$> (mapM (eval g) as)
+eval g (VChoice s t) =
+  VChoice <$> eval g s <*> eval g t
+
 
 
 evalHead :: Subs -> Head -> VAL
@@ -684,6 +688,8 @@ elim (VCons _ _ h t) theElim@(VecElim a m mn mc (Succ n)) =
   do sub <- elim t theElim
      mc $$$ [n, h, t, sub]
 elim (ERefl _ z) theElim@(EqElim a m mr x y) = mr $$ z
+elim (VChoice s t) theElim =
+  VChoice <$> elim s theElim <*> elim t theElim
 elim t a = badElim $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 badElim s = errorWithStackTrace s

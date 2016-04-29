@@ -112,18 +112,22 @@ hole info _Gam _T f =
 
 defineGlobal
   :: EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal pid x _T vinit m = --trace ("Defining global " ++ show x ++ " := " ++ pp v ++ " : " ++ pp _T) $
-  do
-     v <- makeTypeSafe _T vinit
+defineGlobal info x _T vinit m = --trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
+     hole (info {-isCF = CounterFactual-}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
+     ctxr <- Ctx.getR
+     vsingle <- makeTypeSafe _T vinit
+
+     let v = trace ("Fresh choice var " ++ show freshVar) $ VChoice vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
-     pushL $ E x _T (DEFN v) pid
+     pushL $ E x _T (DEFN v) info
      pushR (Left (Map.singleton x v))
      a <- m
      goLeft
+     --Ctx.moveDeclRight x newNom
      --Add our final value to the type graph
-     Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v pid)
+     Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
      return a
 
 define pid _Gam x _T v =

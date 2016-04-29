@@ -31,6 +31,8 @@ class TypeGraph graph info | graph -> info where
    -- deconstruct a type graph
    deleteEdge :: EdgeId -> graph -> graph
 
+   choiceInfo :: graph -> info
+
    -- inspect an equivalence group in a type graph
    verticesInGroupOf       :: VertexId -> graph -> [(VertexId, VertexInfo)]
    childrenInGroupOf       :: VertexId -> graph -> ([ParentChild], [ParentChild])

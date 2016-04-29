@@ -87,6 +87,13 @@ instance TypeGraph (StandardTypeGraph info) info where
                 --    Nothing -> (tp, Nothing)
                 --    Just x  -> (x, Just tp)
          in case newtp of
+               Tm.VChoice s t -> do
+                 (vs, g1) <- addTermGraph synonyms unique s stg
+                 (vt, g2) <- addTermGraph synonyms unique t g1
+                 g3 <- addNewEdge (vs, vt) (choiceInfo g2 :: info) g2
+                 --TODO representative vertex?
+                 return (vs, g3)
+
                Tm.C ctor args -> do
                    fresh1 <- Ln.fresh unique
                    vinit <- VertexId <$> Ln.fresh unique
