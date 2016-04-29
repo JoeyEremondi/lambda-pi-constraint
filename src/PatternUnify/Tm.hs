@@ -618,6 +618,7 @@ containsBottom (L v) = do
   containsBottom b
 containsBottom (N v1 elims) = joinErrors <$> mapM elimContainsBottom elims
 containsBottom (C v1 args) = joinErrors <$> mapM containsBottom args
+containsBottom (VChoice s t) = joinErrors <$> mapM containsBottom [s,t]
 containsBottom (VBot s) = return $ Just s
 --containsBottom (Choice v1 v2) = joinErrors <$> mapM containsBottom [v1,v2]
 
