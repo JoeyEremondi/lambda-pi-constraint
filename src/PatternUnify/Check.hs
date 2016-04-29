@@ -447,8 +447,8 @@ oldCheck = check
     check _T          t     =  throwError $ "check: " ++ pp t ++ " cannot inhabit " ++ pp _T
 
     infer :: Head -> Contextual Type
-    infer (Var x w)  = lookupVar x w
-    infer (Meta x)   = lookupMeta x
+    infer (Var x w)  = flattenChoice =<< lookupVar x w
+    infer (Meta x)   = flattenChoice =<< lookupMeta x
 
 
 
