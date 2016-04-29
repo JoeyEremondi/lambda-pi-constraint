@@ -48,6 +48,8 @@ import Top.Implementation.TypeGraph.DefaultHeuristics
 
 import System.IO.Unsafe (unsafePerformIO)
 
+import Common (Region (..), startRegion)
+
 -- The |test| function executes the constraint solving algorithm on the
 -- given metacontext.
 
@@ -67,18 +69,18 @@ data ErrorResult =
   , solverErrs   :: [SolverErr]
   }
 
-data SolverErr = StringErr (ProbId, String) | GraphErr [ErrorInfo ConstraintInfo]
+data SolverErr = StringErr (ProbId, Region, String) | GraphErr [ErrorInfo ConstraintInfo]
 
 solveEntries :: [Entry] -> Either ErrorResult ((), Context)
-solveEntries !es  =
+solveEntries !es  = trace "SOLVE ENTRIES" $
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
+    (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
           initialise
-          ambulando [] Map.empty
-          validResult <- validate (const True)
-          badEdges <- applyHeuristics defaultHeuristics
+          trace "SOLVING..." $ ambulando [] Map.empty
+          validResult <- trace "VALIDATING..." $ validate (const True)
+          badEdges <- trace "GETTING BAD EDGES..." $ applyHeuristics defaultHeuristics
           setMsg  badEdges
           return badEdges
           )  --Make sure we don't crash
@@ -100,10 +102,11 @@ solveEntries !es  =
     --   Right _ -> render $ runPretty $ pretty ctx
   in --trace ("\n\n=============\nFinal\n" ++ resultString) $
     case (finalBadEdges, result) of
-      ([], Left err) -> Left $ ErrorResult ctx [StringErr (initLoc, err)]
+      ([], Left err) -> Left $ ErrorResult ctx [StringErr (initLoc, startRegion, err)]
       ([], Right _) ->
         case getContextErrors es ctx of
-          Left errList -> Left $ ErrorResult ctx $ map (\(loc, err) -> StringErr (loc, err)) errList
+          Left [] -> error "Empty Left from getContextErrors"
+          Left errList -> Left $ ErrorResult ctx $ map (\(loc, reg, err) -> StringErr (loc, reg, err)) errList
           Right x -> Right x
       (edgeList, _) ->
         Left $ ErrorResult ctx [GraphErr edgeList]
@@ -164,7 +167,8 @@ initialsDependingOn (pendGraph, vertToInfo, infoToVert) initialIdents targetIden
     ]
 
 
-getContextErrors :: [Entry] -> Context -> Either [(ProbId, Err)] ((), Context)
+
+getContextErrors :: [Entry] -> Context -> Either [(ProbId, Region, Err)] ((), Context)
 getContextErrors startEntries cx@(lcx, rcx, _, _,_) = do
   let leftErrors = getErrorPairs (trail lcx)
       rightErrors = getErrorPairs (Either.rights rcx)
@@ -173,7 +177,7 @@ getContextErrors startEntries cx@(lcx, rcx, _, _,_) = do
     ret -> Left ret
     where
 
-      getErrorPairs :: [Entry] -> [(ProbId, String)]
+      getErrorPairs :: [Entry] -> [(ProbId, Region, String)]
       getErrorPairs entries =
         let
           initialIdents = Maybe.catMaybes $ map getIdent startEntries
@@ -183,9 +187,9 @@ getContextErrors startEntries cx@(lcx, rcx, _, _,_) = do
           (pendGraph, vertToInfo, infoToVert) = problemDependenceGraph entries startEntries
 
           failPaths =
-            [ (initId, err)
+            [ (initId, infoRegion $ probInfo failProb, err)
             | initId <- initialIdents
-            , (Prob failId _ (Failed err)) <- failures
+            , (Prob failId failProb (Failed err)) <- failures
             , (Just vinit) <- [infoToVert $ probIdToName initId]
             , (Just vfail) <- [infoToVert $ probIdToName failId]
             , Graph.path pendGraph vinit vfail

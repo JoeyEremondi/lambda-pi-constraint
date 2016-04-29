@@ -179,6 +179,15 @@ data Entry  =  E Nom Type Dec EqnInfo
             |  Prob ProbId Problem ProblemState
   deriving (Show, Generic)
 
+probInfo :: Problem -> EqnInfo
+probInfo (Unify (EQN _ _ _ _ info)) = info
+probInfo (All params bnd) =
+  let
+    (_, innerProb) = unsafeUnbind bnd
+  in
+    probInfo innerProb
+
+
 entryInfo :: Entry -> EqnInfo
 entryInfo (E _ _ _ info) = info
 entryInfo (Prob _ prob _) = probInfo prob

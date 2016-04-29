@@ -102,7 +102,7 @@ solveConstraintM :: ConstraintM (Tm.Nom, Tm.VAL) -> Either [(Common.Region, Stri
 solveConstraintM cm =
   let
     (((nom, normalForm), constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
-    regionDict = getRegionDict constraints
+    --regionDict = getRegionDict constraints
     ret = do
       (_, context@(cl, cr, probId, finalGraph,finalStr)) <- Run.solveEntries $ map conEntry constraints
       let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (cl)
@@ -113,7 +113,7 @@ solveConstraintM cm =
   in
     case ret of
       Left (Run.ErrorResult ctx solverErrs) ->
-        Left $ map (mkErrorPair regionDict) solverErrs
+        Left $ map (mkErrorPair ) solverErrs
         --Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) (mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx) )
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
       Right (_, unsolved, _) ->
@@ -124,8 +124,8 @@ solveConstraintM cm =
           sms -> map (unsolvedMsg (sourceMetas cstate) (metaLocations cstate)) sms
 
 --mkErrorPair :: Run.SolverErr -> (Common.Region, String)
-mkErrorPair regionDict (Run.StringErr (UC.ProbId ident, msg)) = (regionDict Map.! ident, msg)
-mkErrorPair regionDict (Run.GraphErr edgeInfos) =
+mkErrorPair  (Run.StringErr (UC.ProbId ident, reg, msg)) = (reg, msg)
+mkErrorPair  (Run.GraphErr edgeInfos) =
   (UC.infoRegion $ UC.edgeEqnInfo $ snd $ head edgeInfos,
   "Cannot solve the following constraints:\n"
   ++ concatMap edgeMessage edgeInfos)
