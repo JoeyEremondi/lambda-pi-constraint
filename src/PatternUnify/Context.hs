@@ -402,7 +402,7 @@ lookupVar x w = do
   vars <- ask
   look vars vars
   where
-    look vars [] = throwError $ "lookupVar: missing " ++ show x ++ "\nin env " ++ show vars
+    look vars [] = error $ "lookupVar: missing " ++ show x ++ "\nin env " ++ show vars
     look vars  ((y, e) : _) | x == y =
       case (e, w) of
         (P _T,         Only)   -> return _T
@@ -415,7 +415,7 @@ lookupMeta :: Nom -> Contextual Type
 lookupMeta x = look =<< getL
   where
     --look :: Monad m => ContextL -> m Type
-    look B0 = throwError $ "lookupMeta: missing " ++ show x
+    look B0 = error $ "lookupMeta: missing " ++ show x
     look (cx  :< E y t _ _)  | x == y     = return t
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx

@@ -117,7 +117,7 @@ defineGlobal info x _T vinit m = --trace ("Defining global " ++ show x ++ " := "
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
 
-     let v = vinit --trace ("Fresh choice var " ++ show freshVar) $ VChoice vsingle freshVar
+     let v = trace ("Fresh choice var " ++ show freshVar) $ VChoice vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -585,7 +585,8 @@ invert alpha _T es t =
        Just xs
          | o == Nothing && linearOn t xs ->
            do flatTm <- flattenChoice $ lams xs t
-              b <- localParams (const []) $ typecheck _T flatTm
+              flat_T <- flattenChoice _T
+              b <- localParams (const []) $ typecheck flat_T flatTm
               return $
                 if b
                    then Just flatTm
@@ -990,9 +991,9 @@ ambulando ns theta =
       -- compose suspended substitutions
       Just (Left theta') -> ambulando ns (compSubs theta theta')
       -- process entries
-      Just (Right e) -> do
+      Just (Right e) -> trace ("AMBULANDO init " ++ pp e) $ do
         updateVal <- update ns theta e
-        case updateVal of
+        trace ("AMBULANDO updated " ++ pp updateVal) $ case updateVal of
           Prob n p Active ->
             pushR (Left theta) >> solver n p >> ambulando ns Map.empty
           Prob n p Solved ->
