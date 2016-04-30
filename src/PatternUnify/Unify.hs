@@ -31,6 +31,8 @@ import Unbound.Generics.LocallyNameless (Fresh, runFreshM, subst, substs,
 import qualified Top.Implementation.TypeGraph.ClassMonadic as CM
 import qualified Top.Implementation.TypeGraph.Standard as TG
 
+import qualified Data.List as List
+
 import Debug.Trace (trace)
 
 notSubsetOf :: Ord a
@@ -715,11 +717,13 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t info) k =
   --trace ("tryPrune " ++ show n ++ ", " ++ pp q) $
   setProblem n >>
   do _Gam <- ask
+     lc <- Ctx.getL
+     rc <- Ctx.getR
      let potentials = vars _Gam
          freesToIgnore   --trace ("Pruning " ++ (show potentials) ++ " from " ++ (show $ map pp ds) ++ " ignoring " ++ (show $ fvs ds) ++ "\n   in exp " ++ pp t)  $
             =
            fvs ds
-     u <- prune (potentials \\ freesToIgnore) t
+     u <- trace ("***\ntryPrune " ++ show n ++ ", " ++ pp q ++ "\nPRUNE LC\n" ++ List.intercalate "\n" ( map pp lc) ++ "\nPRUNE RC\n" ++ List.intercalate "\n"  (map show rc) ) $ prune (potentials \\ freesToIgnore) t
      --trace ("Prune result " ++ show u) $
      case u of
        d:_ -> active n q >> instantiate (info {creationInfo = CreatedBy n}) d
