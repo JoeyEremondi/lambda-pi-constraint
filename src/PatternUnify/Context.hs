@@ -233,6 +233,14 @@ instance Pretty Subs where
 
 type SimultSub = [(Nom, VAL, VAL)]
 
+splitSSS :: SimultSub -> (SubsList, SubsList)
+splitSSS sss =
+  let
+    (s1, s2, s3) = unzip3 sss
+  in
+    (zip s1 s2, zip s1 s3)
+
+
 --We need to be able to store simultaneous substs in our right context
 data RSubs =
   RSubs Subs

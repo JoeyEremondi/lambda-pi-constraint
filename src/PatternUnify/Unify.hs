@@ -1051,6 +1051,9 @@ ambulando ns theta = do
         do Ctx.modifyLM (mapM (update [] theta))
            return ()
       -- compose suspended substitutions
+      Just (Left (RSimultSub sss)) -> do
+        applySSS sss
+        ambulando ns theta
       Just (Left (RSubs theta')) -> ambulando ns (compSubs theta theta')
       -- process entries
       Just (Right e) -> trace ("AMBULANDO init " ++ pp e) $ do
@@ -1092,3 +1095,17 @@ update pids subs e = do
       --trace ("UPDATE SUBS"  ++ pp e' ++ "\n   " ++ show theta ++ "\n\n") $
       substs (Map.toList theta)
              e'
+
+
+applySSS :: Ctx.SimultSub ->  Contextual ()
+applySSS sss =
+  Ctx.modifyLM (\ctx -> concat <$> mapM singleSSS ctx)
+    where
+      varsToSub = map (\(x,_,_) -> x) sss
+      (subsl, subsr) = Ctx.splitSSS sss
+      singleSSS :: Entry -> Contextual [Entry]
+      singleSSS e =
+        case occurrence varsToSub e of
+          Nothing -> return [e]
+          Just _ ->
+            return [substs subsl e, substs subsr e]
