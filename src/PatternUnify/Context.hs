@@ -231,6 +231,8 @@ instance Pretty Entry where
 instance Pretty Subs where
   pretty x = return $ text $ show $ Map.map pp x
 
+type SimultSub = [(Nom, VAL, VAL)]
+
 
 type ContextL  = Bwd Entry
 type ContextR  = [Either Subs Entry]

@@ -344,6 +344,51 @@ rigidRigid pid eqn =
     rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return [] --badRigidRigid eq
 
 
+withDuplicate
+  :: EqnInfo
+  -> Nom
+  -> (Nom -> Contextual a)
+  -> Contextual a
+withDuplicate info v k = do
+  _T <- trace "Duplicate lookup meta " $ lookupMeta v
+  hole info [] _T $ \ret@(N (Meta n) _) ->
+    k n
+
+withDuplicates
+  :: EqnInfo
+  -> [Nom]
+  -> ([Nom] -> Contextual a)
+  -> Contextual a
+withDuplicates info noms k = helper info noms k []
+  where
+    helper info [] k accum = k accum
+    helper info (v:rest) k accumSoFar =
+      withDuplicate info v $ \vnew ->
+        helper info rest k (accumSoFar ++ [v])
+
+splitChoice
+  :: Type
+  -> (VAL, VAL)
+  -> Type
+  -> VAL
+  -> EqnInfo
+  -> Contextual (Ctx.SimultSub, [Equation])
+splitChoice _T1 (r, s) _T2 t info = do
+  let origMetas = fmvs t
+  ourRet <- withDuplicates info origMetas $ \ freshMetas1 ->
+    withDuplicates info origMetas $ \ freshMetas2 -> do
+      let mvals1 = (map meta freshMetas1 )
+          mvals2 = (map meta freshMetas2 )
+          sub1 = zip origMetas mvals1
+          sub2 = zip origMetas mvals2
+          eq1 = substs sub1 $ EQN _T1 r _T2 t info
+          eq2 = substs sub2 $ EQN _T1 s _T2 t info
+          ret = (zip3 origMetas mvals1 mvals2, [eq1, eq2])
+      trace ("Split return " ++ show ret) $ return ret
+  return ourRet
+
+
+
 -- badRigidRigid
 --   :: Equation -> Contextual [Equation]
 -- badRigidRigid (EQN t1 v1 t2 v2 _) =
