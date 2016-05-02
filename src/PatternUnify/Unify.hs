@@ -114,7 +114,7 @@ hole info _Gam _T f =
 
 defineGlobal
   :: EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal info x _T vinit m = --trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
+defineGlobal info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
@@ -325,6 +325,17 @@ rigidRigid pid eqn =
              ,EQN b x' b' z' pid
              ,EQN b y' b' z' pid
              ,EQN a' z b' z' pid]
+
+    --Temporary workaround: just duplicate with our rigid
+    rigidRigid' (EQN _T1 (VChoice s t) _T2 t2 _) =
+      return
+        [ EQN _T1 s _T2 t2 pid]
+        --, EQN _T1 t _T2 t2 pid]
+    rigidRigid' (EQN _T2 t2 _T1 (VChoice s t) _) =
+      return
+        [ EQN _T1 s _T2 t2 pid]
+        --, EQN _T1 t _T2 t2 pid]
+
     -- >
     --Anything can rigidly match with Bottom
     rigidRigid' (EQN _ (VBot _) _ _ _ ) = return []
@@ -983,9 +994,10 @@ splitSig _ _ _ = return Nothing
 -- solved, for updating the state of subsequent problems, and a
 -- substitution with definitions for metavariables.
 ambulando :: [ProbId] -> Subs -> Contextual ()
-ambulando ns theta =
-  popR >>=
-  \x ->
+ambulando ns theta = do
+  cl <- Ctx.getL
+  cr <- Ctx.getR
+  (trace ("\n******\nAMBULANDO CL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nAMBULANDO CR:\n" ++ List.intercalate "\n" (map pp cr) ++ "\n******\n") popR) >>= \x ->
     case x of
       -- if right context is empty, stop
       Nothing                   --Make sure our final substitutions are applied

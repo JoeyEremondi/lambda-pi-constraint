@@ -89,7 +89,7 @@ canTy (c, as) v = throwError $ "canTy: canonical type " ++ pp (C c as) ++
 
 
 typecheck :: Type -> VAL -> Contextual Bool
-typecheck _T t = 
+typecheck _T t =
   (do
       tequal <- equalize _T t t
       cbottom <- containsBottom tequal
@@ -120,28 +120,42 @@ equalizeMany _T (t1 : rest) = do
   equalize _T t1 ttail
 equalizeMany _ [] = return $ VBot "Cannot equalize 0 values"
 
+headsMatch :: Head -> Head -> Bool
+headsMatch (Var v Only) (Var v2 Only) = v == v2
+headsMatch (Var v TwinL) (Var v2 TwinR) = v == v2
+headsMatch (Var v TwinR) (Var v2 TwinL) = v == v2
+headsMatch h1 h2 = h1 == h2
+
+matchHeads :: Head -> Head -> Head
+matchHeads (Var v Only) (Var v2 Only) | v == v2 = (Var v Only)
+matchHeads (Var v TwinL) (Var v2 TwinR) | v == v2 = (Var v Only)
+matchHeads (Var v TwinR) (Var v2 TwinL) | v == v2 = (Var v Only)
+matchHeads h1 h2 | h1 == h2 = h1
 
 equalize :: Type -> VAL -> VAL -> Contextual VAL
 --equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
 
 equalize (SET) (SET) (SET) = return SET
 
-equalize _T          (N u as) (N v as2) | u == v =
+equalize _T          (N u as) (N v as2) | headsMatch u v =
   --trace ("Equalize neutral " ++ show u ++ " " ++ show (map pp as) ++ ", " ++ show (map pp as2)) $
   do
+     let umatched = matchHeads u v
      vars <- ask
-     _U   <- infer u
+     _U1   <- infer u
+     _V1   <- infer v
+     _U <- equalize SET _U1 _V1
      (as', _T')  <-
-        equalizeSpine _U (N u []) as as2
+        equalizeSpine _U (N umatched []) as as2
      eq   <- --trace ("Equalized spines " ++ show (map pp as') ++ " : " ++ pp _T') $
        (_T <-> _T') --TODO make fail
      case eq of
-       True -> return $ N u as'
+       True -> return $ N umatched as'
        False ->
          return $ VBot $
            "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
            ++ "\n After inferring head type " ++ pp _U
-           ++ "\nin value " ++ pp (N u as')
+           ++ "\nin value " ++ pp (N umatched as')
 equalize (C c as)   (C v bs) (C v2 bs2) | v == v2  =  do
                                tel <- canTy (c, as) v --TODO source of bias?
                                C v <$> equalizeTel tel bs bs2
@@ -349,9 +363,10 @@ isReflexive eqn@(EQN _S s _T t _) = --trace ("IsRelexive " ++ pp eqn) $
 checkProb :: ProbId -> ProblemState -> Problem -> Contextual ()
 --checkProb ident st p | trace ("@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False =
     --error "checkProb"
-checkProb ident st p@(Unify (EQN _S s _T t info)) = do
+checkProb ident st p@(Unify q) = do
    setProblem ident
    currentSubs <- metaSubs
+   qflat@(EQN _S s _T t info) <- flattenEquation q
    !_SVal <-  eval currentSubs _S
    check SET _SVal
    sVal <- eval currentSubs s
@@ -360,9 +375,9 @@ checkProb ident st p@(Unify (EQN _S s _T t info)) = do
    check SET _TVal
    tVal <- eval currentSubs t
    check _TVal tVal
-   if st == Solved
+   trace ("Flattened eqn " ++ pp qflat) $ if st == Solved
        then do  eq <- isReflexive (EQN _SVal sVal _TVal tVal info)
-                unless eq $ throwError $ "checkProb: not unified " ++ pp p
+                unless eq $ throwError $ "checkProb: Solved Problem not reflexive " ++ pp p ++ "\n  actually checked " ++ pp (EQN _SVal sVal _TVal tVal info)
        else return ()
 checkProb ident st (All (P _T) b) = do
     setProblem ident

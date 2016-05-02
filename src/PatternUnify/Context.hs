@@ -228,6 +228,9 @@ instance Pretty Entry where
     pretty (Prob x p s) =  (between (text "<=")) <$> ( (between (text "?? :")) <$> (pretty x) <*> (pretty p) ) <*> (pretty s)
 
 
+instance Pretty Subs where
+  pretty x = return $ text $ show $ Map.map pp x
+
 
 type ContextL  = Bwd Entry
 type ContextR  = [Either Subs Entry]
@@ -524,3 +527,9 @@ recordProblemSub (ProbId pid) prob1 prob2 = helper' prob1 prob2 0
           newProb1 = substs [(nm1, var newVar)] prob1
           newProb2 = substs [(nm2, var newVar)] prob2
       helper' newProb1 newProb2 (i+1)
+
+
+flattenEquation :: (Fresh m) => Equation -> m Equation
+flattenEquation (EQN _T1 t1 _T2 t2 info) =
+  EQN <$> flattenChoice _T1 <*> flattenChoice t1
+    <*> flattenChoice _T2 <*> flattenChoice t2 <*> return info
