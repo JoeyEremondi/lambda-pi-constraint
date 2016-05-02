@@ -21,7 +21,8 @@ import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
                              ProblemState (..), addEqn, allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
                              popR, pushL, pushR, setProblem,
-                             wrapProb, EqnInfo(..), CreationInfo(..), IsCF(..))
+                             wrapProb, EqnInfo(..), CreationInfo(..), IsCF(..),
+                             RSubs(..), SimultSub)
 import qualified PatternUnify.Context as Ctx
 import PatternUnify.Kit (bind3, bind4, bind6, bind7, elem, notElem, pp)
 import PatternUnify.Tm
@@ -1050,7 +1051,7 @@ ambulando ns theta = do
         do Ctx.modifyLM (mapM (update [] theta))
            return ()
       -- compose suspended substitutions
-      Just (Left theta') -> ambulando ns (compSubs theta theta')
+      Just (Left (RSubs theta')) -> ambulando ns (compSubs theta theta')
       -- process entries
       Just (Right e) -> trace ("AMBULANDO init " ++ pp e) $ do
         updateVal <- update ns theta e

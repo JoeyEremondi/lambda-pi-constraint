@@ -233,9 +233,17 @@ instance Pretty Subs where
 
 type SimultSub = [(Nom, VAL, VAL)]
 
+--We need to be able to store simultaneous substs in our right context
+data RSubs =
+  RSubs Subs
+  | RSimultSub SimultSub
+  deriving (Eq, Show, Generic)
+
+instance Pretty RSubs where
+  pretty = return . text . show
 
 type ContextL  = Bwd Entry
-type ContextR  = [Either Subs Entry]
+type ContextR  = [Either RSubs Entry]
 type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges)
 
 type VarEntry   = (Nom, Type)
@@ -266,7 +274,7 @@ instance Pretty Context where
                                ( vcat <$> (mapM f cr) )
       where
         pair cl' cr' = cl' $+$ text "*" $+$ cr'
-        f (Left ns) = prettySubs ns
+        f (Left (RSubs ns)) = prettySubs ns
         f (Right e) = pretty e
 
 prettyEntries :: (Applicative m, LFresh m, MonadReader Size m) => [Entry] -> m Doc
@@ -363,7 +371,7 @@ pushSubs n   =
   if Map.null n then
     return ()
   else
-    modifyR (\ cr -> if null cr then [] else Left n : cr)
+    modifyR (\ cr -> if null cr then [] else Left (RSubs n) : cr)
 
 popL :: Contextual Entry
 popL = do
@@ -373,7 +381,7 @@ popL = do
         B0          -> throwError "popL ran out of context"
         _ -> undefined
 
-popR :: Contextual (Maybe (Either Subs Entry))
+popR :: Contextual (Maybe (Either RSubs Entry))
 popR = do
     cx <- getR
     case cx of
