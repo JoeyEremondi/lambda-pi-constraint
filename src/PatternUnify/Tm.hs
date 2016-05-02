@@ -646,6 +646,9 @@ flattenChoiceElim (Elim e1 e2) = Elim e1 <$> mapM flattenChoice e2
 flattenChoiceElim (EBot e) = return $ EBot e
 
 
+unsafeFlatten :: VAL -> VAL
+unsafeFlatten = runFreshM . flattenChoice
+
 
 isFirstOrder :: VAL -> Bool
 isFirstOrder (L _) = False
