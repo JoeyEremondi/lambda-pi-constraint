@@ -370,15 +370,15 @@ pushL :: Entry -> Contextual ()
 --   case (filter containsL cl, filter containsR cr) of
 --     ([],[]) -> modifyL (:< e)
 --     _ -> error "pushL 16"
-pushL e = trace ("Push left " ++ prettyString e) $
+pushL e = --trace ("Push left " ++ prettyString e) $
   modifyL (:< e)
 
 
 pushR :: Either Subs Entry -> Contextual ()
-pushR (Right (E alpha _ HOLE _)) | (show alpha) == "α_3_19__16" = error "pushR 16"
+--pushR (Right (E alpha _ HOLE _)) | (show alpha) == "α_3_19__16" = error "pushR 16"
 pushR (Left s)   = --trace ("Push subs " ++ show s) $
   pushSubs s
-pushR (Right e)  = trace ("Push right " ++ prettyString e) $
+pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
   modifyR (Right e :)
 
 pushSSS :: SimultSub -> Contextual ()
