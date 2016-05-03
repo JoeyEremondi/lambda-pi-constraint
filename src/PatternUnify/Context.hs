@@ -244,6 +244,7 @@ splitSSS sss =
 --We need to be able to store simultaneous substs in our right context
 data RSubs =
   RSubs Subs
+  | RSubImmediate ProbId Subs
   | RSimultSub SimultSub
   deriving (Eq, Show, Generic)
 
@@ -364,6 +365,18 @@ pushR (Left s)   = --trace ("Push subs " ++ show s) $
   pushSubs s
 pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
   modifyR (Right e :)
+
+pushSSS :: SimultSub -> Contextual ()
+pushSSS s   = --trace ("Push subs " ++ show s) $
+  case s of
+    [] -> return ()
+    _ ->
+      modifyR (Left (RSimultSub s) : )
+
+pushImmediate :: ProbId -> Subs -> Contextual ()
+pushImmediate pid theta   = --trace ("Push subs " ++ show s) $
+  modifyR (Left (RSubImmediate pid theta) : )
+
 
 setProblem :: ProbId -> Contextual ()
 setProblem pid = modify (\ (x, y, _, z, s) -> (x, y, pid, z, s))

@@ -103,7 +103,7 @@ goLeft = popL >>= pushR . Right
 hole
   :: EqnInfo -> [( Nom, Type )] -> Type -> (VAL -> Contextual a) -> Contextual a
 define
-  :: EqnInfo -> [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
+  :: Maybe ProbId -> EqnInfo -> [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
 hole info _Gam _T f =
   do check SET (_Pis _Gam _T) `catchError`
        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
@@ -114,8 +114,8 @@ hole info _Gam _T f =
      return a
 
 defineGlobal
-  :: EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
+  :: (Maybe ProbId) -> EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
+defineGlobal mpid info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
@@ -126,6 +126,9 @@ defineGlobal info x _T vinit m = trace ("Defining global " ++ show x ++ " := " +
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
      pushL $ E x _T (DEFN v) info
      pushR (Left (Map.singleton x v))
+     case mpid of
+       Nothing -> return ()
+       Just pid -> Ctx.pushImmediate pid (Map.singleton x v)
      a <- m
      goLeft
      --Ctx.moveDeclRight x newNom
@@ -133,8 +136,8 @@ defineGlobal info x _T vinit m = trace ("Defining global " ++ show x ++ " := " +
      Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
      return a
 
-define pid _Gam x _T v =
-  defineGlobal pid x
+define mpid info _Gam x _T v =
+  defineGlobal mpid info x
                (_Pis _Gam _T)
                (lams' _Gam v)
                (return ())
@@ -622,7 +625,7 @@ tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k =
   \m ->
     case m of
       Nothing -> k
-      Just v -> active n q >> define (info {creationInfo = CreatedBy n}) [] alpha _T v
+      Just v -> active n q >> define (Just n) (info {creationInfo = CreatedBy n}) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
 
@@ -674,7 +677,7 @@ flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) info) =
          case e of
            E gamma _T HOLE _
              | gamma == alpha && gamma == beta ->
-               block n q >> tryIntersect (info {creationInfo = CreatedBy n}) alpha _T ds es
+               block n q >> tryIntersect n (info {creationInfo = CreatedBy n}) alpha _T ds es
              | gamma == alpha ->
                tryInvert n
                          q
@@ -713,16 +716,16 @@ flexFlex _ q = throwError $ "flexFlex: " ++ show q
 -- metavariable and solves the old one. Otherwise, it leaves the old
 -- metavariable in the context.
 tryIntersect
-  :: EqnInfo -> Nom -> Type -> [Elim] -> [Elim] -> Contextual ()
-tryIntersect pid alpha _T ds es =
+  :: ProbId -> EqnInfo -> Nom -> Type -> [Elim] -> [Elim] -> Contextual ()
+tryIntersect pid info alpha _T ds es =
   case (toVars ds, toVars es) of
     ( Just xs, Just ys ) ->
       intersect [] [] _T xs ys >>=
       \m ->
         case m of --TODO intersect creator?
-          Just ( _U, f ) -> hole pid [] _U $ \beta -> define pid [] alpha _T (f beta)
-          Nothing -> pushL (E alpha _T HOLE pid)
-    _ -> pushL (E alpha _T HOLE pid)
+          Just ( _U, f ) -> hole info [] _U $ \beta -> define (Just pid) info [] alpha _T (f beta)
+          Nothing -> pushL (E alpha _T HOLE info)
+    _ -> pushL (E alpha _T HOLE info)
 
 -- Given the type of $[[alpha]]$ and the two spines, |intersect| produces
 -- a type for $[[beta]]$ and a term with which to solve $[[alpha]]$ given
@@ -886,6 +889,7 @@ pruneSpine _ _ _ _ _ = return Nothing
 -- After pruning, we can |instantiate| a pruned metavariable by moving
 -- left through the context until we find the relevant metavariable, then
 -- creating a new metavariable and solving the old one.
+--TODO want choice here?
 instantiate
   :: EqnInfo -> ( Nom, Type, VAL -> VAL ) -> Contextual ()
 instantiate pid d@( alpha, _T, f ) =
@@ -893,7 +897,7 @@ instantiate pid d@( alpha, _T, f ) =
   \e ->
     case e of
       E beta _U HOLE pid
-        | alpha == beta -> hole pid [] _T $ \t -> define pid [] beta _U (f t)
+        | alpha == beta -> hole pid [] _T $ \t -> define Nothing pid [] beta _U (f t)
       _ -> pushR (Right e) >> instantiate pid d
 
 -- \subsection{Metavariable and problem simplification}
@@ -955,7 +959,7 @@ lower pid _Phi alpha (SIG _S _T) =
           (_T $$ s) $
     return $
     \t ->
-      define pid _Phi
+      define Nothing pid _Phi
              alpha
              (SIG _S _T)
              (PAIR s t)
@@ -970,7 +974,7 @@ lower pid _Phi alpha (PI _S _T) =
                    hole pid _Phi (_Pi y _A (_Pi z _B ourApp2)) $
                      \w ->
                        do ourApp3 <- (w $$$ [u, v])
-                          define pid _Phi
+                          define Nothing pid _Phi
                                  alpha
                                  (PI _S _T)
                                  (lam x ourApp3))
@@ -1054,6 +1058,9 @@ ambulando ns theta = do
       Just (Left (RSimultSub sss)) -> do
         applySSS sss
         ambulando ns theta
+      Just (Left (RSubImmediate pid sub)) -> do
+        applySubImmediate pid sub
+        ambulando ns theta
       Just (Left (RSubs theta')) -> ambulando ns (compSubs theta theta')
       -- process entries
       Just (Right e) -> trace ("AMBULANDO init " ++ pp e) $ do
@@ -1095,6 +1102,16 @@ update pids subs e = do
       --trace ("UPDATE SUBS"  ++ pp e' ++ "\n   " ++ show theta ++ "\n\n") $
       substs (Map.toList theta)
              e'
+
+
+applySubImmediate :: ProbId -> Subs -> Contextual ()
+applySubImmediate pid theta =
+  Ctx.modifyR (map singleSub)
+    where
+      singleSub :: Either RSubs Entry -> Either RSubs Entry
+      singleSub (Right e@(Prob thePid _ _)) | thePid == pid =
+        Right $ substs (Map.toList theta) e
+      singleSub e = e
 
 
 applySSS :: Ctx.SimultSub ->  Contextual ()
