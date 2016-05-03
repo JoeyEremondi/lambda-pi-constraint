@@ -803,7 +803,7 @@ tryPrune n q@(EQN _ (N (Meta _) ds) _ t info) k =
          freesToIgnore   --trace ("Pruning " ++ (show potentials) ++ " from " ++ (show $ map pp ds) ++ " ignoring " ++ (show $ fvs ds) ++ "\n   in exp " ++ pp t)  $
             =
            fvs ds
-     u <- trace ("***\ntryPrune " ++ show n ++ ", " ++ pp q ++ "\nPRUNE LC\n" ++ List.intercalate "\n" ( map pp lc) ++ "\nPRUNE RC\n" ++ List.intercalate "\n"  (map show rc) ) $ prune (potentials \\ freesToIgnore) t
+     u <- prune (potentials \\ freesToIgnore) t
      --trace ("Prune result " ++ show u) $
      case u of
        d:_ -> active n q >> instantiate (info {creationInfo = CreatedBy n}) d
@@ -861,6 +861,7 @@ prune xs (N (Meta beta) es) =
      maybe [] (\( _U, f ) -> [(beta, _U, f)]) <$> pruneSpine [] [] xs _T es
 -- %if False
 prune xs (C _ ts) = throwError "concat <$> mapM (prune xs) ts"
+prune xs (VBot _) = return []
 
 -- %endif
 -- Once a metavariable has been found, |pruneSpine| unfolds its type and
@@ -1067,7 +1068,8 @@ ambulando :: [ProbId] -> Subs -> Contextual ()
 ambulando ns theta = do
   cl <- Ctx.getL
   cr <- Ctx.getR
-  (trace ("\n******\nAMBULANDO CL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nAMBULANDO CR:\n" ++ List.intercalate "\n" (map pp cr) ++ "\n******\n") popR) >>= \x ->
+  --(trace ("\n******\nAMBULANDO CL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nAMBULANDO CR:\n" ++ List.intercalate "\n" (map pp cr) ++ "\n******\n") popR)
+  popR >>= \x ->
     case x of
       -- if right context is empty, stop
       Nothing                   --Make sure our final substitutions are applied
@@ -1083,9 +1085,10 @@ ambulando ns theta = do
         ambulando ns theta
       Just (Left (RSubs theta')) -> ambulando ns (compSubs theta theta')
       -- process entries
-      Just (Right e) -> trace ("AMBULANDO init " ++ pp e) $ do
+      Just (Right e) -> do
         updateVal <- update ns theta e
-        trace ("AMBULANDO updated " ++ pp updateVal) $ case updateVal of
+        --trace ("AMBULANDO updated " ++ pp updateVal) $
+        case updateVal of
           Prob n p Active ->
             pushR (Left theta) >> solver n p >> ambulando ns Map.empty
           Prob n p Solved ->
