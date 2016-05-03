@@ -375,7 +375,7 @@ withDuplicate
   -> Contextual a
 withDuplicate info v k = do
   _T <- trace "Duplicate lookup meta " $ lookupMeta v
-  hole info [] _T $ \ret@(N (Meta n) _) ->
+  hole (info {isCF = CounterFactual}) [] _T $ \ret@(N (Meta n) _) ->
     k n
 
 withDuplicates
@@ -406,7 +406,7 @@ splitChoice _T1 (r, s) _T2 t info = do
           sub1 = zip origMetas mvals1
           sub2 = zip origMetas mvals2
           eq1 = substs sub1 $ EQN _T1 r _T2 t info
-          eq2 = substs sub2 $ EQN _T1 s _T2 t info
+          eq2 = substs sub2 $ EQN _T1 s _T2 t (info {isCF = CounterFactual})
           ret = (zip3 origMetas mvals1 mvals2, [eq1, eq2])
       trace ("Split return " ++ show ret) $ return ret
   return ourRet

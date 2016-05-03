@@ -478,7 +478,7 @@ getUnsolvedAndSolved (entry : rest) =
     case entry of
       E y _ (DEFN valNotFlat) info | isCF info == Factual ->
         let
-          val = runFreshM $ flattenChoice valNotFlat
+          val = unsafeFlatten valNotFlat
         in case fmvs val of
           [] -> (uns, Map.insert y val solved)
           _ -> ((y, infoRegion info, Just val) : uns, solved)
