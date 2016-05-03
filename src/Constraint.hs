@@ -145,10 +145,10 @@ edgeMessage (edgeId, edgeInfo) =
 unsolvedMsg :: [Tm.Nom] -> (Tm.Nom, Common.Region, Maybe Tm.VAL) -> (Common.Region, String)
 unsolvedMsg sourceMetas (nm,reg,_) | not (nm `elem` sourceMetas) =
   ( reg
-  , "Could not infer type. Try adding type annotations, or report this as a bug.")
+  , show nm ++ " Could not infer type. Try adding type annotations, or report this as a bug.")
 unsolvedMsg sourceMetas (nm,reg,Nothing) =
   ( reg
-  , "Could deduce no information about metavariable " ++ (drop 2 $ show nm)
+  , show nm ++ " Could deduce no information about metavariable " ++ (drop 2 $ show nm)
   ++  ". Try adding type annotations, or giving explicit arguments.")
 unsolvedMsg sourceMetas (nm,reg,(Just val)) =
   (reg

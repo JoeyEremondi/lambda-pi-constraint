@@ -30,6 +30,7 @@ import qualified Data.Either as Either
 import qualified Data.Maybe as Maybe
 
 import qualified Data.Map as Map
+import qualified Data.List as List
 
 import Debug.Trace (trace)
 
@@ -88,13 +89,13 @@ solveEntries !es  =
     initLoc = case leadingToList of
       [] -> lastProb
       (i:_) -> i
-    --errString err = "ERROR " ++ err -- ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
+    -- errString err = "ERROR " ++ err -- ++ "\nInitial context:\n" ++ initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     -- resultString = case result of
     --   Left s -> ">>>>>>>>>>>>>>\nERROR " ++ s ++ "\nInitial context:\n" ++
     --     initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     --     ++ "\nErrorGraph " ++ finalStr
     --   Right _ -> render $ runPretty $ pretty ctx
-  in --trace ("\n\n=============\nFinal\n" ++ resultString) $
+  in trace ("\n\n=============\nFinal\n" ++ List.intercalate "\n" (map pp lcx)) $
     case (finalBadEdges, result) of
       ([], Left err) -> Left $ ErrorResult ctx [StringErr (initLoc, startRegion, err)]
       ([], Right _) ->

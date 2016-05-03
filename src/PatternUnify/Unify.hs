@@ -127,9 +127,10 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
      pushL $ E x _T (DEFN v) info
      pushR (Left (Map.singleton x v))
 
-     goLeft
+
      trace "Pushing immediate" $ Ctx.pushImmediate pid (Map.singleton x vinit)
      a <- m
+     goLeft
      --Ctx.moveDeclRight x newNom
      --Add our final value to the type graph
      Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
@@ -154,8 +155,9 @@ defineSingle info _Gam x _T v =
          v <- makeTypeSafe _T vinit
          pushL $ E x _T (DEFN v) info
          pushR (Left (Map.singleton x v))
-         goLeft
          a <- m
+         goLeft
+
          --Ctx.moveDeclRight x newNom
          --Add our final value to the type graph
          Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)

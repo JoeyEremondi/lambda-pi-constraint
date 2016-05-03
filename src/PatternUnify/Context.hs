@@ -28,7 +28,7 @@ import qualified Control.Monad.Writer as Writer
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 
---import Debug.Trace
+import Debug.Trace (trace)
 import GHC.Generics
 
 import Unbound.Generics.LocallyNameless hiding (join, restrict)
@@ -479,10 +479,11 @@ getUnsolvedAndSolved (entry : rest) =
       E y _ (DEFN valNotFlat) info | isCF info == Factual ->
         let
           val = unsafeFlatten valNotFlat
-        in case fmvs val of
+        in trace ("getUnsolved flattened to " ++ pp val) $ case fmvs val of
           [] -> (uns, Map.insert y val solved)
-          _ -> ((y, infoRegion info, Just val) : uns, solved)
-      E y _ HOLE info | isCF info == Factual -> ((y, infoRegion info, Nothing) : uns, solved)
+          _ -> trace ("Unsolved meta in" ++ pp val) $ ((y, infoRegion info, Just val) : uns, solved)
+      E y _ HOLE info | isCF info == Factual ->
+        trace ("Unsolved HOLE " ++ show y) $ ((y, infoRegion info, Nothing) : uns, solved)
       _ -> (uns, solved)
 
 metaValue :: MonadState Context m => Nom -> m VAL
