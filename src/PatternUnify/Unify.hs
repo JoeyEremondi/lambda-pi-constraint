@@ -1116,13 +1116,14 @@ applySubImmediate pid theta =
 
 applySSS :: Ctx.SimultSub ->  Contextual ()
 applySSS sss =
-  Ctx.modifyLM (\ctx -> concat <$> mapM singleSSS ctx)
+  Ctx.modifyR (concatMap singleSSS)
     where
       varsToSub = map (\(x,_,_) -> x) sss
       (subsl, subsr) = Ctx.splitSSS sss
-      singleSSS :: Entry -> Contextual [Entry]
-      singleSSS e =
+      singleSSS :: Either RSubs Entry -> [Either RSubs Entry]
+      singleSSS (Right e) =
         case occurrence varsToSub e of
-          Nothing -> return [e]
+          Nothing -> [Right e]
           Just _ ->
-            return [substs subsl e, substs subsr e]
+            [Right $ substs subsl e, Right $ substs subsr e]
+      singleSSS l = [l]
