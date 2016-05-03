@@ -231,10 +231,11 @@ instance Pretty Entry where
 instance Pretty Subs where
   pretty x = return $ text $ show $ Map.map pp x
 
-type SimultSub = [(Nom, VAL, VAL)]
+data SimultSub = SimultSub Nom [(Nom, VAL, VAL)]
+  deriving (Eq, Show, Generic)
 
 splitSSS :: SimultSub -> (SubsList, SubsList)
-splitSSS sss =
+splitSSS (SimultSub _ sss) =
   let
     (s1, s2, s3) = unzip3 sss
   in
@@ -382,11 +383,11 @@ pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
   modifyR (Right e :)
 
 pushSSS :: SimultSub -> Contextual ()
-pushSSS s   = --trace ("Push subs " ++ show s) $
+pushSSS sss@(SimultSub _ s)   = --trace ("Push subs " ++ show s) $
   case s of
     [] -> return ()
     _ ->
-      modifyR (Left (RSimultSub s) : )
+      modifyR (Left (RSimultSub sss) : )
 
 pushImmediate :: ProbId -> Subs -> Contextual ()
 pushImmediate pid theta   = --trace ("Push subs " ++ show s) $

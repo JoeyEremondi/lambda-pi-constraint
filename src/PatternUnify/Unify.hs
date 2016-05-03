@@ -120,7 +120,7 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
 
-     let v = trace ("Fresh choice var " ++ show freshVar) $ VChoice vsingle freshVar
+     let v = trace ("Fresh choice var " ++ show freshVar) $ VChoice x vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -358,8 +358,10 @@ rigidRigid pid eqn =
              ,EQN b y' b' z' pid
              ,EQN a' z b' z' pid]
     -- >
-    rigidRigid' (EQN _T1 (VChoice r s) _T2 t info) = Right <$> splitChoice _T1 (r, s) _T2 t info
-    rigidRigid' (EQN _T1 t _T2 (VChoice r s) info) = Right <$> splitChoice _T1 (r, s) _T2 t info
+    rigidRigid' (EQN _T1 (VChoice nchoice r s) _T2 t info) =
+      Right <$> splitChoice nchoice _T1 (r, s) _T2 t info
+    rigidRigid' (EQN _T1 t _T2 (VChoice nchoice r s) info) =
+      Right <$> splitChoice nchoice _T1 (r, s) _T2 t info
 
     --Anything can rigidly match with Bottom
     rigidRigid' (EQN _ (VBot _) _ _ _ ) = return $ Left []
@@ -391,13 +393,14 @@ withDuplicates info noms k = helper info noms k []
         helper info rest k (accumSoFar ++ [v])
 
 splitChoice
-  :: Type
+  :: Nom
+  -> Type
   -> (VAL, VAL)
   -> Type
   -> VAL
   -> EqnInfo
   -> Contextual (Ctx.SimultSub, [Equation])
-splitChoice _T1 (r, s) _T2 t info = do
+splitChoice n _T1 (r, s) _T2 t info = do
   let origMetas = fmvs t
   ourRet <- withDuplicates info origMetas $ \ freshMetas1 ->
     withDuplicates info origMetas $ \ freshMetas2 -> do
@@ -407,7 +410,7 @@ splitChoice _T1 (r, s) _T2 t info = do
           sub2 = zip origMetas mvals2
           eq1 = substs sub1 $ EQN _T1 r _T2 t info
           eq2 = substs sub2 $ EQN _T1 s _T2 t (info {isCF = CounterFactual})
-          ret = (zip3 origMetas mvals1 mvals2, [eq1, eq2])
+          ret = (Ctx.SimultSub n $ zip3 origMetas mvals1 mvals2, [eq1, eq2])
       trace ("Split return " ++ show ret) $ return ret
   return ourRet
 
@@ -836,7 +839,7 @@ prune
   :: [Nom] -> VAL -> Contextual [( Nom, Type, VAL -> VAL )]
 --prune xs t | trace ("In Pruning " ++ (show xs) ++ " from " ++ pp t) False = error "prune"
 prune xs SET = return []
-prune xs (VChoice s t) = (++) <$> prune xs s <*> prune xs t
+prune xs (VChoice _ s t) = (++) <$> prune xs s <*> prune xs t
 prune xs Nat = return []
 prune xs (Fin n) = prune xs n
 prune xs (Vec a n) = (++) <$> prune xs a <*> prune xs n
@@ -1152,22 +1155,17 @@ applySubImmediate pid theta =
 
 --TODO need version that works on the right?
 applySSS :: Ctx.SimultSub ->  Contextual ()
-applySSS sss = do
-  cl <- Ctx.getL
-  cr <- Ctx.getR
-  ret <- trace ("ApplySSS " ++ show sss ++ " Before\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr) ++ "\n***\n") Ctx.modifyR (concatMap singleSSS)
-  cl2 <- Ctx.getL
-  cr2 <- Ctx.getR
-  trace ("ApplySSS after\n" ++ List.intercalate "\n" (map pp cl2) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr2) ++ "\n***\n") $ return ret
+applySSS sss@(Ctx.SimultSub nc sl) =
+  Ctx.modifyR (concatMap singleSSS)
     where
-      varsToSub = map (\(x,_,_) -> x) sss
+      varsToSub = map (\(x,_,_) -> x) sl
       (subsl, subsr) = Ctx.splitSSS sss
       singleSSS :: Either RSubs Entry -> [Either RSubs Entry]
       singleSSS e@(Right (E x _T (DEFN d) info)) =
         case occurrence varsToSub d of
           Nothing -> [e]
           Just _ ->
-            [Right (E x _T (DEFN $ VChoice (substs subsl d) (substs subsr d)) info)]
+            [Right (E x _T (DEFN $ VChoice nc (substs subsl d) (substs subsr d)) info)]
       singleSSS (Right e@(Prob _ _ _)) =
         case occurrence varsToSub e of
           Nothing -> [Right e]

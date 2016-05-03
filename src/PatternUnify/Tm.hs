@@ -48,7 +48,7 @@ data VAL where
         N :: Head -> [Elim] -> VAL
         C :: Can -> [VAL] -> VAL
         VBot :: String -> VAL
-        VChoice :: VAL -> VAL -> VAL
+        VChoice :: Nom -> VAL -> VAL -> VAL
 --        Nat :: VAL
 --        Fin :: VAL -> VAL
 --        Vec :: VAL -> VAL -> VAL
@@ -176,7 +176,7 @@ maybePar tm = parens
 
 instance Pretty VAL where
   pretty (VBot s) = return $ text "⊥"
-  pretty (VChoice s t) =
+  pretty (VChoice _ s t) =
     (\ ps pt -> char '[' <> ps <> char ',' <+> pt <> char ']' )
       <$> pretty s <*> pretty t
   pretty (PI _S (L b)) =
@@ -532,7 +532,7 @@ unions = concat
 instance Occurs VAL where
   occurrence xs (L (B _ b)) = occurrence xs b
   occurrence xs (C _ as) = occurrence xs as
-  occurrence xs (VChoice s t) = occurrence xs [s,t]
+  occurrence xs (VChoice _ s t) = occurrence xs [s,t]
   occurrence xs (N (Var y _) as)
     | y `elem` xs = Just (Rigid Strong)
     | otherwise = weaken <$> occurrence xs as
@@ -544,7 +544,7 @@ instance Occurs VAL where
   --occurrence xs _ = Nothing --TODO occurrence cases
   frees isMeta (L (B _ t)) = frees isMeta t
   frees isMeta (C _ as) = unions (map (frees isMeta) as)
-  frees isMeta (VChoice s t) = unions (map (frees isMeta) [s,t])
+  frees isMeta (VChoice _ s t) = unions (map (frees isMeta) [s,t])
   frees isMeta (N h es) = unions (map (frees isMeta) es) `union` x
     where x =
             case h of
@@ -620,7 +620,7 @@ containsBottom (L v) = do
   containsBottom b
 containsBottom (N v1 elims) = joinErrors <$> mapM elimContainsBottom elims
 containsBottom (C v1 args) = joinErrors <$> mapM containsBottom args
-containsBottom (VChoice s t) = joinErrors <$> mapM containsBottom [s,t]
+containsBottom (VChoice _ s t) = joinErrors <$> mapM containsBottom [s,t]
 containsBottom (VBot s) = return $ Just s
 --containsBottom (Choice v1 v2) = joinErrors <$> mapM containsBottom [v1,v2]
 
@@ -639,7 +639,7 @@ flattenChoice (N v elims) =
 flattenChoice (C t1 t2) =
   C t1 <$> mapM flattenChoice t2
 flattenChoice (VBot t) = return $ VBot t
-flattenChoice (VChoice t1 t2) = flattenChoice t1
+flattenChoice (VChoice _ t1 t2) = flattenChoice t1
 
 flattenChoiceElim :: (Fresh m) => Elim -> m Elim
 flattenChoiceElim (Elim e1 e2) = Elim e1 <$> mapM flattenChoice e2
@@ -679,8 +679,8 @@ eval g (N u as) =
   do elims <- mapM (mapElimM (eval g)) as
      evalHead g u %%% elims
 eval g (C c as) = C c <$> (mapM (eval g) as)
-eval g (VChoice s t) =
-  VChoice <$> eval g s <*> eval g t
+eval g (VChoice n s t) =
+  VChoice n <$> eval g s <*> eval g t
 
 
 
@@ -715,8 +715,8 @@ elim (VCons _ _ h t) theElim@(VecElim a m mn mc (Succ n)) =
   do sub <- elim t theElim
      mc $$$ [n, h, t, sub]
 elim (ERefl _ z) theElim@(EqElim a m mr x y) = mr $$ z
-elim (VChoice s t) theElim =
-  VChoice <$> elim s theElim <*> elim t theElim
+elim (VChoice n s t) theElim =
+  VChoice n <$> elim s theElim <*> elim t theElim
 elim t a = badElim $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 badElim s = errorWithStackTrace s

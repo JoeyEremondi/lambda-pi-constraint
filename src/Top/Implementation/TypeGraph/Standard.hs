@@ -87,7 +87,8 @@ instance TypeGraph (StandardTypeGraph info) info where
                 --    Nothing -> (tp, Nothing)
                 --    Just x  -> (x, Just tp)
          in case newtp of
-               Tm.VChoice s t -> do
+               --TODO use meta as central node?
+               Tm.VChoice _ s t -> do
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1
                  g3 <- addNewEdge (vs, vt) (choiceInfo g2 :: info) g2
