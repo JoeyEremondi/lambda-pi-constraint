@@ -115,7 +115,7 @@ hole info _Gam _T f =
 
 defineGlobal
   :: (Maybe ProbId) -> EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal mpid info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
+defineGlobal mpid info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\nmpid: " ++ show mpid) $
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
@@ -126,11 +126,12 @@ defineGlobal mpid info x _T vinit m = trace ("Defining global " ++ show x ++ " :
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
      pushL $ E x _T (DEFN v) info
      pushR (Left (Map.singleton x v))
+
+     goLeft
      case mpid of
        Nothing -> return ()
-       Just pid -> Ctx.pushImmediate pid (Map.singleton x v)
+       Just pid -> trace "Pushing immediate" $ Ctx.pushImmediate pid (Map.singleton x vinit)
      a <- m
-     goLeft
      --Ctx.moveDeclRight x newNom
      --Add our final value to the type graph
      Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
@@ -230,7 +231,14 @@ unify n q  = do
   unify' n q@(EQN _ _ _ _ info) =
     do
       setProblem n
-      rigidRigid (info {creationInfo = CreatedBy n}) q >>= simplify n (Unify q) . map Unify
+      rigidResult <- rigidRigid (info {creationInfo = CreatedBy n}) q
+      rigidEqns <- case rigidResult of
+        Left eqns ->
+          return eqns
+        Right (sss, eqns) -> do
+          Ctx.pushSSS sss
+          return eqns
+      (simplify n (Unify q) . map Unify) rigidEqns
 
 -- Here |sym| swaps the two sides of an equation:
 sym :: Equation -> Equation
@@ -247,7 +255,7 @@ sym (EQN _S s _T t pid) = EQN _T t _S s pid
 -- %% function implements the steps shown in Figure~\ref{fig:decompose}.
 -- %% excluding the $\eta$-expansion steps, which are handled by |unify|
 -- %% above.
-rigidRigid :: EqnInfo -> Equation -> Contextual [Equation]
+rigidRigid :: EqnInfo -> Equation -> Contextual (Either [Equation] (Ctx.SimultSub, [Equation]))
 rigidRigid pid eqn =
   do
     retEqns <- rigidRigid' eqn
@@ -255,17 +263,17 @@ rigidRigid pid eqn =
     return retEqns
     --TODO need derived edges?
   where
-    rigidRigid' (EQN SET SET SET SET _) = return []
+    rigidRigid' (EQN SET SET SET SET _) = return $ Left []
     -- >
     rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T) _) =
-      return [EQN SET _A SET _S pid
+      return $ Left [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B
                   (_S --> SET)
                   _T pid]
     -- >
     rigidRigid' (EQN SET (SIG _A _B) SET (SIG _S _T) _) =
-      return [EQN SET _A SET _S pid
+      return $ Left [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B
                   (_S --> SET)
@@ -275,27 +283,27 @@ rigidRigid pid eqn =
       | x == y =
         do _X <- lookupVar x w
            _Y <- lookupVar y w'
-           (EQN SET _X SET _Y pid :) <$>
+           Left <$> (EQN SET _X SET _Y pid :) <$>
              matchSpine pid _X
                         (N (Var x w) [])
                         ds
                         _Y
                         (N (Var y w') [])
                         es
-    rigidRigid' (EQN SET Nat SET Nat _) = return []
-    rigidRigid' (EQN SET (Fin n) SET (Fin n') _) = return [EQN Nat n Nat n' pid]
+    rigidRigid' (EQN SET Nat SET Nat _) = return $ Left []
+    rigidRigid' (EQN SET (Fin n) SET (Fin n') _) = return $ Left [EQN Nat n Nat n' pid]
     rigidRigid' (EQN SET (Vec a m) SET (Vec b n) _) =
-      return [EQN SET a SET b pid, EQN Nat m Nat n pid]
+      return $ Left [EQN SET a SET b pid, EQN Nat m Nat n pid]
     --TODO need twins here?
     rigidRigid' (EQN SET (Eq a x y) SET (Eq a' x' y') _) =
-      return [EQN SET a SET a' pid, EQN a x a' x' pid, EQN a y a' y' pid]
-    rigidRigid' (EQN Nat Zero Nat Zero _) = return []
-    rigidRigid' (EQN Nat (Succ m) Nat (Succ n) _) = return [EQN Nat m Nat n pid]
+      return $ Left[EQN SET a SET a' pid, EQN a x a' x' pid, EQN a y a' y' pid]
+    rigidRigid' (EQN Nat Zero Nat Zero _) = return $ Left []
+    rigidRigid' (EQN Nat (Succ m) Nat (Succ n) _) = return $ Left [EQN Nat m Nat n pid]
     rigidRigid' (EQN (Fin m) (FZero n) (Fin m') (FZero n') _) =
-      return [EQN Nat n Nat n' pid, EQN Nat m Nat m' pid, EQN Nat m Nat n pid]
+      return $ Left [EQN Nat n Nat n' pid, EQN Nat m Nat m' pid, EQN Nat m Nat n pid]
     --TODO need twins here?
     rigidRigid' (EQN (Fin m) (FSucc n f) (Fin m') (FSucc n' f') _) =
-      return [EQN Nat n Nat n' pid
+      return $ Left [EQN Nat n Nat n' pid
              ,EQN Nat m Nat m' pid
              ,EQN Nat m Nat n pid
              ,EQN (Fin n)
@@ -304,10 +312,10 @@ rigidRigid pid eqn =
                   f' pid]
     --TODO need to unify type indices of vectors?
     rigidRigid' (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b') _) =
-      return [EQN SET a SET a' pid, EQN SET b SET b' pid, EQN SET a' SET b' pid]
+      return $ Left [EQN SET a SET a' pid, EQN SET b SET b' pid, EQN SET a' SET b' pid]
     --TODO need to unify type indices of vectors?
     rigidRigid' (EQN (Vec a (Succ m)) (VCons a' (Succ m') h t) (Vec b (Succ n)) (VCons b' (Succ n') h' t') _) =
-      return [EQN SET a SET a' pid
+      return $ Left [EQN SET a SET a' pid
              ,EQN SET b SET b' pid
              ,EQN SET a' SET b' pid
              ,EQN Nat m Nat m' pid
@@ -319,7 +327,7 @@ rigidRigid pid eqn =
                   (Vec b n)
                   t' pid]
     rigidRigid' (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z') _) =
-      return [EQN SET a SET a' pid
+      return $ Left [EQN SET a SET a' pid
              ,EQN SET b SET b' pid
              ,EQN SET a' SET b' pid
              ,EQN a x b x' pid
@@ -329,23 +337,15 @@ rigidRigid pid eqn =
              ,EQN b x' b' z' pid
              ,EQN b y' b' z' pid
              ,EQN a' z b' z' pid]
-
-    --Temporary workaround: just duplicate with our rigid
-    rigidRigid' (EQN _T1 (VChoice s t) _T2 t2 _) =
-      return
-        [ EQN _T1 s _T2 t2 pid]
-        --, EQN _T1 t _T2 t2 pid]
-    rigidRigid' (EQN _T2 t2 _T1 (VChoice s t) _) =
-      return
-        [ EQN _T1 s _T2 t2 pid]
-        --, EQN _T1 t _T2 t2 pid]
-
     -- >
+    rigidRigid' (EQN _T1 (VChoice r s) _T2 t info) = Right <$> splitChoice _T1 (r, s) _T2 t info
+    rigidRigid' (EQN _T1 t _T2 (VChoice r s) info) = Right <$> splitChoice _T1 (r, s) _T2 t info
+
     --Anything can rigidly match with Bottom
-    rigidRigid' (EQN _ (VBot _) _ _ _ ) = return []
-    rigidRigid' (EQN _ _ _ (VBot _) _) = return []
+    rigidRigid' (EQN _ (VBot _) _ _ _ ) = return $ Left []
+    rigidRigid' (EQN _ _ _ (VBot _) _) = return $ Left []
     --Anything else, we should be able to catch in our type graph
-    rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return [] --badRigidRigid eq
+    rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return $ Left [] --badRigidRigid eq
 
 
 withDuplicate
@@ -1113,7 +1113,7 @@ applySubImmediate pid theta =
         Right $ substs (Map.toList theta) e
       singleSub e = e
 
-
+--TODO need version that works on the right?
 applySSS :: Ctx.SimultSub ->  Contextual ()
 applySSS sss =
   Ctx.modifyR (concatMap singleSSS)
