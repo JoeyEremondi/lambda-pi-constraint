@@ -357,13 +357,28 @@ modifyR :: (ContextR -> ContextR) -> Contextual ()
 modifyR f = modify (\ (x, y, pid, gr, s) -> (x, f y, pid, gr, s))
 
 pushL :: Entry -> Contextual ()
-pushL e = --trace ("Push left " ++ prettyString e) $
+-- pushL e@((E alpha _ HOLE _)) | (show alpha) == "α_3_19__16" = trace ("pushL " ++ pp e) $ do
+--   cl <- getL
+--   cr <- getR
+--   let
+--     containsL e' = case e' of
+--       (E a2 _ (DEFN _) _) -> alpha == a2
+--       _ -> False
+--     containsR e' = case e' of
+--       (Right (E a2 _ (DEFN _) _)) -> alpha == a2
+--       _ -> False
+--   case (filter containsL cl, filter containsR cr) of
+--     ([],[]) -> modifyL (:< e)
+--     _ -> error "pushL 16"
+pushL e = trace ("Push left " ++ prettyString e) $
   modifyL (:< e)
 
+
 pushR :: Either Subs Entry -> Contextual ()
+pushR (Right (E alpha _ HOLE _)) | (show alpha) == "α_3_19__16" = error "pushR 16"
 pushR (Left s)   = --trace ("Push subs " ++ show s) $
   pushSubs s
-pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
+pushR (Right e)  = trace ("Push right " ++ prettyString e) $
   modifyR (Right e :)
 
 pushSSS :: SimultSub -> Contextual ()

@@ -70,7 +70,7 @@ putProb
 putProb x q s =
   do setProblem x
      _Gam <- ask
-     pushR . Right $ Prob x (wrapProb _Gam q) s
+     trace ("putProb pushR") (pushR . Right) $ Prob x (wrapProb _Gam q) s
 
 pendingSolve
   :: ProbId -> Problem -> [ProbId] -> Contextual ()
@@ -108,7 +108,7 @@ hole info _Gam _T f =
   do check SET (_Pis _Gam _T) `catchError`
        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
      x <- freshNom
-     pushL $ E x (_Pis _Gam _T) HOLE info
+     trace ("HOLE pushing " ++ show x) $ pushL $ E x (_Pis _Gam _T) HOLE info
      a <- f =<< (N (Meta x) [] $*$ _Gam)
      goLeft
      return a
@@ -143,15 +143,13 @@ define mpid info _Gam x _T v =
                (return ())
 
 
-defineSingle info _Gam x _T v =
-  defineGlobalSingle info x
+defineSingle info _Gam xtop _T vtop =
+  defineGlobalSingle info xtop
                (_Pis _Gam _T)
-               (lams' _Gam v)
+               (lams' _Gam vtop)
                (return ())
   where
-    defineGlobalSingle info x _T vinit m = trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
-      hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
-         ctxr <- Ctx.getR
+    defineGlobalSingle info x _T vinit m = trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $ do
          v <- makeTypeSafe _T vinit
          pushL $ E x _T (DEFN v) info
          pushR (Left (Map.singleton x v))
@@ -618,16 +616,22 @@ flexRigid
 flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) =
   setProblem n >>
   do _Gam <- ask
-     popL >>=
-       \e ->
-         case e of
+     cl <- Ctx.getL
+     cr <- Ctx.getR
+
+     e <- popL
+     ret <- --trace ("FR tryInvert CL\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr) ++ "\n***\n")
+       case e of
            E beta _T HOLE info
-             | alpha == beta && alpha `elem` fmvs _Xi ->
+             | alpha == beta && alpha `elem` fmvs _Xi -> trace ("FR1 hole for " ++ show beta) $
                pushL e >> mapM_ pushL _Xi >> block n q
-             | alpha == beta ->
-               mapM_ pushL _Xi >> tryInvert n q _T (block n q >> pushL e)
-             | beta `elem` fmvs (_Gam, _Xi, q) -> flexRigid (e : _Xi) n q
+             | alpha == beta -> trace ("FR2 hole for " ++ show beta ++ "\nXi:\n" ++ List.intercalate "\n" (map pp _Xi)) $ do
+                mapM_ pushL _Xi
+                tryInvert n q _T (block n q >> pushL e)
+             | beta `elem` fmvs (_Gam, _Xi, q) -> trace ("FR3 hole for " ++ show beta) $ flexRigid (e : _Xi) n q
            _ -> pushR (Right e) >> flexRigid _Xi n q
+     --trace ("\n\n***FR AFTER CL\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr) ++ "\n***\n") $
+     return ret
 -- %if False
 flexRigid _ n q = throwError $ "flexRigid: " ++ show q
 
@@ -646,7 +650,7 @@ tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k =
   invert alpha _T es s >>=
   \m ->
     case m of
-      Nothing -> k
+      Nothing -> trace ("Try invert " ++ show alpha ++ " failing, " ++ pp q) $ k
       Just v -> active n q >> define n (info {creationInfo = CreatedBy n}) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
@@ -698,6 +702,7 @@ flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) info) =
        \e ->
          case e of
            E gamma _T HOLE _
+             | trace ("FF hole for " ++ show beta) False -> error "FF"
              | gamma == alpha && gamma == beta ->
                block n q >> tryIntersect n (info {creationInfo = CreatedBy n}) alpha _T ds es
              | gamma == alpha ->
@@ -746,8 +751,8 @@ tryIntersect pid info alpha _T ds es =
       \m ->
         case m of --TODO intersect creator?
           Just ( _U, f ) -> hole info [] _U $ \beta -> define pid info [] alpha _T (f beta)
-          Nothing -> pushL (E alpha _T HOLE info)
-    _ -> pushL (E alpha _T HOLE info)
+          Nothing -> trace ("Pushing HOLE for " ++ show alpha) $ pushL (E alpha _T HOLE info)
+    _ -> trace ("TI Default pushing " ++ show alpha) $ pushL (E alpha _T HOLE info)
 
 -- Given the type of $[[alpha]]$ and the two spines, |intersect| produces
 -- a type for $[[beta]]$ and a term with which to solve $[[alpha]]$ given
@@ -1001,7 +1006,7 @@ lower pid _Phi alpha (PI _S _T) =
                                  alpha
                                  (PI _S _T)
                                  (lam x ourApp3))
-lower pid _Phi alpha _T = pushL (E alpha (_Pis _Phi _T) HOLE pid)
+lower pid _Phi alpha _T = trace ("Lower push hole " ++ show alpha) $ pushL (E alpha (_Pis _Phi _T) HOLE pid)
 
 -- Both |solver| and |lower| above need to split $\Sigma$-types (possibly
 -- underneath a bunch of parameters) into their components.  For example,
@@ -1089,14 +1094,21 @@ ambulando ns theta = do
       -- process entries
       Just (Right e) -> do
         updateVal <- update ns theta e
+        case (updateVal, e) of
+          (E a _T HOLE i,  E alpha _T2 HOLE info) -> return ()
+          (E a _T HOLE i,  _) -> error "Bad HOLE update"
+          _ -> return ()
         --trace ("AMBULANDO updated " ++ pp updateVal) $
         case updateVal of
           Prob n p Active ->
             pushR (Left theta) >> solver n p >> ambulando ns Map.empty
           Prob n p Solved ->
             pushL (Prob n p Solved) >> ambulando (n : ns) theta
-          E alpha _T HOLE info -> lower info [] alpha _T >> ambulando ns theta
-          e' -> pushL e' >> ambulando ns theta
+          E alpha _T HOLE info ->
+            case e of
+              (E _ _ HOLE _) -> trace ("AMB about to lower " ++ show alpha) $ lower info [] alpha _T >> ambulando ns theta
+              _ -> error "Bad HOLE update2"
+          e' -> trace ("Ambulando pushing after update " ++ pp e') $ pushL e' >> ambulando ns theta
 
 -- Given a list of solved problems, a substitution and an entry, |update|
 -- returns a modified entry with the substitution applied and the problem
@@ -1140,15 +1152,25 @@ applySubImmediate pid theta =
 
 --TODO need version that works on the right?
 applySSS :: Ctx.SimultSub ->  Contextual ()
-applySSS sss =
-  Ctx.modifyR (concatMap singleSSS)
+applySSS sss = do
+  cl <- Ctx.getL
+  cr <- Ctx.getR
+  ret <- trace ("ApplySSS " ++ show sss ++ " Before\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr) ++ "\n***\n") Ctx.modifyR (concatMap singleSSS)
+  cl2 <- Ctx.getL
+  cr2 <- Ctx.getR
+  trace ("ApplySSS after\n" ++ List.intercalate "\n" (map pp cl2) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr2) ++ "\n***\n") $ return ret
     where
       varsToSub = map (\(x,_,_) -> x) sss
       (subsl, subsr) = Ctx.splitSSS sss
       singleSSS :: Either RSubs Entry -> [Either RSubs Entry]
-      singleSSS (Right e) =
+      singleSSS e@(Right (E x _T (DEFN d) info)) =
+        case occurrence varsToSub d of
+          Nothing -> [e]
+          Just _ ->
+            [Right (E x _T (DEFN $ VChoice (substs subsl d) (substs subsr d)) info)]
+      singleSSS (Right e@(Prob _ _ _)) =
         case occurrence varsToSub e of
           Nothing -> [Right e]
           Just _ ->
-            [Right $ substs subsl e, Right $ substs subsr e]
+            [Right (substs subsl e), Right (substs subsr e) ]
       singleSSS l = [l]
