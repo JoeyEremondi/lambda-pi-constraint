@@ -103,7 +103,7 @@ goLeft = popL >>= pushR . Right
 hole
   :: EqnInfo -> [( Nom, Type )] -> Type -> (VAL -> Contextual a) -> Contextual a
 define
-  :: Maybe ProbId -> EqnInfo -> [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
+  :: ProbId -> EqnInfo -> [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
 hole info _Gam _T f =
   do check SET (_Pis _Gam _T) `catchError`
        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
@@ -114,8 +114,8 @@ hole info _Gam _T f =
      return a
 
 defineGlobal
-  :: (Maybe ProbId) -> EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal mpid info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\nmpid: " ++ show mpid) $
+  :: (ProbId) -> EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
+defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\npid: " ++ show pid) $
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
@@ -128,9 +128,7 @@ defineGlobal mpid info x _T vinit m = trace ("Defining global " ++ show x ++ " :
      pushR (Left (Map.singleton x v))
 
      goLeft
-     case mpid of
-       Nothing -> return ()
-       Just pid -> trace "Pushing immediate" $ Ctx.pushImmediate pid (Map.singleton x vinit)
+     trace "Pushing immediate" $ Ctx.pushImmediate pid (Map.singleton x vinit)
      a <- m
      --Ctx.moveDeclRight x newNom
      --Add our final value to the type graph
@@ -142,6 +140,28 @@ define mpid info _Gam x _T v =
                (_Pis _Gam _T)
                (lams' _Gam v)
                (return ())
+
+
+defineSingle info _Gam x _T v =
+  defineGlobalSingle info x
+               (_Pis _Gam _T)
+               (lams' _Gam v)
+               (return ())
+  where
+    defineGlobalSingle info x _T vinit m = trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $
+      hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
+         ctxr <- Ctx.getR
+         v <- makeTypeSafe _T vinit
+         pushL $ E x _T (DEFN v) info
+         pushR (Left (Map.singleton x v))
+         goLeft
+         a <- m
+         --Ctx.moveDeclRight x newNom
+         --Add our final value to the type graph
+         Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
+         return a
+
+
 
 -- %endif
 -- \subsection{Unification}
@@ -625,7 +645,7 @@ tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k =
   \m ->
     case m of
       Nothing -> k
-      Just v -> active n q >> define (Just n) (info {creationInfo = CreatedBy n}) [] alpha _T v
+      Just v -> active n q >> define n (info {creationInfo = CreatedBy n}) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
 
@@ -723,7 +743,7 @@ tryIntersect pid info alpha _T ds es =
       intersect [] [] _T xs ys >>=
       \m ->
         case m of --TODO intersect creator?
-          Just ( _U, f ) -> hole info [] _U $ \beta -> define (Just pid) info [] alpha _T (f beta)
+          Just ( _U, f ) -> hole info [] _U $ \beta -> define pid info [] alpha _T (f beta)
           Nothing -> pushL (E alpha _T HOLE info)
     _ -> pushL (E alpha _T HOLE info)
 
@@ -897,7 +917,7 @@ instantiate pid d@( alpha, _T, f ) =
   \e ->
     case e of
       E beta _U HOLE pid
-        | alpha == beta -> hole pid [] _T $ \t -> define Nothing pid [] beta _U (f t)
+        | alpha == beta -> hole pid [] _T $ \t -> defineSingle pid [] beta _U (f t)
       _ -> pushR (Right e) >> instantiate pid d
 
 -- \subsection{Metavariable and problem simplification}
@@ -959,7 +979,7 @@ lower pid _Phi alpha (SIG _S _T) =
           (_T $$ s) $
     return $
     \t ->
-      define Nothing pid _Phi
+      defineSingle pid _Phi
              alpha
              (SIG _S _T)
              (PAIR s t)
@@ -974,7 +994,7 @@ lower pid _Phi alpha (PI _S _T) =
                    hole pid _Phi (_Pi y _A (_Pi z _B ourApp2)) $
                      \w ->
                        do ourApp3 <- (w $$$ [u, v])
-                          define Nothing pid _Phi
+                          defineSingle pid _Phi
                                  alpha
                                  (PI _S _T)
                                  (lam x ourApp3))

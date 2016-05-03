@@ -1,6 +1,6 @@
-let x = 3 :: Nat
+--let x = 3 :: Nat
 
---let id = (\_ x -> x) :: forall (a :: *) . a -> a
+let id = (\x -> x) :: Nat -> Nat
 
 --let natIf =
 --  (\_ x y n ->  natElim _ x (\ _ _ -> y) n ) :: forall (a :: *) . a -> a -> Nat -> a
