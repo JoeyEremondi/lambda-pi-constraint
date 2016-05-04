@@ -262,13 +262,13 @@ unify n q  = do
     do
       setProblem n
       rigidResult <- rigidRigid (info {creationInfo = CreatedBy n}) q
-      rigidEqns <- case rigidResult of
+      case rigidResult of
         Left eqns ->
-          return eqns
-        Right (sss, eqns) -> do
+          (simplify n (Unify q) . map Unify) eqns
+        Right (sss, q1, q2) -> do
           Ctx.pushSSS sss
-          return eqns
-      (simplify n (Unify q) . map Unify) rigidEqns
+          (simplifySplit n (Unify q) (Unify q1, Unify q2))
+
 
 -- Here |sym| swaps the two sides of an equation:
 sym :: Equation -> Equation
@@ -285,7 +285,7 @@ sym (EQN _S s _T t pid) = EQN _T t _S s pid
 -- %% function implements the steps shown in Figure~\ref{fig:decompose}.
 -- %% excluding the $\eta$-expansion steps, which are handled by |unify|
 -- %% above.
-rigidRigid :: EqnInfo -> Equation -> Contextual (Either [Equation] (Ctx.SimultSub, [Equation]))
+rigidRigid :: EqnInfo -> Equation -> Contextual (Either [Equation] (Ctx.SimultSub, Equation, Equation))
 rigidRigid pid eqn =
   do
     retEqns <- rigidRigid' eqn
@@ -409,7 +409,7 @@ splitChoice
   -> Type
   -> VAL
   -> EqnInfo
-  -> Contextual (Ctx.SimultSub, [Equation])
+  -> Contextual (Ctx.SimultSub, Equation, Equation)
 splitChoice n _T1 (r, s) _T2 t info = do
   let origMetas = fmvs t
   ourRet <- withDuplicates info origMetas $ \ freshMetas1 ->
@@ -420,7 +420,7 @@ splitChoice n _T1 (r, s) _T2 t info = do
           sub2 = zip origMetas mvals2
           eq1 = substs sub1 $ EQN _T1 r _T2 t info
           eq2 = substs sub2 $ EQN _T1 s _T2 t (info {isCF = CounterFactual})
-          ret = (Ctx.SimultSub n $ zip3 origMetas mvals1 mvals2, [eq1, eq2])
+          ret = (Ctx.SimultSub n $ zip3 origMetas mvals1 mvals2, eq1, eq2)
       trace ("Split return " ++ show ret) $ return ret
   return ourRet
 
