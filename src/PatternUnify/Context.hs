@@ -467,7 +467,7 @@ lookupVar x w = do
         (P _T,         Only)   -> return _T
         (Twins _S _T,  TwinL)  -> return _S
         (Twins _S _T,  TwinR)  -> return _T
-        _                      -> throwError $ "lookupVar: evil twin"
+        _                      -> error $ "lookupVar: evil twin | " ++ show y ++ " | " ++ show e ++ " | " ++ show w
     look vars (_ : _Gam)                      = look vars _Gam
 
 lookupMeta :: Nom -> Contextual Type

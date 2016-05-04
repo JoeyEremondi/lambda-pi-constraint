@@ -133,7 +133,7 @@ matchHeads (Var v TwinR) (Var v2 TwinL) | v == v2 = (Var v Only)
 matchHeads h1 h2 | h1 == h2 = h1
 
 equalize :: Type -> VAL -> VAL -> Contextual VAL
---equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
+equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
 
 equalize (SET) (SET) (SET) = return SET
 
@@ -353,7 +353,7 @@ equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ====
 _S <-> _T = equal SET _S _T
 
 isReflexive :: Equation -> Contextual Bool
-isReflexive eqn@(EQN _S s _T t _) = --trace ("IsRelexive " ++ pp eqn) $
+isReflexive eqn@(EQN _S s _T t _) = trace ("IsRelexive " ++ pp eqn) $
   do
     vars <- ask
     eq <- --trace ("IsReflexive vars " ++ show vars) $
@@ -362,8 +362,7 @@ isReflexive eqn@(EQN _S s _T t _) = --trace ("IsRelexive " ++ pp eqn) $
            else  return False
 
 checkProb :: ProbId -> ProblemState -> Problem -> Contextual ()
---checkProb ident st p | trace ("@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False =
-    --error "checkProb"
+checkProb ident st p | trace ("@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False = error "checkProb"
 checkProb ident st p@(Unify q) = do
    setProblem ident
    currentSubs <- metaSubs

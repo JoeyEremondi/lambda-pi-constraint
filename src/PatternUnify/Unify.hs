@@ -1089,7 +1089,7 @@ ambulando ns fails theta = do
   cl <- Ctx.getL
   cr <- Ctx.getR
   --(trace ("\n******\nAMBULANDO CL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nAMBULANDO CR:\n" ++ List.intercalate "\n" (map pp cr) ++ "\n******\n") popR)
-  popR >>= \x ->
+  popR >>= \x -> trace ("Ambulando popped " ++ maybe "Nothing" pp x) $
     case x of
       -- if right context is empty, stop
       Nothing                   --Make sure our final substitutions are applied
