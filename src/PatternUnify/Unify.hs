@@ -1117,6 +1117,8 @@ ambulando ns fails theta = do
             pushR (Left theta) >> solver n p >> ambulando ns fails Map.empty
           Prob n p Solved ->
             pushL (Prob n p Solved) >> ambulando (n : ns) fails theta
+          Prob nfail p (Failed err) ->
+            pushL (Prob nfail p (Failed err)) >> ambulando ns (nfail : fails) theta
           E alpha _T HOLE info ->
             case e of
               (E _ _ HOLE _) -> trace ("AMB about to lower " ++ show alpha) $ lower info [] alpha _T >> ambulando ns fails theta
