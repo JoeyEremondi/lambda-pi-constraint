@@ -173,7 +173,7 @@ data ProblemState =
   | Solved
   | Failed Err
   | FailPending ProbId
-  | Ignored 
+  | Ignored
   deriving (Eq, Show, Generic)
 
 instance Alpha ProblemState
@@ -189,7 +189,9 @@ instance Pretty ProblemState where
     pretty Active        = return $ text "ACTIVE"
     pretty (Pending xs)  = return $ text $ "PENDING " ++ show xs
     pretty Solved        = return $ text "SOLVED"
+    pretty Ignored        = return $ text "CF IGNORED"
     pretty (Failed e)    = return $ text $ "FAILED: " ++ e
+    pretty (FailPending pid)    = return $ text $ "CF IF " ++ show pid ++ " FAILS: "
 
 data IsCF = Factual | CounterFactual
   deriving (Eq, Ord, Show, Generic)
