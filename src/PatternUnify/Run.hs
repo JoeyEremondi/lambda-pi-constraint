@@ -29,8 +29,8 @@ import PatternUnify.Unify
 import qualified Data.Either as Either
 import qualified Data.Maybe as Maybe
 
-import qualified Data.Map as Map
 import qualified Data.List as List
+import qualified Data.Map as Map
 
 import Debug.Trace (trace)
 
@@ -73,7 +73,7 @@ solveEntries !es  =
     (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
           initialise
-          ambulando [] Map.empty
+          ambulando [] [] Map.empty
           validResult <- validate (const True)
           badEdges <- applyHeuristics defaultHeuristics
           setMsg  badEdges

@@ -97,6 +97,16 @@ simplify n q rs = setProblem n >> help rs []
              goLeft
              return a
 
+simplifySplit n q (r1, r2) = do
+   setProblem n
+   x1 <- ProbId <$> freshNom
+   x2 <- ProbId <$> freshNom
+   _Gam <- ask
+   pushR $ Right $ Prob x2 (wrapProb _Gam r2) (FailPending x1)
+   pushR $ Right $ Prob x1 (wrapProb _Gam r1) Active
+
+
+
 goLeft :: Contextual ()
 goLeft = popL >>= pushR . Right
 
@@ -1074,8 +1084,8 @@ splitSig _ _ _ = return Nothing
 -- The |ambulando| automaton carries a list of problems that have been
 -- solved, for updating the state of subsequent problems, and a
 -- substitution with definitions for metavariables.
-ambulando :: [ProbId] -> Subs -> Contextual ()
-ambulando ns theta = do
+ambulando :: [ProbId] -> [ProbId] -> Subs -> Contextual ()
+ambulando ns fails theta = do
   cl <- Ctx.getL
   cr <- Ctx.getR
   --(trace ("\n******\nAMBULANDO CL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nAMBULANDO CR:\n" ++ List.intercalate "\n" (map pp cr) ++ "\n******\n") popR)
@@ -1084,19 +1094,19 @@ ambulando ns theta = do
       -- if right context is empty, stop
       Nothing                   --Make sure our final substitutions are applied
        ->
-        do Ctx.modifyLM (mapM (update [] theta))
+        do Ctx.modifyLM (mapM (update [] [] theta))
            return ()
       -- compose suspended substitutions
       Just (Left (RSimultSub sss)) -> do
         applySSS sss
-        ambulando ns theta
+        ambulando ns fails theta
       Just (Left (RSubImmediate pid sub)) -> do
         applySubImmediate pid sub
-        ambulando ns theta
-      Just (Left (RSubs theta')) -> ambulando ns (compSubs theta theta')
+        ambulando ns fails theta
+      Just (Left (RSubs theta')) -> ambulando ns fails (compSubs theta theta')
       -- process entries
       Just (Right e) -> do
-        updateVal <- update ns theta e
+        updateVal <- update ns fails theta e
         case (updateVal, e) of
           (E a _T HOLE i,  E alpha _T2 HOLE info) -> return ()
           (E a _T HOLE i,  _) -> error "Bad HOLE update"
@@ -1104,21 +1114,21 @@ ambulando ns theta = do
         --trace ("AMBULANDO updated " ++ pp updateVal) $
         case updateVal of
           Prob n p Active ->
-            pushR (Left theta) >> solver n p >> ambulando ns Map.empty
+            pushR (Left theta) >> solver n p >> ambulando ns fails Map.empty
           Prob n p Solved ->
-            pushL (Prob n p Solved) >> ambulando (n : ns) theta
+            pushL (Prob n p Solved) >> ambulando (n : ns) fails theta
           E alpha _T HOLE info ->
             case e of
-              (E _ _ HOLE _) -> trace ("AMB about to lower " ++ show alpha) $ lower info [] alpha _T >> ambulando ns theta
+              (E _ _ HOLE _) -> trace ("AMB about to lower " ++ show alpha) $ lower info [] alpha _T >> ambulando ns fails theta
               _ -> error "Bad HOLE update2"
-          e' -> trace ("Ambulando pushing after update " ++ pp e') $ pushL e' >> ambulando ns theta
+          e' -> trace ("Ambulando pushing after update " ++ pp e') $ pushL e' >> ambulando ns fails theta
 
 -- Given a list of solved problems, a substitution and an entry, |update|
 -- returns a modified entry with the substitution applied and the problem
 -- state changed if appropriate.
-update :: [ProbId] -> Subs -> Entry -> Contextual Entry
+update :: [ProbId] -> [ProbId] -> Subs -> Entry -> Contextual Entry
 --update ns theta entry | trace ("UPDATE " ++ show ns ++ " " ++ show theta ++ " " ++ pp entry) False = error "update"
-update pids subs e = do
+update pids failPids subs e = do
   let newE = update' pids subs e
   --Record our substitutions, letting us get rid of function applications
   Ctx.recordEntrySub e newE

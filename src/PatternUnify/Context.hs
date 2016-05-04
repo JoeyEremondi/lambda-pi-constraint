@@ -166,7 +166,14 @@ instance Subst VAL ProbId
 
 
 
-data ProblemState = Blocked | Active | Pending [ProbId] | Solved | Failed Err
+data ProblemState =
+  Blocked
+  | Active
+  | Pending [ProbId]
+  | Solved
+  | Failed Err
+  | FailPending ProbId
+  | Ignored 
   deriving (Eq, Show, Generic)
 
 instance Alpha ProblemState
