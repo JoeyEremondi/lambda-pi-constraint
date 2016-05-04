@@ -1148,6 +1148,11 @@ update pids failPids subs e = do
       | otherwise = Prob n p' (Pending rs)
       where rs = ys \\ ns
             p' = substs (Map.toList theta) p
+    update' ns theta (Prob n p (FailPending failId))
+      | failId `elem` failPids = Prob n p' Active --Activate if we failed
+      | failId `elem` ns = Prob n p Ignored --Ignore if we solved the problem
+      | otherwise = Prob n p' (FailPending failId) --Keep wainting otherwise --TODO other subs?
+      where p' = substs (Map.toList theta) p
     update' _ _ e'@(Prob _ _ Solved) = e'
     update' _ _ e'@(Prob _ _ (Failed _)) = e'
     update' _ theta e' =
