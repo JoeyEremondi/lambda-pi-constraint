@@ -109,7 +109,7 @@ check _T t =
     cbottom <- containsBottom tequal
     case cbottom of
        Nothing -> return ()
-       Just s -> error $ "Typechecking error for " ++ pp tequal
+       Just s -> throwError $ "Typechecking error for " ++ pp tequal
         ++ "\n" ++ s --TODO nicer errors
 
 equalizeMany :: Type -> [VAL] -> Contextual VAL
