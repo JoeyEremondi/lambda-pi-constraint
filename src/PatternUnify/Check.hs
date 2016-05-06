@@ -131,98 +131,104 @@ equalizeMany _ [] = return $ VBot "Cannot equalize 0 values"
 -- matchHeads (Var v TwinL) (Var v2 TwinR) | v == v2 = (Var v Only)
 -- matchHeads (Var v TwinR) (Var v2 TwinL) | v == v2 = (Var v Only)
 -- matchHeads h1 h2 | h1 == h2 = h1
-
 equalize :: Type -> VAL -> VAL -> Contextual VAL
---equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
+equalize _T s t = do
+  _Tflat <- flattenChoice _T
+  equalize' _Tflat s t
+  where
+    equalize' :: Type -> VAL -> VAL -> Contextual VAL
+    --equalize' _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize'"
 
-equalize (SET) (SET) (SET) = return SET
+    equalize' (SET) (SET) (SET) = return SET
 
-equalize _T          (N u as) (N v as2) | u == v = --headsMatch u v =
-  --trace ("Equalize neutral " ++ show u ++ " " ++ show (map pp as) ++ ", " ++ show (map pp as2)) $
-  do
-     let umatched = u --matchHeads u v
-     vars <- ask
-     _U1   <- infer u
-     _V1   <- infer v
-     _U <- equalize SET _U1 _V1
-     (as', _T')  <-
-        equalizeSpine _U (N umatched []) as as2
-     eq   <- --trace ("Equalized spines " ++ show (map pp as') ++ " : " ++ pp _T') $
-       (_T <-> _T') --TODO make fail
-     case eq of
-       True -> return $ N umatched as'
-       False ->
-         return $ VBot $
-           "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
-           ++ "\n After inferring head type " ++ pp _U
-           ++ "\nin value " ++ pp (N umatched as')
-equalize (C c as)   (C v bs) (C v2 bs2) | v == v2  =  do
-                               tel <- canTy (c, as) v --TODO source of bias?
-                               C v <$> equalizeTel tel bs bs2
+    equalize' _T          (N u as) (N v as2) | u == v = --headsMatch u v =
+      --trace ("equalize' neutral " ++ show u ++ " " ++ show (map pp as) ++ ", " ++ show (map pp as2)) $
+      do
+         let umatched = u --matchHeads u v
+         vars <- ask
+         _U1   <- infer u
+         _V1   <- infer v
+         _U <- equalize' SET _U1 _V1
+         (as', _T')  <-
+            equalizeSpine _U (N umatched []) as as2
+         eq   <- --trace ("equalize'd spines " ++ show (map pp as') ++ " : " ++ pp _T') $
+           (_T <-> _T') --TODO make fail
+         case eq of
+           True -> return $ N umatched as'
+           False ->
+             return $ VBot $
+               "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
+               ++ "\n After inferring head type " ++ pp _U
+               ++ "\nin value " ++ pp (N umatched as')
+    equalize' (C c as)   (C v bs) (C v2 bs2) | v == v2  =  do
+                                   tel <- canTy (c, as) v --TODO source of bias?
+                                   C v <$> equalizeTel tel bs bs2
 
--- equalize (PI _S _T)  (L b) (L b2)     =  do
---                                (x, t) <- unbind b
---                                (y, t2) <- unbind b2
---                                appRes <- (_T $$ var x)
---                                tf <- equalize appRes t t2
---                                inScope x (P _S) $
---                                  return $ L $ bind x t2 --TODO how to deal with var here?
-equalize (PI _U _V) f g = do
-    vars <- ask
-    x <- fresh $ s2n "arg"
-    fx <- f $$ var x
-    gx <- g $$ var x
-    _Vx <- _V $$ var x
-    body <- --trace ("FN BODY " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx) $
-      localParams (++ [(x, P _U)]) $ equalize _Vx fx gx
-    --trace ("FN RET " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx)  $
-    return $ L $ bind x body
+    -- equalize' (PI _S _T)  (L b) (L b2)     =  do
+    --                                (x, t) <- unbind b
+    --                                (y, t2) <- unbind b2
+    --                                appRes <- (_T $$ var x)
+    --                                tf <- equalize' appRes t t2
+    --                                inScope x (P _S) $
+    --                                  return $ L $ bind x t2 --TODO how to deal with var here?
+    equalize' (PI _U _V) f g = do
+        vars <- ask
+        x <- fresh $ s2n "arg"
+        fx <- f $$ var x
+        gx <- g $$ var x
+        _Vx <- _V $$ var x
+        body <- --trace ("FN BODY " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx) $
+          localParams (++ [(x, P _U)]) $ equalize' _Vx fx gx
+        --trace ("FN RET " ++ pp fx ++ ", " ++ pp gx ++ " : " ++ pp _Vx)  $
+        return $ L $ bind x body
 
 
 
-equalize (SET) (Nat) Nat = return Nat
-equalize (SET) (Fin n) (Fin n2) = do
-  Fin <$> equalize Nat n n2
-equalize (SET) (Vec a n) (Vec a2 n2) =
-  Vec <$> equalize SET a a2 <*> equalize Nat n n2
-equalize (SET) (Eq a x y) (Eq a2 x2 y2) =
-  Eq
-  <$> equalize SET a a2
-  <*> equalize a x x2
-  <*> equalize a y y2
+    equalize' (SET) (Nat) Nat = return Nat
+    equalize' (SET) (Fin n) (Fin n2) = do
+      Fin <$> equalize' Nat n n2
+    equalize' (SET) (Vec a n) (Vec a2 n2) =
+      Vec <$> equalize' SET a a2 <*> equalize' Nat n n2
+    equalize' (SET) (Eq a x y) (Eq a2 x2 y2) =
+      Eq
+      <$> equalize' SET a a2
+      <*> equalize' a x x2
+      <*> equalize' a y y2
 
-equalize (Nat) Zero Zero = return Zero
-equalize Nat (Succ k) (Succ k2) =
-  Succ <$> equalize Nat k k2
+    equalize' (Nat) Zero Zero = return Zero
+    equalize' Nat (Succ k) (Succ k2) =
+      Succ <$> equalize' Nat k k2
 
-equalize (Fin (Succ n)) (FZero n') (FZero n2) =
-  FZero <$> equalizeMany Nat [n,n2,n']
-  --unless eq $ throwError $ "equalize: FZero index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+    equalize' (Fin (Succ n)) (FZero n') (FZero n2) =
+      FZero <$> equalizeMany Nat [n,n2,n']
+      --unless eq $ throwError $ "equalize': FZero index " ++ (pp n') ++ " does not match type index " ++ (pp n)
 
-equalize (Fin (Succ n)) (FSucc n' k) (FSucc n2 k2) = do
-  FSucc <$> equalizeMany Nat [n, n', n2] <*> equalize (Fin n) k k2
-  --eq <- equal Nat n n'
-  --unless eq $ throwError $ "equalize: FSucc index " ++ (pp n') ++ " does not match type index " ++ (pp n)
+    equalize' (Fin (Succ n)) (FSucc n' k) (FSucc n2 k2) = do
+      FSucc <$> equalizeMany Nat [n, n', n2] <*> equalize' (Fin n) k k2
+      --eq <- equal Nat n n'
+      --unless eq $ throwError $ "equalize': FSucc index " ++ (pp n') ++ " does not match type index " ++ (pp n)
 
-equalize (Vec a Zero) (VNil a') (VNil a2) =
-  VNil <$> equalizeMany SET [a,a2,a']
+    equalize' (Vec a Zero) (VNil a') (VNil a2) =
+      VNil <$> equalizeMany SET [a,a2,a']
 
-equalize (Vec a (Succ n)) (VCons a' n' h t) (VCons a2 n2 h2 t2) =
-  VCons <$> equalizeMany SET [a,a2,a'] <*> equalizeMany Nat [n,n',n2] <*> equalize a h h2 <*> equalize (Vec a n) t t2
+    equalize' (Vec a (Succ n)) (VCons a' n' h t) (VCons a2 n2 h2 t2) =
+      VCons <$> equalizeMany SET [a,a2,a'] <*> equalizeMany Nat [n,n',n2] <*> equalize' a h h2 <*> equalize' (Vec a n) t t2
 
-equalize (Eq a x y) (ERefl a1 x1) (ERefl a2 x2) =
-  ERefl <$> equalizeMany SET [a,a1,a2] <*> equalizeMany a [x,y,x1,x2]
+    equalize' (Eq a x y) (ERefl a1 x1) (ERefl a2 x2) =
+      ERefl <$> equalizeMany SET [a,a1,a2] <*> equalizeMany a [x,y,x1,x2]
 
---Choices are ordered, we equalize their parts
---TODO which meta?
-equalize _T (VChoice n1 s1 t1) (VChoice _ s2 t2) =
-  VChoice n1 <$> equalize _T s1 s2 <*> equalize _T t1 t2
+    --Choices are ordered, we equalize' their parts
+    --TODO which meta?
+    equalize' _T (VChoice n1 s1 t1) (VChoice _ s2 t2) =
+      VChoice n1 <$> equalize' _T s1 s2 <*> equalize' _T t1 t2
 
-equalize _T t1 t2 =
-  --trace ("Equalize Bottom " ++ pp _T ++ ", " ++ pp t1 ++ ", " ++ pp t2) $
-  return $ VBot $
-    "Cannot equalize values " ++ pp t1 ++ ", " ++ pp t2 ++
-    "\nof type " ++ pp _T
+    equalize' _T (VBot s1) (VBot s2) = return $ VBot (s1 ++ "\n" ++ s2)
+
+    equalize' _T t1 t2 =
+      --trace ("equalize' Bottom " ++ pp _T ++ ", " ++ pp t1 ++ ", " ++ pp t2) $
+      return $ VBot $
+        "Cannot equalize' values " ++ pp t1 ++ ", " ++ pp t2 ++
+        "\nof type " ++ pp _T
 
 
 
