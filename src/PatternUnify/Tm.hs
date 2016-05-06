@@ -541,7 +541,9 @@ instance Occurs VAL where
   occurrence xs (N (Meta y) as)
     | y `elem` xs = Just (Rigid Strong)
     | otherwise = const Flexible <$> occurrence xs as
+  occurrence xs (VBot s) = Nothing
   --occurrence xs _ = Nothing --TODO occurrence cases
+  frees isMeta (VBot s) = []
   frees isMeta (L (B _ t)) = frees isMeta t
   frees isMeta (C _ as) = unions (map (frees isMeta) as)
   frees isMeta (VChoice _ s t) = unions (map (frees isMeta) [s,t])
