@@ -214,6 +214,7 @@ instance TypeGraph (StandardTypeGraph info) info where
        theEdges = [(v1, v2) | (EdgeId v1 v2 _,_) <- concatMap (edges) eqGroups]
 
        dotLabel :: VertexId -> VertexInfo -> (String)
+       dotLabel vid (VertBot,_) = "Bottom"
        dotLabel vid (VVar,_) = "Meta " ++ show vid
        dotLabel vid ((VCon k),_) = show k
        dotLabel vid (VApp _ _, Just tm) = "App " ++ show vid ++ " " ++ Tm.prettyString tm
@@ -223,6 +224,7 @@ instance TypeGraph (StandardTypeGraph info) info where
        dotLabel vid _ = show vid
 
        dotEdges :: VertexId -> VertexInfo -> (String)
+       dotEdges vid (VertBot, _) = ""
        dotEdges vid (VVar,_) = ("")
        dotEdges vid ((VCon k),_) = ("")
        dotEdges vid ((VLam k1 k2),_) =
