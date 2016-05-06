@@ -177,7 +177,7 @@ maybePar tm = parens
 instance Pretty VAL where
   pretty (VBot s) = return $ text "⊥"
   pretty (VChoice _ s t) =
-    (\ ps pt -> char '[' <> ps <> char ',' <+> pt <> char ']' )
+    (\ ps pt -> text "<<" <> ps <> char ',' <+> pt <> text ">>" )
       <$> pretty s <*> pretty t
   pretty (PI _S (L b)) =
     lunbind b $

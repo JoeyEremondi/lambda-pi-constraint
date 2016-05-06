@@ -120,27 +120,27 @@ equalizeMany _T (t1 : rest) = do
   equalize _T t1 ttail
 equalizeMany _ [] = return $ VBot "Cannot equalize 0 values"
 
-headsMatch :: Head -> Head -> Bool
-headsMatch (Var v Only) (Var v2 Only) = v == v2
-headsMatch (Var v TwinL) (Var v2 TwinR) = v == v2
-headsMatch (Var v TwinR) (Var v2 TwinL) = v == v2
-headsMatch h1 h2 = h1 == h2
-
-matchHeads :: Head -> Head -> Head
-matchHeads (Var v Only) (Var v2 Only) | v == v2 = (Var v Only)
-matchHeads (Var v TwinL) (Var v2 TwinR) | v == v2 = (Var v Only)
-matchHeads (Var v TwinR) (Var v2 TwinL) | v == v2 = (Var v Only)
-matchHeads h1 h2 | h1 == h2 = h1
+-- headsMatch :: Head -> Head -> Bool
+-- headsMatch (Var v Only) (Var v2 Only) = v == v2
+-- headsMatch (Var v TwinL) (Var v2 TwinR) = v == v2
+-- headsMatch (Var v TwinR) (Var v2 TwinL) = v == v2
+-- headsMatch h1 h2 = h1 == h2
+--
+-- matchHeads :: Head -> Head -> Head
+-- matchHeads (Var v Only) (Var v2 Only) | v == v2 = (Var v Only)
+-- matchHeads (Var v TwinL) (Var v2 TwinR) | v == v2 = (Var v Only)
+-- matchHeads (Var v TwinR) (Var v2 TwinL) | v == v2 = (Var v Only)
+-- matchHeads h1 h2 | h1 == h2 = h1
 
 equalize :: Type -> VAL -> VAL -> Contextual VAL
-equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
+--equalize _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize"
 
 equalize (SET) (SET) (SET) = return SET
 
-equalize _T          (N u as) (N v as2) | headsMatch u v =
+equalize _T          (N u as) (N v as2) | u == v = --headsMatch u v =
   --trace ("Equalize neutral " ++ show u ++ " " ++ show (map pp as) ++ ", " ++ show (map pp as2)) $
   do
-     let umatched = matchHeads u v
+     let umatched = u --matchHeads u v
      vars <- ask
      _U1   <- infer u
      _V1   <- infer v

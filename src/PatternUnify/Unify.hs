@@ -108,7 +108,7 @@ simplifySplit n q (r1, r2) = do
 
 
 goLeft :: Contextual ()
-goLeft = popL >>= pushR . Right
+goLeft = trace "goLeft" $ popL >>= pushR . Right
 
 hole
   :: EqnInfo -> [( Nom, Type )] -> Type -> (VAL -> Contextual a) -> Contextual a
@@ -213,6 +213,14 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
+  unify' n (EQN _T1 (VChoice nchoice r s) _T2 t info) = do
+    (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
+    Ctx.pushSSS sss
+    (simplifySplit n (Unify q) (Unify q1, Unify q2))
+  unify' n (EQN _T1 t _T2 (VChoice nchoice r s) info) =  do --TODO avoid duplication?
+    (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
+    Ctx.pushSSS sss
+    (simplifySplit n (Unify q) (Unify q1, Unify q2))
   unify' n q@(EQN (PI _A _B) f (PI _S _T) g info) =
     do setProblem n
        x <- freshNom
@@ -261,13 +269,9 @@ unify n q  = do
   unify' n q@(EQN _ _ _ _ info) =
     do
       setProblem n
-      rigidResult <- rigidRigid (info {creationInfo = CreatedBy n}) q
-      case rigidResult of
-        Left eqns ->
-          (simplify n (Unify q) . map Unify) eqns
-        Right (sss, q1, q2) -> do
-          Ctx.pushSSS sss
-          (simplifySplit n (Unify q) (Unify q1, Unify q2))
+      eqns <- rigidRigid (info {creationInfo = CreatedBy n}) q
+      (simplify n (Unify q) . map Unify) eqns
+
 
 
 -- Here |sym| swaps the two sides of an equation:
@@ -285,7 +289,7 @@ sym (EQN _S s _T t pid) = EQN _T t _S s pid
 -- %% function implements the steps shown in Figure~\ref{fig:decompose}.
 -- %% excluding the $\eta$-expansion steps, which are handled by |unify|
 -- %% above.
-rigidRigid :: EqnInfo -> Equation -> Contextual (Either [Equation] (Ctx.SimultSub, Equation, Equation))
+rigidRigid :: EqnInfo -> Equation -> Contextual [Equation]
 rigidRigid pid eqn =
   do
     retEqns <- rigidRigid' eqn
@@ -293,17 +297,17 @@ rigidRigid pid eqn =
     return retEqns
     --TODO need derived edges?
   where
-    rigidRigid' (EQN SET SET SET SET _) = return $ Left []
+    rigidRigid' (EQN SET SET SET SET _) = return []
     -- >
     rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T) _) =
-      return $ Left [EQN SET _A SET _S pid
+      return [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B
                   (_S --> SET)
                   _T pid]
     -- >
     rigidRigid' (EQN SET (SIG _A _B) SET (SIG _S _T) _) =
-      return $ Left [EQN SET _A SET _S pid
+      return [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B
                   (_S --> SET)
@@ -313,27 +317,27 @@ rigidRigid pid eqn =
       | x == y =
         do _X <- lookupVar x w
            _Y <- lookupVar y w'
-           Left <$> (EQN SET _X SET _Y pid :) <$>
+           (EQN SET _X SET _Y pid :) <$>
              matchSpine pid _X
                         (N (Var x w) [])
                         ds
                         _Y
                         (N (Var y w') [])
                         es
-    rigidRigid' (EQN SET Nat SET Nat _) = return $ Left []
-    rigidRigid' (EQN SET (Fin n) SET (Fin n') _) = return $ Left [EQN Nat n Nat n' pid]
+    rigidRigid' (EQN SET Nat SET Nat _) = return []
+    rigidRigid' (EQN SET (Fin n) SET (Fin n') _) = return [EQN Nat n Nat n' pid]
     rigidRigid' (EQN SET (Vec a m) SET (Vec b n) _) =
-      return $ Left [EQN SET a SET b pid, EQN Nat m Nat n pid]
+      return [EQN SET a SET b pid, EQN Nat m Nat n pid]
     --TODO need twins here?
     rigidRigid' (EQN SET (Eq a x y) SET (Eq a' x' y') _) =
-      return $ Left[EQN SET a SET a' pid, EQN a x a' x' pid, EQN a y a' y' pid]
-    rigidRigid' (EQN Nat Zero Nat Zero _) = return $ Left []
-    rigidRigid' (EQN Nat (Succ m) Nat (Succ n) _) = return $ Left [EQN Nat m Nat n pid]
+      return[EQN SET a SET a' pid, EQN a x a' x' pid, EQN a y a' y' pid]
+    rigidRigid' (EQN Nat Zero Nat Zero _) = return []
+    rigidRigid' (EQN Nat (Succ m) Nat (Succ n) _) = return [EQN Nat m Nat n pid]
     rigidRigid' (EQN (Fin m) (FZero n) (Fin m') (FZero n') _) =
-      return $ Left [EQN Nat n Nat n' pid, EQN Nat m Nat m' pid, EQN Nat m Nat n pid]
+      return [EQN Nat n Nat n' pid, EQN Nat m Nat m' pid, EQN Nat m Nat n pid]
     --TODO need twins here?
     rigidRigid' (EQN (Fin m) (FSucc n f) (Fin m') (FSucc n' f') _) =
-      return $ Left [EQN Nat n Nat n' pid
+      return [EQN Nat n Nat n' pid
              ,EQN Nat m Nat m' pid
              ,EQN Nat m Nat n pid
              ,EQN (Fin n)
@@ -342,10 +346,10 @@ rigidRigid pid eqn =
                   f' pid]
     --TODO need to unify type indices of vectors?
     rigidRigid' (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b') _) =
-      return $ Left [EQN SET a SET a' pid, EQN SET b SET b' pid, EQN SET a' SET b' pid]
+      return [EQN SET a SET a' pid, EQN SET b SET b' pid, EQN SET a' SET b' pid]
     --TODO need to unify type indices of vectors?
     rigidRigid' (EQN (Vec a (Succ m)) (VCons a' (Succ m') h t) (Vec b (Succ n)) (VCons b' (Succ n') h' t') _) =
-      return $ Left [EQN SET a SET a' pid
+      return [EQN SET a SET a' pid
              ,EQN SET b SET b' pid
              ,EQN SET a' SET b' pid
              ,EQN Nat m Nat m' pid
@@ -357,7 +361,7 @@ rigidRigid pid eqn =
                   (Vec b n)
                   t' pid]
     rigidRigid' (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z') _) =
-      return $ Left [EQN SET a SET a' pid
+      return [EQN SET a SET a' pid
              ,EQN SET b SET b' pid
              ,EQN SET a' SET b' pid
              ,EQN a x b x' pid
@@ -369,15 +373,15 @@ rigidRigid pid eqn =
              ,EQN a' z b' z' pid]
     -- >
     rigidRigid' (EQN _T1 (VChoice nchoice r s) _T2 t info) =
-      Right <$> splitChoice nchoice _T1 (r, s) _T2 t info
+      error "Choice should not be rigid"
     rigidRigid' (EQN _T1 t _T2 (VChoice nchoice r s) info) =
-      Right <$> splitChoice nchoice _T1 (r, s) _T2 t info
+      error "Choice should not be rigid"
 
     --Anything can rigidly match with Bottom
-    rigidRigid' (EQN _ (VBot _) _ _ _ ) = return $ Left []
-    rigidRigid' (EQN _ _ _ (VBot _) _) = return $ Left []
+    rigidRigid' (EQN _ (VBot _) _ _ _ ) = return []
+    rigidRigid' (EQN _ _ _ (VBot _) _) = return []
     --Anything else, we should be able to catch in our type graph
-    rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return $ Left [] --badRigidRigid eq
+    rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return [] --badRigidRigid eq
 
 
 withDuplicate
@@ -632,7 +636,7 @@ flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) =
      cl <- Ctx.getL
      cr <- Ctx.getR
 
-     e <- popL
+     e <- trace "FR popL" popL
      ret <- --trace ("FR tryInvert CL\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr) ++ "\n***\n")
        case e of
            E beta _T HOLE info
@@ -658,15 +662,15 @@ flexRigid _ n q = throwError $ "flexRigid: " ++ show q
 -- solution, it runs the continuation.
 tryInvert
   :: ProbId -> Equation -> Type -> Contextual () -> Contextual ()
-tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k =
+tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k = trace ("tryInvert " ++ show n ++ ", " ++ show alpha) $
   setProblem n >>
   invert alpha _T es s >>=
   \m ->
     case m of
       Nothing -> trace ("Try invert " ++ show alpha ++ " failing, " ++ pp q) $ k
-      Just v -> active n q >> define n (info {creationInfo = CreatedBy n}) [] alpha _T v
+      Just v -> trace ("Try invert " ++ show alpha ++ " succeeding, " ++ pp v) $ active n q >> define n (info {creationInfo = CreatedBy n}) [] alpha _T v
 -- %if False
-tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
+tryInvert _ _ q _ = error $ "tryInvert: " ++ show q
 
 -- %endif
 -- Given a metavariable $[[alpha]]$ of type $[[T]]$, spine
@@ -677,22 +681,22 @@ tryInvert _ _ q _ = throwError $ "tryInvert: " ++ show q
 -- occurrence.
 invert
   :: Nom -> Type -> [Elim] -> VAL -> Contextual (Maybe VAL)
-invert alpha _T es t =
+invert alpha _T es t = trace ("Invert " ++ show alpha ++ ", t " ++ show t) $
   do let o =
-           occurrence [alpha]
+           trace "invert a" $ occurrence [alpha]
                       t
-     when (isStrongRigid o) $ throwError "occurrence"
-     case toVars es of
+     trace ("invert b, " ++ show o) $ when (isStrongRigid o) $ trace ("Invert error") $ throwError "occurrence"
+     trace "Invert case" $ case toVars es of
        Just xs
-         | o == Nothing && linearOn t xs ->
-           do flatTm <- flattenChoice $ lams xs t
-              flat_T <- flattenChoice _T
-              b <- localParams (const []) $ typecheck flat_T flatTm
-              return $
+         | o == Nothing && linearOn t xs -> trace "invert1" $
+           do flatTm <- trace "invert2" $ flattenChoice $ lams xs t
+              flat_T <- trace "invert3" $flattenChoice _T
+              b <- trace "invert4" $ localParams (const []) $ typecheck flat_T flatTm
+              trace "invert returning" $ return $
                 if b
-                   then Just flatTm
-                   else Nothing
-       _ -> return Nothing
+                   then trace ("invert " ++ pp flatTm) $ Just flatTm
+                   else trace "invert Nothing" Nothing
+       _ -> trace "invert Nothing 2" $ return Nothing
 
 -- Here |toVars :: [Elim] -> Maybe [Nom]| tries to convert a spine to a
 -- list of variables, and |linearOn :: VAL -> [Nom] -> Bool| determines
@@ -711,7 +715,7 @@ flexFlex :: ProbId -> Equation -> Contextual ()
 flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) info) =
   setProblem n >>
   do _Gam <- ask
-     popL >>=
+     trace "FF popL" $ popL  >>=
        \e ->
          case e of
            E gamma _T HOLE _
@@ -934,7 +938,7 @@ pruneSpine _ _ _ _ _ = return Nothing
 instantiate
   :: EqnInfo -> ( Nom, Type, VAL -> VAL ) -> Contextual ()
 instantiate pid d@( alpha, _T, f ) =
-  popL >>=
+  trace "inst popL" $ popL >>=
   \e ->
     case e of
       E beta _U HOLE pid
@@ -992,6 +996,7 @@ solver n prob@(All p b) =
 --TODO lower for elim cases?
 lower
   :: EqnInfo -> [( Nom, Type )] -> Nom -> Type -> Contextual ()
+lower _ _ alpha _ | trace ("Lower " ++ show alpha) False = error "lower"
 lower pid _Phi alpha (SIG _S _T) =
   hole pid _Phi _S $
   \s ->

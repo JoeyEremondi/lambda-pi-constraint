@@ -25,6 +25,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 import qualified Control.Monad.Writer as Writer
 
+import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 
@@ -423,7 +424,8 @@ popL :: Contextual Entry
 popL = do
     cx <- getL
     case cx of
-        (cx' :< e)  -> putL cx' >> return e
+        ((E x _ _ _) : _) | (show x == "β_6_25") && (trace ("popL β_6_25 ") False) -> error "popL case"
+        (cx' :< e)  -> trace ("popL popping " ++ pp e) $ putL cx' >> return e
         B0          -> throwError "popL ran out of context"
         _ -> undefined
 
@@ -431,6 +433,7 @@ popR :: Contextual (Maybe (Either RSubs Entry))
 popR = do
     cx <- getR
     case cx of
+        (Right (E x _ _ _) : _) | (show x == "β_6_25") && (trace ("popR β_6_25 ") False) -> error "popR case"
         (x  : cx')  -> putR cx' >> return (Just x)
         []          -> return Nothing
 
@@ -471,14 +474,19 @@ lookupVar x w = do
     look vars (_ : _Gam)                      = look vars _Gam
 
 lookupMeta :: Nom -> Contextual Type
-lookupMeta x = look =<< getL
-  where
-    --look :: Monad m => ContextL -> m Type
-    look B0 = error $ "lookupMeta: missing " ++ show x
+lookupMeta x = do
+  cl <- getL
+  cr <- getR
+  --look :: Monad m => ContextL -> m Type
+  let
+    look B0 = error $ "lookupMeta: missing " ++ show x ++ "\nCL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr)
     look (cx  :< E y t _ _)  | x == y     = return t
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _) = look cx
     look _ = undefined
+  look cl
+  where
+
 
 metaSubs :: MonadState Context m => m Subs
 metaSubs = do
