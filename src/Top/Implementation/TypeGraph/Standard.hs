@@ -88,6 +88,9 @@ instance TypeGraph (StandardTypeGraph info) info where
                 --    Just x  -> (x, Just tp)
          in case newtp of
                --TODO use meta as central node?
+               Tm.VBot _ -> do
+                 vinit <- VertexId <$> Ln.fresh unique
+                 return (vinit, addVertex vinit (VertBot, original) stg)
                Tm.VChoice _ s t -> do
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1

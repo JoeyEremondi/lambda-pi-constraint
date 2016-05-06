@@ -424,8 +424,8 @@ popL :: Contextual Entry
 popL = do
     cx <- getL
     case cx of
-        ((E x _ _ _) : _) | (show x == "β_6_25") && (trace ("popL β_6_25 ") False) -> error "popL case"
-        (cx' :< e)  -> trace ("popL popping " ++ pp e) $ putL cx' >> return e
+        --((E x _ _ _) : _) | (show x == "β_6_25") && (trace ("popL β_6_25 ") False) -> error "popL case"
+        (cx' :< e)  -> putL cx' >> return e
         B0          -> throwError "popL ran out of context"
         _ -> undefined
 
@@ -433,7 +433,7 @@ popR :: Contextual (Maybe (Either RSubs Entry))
 popR = do
     cx <- getR
     case cx of
-        (Right (E x _ _ _) : _) | (show x == "β_6_25") && (trace ("popR β_6_25 ") False) -> error "popR case"
+        --(Right (E x _ _ _) : _) | (show x == "β_6_25") && (trace ("popR β_6_25 ") False) -> error "popR case"
         (x  : cx')  -> putR cx' >> return (Just x)
         []          -> return Nothing
 
@@ -512,7 +512,7 @@ getUnsolvedAndSolved (entry : rest) =
       E y _ (DEFN valNotFlat) info | isCF info == Factual ->
         let
           val = unsafeFlatten valNotFlat
-        in trace ("getUnsolved flattened to " ++ pp val) $ case fmvs val of
+        in case fmvs val of
           [] -> (uns, Map.insert y val solved)
           _ -> trace ("Unsolved meta in" ++ pp val) $ ((y, infoRegion info, Just val) : uns, solved)
       E y _ HOLE info | isCF info == Factual ->

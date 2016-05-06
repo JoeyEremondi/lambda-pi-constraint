@@ -353,16 +353,18 @@ equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ====
 _S <-> _T = equal SET _S _T
 
 isReflexive :: Equation -> Contextual Bool
-isReflexive eqn@(EQN _S s _T t _) = trace ("IsRelexive " ++ pp eqn) $
+isReflexive eqn@(EQN _S s _T t _) = --trace ("IsRelexive " ++ pp eqn) $
   do
     vars <- ask
     eq <- --trace ("IsReflexive vars " ++ show vars) $
       equal SET _S _T
-    if eq  then  equal _S s t
+    ret <- if eq  then  equal _S s t
            else  return False
+    --trace ("IsReflexive " ++ show ret) $
+    return ret
 
 checkProb :: ProbId -> ProblemState -> Problem -> Contextual ()
-checkProb ident st p | trace ("@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False = error "checkProb"
+--checkProb ident st p | trace ("@@@ checkProb " ++ show ident ++ " " ++ show st ++ " " ++ pp p) False = error "checkProb"
 checkProb ident st p@(Unify q) = do
    setProblem ident
    currentSubs <- metaSubs
@@ -375,10 +377,11 @@ checkProb ident st p@(Unify q) = do
    check SET _TVal
    tVal <- eval currentSubs t
    check _TVal tVal
-   trace ("Flattened eqn " ++ pp qflat) $ if st == Solved
-       then do  eq <- isReflexive (EQN _SVal sVal _TVal tVal info)
-                unless eq $ throwError $ "checkProb: Solved Problem not reflexive " ++ pp p ++ "\n  actually checked " ++ pp (EQN _SVal sVal _TVal tVal info)
-       else return ()
+   if st == Solved
+   then do
+     eq <- isReflexive (EQN _SVal sVal _TVal tVal info)
+     unless eq $ throwError $ "checkProb: Solved Problem not reflexive " ++ pp p ++ "\n  actually checked " ++ pp (EQN _SVal sVal _TVal tVal info)
+   else return ()
 checkProb ident st (All (P _T) b) = do
     setProblem ident
     currentSubs <- metaSubs

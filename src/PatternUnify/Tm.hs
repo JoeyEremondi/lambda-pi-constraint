@@ -681,6 +681,7 @@ eval g (N u as) =
 eval g (C c as) = C c <$> (mapM (eval g) as)
 eval g (VChoice n s t) =
   VChoice n <$> eval g s <*> eval g t
+eval g (VBot s) = return $ VBot s
 
 
 

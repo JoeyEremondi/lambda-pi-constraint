@@ -118,7 +118,7 @@ hole info _Gam _T f =
   do check SET (_Pis _Gam _T) `catchError`
        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
      x <- freshNom
-     trace ("HOLE pushing " ++ show x) $ pushL $ E x (_Pis _Gam _T) HOLE info
+     pushL $ E x (_Pis _Gam _T) HOLE info
      a <- f =<< (N (Meta x) [] $*$ _Gam)
      goLeft
      return a
@@ -213,14 +213,22 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
-  unify' n (EQN _T1 (VChoice nchoice r s) _T2 t info) = do
-    (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
-    Ctx.pushSSS sss
-    (simplifySplit n (Unify q) (Unify q1, Unify q2))
-  unify' n (EQN _T1 t _T2 (VChoice nchoice r s) info) =  do --TODO avoid duplication?
-    (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
-    Ctx.pushSSS sss
-    (simplifySplit n (Unify q) (Unify q1, Unify q2))
+  unify' n q@(EQN _T1 ch@(VChoice nchoice r s) _T2 t info) =
+    case (List.intersect (fmvs ch) (fmvs t) ) of
+      [] -> do
+        (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
+        Ctx.pushSSS sss
+        (simplifySplit n (Unify q) (Unify q1, Unify q2))
+      _ ->
+        Ctx.flattenEquation q >>= unify' n
+  unify' n q@(EQN _T1 t _T2 ch@(VChoice nchoice r s) info) =
+    case (List.intersect (fmvs ch) (fmvs t) ) of
+      [] -> do
+        (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
+        Ctx.pushSSS sss
+        (simplifySplit n (Unify q) (Unify q1, Unify q2))
+      _ ->
+        Ctx.flattenEquation q >>= unify' n
   unify' n q@(EQN (PI _A _B) f (PI _S _T) g info) =
     do setProblem n
        x <- freshNom
@@ -390,7 +398,7 @@ withDuplicate
   -> (Nom -> Contextual a)
   -> Contextual a
 withDuplicate info v k = do
-  _T <- trace "Duplicate lookup meta " $ lookupMeta v
+  _T <- lookupMeta v
   hole (info {isCF = CounterFactual}) [] _T $ \ret@(N (Meta n) _) ->
     k n
 
@@ -636,16 +644,16 @@ flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) =
      cl <- Ctx.getL
      cr <- Ctx.getR
 
-     e <- trace "FR popL" popL
+     e <- popL
      ret <- --trace ("FR tryInvert CL\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr) ++ "\n***\n")
        case e of
            E beta _T HOLE info
-             | alpha == beta && alpha `elem` fmvs _Xi -> trace ("FR1 hole for " ++ show beta) $
+             | alpha == beta && alpha `elem` fmvs _Xi ->
                pushL e >> mapM_ pushL _Xi >> block n q
-             | alpha == beta -> trace ("FR2 hole for " ++ show beta ++ "\nXi:\n" ++ List.intercalate "\n" (map pp _Xi)) $ do
+             | alpha == beta -> do
                 mapM_ pushL _Xi
                 tryInvert n q _T (block n q >> pushL e)
-             | beta `elem` fmvs (_Gam, _Xi, q) -> trace ("FR3 hole for " ++ show beta) $ flexRigid (e : _Xi) n q
+             | beta `elem` fmvs (_Gam, _Xi, q) -> flexRigid (e : _Xi) n q
            _ -> pushR (Right e) >> flexRigid _Xi n q
      --trace ("\n\n***FR AFTER CL\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr) ++ "\n***\n") $
      return ret
@@ -662,13 +670,13 @@ flexRigid _ n q = throwError $ "flexRigid: " ++ show q
 -- solution, it runs the continuation.
 tryInvert
   :: ProbId -> Equation -> Type -> Contextual () -> Contextual ()
-tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k = trace ("tryInvert " ++ show n ++ ", " ++ show alpha) $
+tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k =
   setProblem n >>
   invert alpha _T es s >>=
   \m ->
     case m of
-      Nothing -> trace ("Try invert " ++ show alpha ++ " failing, " ++ pp q) $ k
-      Just v -> trace ("Try invert " ++ show alpha ++ " succeeding, " ++ pp v) $ active n q >> define n (info {creationInfo = CreatedBy n}) [] alpha _T v
+      Nothing -> k
+      Just v -> active n q >> define n (info {creationInfo = CreatedBy n}) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = error $ "tryInvert: " ++ show q
 
@@ -681,22 +689,22 @@ tryInvert _ _ q _ = error $ "tryInvert: " ++ show q
 -- occurrence.
 invert
   :: Nom -> Type -> [Elim] -> VAL -> Contextual (Maybe VAL)
-invert alpha _T es t = trace ("Invert " ++ show alpha ++ ", t " ++ show t) $
+invert alpha _T es t =
   do let o =
-           trace "invert a" $ occurrence [alpha]
+           occurrence [alpha]
                       t
-     trace ("invert b, " ++ show o) $ when (isStrongRigid o) $ trace ("Invert error") $ throwError "occurrence"
-     trace "Invert case" $ case toVars es of
+     when (isStrongRigid o) $ throwError "occurrence"
+     case toVars es of
        Just xs
-         | o == Nothing && linearOn t xs -> trace "invert1" $
-           do flatTm <- trace "invert2" $ flattenChoice $ lams xs t
-              flat_T <- trace "invert3" $flattenChoice _T
-              b <- trace "invert4" $ localParams (const []) $ typecheck flat_T flatTm
-              trace "invert returning" $ return $
+         | o == Nothing && linearOn t xs ->
+           do flatTm <- flattenChoice $ lams xs t
+              flat_T <- flattenChoice _T
+              b <- localParams (const []) $ typecheck flat_T flatTm
+              return $
                 if b
-                   then trace ("invert " ++ pp flatTm) $ Just flatTm
-                   else trace "invert Nothing" Nothing
-       _ -> trace "invert Nothing 2" $ return Nothing
+                   then Just flatTm
+                   else Nothing
+       _ -> return Nothing
 
 -- Here |toVars :: [Elim] -> Maybe [Nom]| tries to convert a spine to a
 -- list of variables, and |linearOn :: VAL -> [Nom] -> Bool| determines
@@ -719,7 +727,6 @@ flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) info) =
        \e ->
          case e of
            E gamma _T HOLE _
-             | trace ("FF hole for " ++ show beta) False -> error "FF"
              | gamma == alpha && gamma == beta ->
                block n q >> tryIntersect n (info {creationInfo = CreatedBy n}) alpha _T ds es
              | gamma == alpha ->
@@ -955,12 +962,12 @@ instantiate pid d@( alpha, _T, f ) =
 -- parameter.
 solver :: ProbId -> Problem -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
-solver n p@(Unify q) =
-  Ctx.recordProblem (Ctx.DerivedEqn n p) n p >>
-  setProblem n >>
-  isReflexive q >>=
-  \b ->
-    if b
+solver n p@(Unify q) = do
+  qFlat <- Ctx.flattenEquation q
+  Ctx.recordProblem (Ctx.DerivedEqn n p) n p
+  setProblem n
+  b <- isReflexive qFlat
+  if b
        then solved n q
        else unify n q `catchError` failed n q
 solver n prob@(All p b) =
@@ -996,7 +1003,7 @@ solver n prob@(All p b) =
 --TODO lower for elim cases?
 lower
   :: EqnInfo -> [( Nom, Type )] -> Nom -> Type -> Contextual ()
-lower _ _ alpha _ | trace ("Lower " ++ show alpha) False = error "lower"
+--lower _ _ alpha _ | trace ("Lower " ++ show alpha) False = error "lower"
 lower pid _Phi alpha (SIG _S _T) =
   hole pid _Phi _S $
   \s ->
@@ -1024,7 +1031,7 @@ lower pid _Phi alpha (PI _S _T) =
                                  alpha
                                  (PI _S _T)
                                  (lam x ourApp3))
-lower pid _Phi alpha _T = trace ("Lower push hole " ++ show alpha) $ pushL (E alpha (_Pis _Phi _T) HOLE pid)
+lower pid _Phi alpha _T = pushL (E alpha (_Pis _Phi _T) HOLE pid)
 
 -- Both |solver| and |lower| above need to split $\Sigma$-types (possibly
 -- underneath a bunch of parameters) into their components.  For example,
@@ -1094,8 +1101,8 @@ ambulando ns fails theta = do
   cl <- Ctx.getL
   cr <- Ctx.getR
   --(trace ("\n******\nAMBULANDO CL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nAMBULANDO CR:\n" ++ List.intercalate "\n" (map pp cr) ++ "\n******\n") popR)
-  popR >>= \x -> trace ("Ambulando popped " ++ maybe "Nothing" pp x) $
-    case x of
+  x <- popR -- >>= \x -> trace ("Ambulando popped " ++ maybe "Nothing" pp x) $
+  case x of
       -- if right context is empty, stop
       Nothing                   --Make sure our final substitutions are applied
        ->
@@ -1126,9 +1133,9 @@ ambulando ns fails theta = do
             pushL (Prob nfail p (Failed err)) >> ambulando ns (nfail : fails) theta
           E alpha _T HOLE info ->
             case e of
-              (E _ _ HOLE _) -> trace ("AMB about to lower " ++ show alpha) $ lower info [] alpha _T >> ambulando ns fails theta
+              (E _ _ HOLE _) -> lower info [] alpha _T >> ambulando ns fails theta
               _ -> error "Bad HOLE update2"
-          e' -> trace ("Ambulando pushing after update " ++ pp e') $ pushL e' >> ambulando ns fails theta
+          e' -> pushL e' >> ambulando ns fails theta
 
 -- Given a list of solved problems, a substitution and an entry, |update|
 -- returns a modified entry with the substitution applied and the problem
