@@ -718,6 +718,7 @@ elim (VCons _ _ h t) theElim@(VecElim a m mn mc (Succ n)) =
 elim (ERefl _ z) theElim@(EqElim a m mr x y) = mr $$ z
 elim (VChoice n s t) theElim =
   VChoice n <$> elim s theElim <*> elim t theElim
+elim (VBot s) elim = return $ VBot s --TODO better error?
 elim t a = badElim $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 badElim s = errorWithStackTrace s
