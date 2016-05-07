@@ -412,7 +412,7 @@ withDuplicates info noms k = helper info noms k []
     helper info [] k accum = k accum
     helper info (v:rest) k accumSoFar =
       withDuplicate info v $ \vnew ->
-        helper info rest k (accumSoFar ++ [v])
+        helper info rest k (accumSoFar ++ [vnew])
 
 splitChoice
   :: ChoiceId
@@ -436,10 +436,11 @@ splitChoice cid n _T1 (r, s) _T2 t info = do
           eq1 = substs sub1 $ EQN _T1 r _T2 tl info
           eq2 = substs sub2 $ EQN _T1 s _T2 tr (info {isCF = CounterFactual})
           ret = (eq1, eq2)
-          triples = zip3 origMetas mvals1 mvals2
+          triples = zip3 origMetas freshMetas1 freshMetas2
       forM triples $ \(orig, v1, v2) -> do
         _T <- lookupMeta orig
-        defineSingle info [] orig _T $ VChoice cid n v1 v2
+        trace ("Defining choice free " ++ pp orig ++ " " ++ pp v1 ++ " " ++ pp v2) $
+          defineSingle info [] orig _T $ VChoice cid n (meta v1) (meta v2)
       trace ("Split return " ++ show ret) $ return ret
 
   return ourRet
