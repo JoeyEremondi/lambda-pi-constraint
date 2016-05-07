@@ -443,7 +443,7 @@ unify reg v1 v2 tp env = do
         prob = UC.Unify $ UC.EQN tp v1 tp v2 (UC.EqnInfo UC.Initial reg UC.Factual)
     let newCon = --trace ("**WRAP " ++ Tm.prettyString prob ++ " QUANTS " ++ show currentQuants ) $
           wrapProblemForalls currentQuants env prob
-    let ourEntry = UC.Prob probId newCon UC.Active
+    let ourEntry = UC.Prob probId newCon UC.Active []
     addConstr $ Constraint reg  ourEntry
 
 unifySets reg v1 v2 env = unify reg v1 v2 Tm.SET env

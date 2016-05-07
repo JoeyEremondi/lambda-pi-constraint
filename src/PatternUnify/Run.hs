@@ -109,13 +109,13 @@ solveEntries !es  =
 
 
 
-isFailed (Prob _ _ (Failed e)) = True
+isFailed (Prob _ _ (Failed e) _) = True
 isFailed _ = False
 
-isPending (Prob _ _ (Pending _)) = True
+isPending (Prob _ _ (Pending _) _) = True
 isPending _ = False
 
-getIdent (Prob ident _ _) = Just ident
+getIdent (Prob ident _ _ _) = Just ident
 getIdent _ = Nothing
 
 problemDependenceGraph :: [Entry] -> [Entry] -> (Graph.Graph, Graph.Vertex -> (Entry, Nom, [Nom]), Nom -> Maybe Graph.Vertex)
@@ -129,25 +129,25 @@ problemDependenceGraph entries startEntries  =
 
     initialIdents = Maybe.catMaybes $ map getIdent startEntries
 
-    isInitial (Prob ident _ _) = ident `Prelude.elem` initialIdents
+    isInitial (Prob ident _ _ _) = ident `Prelude.elem` initialIdents
     isInitial _ = False
 
-    failEdges pFrom@(Prob idPendingOn _ (Pending pendingOn)) =
+    failEdges pFrom@(Prob idPendingOn _ (Pending pendingOn) _) =
       (pFrom, probIdToName idPendingOn,
       [ probIdToName idFailed
-      | (Prob idFailed _ (Failed err)) <- failures
+      | (Prob idFailed _ (Failed err) _) <- failures
       , idFailed `Prelude.elem` pendingOn
       ]
       ++
       [ probIdToName idFailed
-      | (Prob idFailed _ _) <- allPendings
+      | (Prob idFailed _ _ _) <- allPendings
       , idFailed `Prelude.elem` pendingOn
       ])
     failEdges _ = undefined
   in
     Graph.graphFromEdges $
         [ failEdges p | p <- allPendings]
-        ++ [(failProb, probIdToName idFailed, []) | failProb@(Prob idFailed _ _) <- failures]
+        ++ [(failProb, probIdToName idFailed, []) | failProb@(Prob idFailed _ _ _) <- failures]
 
 initialsDependingOn :: (Graph.Graph, t, Nom -> Maybe Graph.Vertex) -> [ProbId] -> [ProbId] -> [ProbId]
 initialsDependingOn (pendGraph, vertToInfo, infoToVert) initialIdents targetIdents =
@@ -184,7 +184,7 @@ getContextErrors startEntries cx@(lcx, rcx, _, _,_) = do
           failPaths =
             [ (initId, infoRegion $ probInfo failProb, err)
             | initId <- initialIdents
-            , (Prob failId failProb (Failed err)) <- failures
+            , (Prob failId failProb (Failed err) _) <- failures
             , (Just vinit) <- [infoToVert $ probIdToName initId]
             , (Just vfail) <- [infoToVert $ probIdToName failId]
             , Graph.path pendGraph vinit vfail
