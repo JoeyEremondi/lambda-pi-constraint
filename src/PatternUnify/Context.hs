@@ -57,6 +57,9 @@ import Top.Solver (LogEntries)
 import Common (Region)
 import Text.Parsec (SourcePos)
 
+import qualified Top.Interface.Substitution as Sub
+import qualified Top.Types.Substitution as TSub
+
 type BadEdges = [Heur.ErrorInfo ConstraintInfo]
 
 type TypeGraph = TG.StandardTypeGraph ConstraintInfo
@@ -335,6 +338,8 @@ instance CM.HasTG Contextual ConstraintInfo where
     (ret, newGraph) <- f ourGraph
     setGraph newGraph
     return ret
+
+instance Sub.HasSubst Contextual ConstraintInfo where
 
 instance Basic.HasBasic Contextual ConstraintInfo where
 
