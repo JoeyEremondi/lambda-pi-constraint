@@ -165,6 +165,7 @@ wrapProb ((x, e) : _Gam)  p = All e (bind x (wrapProb _Gam p))
 newtype ProbId = ProbId {probIdToName :: Nom}
   deriving (Eq, Show, Pretty, Generic)
 
+
 instance Alpha ProbId
 instance Subst VAL ProbId
 
@@ -271,7 +272,7 @@ splitSSS (SimultSub _ sss) =
 data RSubs =
   RSubs Subs
   | RSubImmediate ProbId Subs
-  | RSimultSub SimultSub
+--  | RSimultSub SimultSub
   deriving (Eq, Show, Generic)
 
 instance Pretty RSubs where
@@ -409,12 +410,12 @@ pushR (Left s)   = --trace ("Push subs " ++ show s) $
 pushR (Right e)  = --trace ("Push right " ++ prettyString e) $
   modifyR (Right e :)
 
-pushSSS :: SimultSub -> Contextual ()
-pushSSS sss@(SimultSub _ s)   = --trace ("Push subs " ++ show s) $
-  case s of
-    [] -> return ()
-    _ ->
-      modifyR (Left (RSimultSub sss) : )
+-- pushSSS :: SimultSub -> Contextual ()
+-- pushSSS sss@(SimultSub _ s)   = --trace ("Push subs " ++ show s) $
+--   case s of
+--     [] -> return ()
+--     _ ->
+--       modifyR (Left (RSimultSub sss) : )
 
 pushImmediate :: ProbId -> Subs -> Contextual ()
 pushImmediate pid theta   = --trace ("Push subs " ++ show s) $

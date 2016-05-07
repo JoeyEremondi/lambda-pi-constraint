@@ -129,8 +129,8 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
-
-     let v = trace ("Fresh choice var " ++ show freshVar) $ VChoice x vsingle freshVar
+     cid <- ChoiceId <$> freshNom
+     let v = trace ("Fresh choice var " ++ show freshVar) $ VChoice cid x vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -213,19 +213,19 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
-  unify' n q@(EQN _T1 ch@(VChoice nchoice r s) _T2 t info) =
+  unify' n q@(EQN _T1 ch@(VChoice _ nchoice r s) _T2 t info) =
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
         (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
-        Ctx.pushSSS sss
+        --Ctx.pushSSS sss
         (simplifySplit n (Unify q) (Unify q1, Unify q2))
       _ ->
         Ctx.flattenEquation q >>= unify' n
-  unify' n q@(EQN _T1 t _T2 ch@(VChoice nchoice r s) info) =
+  unify' n q@(EQN _T1 t _T2 ch@(VChoice _ nchoice r s) info) =
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
         (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
-        Ctx.pushSSS sss
+        --Ctx.pushSSS sss
         (simplifySplit n (Unify q) (Unify q1, Unify q2))
       _ ->
         Ctx.flattenEquation q >>= unify' n
@@ -380,9 +380,9 @@ rigidRigid pid eqn =
              ,EQN b y' b' z' pid
              ,EQN a' z b' z' pid]
     -- >
-    rigidRigid' (EQN _T1 (VChoice nchoice r s) _T2 t info) =
+    rigidRigid' (EQN _T1 (VChoice _ nchoice r s) _T2 t info) =
       error "Choice should not be rigid"
-    rigidRigid' (EQN _T1 t _T2 (VChoice nchoice r s) info) =
+    rigidRigid' (EQN _T1 t _T2 (VChoice _ nchoice r s) info) =
       error "Choice should not be rigid"
 
     --Anything can rigidly match with Bottom
@@ -860,7 +860,7 @@ prune
   :: [Nom] -> VAL -> Contextual [( Nom, Type, VAL -> VAL )]
 --prune xs t | trace ("In Pruning " ++ (show xs) ++ " from " ++ pp t) False = error "prune"
 prune xs SET = return []
-prune xs (VChoice _ s t) = (++) <$> prune xs s <*> prune xs t
+prune xs (VChoice _ _ s t) = (++) <$> prune xs s <*> prune xs t
 prune xs Nat = return []
 prune xs (Fin n) = prune xs n
 prune xs (Vec a n) = (++) <$> prune xs a <*> prune xs n
@@ -1112,9 +1112,9 @@ ambulando ns fails theta = do
         do Ctx.modifyLM (mapM (update [] [] theta))
            return ()
       -- compose suspended substitutions
-      Just (Left (RSimultSub sss)) -> do
-        applySSS sss
-        ambulando ns fails theta
+      -- Just (Left (RSimultSub sss)) -> do
+      --   applySSS sss
+      --   ambulando ns fails theta
       Just (Left (RSubImmediate pid sub)) -> do
         applySubImmediate pid sub
         ambulando ns fails theta
@@ -1185,29 +1185,29 @@ applySubImmediate pid theta =
         Right $ substs (Map.toList theta) e
       singleSub e = e
 
---TODO need version that works on the right?
-applySSS :: Ctx.SimultSub ->  Contextual ()
-applySSS sss@(Ctx.SimultSub nc sl) = do
-  oldCR <- Ctx.getR
-  newCR <- forM oldCR singleSSS
-  Ctx.modifyR (\_ -> newCR)
-    where
-      varsToSub = map (\(x,_,_) -> x) sl
-      (subsl, subsr) = Ctx.splitSSS sss
-      singleSSS :: Either RSubs Entry -> Contextual (Either RSubs Entry)
-      singleSSS e@(Right (E x _T (DEFN d) info)) =
-        return $ case occurrence varsToSub d of
-          Nothing -> e
-          Just _ ->
-            Right (E x _T (DEFN $ VChoice nc (substs subsl d) (substs subsr d)) info)
-      singleSSS (Right e@(Prob _ prob st info)) = do
-        newPid <- ProbId <$> freshNom
-        let
-          newProb =
-            Prob newPid (substs subsr prob) (FailPending $ ProbId nc) []
-             --(info {isCF = CounterFactual, creationInfo = CreatedBy pid})
-        case occurrence varsToSub e of
-          Nothing -> return $ Right e
-          Just _ ->
-            return $ Right $ Ctx.addFailWaits [newProb] $ (substs subsl e)
-      singleSSS l = return l
+-- --TODO need version that works on the right?
+-- applySSS :: Ctx.SimultSub ->  Contextual ()
+-- applySSS sss@(Ctx.SimultSub nc sl) = do
+--   oldCR <- Ctx.getR
+--   newCR <- forM oldCR singleSSS
+--   Ctx.modifyR (\_ -> newCR)
+--     where
+--       varsToSub = map (\(x,_,_) -> x) sl
+--       (subsl, subsr) = Ctx.splitSSS sss
+--       singleSSS :: Either RSubs Entry -> Contextual (Either RSubs Entry)
+--       singleSSS e@(Right (E x _T (DEFN d) info)) =
+--         return $ case occurrence varsToSub d of
+--           Nothing -> e
+--           Just _ ->
+--             Right (E x _T (DEFN $ VChoice nc (substs subsl d) (substs subsr d)) info)
+--       singleSSS (Right e@(Prob _ prob st info)) = do
+--         newPid <- ProbId <$> freshNom
+--         let
+--           newProb =
+--             Prob newPid (substs subsr prob) (FailPending $ ProbId nc) []
+--              --(info {isCF = CounterFactual, creationInfo = CreatedBy pid})
+--         case occurrence varsToSub e of
+--           Nothing -> return $ Right e
+--           Just _ ->
+--             return $ Right $ Ctx.addFailWaits [newProb] $ (substs subsl e)
+--       singleSSS l = return l

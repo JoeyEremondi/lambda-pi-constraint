@@ -91,7 +91,7 @@ instance TypeGraph (StandardTypeGraph info) info where
                Tm.VBot _ -> do
                  vinit <- VertexId <$> Ln.fresh unique
                  return (vinit, addVertex vinit (VertBot, original) stg)
-               Tm.VChoice _ s t -> do
+               Tm.VChoice _ _ s t -> do
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1
                  g3 <- addNewEdge (vs, vt) (choiceInfo g2 :: info) g2

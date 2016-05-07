@@ -219,8 +219,8 @@ equalize _T s t = do
 
     --Choices are ordered, we equalize' their parts
     --TODO which meta?
-    equalize' _T (VChoice n1 s1 t1) (VChoice _ s2 t2) =
-      VChoice n1 <$> equalize' _T s1 s2 <*> equalize' _T t1 t2
+    equalize' _T (VChoice cid n1 s1 t1) (VChoice _ _ s2 t2) =
+      VChoice cid n1 <$> equalize' _T s1 s2 <*> equalize' _T t1 t2
 
     equalize' _T (VBot s1) (VBot s2) = return $ VBot (s1 ++ "\n" ++ s2)
 
