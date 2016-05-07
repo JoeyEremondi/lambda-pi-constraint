@@ -204,6 +204,14 @@ data Entry  =  E Nom Type Dec EqnInfo
             |  Prob ProbId Problem ProblemState [Entry]
   deriving (Show, Generic)
 
+makeFailPend :: ProbId -> Entry -> Entry
+makeFailPend n (Prob pid p _ failWaits) = Prob pid p (FailPending n) failWaits
+makeFailPend _ e = e
+
+addFailWaits :: [Entry] -> Entry -> Entry
+addFailWaits newWaits (Prob pid p st waits) = Prob pid p st $ waits ++ newWaits
+addFailWaits _ e = e
+
 probInfo :: Problem -> EqnInfo
 probInfo (Unify (EQN _ _ _ _ info)) = info
 probInfo (All params bnd) =
@@ -211,6 +219,10 @@ probInfo (All params bnd) =
     (_, innerProb) = unsafeUnbind bnd
   in
     probInfo innerProb
+
+-- modifyProbInfo :: (EqnInfo -> EqnInfo) -> Problem -> Contextual Problem
+-- modifyProbInfo (All params bnd) = _
+
 
 
 entryInfo :: Entry -> EqnInfo

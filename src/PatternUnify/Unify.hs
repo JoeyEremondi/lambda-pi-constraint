@@ -1187,20 +1187,27 @@ applySubImmediate pid theta =
 
 --TODO need version that works on the right?
 applySSS :: Ctx.SimultSub ->  Contextual ()
-applySSS sss@(Ctx.SimultSub nc sl) =
-  Ctx.modifyR (concatMap singleSSS)
+applySSS sss@(Ctx.SimultSub nc sl) = do
+  oldCR <- Ctx.getR
+  newCR <- forM oldCR singleSSS
+  Ctx.modifyR (\_ -> newCR)
     where
       varsToSub = map (\(x,_,_) -> x) sl
       (subsl, subsr) = Ctx.splitSSS sss
-      singleSSS :: Either RSubs Entry -> [Either RSubs Entry]
+      singleSSS :: Either RSubs Entry -> Contextual (Either RSubs Entry)
       singleSSS e@(Right (E x _T (DEFN d) info)) =
-        case occurrence varsToSub d of
-          Nothing -> [e]
+        return $ case occurrence varsToSub d of
+          Nothing -> e
           Just _ ->
-            [Right (E x _T (DEFN $ VChoice nc (substs subsl d) (substs subsr d)) info)]
-      singleSSS (Right e@(Prob _ _ _ _)) =
+            Right (E x _T (DEFN $ VChoice nc (substs subsl d) (substs subsr d)) info)
+      singleSSS (Right e@(Prob _ prob st info)) = do
+        newPid <- ProbId <$> freshNom
+        let
+          newProb =
+            Prob newPid (substs subsr prob) (FailPending $ ProbId nc) []
+             --(info {isCF = CounterFactual, creationInfo = CreatedBy pid})
         case occurrence varsToSub e of
-          Nothing -> [Right e]
+          Nothing -> return $ Right e
           Just _ ->
-            [Right (substs subsl e), Right (substs subsr e) ]
-      singleSSS l = [l]
+            return $ Right $ Ctx.addFailWaits [newProb] $ (substs subsl e)
+      singleSSS l = return l
