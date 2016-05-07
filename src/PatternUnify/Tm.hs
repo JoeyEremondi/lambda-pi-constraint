@@ -635,25 +635,36 @@ elimContainsBottom (Elim v1 args) = joinErrors <$> mapM containsBottom args
 elimContainsBottom (EBot s) = return $ Just s
 
 
-flattenChoice :: (Fresh m) => VAL -> m VAL
-flattenChoice (L t) = do
+flattenChoiceGen :: (Fresh m) =>  (ChoiceId -> Maybe ((VAL,VAL) -> VAL)) -> VAL -> m VAL
+flattenChoiceGen shouldFlatten (L t) = do
   (var, body) <- unbind t
-  newBody <- flattenChoice body
+  newBody <- flattenChoiceGen shouldFlatten  body
   return $ L $ bind var newBody
-flattenChoice (N v elims) =
-  N v <$> mapM flattenChoiceElim elims
-flattenChoice (C t1 t2) =
-  C t1 <$> mapM flattenChoice t2
-flattenChoice (VBot t) = return $ VBot t
-flattenChoice (VChoice _ _ t1 t2) = flattenChoice t1
+flattenChoiceGen shouldFlatten (N v elims) =
+  N v <$> mapM (flattenChoiceElim shouldFlatten) elims
+flattenChoiceGen shouldFlatten (C t1 t2) =
+  C t1 <$> mapM (flattenChoiceGen shouldFlatten)  t2
+flattenChoiceGen shouldFlatten (VBot t) = return $ VBot t
+flattenChoiceGen shouldFlatten (VChoice cid n t1 t2) =
+  case shouldFlatten cid of
+    Nothing ->  VChoice cid n <$> flattenChoiceGen shouldFlatten t1 <*> flattenChoiceGen shouldFlatten t2
+    Just f -> flattenChoiceGen shouldFlatten $ f (t1,t2)
 
-flattenChoiceElim :: (Fresh m) => Elim -> m Elim
-flattenChoiceElim (Elim e1 e2) = Elim e1 <$> mapM flattenChoice e2
-flattenChoiceElim (EBot e) = return $ EBot e
+flattenChoiceElim :: (Fresh m) => (ChoiceId -> Maybe ((VAL,VAL) -> VAL)) -> Elim -> m Elim
+flattenChoiceElim shouldFlatten (Elim e1 e2) = Elim e1 <$> mapM (flattenChoiceGen shouldFlatten)  e2
+flattenChoiceElim _ (EBot e) = return $ EBot e
 
+
+flattenChoice = flattenChoiceGen $ \_ -> Just fst
 
 unsafeFlatten :: VAL -> VAL
 unsafeFlatten = runFreshM . flattenChoice
+
+splitOnChoice :: (Fresh m) => ChoiceId -> VAL -> m (VAL,VAL)
+splitOnChoice cid v = do
+  (,)
+    <$> flattenChoiceGen (\c -> if c == cid then Just fst else Nothing) v
+    <*> flattenChoiceGen (\c -> if c == cid then Just snd else Nothing) v
 
 
 isFirstOrder :: VAL -> Bool
