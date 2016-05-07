@@ -213,18 +213,18 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
-  unify' n q@(EQN _T1 ch@(VChoice _ nchoice r s) _T2 t info) =
+  unify' n q@(EQN _T1 ch@(VChoice cid nchoice r s) _T2 t info) =
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
-        (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
+        (q1, q2) <- splitChoice cid nchoice _T1 (r, s) _T2 t info
         --Ctx.pushSSS sss
         (simplifySplit n (Unify q) (Unify q1, Unify q2))
       _ ->
         Ctx.flattenEquation q >>= unify' n
-  unify' n q@(EQN _T1 t _T2 ch@(VChoice _ nchoice r s) info) =
+  unify' n q@(EQN _T1 t _T2 ch@(VChoice cid nchoice r s) info) =
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
-        (sss, q1, q2) <- splitChoice nchoice _T1 (r, s) _T2 t info
+        (q1, q2) <- splitChoice cid nchoice _T1 (r, s) _T2 t info
         --Ctx.pushSSS sss
         (simplifySplit n (Unify q) (Unify q1, Unify q2))
       _ ->
@@ -415,25 +415,33 @@ withDuplicates info noms k = helper info noms k []
         helper info rest k (accumSoFar ++ [v])
 
 splitChoice
-  :: Nom
+  :: ChoiceId
+  -> Nom
   -> Type
   -> (VAL, VAL)
   -> Type
   -> VAL
   -> EqnInfo
-  -> Contextual (Ctx.SimultSub, Equation, Equation)
-splitChoice n _T1 (r, s) _T2 t info = do
+  -> Contextual (Equation, Equation)
+splitChoice cid n _T1 (r, s) _T2 t info = do
   let origMetas = fmvs t
   ourRet <- withDuplicates info origMetas $ \ freshMetas1 ->
     withDuplicates info origMetas $ \ freshMetas2 -> do
-      let mvals1 = (map meta freshMetas1 )
+      (tl, tr) <- splitOnChoice cid t
+      let
+          mvals1 = (map meta freshMetas1 )
           mvals2 = (map meta freshMetas2 )
           sub1 = zip origMetas mvals1
           sub2 = zip origMetas mvals2
-          eq1 = substs sub1 $ EQN _T1 r _T2 t info
-          eq2 = substs sub2 $ EQN _T1 s _T2 t (info {isCF = CounterFactual})
-          ret = (Ctx.SimultSub n $ zip3 origMetas mvals1 mvals2, eq1, eq2)
+          eq1 = substs sub1 $ EQN _T1 r _T2 tl info
+          eq2 = substs sub2 $ EQN _T1 s _T2 tr (info {isCF = CounterFactual})
+          ret = (eq1, eq2)
+          triples = zip3 origMetas mvals1 mvals2
+      forM triples $ \(orig, v1, v2) -> do
+        _T <- lookupMeta orig
+        defineSingle info [] orig _T $ VChoice cid n v1 v2
       trace ("Split return " ++ show ret) $ return ret
+
   return ourRet
 
 

@@ -654,7 +654,7 @@ flattenChoiceElim :: (Fresh m) => (ChoiceId -> Maybe ((VAL,VAL) -> VAL)) -> Elim
 flattenChoiceElim shouldFlatten (Elim e1 e2) = Elim e1 <$> mapM (flattenChoiceGen shouldFlatten)  e2
 flattenChoiceElim _ (EBot e) = return $ EBot e
 
-
+flattenChoice :: (Fresh m) => VAL -> m VAL
 flattenChoice = flattenChoiceGen $ \_ -> Just fst
 
 unsafeFlatten :: VAL -> VAL
