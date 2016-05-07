@@ -55,7 +55,7 @@ active n q = putProb n (Unify q) Active
 
 block n q = putProb n (Unify q) Blocked
 
-failed n q e = trace ("FAILING " ++ show n ++ ": " ++ e) $ 
+failed n q e = trace ("FAILING " ++ show n ++ ": " ++ e) $
   putProb n
           (Unify q)
           (Failed e)
@@ -960,17 +960,18 @@ instantiate pid d@( alpha, _T, f ) =
 -- $\Sigma$-types from parameters, potentially eliminating projections,
 -- and replaces twins whose types are definitionally equal with a normal
 -- parameter.
-solver :: ProbId -> Problem -> Contextual ()
+solver :: ProbId -> Problem -> Maybe Entry -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
-solver n p@(Unify q) = do
+solver n p@(Unify q) me = do
   qFlat <- Ctx.flattenEquation q
   Ctx.recordProblem (Ctx.DerivedEqn n p) n p
   setProblem n
   b <- isReflexive qFlat
   if b
        then solved n q
-       else unify n q `catchError` failed n q
-solver n prob@(All p b) =
+       else unify n q `catchError`
+          (\s -> failed n q s >> maybe (return ()) (pushR . Right) me )
+solver n prob@(All p b) me =
   --Ctx.recordProblem n prob >> --TODO only record innermost?
   setProblem n >>
   do ( x, q ) <- unbind b
@@ -986,16 +987,16 @@ solver n prob@(All p b) =
          \m ->
            case m of
              Just ( y, _A, z, _B, s, _ ) ->
-               solver n (allProb y _A (allProb z _B (subst x s q)))
-             Nothing -> localParams (++ [(x, P _S)]) $ solver n q
+               solver n (allProb y _A (allProb z _B (subst x s q))) me
+             Nothing -> localParams (++ [(x, P _S)]) $ solver n q me
        Twins _Sch _Tch -> do
          _S <- flattenChoice _Sch
          _T <- flattenChoice _Tch
          c <- equal SET _S _T
          trace ("Twins solver comparing " ++ pp _S ++ " ||| " ++ pp _T) $
            if c
-              then trace "Twins true" $ solver n (allProb x _S (subst x (var x) q))
-              else trace "twins false" $ localParams (++ [(x, Twins _S _T)]) $ solver n q
+              then trace "Twins true" $ solver n (allProb x _S (subst x (var x) q)) me
+              else trace "twins false" $ localParams (++ [(x, Twins _S _T)]) $ solver n q me
 
 -- \newpage
 -- Given the name and type of a metavariable, |lower| attempts to
@@ -1128,7 +1129,7 @@ ambulando ns fails theta = do
         --trace ("AMBULANDO updated " ++ pp updateVal) $
         case updateVal of
           Prob n p Active ->
-            pushR (Left theta) >> solver n p >> ambulando ns fails Map.empty
+            pushR (Left theta) >> solver n p Nothing >> ambulando ns fails Map.empty
           Prob n p Solved ->
             pushL (Prob n p Solved) >> ambulando (n : ns) fails theta
           Prob nfail p (Failed err) ->
