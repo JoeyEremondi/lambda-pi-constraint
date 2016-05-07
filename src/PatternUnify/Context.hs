@@ -198,7 +198,7 @@ data IsCF = Factual | CounterFactual
   deriving (Eq, Ord, Show, Generic)
 
 data Entry  =  E Nom Type Dec EqnInfo
-            |  Prob ProbId Problem ProblemState
+            |  Prob ProbId Problem ProblemState [Entry]
   deriving (Show, Generic)
 
 probInfo :: Problem -> EqnInfo
@@ -212,7 +212,7 @@ probInfo (All params bnd) =
 
 entryInfo :: Entry -> EqnInfo
 entryInfo (E _ _ _ info) = info
-entryInfo (Prob _ prob _) = probInfo prob
+entryInfo (Prob _ prob _ _) = probInfo prob
   where
     probInfo :: Problem -> EqnInfo
     probInfo (Unify (EQN _ _ _ _ info)) = info
@@ -227,15 +227,15 @@ instance Subst VAL Entry
 
 instance Occurs Entry where
     occurrence xs (E _ _T d _)    = max (occurrence xs _T) (occurrence xs d)
-    occurrence xs (Prob _ p _)  = occurrence xs p
+    occurrence xs (Prob _ p _ _)  = occurrence xs p
     frees isMeta (E _ _T d _)     = union (frees isMeta _T) (frees isMeta d)
-    frees isMeta (Prob _ p _)   = frees isMeta p
+    frees isMeta (Prob _ p _ _)   = frees isMeta p
 
 instance Pretty Entry where
     pretty (E x _T HOLE _)  = (between (text "? :")) <$> (pretty x) <*> (pretty _T)
     pretty (E x _T (DEFN d) _)  = (\ d' -> between (text ":=" <+> d' <+> text ":")) <$>
                                    (prettyAt PiSize d) <*> (pretty x) <*> (prettyAt PiSize _T)
-    pretty (Prob x p s) =  (between (text "<=")) <$> ( (between (text "?? :")) <$> (pretty x) <*> (pretty p) ) <*> (pretty s)
+    pretty (Prob x p s _) =  (between (text "<=")) <$> ( (between (text "?? :")) <$> (pretty x) <*> (pretty p) ) <*> (pretty s)
 
 
 instance Pretty Subs where
@@ -482,7 +482,7 @@ lookupMeta x = do
     look B0 = error $ "lookupMeta: missing " ++ show x ++ "\nCL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr)
     look (cx  :< E y t _ _)  | x == y     = return t
                            | otherwise  = look cx
-    look (cx  :< Prob _ _ _) = look cx
+    look (cx  :< Prob _ _ _ _) = look cx
     look _ = undefined
   look cl
   where
@@ -526,7 +526,7 @@ metaValue x = look =<< getL
     look B0 = fail $ "metaValue: missing " ++ show x
     look (cx  :< E y _ (DEFN val) _)  | x == y     = return val
                            | otherwise  = look cx
-    look (cx  :< Prob _ _ _) = look cx
+    look (cx  :< Prob _ _ _ _) = look cx
     look (cx  :< E y _ HOLE _)  | x == y     = return $ meta x
                            | otherwise  = look cx
     look _ = undefined
@@ -571,7 +571,7 @@ recordEntrySub :: Entry -> Entry -> Contextual ()
 recordEntrySub (E nm1 tp1 HOLE _) (E nm2 tp2 HOLE _) = return () --TODO will ever change?
 recordEntrySub (E alpha tp1 (DEFN dec1) _) (E _ tp2 (DEFN dec2) info) =
   recordEqn (DefnUpdate alpha) (EQN tp1 dec1 tp2 dec2 info)
-recordEntrySub (Prob pid prob _) (Prob _ prob2 _) =
+recordEntrySub (Prob pid prob _ _) (Prob _ prob2 _ _) =
   recordProblemSub pid prob prob2
 
 --Decompose the problems in parallel, creating matching

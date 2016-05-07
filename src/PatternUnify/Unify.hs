@@ -5,7 +5,7 @@
 
 module PatternUnify.Unify where
 
-import Control.Monad (forM)
+import Control.Monad (forM, forM_)
 import Control.Monad.Except (catchError, throwError, when)
 import Control.Monad.Reader (ask)
 import Data.List ((\\))
@@ -70,7 +70,7 @@ putProb
 putProb x q s =
   do setProblem x
      _Gam <- ask
-     trace ("putProb pushR") (pushR . Right) $ Prob x (wrapProb _Gam q) s
+     trace ("putProb pushR") (pushR . Right) $ Prob x (wrapProb _Gam q) s []
 
 pendingSolve
   :: ProbId -> Problem -> [ProbId] -> Contextual ()
@@ -92,7 +92,7 @@ simplify n q rs = setProblem n >> help rs []
         subgoal p f =
           do x <- ProbId <$> freshNom
              _Gam <- ask
-             pushL $ Prob x (wrapProb _Gam p) Active
+             pushL $ Prob x (wrapProb _Gam p) Active []
              a <- f x
              goLeft
              return a
@@ -102,8 +102,8 @@ simplifySplit n q (r1, r2) = do
    x1 <- ProbId <$> freshNom
    x2 <- ProbId <$> freshNom
    _Gam <- ask
-   pushR $ Right $ Prob x2 (wrapProb _Gam r2) (FailPending x1)
-   pushR $ Right $ Prob x1 (wrapProb _Gam r1) Active
+   pushR $
+     Right $ Prob x1 (wrapProb _Gam r1) Active [Prob x2 (wrapProb _Gam r2) (FailPending x1) []]
 
 
 
@@ -960,7 +960,7 @@ instantiate pid d@( alpha, _T, f ) =
 -- $\Sigma$-types from parameters, potentially eliminating projections,
 -- and replaces twins whose types are definitionally equal with a normal
 -- parameter.
-solver :: ProbId -> Problem -> Maybe Entry -> Contextual ()
+solver :: ProbId -> Problem -> [Entry] -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
 solver n p@(Unify q) me = do
   qFlat <- Ctx.flattenEquation q
@@ -970,7 +970,7 @@ solver n p@(Unify q) me = do
   if b
        then solved n q
        else unify n q `catchError`
-          (\s -> failed n q s >> maybe (return ()) (pushR . Right) me )
+          (\s -> failed n q s >> forM_ me (pushR . Right) )
 solver n prob@(All p b) me =
   --Ctx.recordProblem n prob >> --TODO only record innermost?
   setProblem n >>
@@ -1128,12 +1128,12 @@ ambulando ns fails theta = do
           _ -> return ()
         --trace ("AMBULANDO updated " ++ pp updateVal) $
         case updateVal of
-          Prob n p Active ->
-            pushR (Left theta) >> solver n p Nothing >> ambulando ns fails Map.empty
-          Prob n p Solved ->
-            pushL (Prob n p Solved) >> ambulando (n : ns) fails theta
-          Prob nfail p (Failed err) ->
-            pushL (Prob nfail p (Failed err)) >> ambulando ns (nfail : fails) theta
+          Prob n p Active onFails ->
+            pushR (Left theta) >> solver n p onFails >> ambulando ns fails Map.empty
+          Prob n p Solved onFails ->
+            pushL (Prob n p Solved onFails) >> ambulando (n : ns) fails theta
+          Prob nfail p (Failed err) onFails ->
+            pushL (Prob nfail p (Failed err) onFails) >> ambulando ns (nfail : fails) theta
           E alpha _T HOLE info ->
             case e of
               (E _ _ HOLE _) -> lower info [] alpha _T >> ambulando ns fails theta
@@ -1152,24 +1152,24 @@ update pids failPids subs e = do
   return newE
   where
     update' :: [ProbId] -> Subs -> Entry -> Entry
-    update' _ theta (Prob n p Blocked) = Prob n p' k
+    update' _ theta (Prob n p Blocked onFails) = Prob n p' k onFails
       where p' = substs (Map.toList theta) p
             k =
               if p == p'
                  then Blocked
                  else Active
-    update' ns theta (Prob n p (Pending ys))
-      | null rs = Prob n p' Solved
-      | otherwise = Prob n p' (Pending rs)
+    update' ns theta (Prob n p (Pending ys) onFails)
+      | null rs = Prob n p' Solved onFails
+      | otherwise = Prob n p' (Pending rs) onFails
       where rs = ys \\ ns
             p' = substs (Map.toList theta) p
-    update' ns theta (Prob n p (FailPending failId))
-      | failId `elem` failPids = trace ("WAKING UP " ++ show n ++ " from fail " ++ show failId) $ Prob n p' Active --Activate if we failed
-      | failId `elem` ns = Prob n p Ignored --Ignore if we solved the problem
-      | otherwise = Prob n p' (FailPending failId) --Keep wainting otherwise --TODO other subs?
+    update' ns theta (Prob n p (FailPending failId) onFails)
+      | failId `elem` failPids = trace ("WAKING UP " ++ show n ++ " from fail " ++ show failId) $ Prob n p' Active onFails --Activate if we failed
+      | failId `elem` ns = Prob n p Ignored onFails --Ignore if we solved the problem
+      | otherwise = Prob n p' (FailPending failId) onFails --Keep wainting otherwise --TODO other subs?
       where p' = substs (Map.toList theta) p
-    update' _ _ e'@(Prob _ _ Solved) = e'
-    update' _ _ e'@(Prob _ _ (Failed _)) = e'
+    update' _ _ e'@(Prob _ _ Solved _) = e'
+    update' _ _ e'@(Prob _ _ (Failed _) _) = e'
     update' _ theta e' =
       --trace ("UPDATE SUBS"  ++ pp e' ++ "\n   " ++ show theta ++ "\n\n") $
       substs (Map.toList theta)
@@ -1181,7 +1181,7 @@ applySubImmediate pid theta =
   Ctx.modifyR (map singleSub)
     where
       singleSub :: Either RSubs Entry -> Either RSubs Entry
-      singleSub (Right e@(Prob thePid _ _)) | thePid == pid =
+      singleSub (Right e@(Prob thePid _ _ _)) | thePid == pid =
         Right $ substs (Map.toList theta) e
       singleSub e = e
 
@@ -1198,7 +1198,7 @@ applySSS sss@(Ctx.SimultSub nc sl) =
           Nothing -> [e]
           Just _ ->
             [Right (E x _T (DEFN $ VChoice nc (substs subsl d) (substs subsr d)) info)]
-      singleSSS (Right e@(Prob _ _ _)) =
+      singleSSS (Right e@(Prob _ _ _ _)) =
         case occurrence varsToSub e of
           Nothing -> [Right e]
           Just _ ->

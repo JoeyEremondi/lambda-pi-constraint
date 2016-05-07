@@ -428,7 +428,7 @@ validate q = local (const []) $ do
                                             check SET _T
                                             check _T v
                                             help _Del
-    help (_Del :< Prob ident p st)      = do
+    help (_Del :< Prob ident p st _)      = do
                                           checkProb ident st p
                                           unless (q st) $ throwError "validate: bad state"
                                           help _Del
