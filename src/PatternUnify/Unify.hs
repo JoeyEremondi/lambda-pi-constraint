@@ -55,7 +55,7 @@ active n q = putProb n (Unify q) Active
 
 block n q = putProb n (Unify q) Blocked
 
-failed n q e =
+failed n q e = trace ("FAILING " ++ show n ++ ": " ++ e) $ 
   putProb n
           (Unify q)
           (Failed e)
@@ -988,12 +988,14 @@ solver n prob@(All p b) =
              Just ( y, _A, z, _B, s, _ ) ->
                solver n (allProb y _A (allProb z _B (subst x s q)))
              Nothing -> localParams (++ [(x, P _S)]) $ solver n q
-       Twins _S _T ->
-         equal SET _S _T >>=
-         \c ->
+       Twins _Sch _Tch -> do
+         _S <- flattenChoice _Sch
+         _T <- flattenChoice _Tch
+         c <- equal SET _S _T
+         trace ("Twins solver comparing " ++ pp _S ++ " ||| " ++ pp _T) $
            if c
-              then solver n (allProb x _S (subst x (var x) q))
-              else localParams (++ [(x, Twins _S _T)]) $ solver n q
+              then trace "Twins true" $ solver n (allProb x _S (subst x (var x) q))
+              else trace "twins false" $ localParams (++ [(x, Twins _S _T)]) $ solver n q
 
 -- \newpage
 -- Given the name and type of a metavariable, |lower| attempts to
@@ -1161,7 +1163,7 @@ update pids failPids subs e = do
       where rs = ys \\ ns
             p' = substs (Map.toList theta) p
     update' ns theta (Prob n p (FailPending failId))
-      | failId `elem` failPids = Prob n p' Active --Activate if we failed
+      | failId `elem` failPids = trace ("WAKING UP " ++ show n ++ " from fail " ++ show failId) $ Prob n p' Active --Activate if we failed
       | failId `elem` ns = Prob n p Ignored --Ignore if we solved the problem
       | otherwise = Prob n p' (FailPending failId) --Keep wainting otherwise --TODO other subs?
       where p' = substs (Map.toList theta) p
