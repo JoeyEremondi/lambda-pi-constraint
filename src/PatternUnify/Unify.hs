@@ -484,7 +484,8 @@ splitChoice cid n _T1 (r, s) _T2 t info = do
   trace ("\n\nRewriting vars with subs " ++ show nomMap) $ rewriteVars nomMap
   cl <- Ctx.getL
   cr <- Ctx.getR
-  trace ("CL after traversing rewriting\n" ++ Ctx.prettyList cl ++ "\nCR after traversing rewriting\n" ++ Ctx.prettyList cr ++ "\n*******\n\n") $ return ()
+  return ()
+  --trace ("CL after traversing rewriting\n" ++ Ctx.prettyList cl ++ "\nCR after traversing rewriting\n" ++ Ctx.prettyList cr ++ "\n*******\n\n") $ return ()
     where
       rewriteVars nomMap = do
         me <- Ctx.mpopL
@@ -492,11 +493,11 @@ splitChoice cid n _T1 (r, s) _T2 t info = do
           Nothing -> return ()
           Just e@(E alpha _T HOLE info) ->
             case Map.lookup alpha nomMap of
-              Nothing -> trace ("rewrite ignoring hole " ++ pp e) $ do
+              Nothing ->do
                 pushR $ Right e
                 --Continue going back
                 rewriteVars nomMap
-              Just (n1, n2) -> trace ("Popped HOLE for " ++ show alpha) $  do
+              Just (n1, n2) -> do
                 --Push the substitution we just defined
                 let ourChoice = VChoice cid n (meta n1) (meta n2)
                 pushR $ Left $ Map.singleton alpha ourChoice
@@ -508,7 +509,7 @@ splitChoice cid n _T1 (r, s) _T2 t info = do
                 --Continue going back
                 rewriteVars nomMap
           Just e -> do
-            trace ("rewrite ignoring non-hole " ++ pp e) $ pushR $ Right e
+            pushR $ Right e
             rewriteVars nomMap
 
 
