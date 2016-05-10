@@ -66,6 +66,9 @@ data ErrorResult =
 
 data SolverErr = StringErr (ProbId, Region, String) | GraphErr [ErrorInfo ConstraintInfo]
 
+shouldValidate (Solved, info) | isCF info == Factual = True
+shouldValidate _ = False
+
 solveEntries :: [Entry] -> Either ErrorResult ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
@@ -74,8 +77,11 @@ solveEntries !es  =
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
           initialise
           ambulando [] [] Map.empty
-          validResult <- validate (const True)
+          --validResult <- validate (const True)
           badEdges <- applyHeuristics defaultHeuristics
+          case badEdges of
+            [] -> validate shouldValidate
+            _ -> return ()
           setMsg  badEdges
           return badEdges
           )  --Make sure we don't crash

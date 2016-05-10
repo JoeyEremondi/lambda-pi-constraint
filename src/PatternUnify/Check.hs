@@ -407,7 +407,7 @@ checkProb ident st (All (Twins _S _T) b) = do
 
 
 
-validate :: (ProblemState -> Bool) -> Contextual ()
+validate :: ((ProblemState, EqnInfo) -> Bool) -> Contextual ()
 validate q = local (const []) $ do
     _Del' <- getR
     unless (null _Del') $ throwError "validate: not at far right"
@@ -420,16 +420,18 @@ validate q = local (const []) $ do
     help B0 = return ()
     --TODO why is this so slow?
     --help (_Del :< E x _ _) | any (x `occursIn`) _Del = throwError "validate: dependency error"
-    help (_Del :< E _ _T HOLE _)      = do
+    help (_Del :< E _ _T HOLE info)      = do
                                           putL _Del
-                                          check SET _T
-                                          help _Del
-    help (_Del :< E _ _T (DEFN v) _)  = do  putL _Del
+                                          when (isCF info == Factual) $
                                             check SET _T
-                                            check _T v
-                                            help _Del
+                                          help _Del
+    help (_Del :< E _ _T (DEFN v) info)  =
+      do  putL _Del
+          when (isCF info == Factual) $
+            (check SET _T >> check _T v)
+          help _Del
     help (_Del :< Prob ident p st _)      = do
                                           checkProb ident st p
-                                          unless (q st) $ throwError "validate: bad state"
+                                          unless (q (st, probInfo p)) $ throwError "validate: bad state"
                                           help _Del
     help _ = undefined

@@ -106,9 +106,6 @@ simplifySplit n (r1, r2) = do
    _Gam <- ask
    pushR $
      Right $ Prob x1 (wrapProb _Gam r1) Active [Prob x2 (wrapProb _Gam r2) (FailPending x1) []]
-   cl <- Ctx.getL
-   cr <- trace ("simplifySplit CL\n" ++ Ctx.prettyList cl)  Ctx.getR
-   !x <- trace ("\nCR\n" ++ Ctx.prettyList cr) $ Ctx.getR
    return ()
 
 
@@ -147,7 +144,7 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
      cid <- ChoiceId <$> freshNom
-     let v = trace ("Fresh choice var " ++ show freshVar) $ VChoice cid x vsingle freshVar
+     let v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid) $ VChoice cid x vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -249,13 +246,13 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
-  unify' n q@(EQN _T1 ch@(VChoice cid nchoice r s) _T2 t info) = trace ("Splitting choice " ++ pp q) $
+  unify' n q@(EQN _T1 ch@(VChoice cid nchoice r s) _T2 t info) = trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
         splitChoice cid nchoice _T1 (r, s) _T2 t info
       _ ->
         Ctx.flattenEquation q >>= unify' n
-  unify' n q@(EQN _T1 t _T2 ch@(VChoice cid nchoice r s) info) = trace ("Splitting choice " ++ pp q) $
+  unify' n q@(EQN _T1 t _T2 ch@(VChoice cid nchoice r s) info) = trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
         splitChoice cid nchoice _T1 (r, s) _T2 t info
@@ -300,13 +297,13 @@ unify n q  = do
     do
       setProblem n
       cl <- Ctx.getL
-      trace ("Doing FR, CL is\n" ++ Ctx.prettyList cl) $ tryPrune n q $ flexRigid [] n q
+      tryPrune n q $ flexRigid [] n q
   -- >
   unify' n q@(EQN _ _ _ (N (Meta _) _) info) =
     do
       setProblem n
       cl <- Ctx.getL
-      trace ("Doing FR, CL is\n" ++ Ctx.prettyList cl) $ tryPrune n (sym q) $ flexRigid [] n (sym q)
+      tryPrune n (sym q) $ flexRigid [] n (sym q)
   -- >
   unify' n q@(EQN _ _ _ _ info) =
     do
@@ -457,7 +454,7 @@ splitChoice
   -> VAL
   -> EqnInfo
   -> Contextual () --(Equation, Equation)
-splitChoice cid n _T1 (r, s) _T2 t info = do
+splitChoice cid n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ show cid ++ ", " ++ show n) $  do
   let origMetas = fmvs t
   -- withDuplicates info origMetas $ \ freshMetas1 ->
   --   withDuplicates info origMetas $ \ freshMetas2 -> do
@@ -714,7 +711,7 @@ matchSpine _ t hd spn t' hd' spn' =
 -- subsection~\ref{subsec:spec:flex-rigid}.
 flexRigid
   :: [Entry] -> ProbId -> Equation -> Contextual ()
-flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) = trace ("Flex rigid seeking " ++ show alpha) $
+flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) =
   setProblem n >>
   do _Gam <- ask
      cl <- Ctx.getL
