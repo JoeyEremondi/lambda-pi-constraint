@@ -2,6 +2,7 @@
 --{-# OPTIONS_GHC -F -pgmF she #-}
 {-# LANGUAGE PatternSynonyms      #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE BangPatterns #-}
 
 module PatternUnify.Unify where
 
@@ -97,18 +98,34 @@ simplify n q rs = setProblem n >> help rs []
              goLeft
              return a
 
-simplifySplit n q (r1, r2) = do
+simplifySplit :: ProbId -> (Problem, Problem) -> Contextual ()
+simplifySplit n (r1, r2) = do
    setProblem n
    x1 <- ProbId <$> freshNom
    x2 <- ProbId <$> freshNom
    _Gam <- ask
    pushR $
      Right $ Prob x1 (wrapProb _Gam r1) Active [Prob x2 (wrapProb _Gam r2) (FailPending x1) []]
+   cl <- Ctx.getL
+   cr <- trace ("simplifySplit CL\n" ++ Ctx.prettyList cl)  Ctx.getR
+   !x <- trace ("\nCR\n" ++ Ctx.prettyList cr) $ Ctx.getR
+   return ()
 
 
 
 goLeft :: Contextual ()
 goLeft = trace "goLeft" $ popL >>= pushR . Right
+
+-- leftHole info _Gam _T f =
+--   do check SET (_Pis _Gam _T) `catchError`
+--        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
+--      x <- freshNom
+--      trace ("Pushing left new var " ++ show x)$ pushL $ E x (_Pis _Gam _T) HOLE info
+--      a <- f =<< (N (Meta x) [] $*$ _Gam)
+--      --goLeft
+--      return a
+
+
 
 hole
   :: EqnInfo -> [( Nom, Type )] -> Type -> (VAL -> Contextual a) -> Contextual a
@@ -172,6 +189,25 @@ defineSingle info _Gam xtop _T vtop =
          return a
 
 
+defineSingle info _Gam xtop _T vtop =
+  defineGlobalSingle info xtop
+               (_Pis _Gam _T)
+               (lams' _Gam vtop)
+               (return ())
+  where
+    defineGlobalSingle info x _T vinit m = trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $ do
+         v <- makeTypeSafe _T vinit
+         pushL $ E x _T (DEFN v) info
+         pushR (Left (Map.singleton x v))
+         a <- m
+         goLeft
+
+         --Ctx.moveDeclRight x newNom
+         --Add our final value to the type graph
+         Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
+         return a
+
+
 
 -- %endif
 -- \subsection{Unification}
@@ -213,20 +249,16 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
-  unify' n q@(EQN _T1 ch@(VChoice cid nchoice r s) _T2 t info) =
+  unify' n q@(EQN _T1 ch@(VChoice cid nchoice r s) _T2 t info) = trace ("Splitting choice " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
-        (q1, q2) <- splitChoice cid nchoice _T1 (r, s) _T2 t info
-        --Ctx.pushSSS sss
-        (simplifySplit n (Unify q) (Unify q1, Unify q2))
+        splitChoice cid nchoice _T1 (r, s) _T2 t info
       _ ->
         Ctx.flattenEquation q >>= unify' n
-  unify' n q@(EQN _T1 t _T2 ch@(VChoice cid nchoice r s) info) =
+  unify' n q@(EQN _T1 t _T2 ch@(VChoice cid nchoice r s) info) = trace ("Splitting choice " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
-        (q1, q2) <- splitChoice cid nchoice _T1 (r, s) _T2 t info
-        --Ctx.pushSSS sss
-        (simplifySplit n (Unify q) (Unify q1, Unify q2))
+        splitChoice cid nchoice _T1 (r, s) _T2 t info
       _ ->
         Ctx.flattenEquation q >>= unify' n
   unify' n q@(EQN (PI _A _B) f (PI _S _T) g info) =
@@ -267,12 +299,14 @@ unify n q  = do
   unify' n q@(EQN _ (N (Meta _) _) _ _ info) =
     do
       setProblem n
-      tryPrune n q $ flexRigid [] n q
+      cl <- Ctx.getL
+      trace ("Doing FR, CL is\n" ++ Ctx.prettyList cl) $ tryPrune n q $ flexRigid [] n q
   -- >
   unify' n q@(EQN _ _ _ (N (Meta _) _) info) =
     do
       setProblem n
-      tryPrune n (sym q) $ flexRigid [] n (sym q)
+      cl <- Ctx.getL
+      trace ("Doing FR, CL is\n" ++ Ctx.prettyList cl) $ tryPrune n (sym q) $ flexRigid [] n (sym q)
   -- >
   unify' n q@(EQN _ _ _ _ info) =
     do
@@ -392,27 +426,27 @@ rigidRigid pid eqn =
     rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return [] --badRigidRigid eq
 
 
-withDuplicate
-  :: EqnInfo
-  -> Nom
-  -> (Nom -> Contextual a)
-  -> Contextual a
-withDuplicate info v k = do
-  _T <- lookupMeta v
-  hole (info {isCF = CounterFactual}) [] _T $ \ret@(N (Meta n) _) ->
-    k n
-
-withDuplicates
-  :: EqnInfo
-  -> [Nom]
-  -> ([Nom] -> Contextual a)
-  -> Contextual a
-withDuplicates info noms k = helper info noms k []
-  where
-    helper info [] k accum = k accum
-    helper info (v:rest) k accumSoFar =
-      withDuplicate info v $ \vnew ->
-        helper info rest k (accumSoFar ++ [vnew])
+-- withDuplicate
+--   :: EqnInfo
+--   -> Nom
+--   -> (Nom -> Contextual a)
+--   -> Contextual a
+-- withDuplicate info v k = do
+--   _T <- lookupMeta v
+--   hole (info {isCF = CounterFactual}) [] _T $ \ret@(N (Meta n) _) ->
+--     k n
+--
+-- withDuplicates
+--   :: EqnInfo
+--   -> [Nom]
+--   -> ([Nom] -> Contextual a)
+--   -> Contextual a
+-- withDuplicates info noms k = helper info noms k []
+--   where
+--     helper info [] k accum = k accum
+--     helper info (v:rest) k accumSoFar =
+--       withDuplicate info v $ \vnew ->
+--         helper info rest k (accumSoFar ++ [vnew])
 
 splitChoice
   :: ChoiceId
@@ -422,28 +456,60 @@ splitChoice
   -> Type
   -> VAL
   -> EqnInfo
-  -> Contextual (Equation, Equation)
+  -> Contextual () --(Equation, Equation)
 splitChoice cid n _T1 (r, s) _T2 t info = do
   let origMetas = fmvs t
-  ourRet <- withDuplicates info origMetas $ \ freshMetas1 ->
-    withDuplicates info origMetas $ \ freshMetas2 -> do
-      (tl, tr) <- splitOnChoice cid t
-      let
-          mvals1 = (map meta freshMetas1 )
-          mvals2 = (map meta freshMetas2 )
-          sub1 = zip origMetas mvals1
-          sub2 = zip origMetas mvals2
-          eq1 = substs sub1 $ EQN _T1 r _T2 tl info
-          eq2 = substs sub2 $ EQN _T1 s _T2 tr (info {isCF = CounterFactual})
-          ret = (eq1, eq2)
-          triples = zip3 origMetas freshMetas1 freshMetas2
-      forM triples $ \(orig, v1, v2) -> do
-        _T <- lookupMeta orig
-        trace ("Defining choice free " ++ pp orig ++ " " ++ pp v1 ++ " " ++ pp v2) $
-          defineSingle info [] orig _T $ VChoice cid n (meta v1) (meta v2)
-      trace ("Split return " ++ show ret) $ return ret
-
-  return ourRet
+  -- withDuplicates info origMetas $ \ freshMetas1 ->
+  --   withDuplicates info origMetas $ \ freshMetas2 -> do
+  freshMetas1 <- forM origMetas $ \_ -> freshNom
+  freshMetas2 <- forM origMetas $ \_ -> freshNom
+  (tl, tr) <- splitOnChoice cid t
+  let
+      mvals1 = (map meta freshMetas1 )
+      mvals2 = (map meta freshMetas2 )
+      sub1 = zip origMetas mvals1
+      sub2 = zip origMetas mvals2
+      eq1 = substs sub1 $ EQN _T1 r _T2 tl info
+      eq2 = substs sub2 $ EQN _T1 s _T2 tr (info {isCF = CounterFactual})
+      ret = (eq1, eq2)
+      nomMap = Map.fromList $ zip origMetas $ zip freshMetas1 freshMetas2
+  -- forM triples $ \(orig, v1, v2) -> do
+  --   _T <- lookupMeta orig
+  --   trace ("Defining choice free " ++ pp orig ++ " " ++ pp v1 ++ " " ++ pp v2) $
+  --     defineSingle info [] orig _T $ VChoice cid n (meta v1) (meta v2)
+  trace ("Split return\n  " ++  pp (fst ret) ++ "\n  " ++ pp (snd ret) ) $ return ret
+  --First, we push our new problems into the context
+  (simplifySplit (ProbId n) (Unify eq1, Unify eq2))
+  --Then, we go backwards in the context, re-defining our new variables as we go
+  trace ("\n\nRewriting vars with subs " ++ show nomMap) $ rewriteVars nomMap
+  cl <- Ctx.getL
+  cr <- Ctx.getR
+  trace ("CL after traversing rewriting\n" ++ Ctx.prettyList cl ++ "\nCR after traversing rewriting\n" ++ Ctx.prettyList cr ++ "\n*******\n\n") $ return ()
+    where
+      rewriteVars nomMap = do
+        me <- Ctx.mpopL
+        case me of
+          Nothing -> return ()
+          Just e@(E alpha _T HOLE info) ->
+            case Map.lookup alpha nomMap of
+              Nothing -> trace ("rewrite ignoring hole " ++ pp e) $ do
+                pushR $ Right e
+                --Continue going back
+                rewriteVars nomMap
+              Just (n1, n2) -> trace ("Popped HOLE for " ++ show alpha) $  do
+                --Push the substitution we just defined
+                let ourChoice = VChoice cid n (meta n1) (meta n2)
+                pushR $ Left $ Map.singleton alpha ourChoice
+                --Push the new definition of this variable
+                pushR $ Right $ E alpha _T (DEFN ourChoice) info
+                --Push the two new variables that define this old variable
+                pushR $ Right $ E n1 _T HOLE info
+                pushR $ Right $ E n2 _T HOLE (info {isCF = CounterFactual})
+                --Continue going back
+                rewriteVars nomMap
+          Just e -> do
+            trace ("rewrite ignoring non-hole " ++ pp e) $ pushR $ Right e
+            rewriteVars nomMap
 
 
 
@@ -647,7 +713,7 @@ matchSpine _ t hd spn t' hd' spn' =
 -- subsection~\ref{subsec:spec:flex-rigid}.
 flexRigid
   :: [Entry] -> ProbId -> Equation -> Contextual ()
-flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) =
+flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) = trace ("Flex rigid seeking " ++ show alpha) $
   setProblem n >>
   do _Gam <- ask
      cl <- Ctx.getL

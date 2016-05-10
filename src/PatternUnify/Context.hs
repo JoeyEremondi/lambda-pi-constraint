@@ -285,6 +285,8 @@ type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges)
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
 
+prettyList l = List.intercalate "\n" $ map pp l
+
 data Param = P Type | Twins Type Type
    deriving (Show, Generic)
 
@@ -438,13 +440,22 @@ pushSubs n   =
   else
     modifyR (\ cr -> if null cr then [] else Left (RSubs n) : cr)
 
+mpopL :: Contextual (Maybe Entry)
+mpopL = do
+    cx <- getL
+    case cx of
+        --((E x _ _ _) : _) | (show x == "β_6_25") && (trace ("popL β_6_25 ") False) -> error "popL case"
+        (cx' :< e)  -> putL cx' >> return (Just e)
+        B0          -> return Nothing
+        _ -> undefined
+
 popL :: Contextual Entry
 popL = do
     cx <- getL
     case cx of
         --((E x _ _ _) : _) | (show x == "β_6_25") && (trace ("popL β_6_25 ") False) -> error "popL case"
         (cx' :< e)  -> putL cx' >> return e
-        B0          -> throwError "popL ran out of context"
+        B0          -> error "popL ran out of context"
         _ -> undefined
 
 popR :: Contextual (Maybe (Either RSubs Entry))
