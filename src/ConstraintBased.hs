@@ -345,26 +345,28 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           aVal <- evaluate ii a g
           unifySets reg aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
-      do  bVal <- freshType (region a) g
-          k <- fresh (region n) g Tm.Nat
+      do  --bVal <- freshType (region a) g
+          aVal <- evaluate ii a g
+          nVal <- evaluate ii n g
+          --k <- fresh (region n) g Tm.Nat
           --Trickery to get a Type_ to a ConType
-          let kVal = Tm.Succ k
-          unifySets reg ty (mkVec bVal kVal) g
+          --let kSucc = Tm.Succ k
+          unifySets reg ty (mkVec aVal (Tm.Succ nVal)) g
           cType_ ii g a conStar
 
-          aVal <- evaluate ii a g
-          unifySets reg aVal bVal g
+
+          --unifySets reg aVal bVal g
 
           cType_ ii g n Tm.Nat
 
           --Make sure our numbers match
-          nVal <- evaluate ii n g
-          unify reg nVal kVal Tm.Nat g
+
+          --unify reg nVal kSucc Tm.Nat g
 
           --Make sure our new head has the right list type
           cType_ ii g x aVal
           --Make sure our tail has the right length
-          cType_ ii g xs (mkVec bVal k)
+          cType_ ii g xs (mkVec aVal nVal)
 
     cType_' ii g (Refl_ a z) ty =
       do  aVal <- evaluate ii a g
