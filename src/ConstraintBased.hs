@@ -324,15 +324,18 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
       unifySets reg ty Tm.Nat g
       cType_ ii g k Tm.Nat
 
-    cType_' ii g (FZero_ f)      ty  =  do
-      cType_ ii g f Tm.Nat
-      fVal <- evaluate ii f g
-      unifySets reg ty (Tm.Fin fVal) g
-    cType_' ii g (FSucc_ k f)  ty  = do
-      cType_ ii g f Tm.Nat
-      fVal <- evaluate ii f g
-      unifySets reg ty (Tm.Fin fVal) g
-      cType_ ii g k Tm.Nat
+    cType_' ii g (FZero_ n)      ty  =  do
+      cType_ ii g n Tm.Nat
+      nVal <- evaluate ii n g
+      --Never can make an element of Fin 0
+      unifySets reg ty (Tm.Fin (Tm.Succ nVal) ) g
+    cType_' ii g (FSucc_ n f)  ty  = do
+      cType_ ii g n Tm.Nat
+      nVal <- evaluate ii n g
+      --Decrease our index each time we check
+      cType_ ii g f (Tm.Fin nVal)
+      unifySets reg ty (Tm.Fin (Tm.Succ nVal)) g
+
 
     cType_' ii g (Nil_ a) ty =
       do
