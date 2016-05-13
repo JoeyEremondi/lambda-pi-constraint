@@ -367,17 +367,18 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           cType_ ii g xs (mkVec bVal k)
 
     cType_' ii g (Refl_ a z) ty =
-      do  bVal <- freshType (region a) g
-          xVal <- fresh (region z) g bVal
-          yVal <- fresh (region z) g bVal
-          unifySets reg ty (mkEq bVal xVal yVal) g
+      do  aVal <- evaluate ii a g
+          --bVal <- freshType (region a) g
+          xVal <- fresh (region z) g aVal
+          yVal <- fresh (region z) g aVal
+          unifySets reg ty (mkEq aVal xVal yVal) g
           --Check that our type argument has kind *
           cType_ ii g a conStar
           --Get evaluation constraint for our type argument
-          aVal <- evaluate ii a g
+
 
           --Check that our given type is the same as our inferred type --TODO is this right?
-          unifySets reg aVal bVal g
+          --unifySets reg aVal bVal g
 
           --Check that the value we're proving on has type A
           cType_ ii g z aVal
@@ -386,5 +387,5 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           zVal <- evaluate ii z g
 
           --Show constraint that the type parameters must match that type
-          unify reg zVal xVal bVal g
-          unify reg zVal yVal bVal g
+          unify reg zVal xVal aVal g
+          unify reg zVal yVal aVal g
