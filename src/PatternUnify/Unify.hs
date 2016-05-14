@@ -249,13 +249,13 @@ unify n q  = do
   unify' n q@(EQN _T1 ch@(VChoice cid nchoice r s) _T2 t info) = trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
-        splitChoice cid nchoice _T1 (r, s) _T2 t info
+        splitChoice (cid, nchoice) n _T1 (r, s) _T2 t info
       _ ->
         Ctx.flattenEquation q >>= unify' n
   unify' n q@(EQN _T1 t _T2 ch@(VChoice cid nchoice r s) info) = trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
-        splitChoice cid nchoice _T1 (r, s) _T2 t info
+        splitChoice (cid, nchoice) n _T1 (r, s) _T2 t info
       _ ->
         Ctx.flattenEquation q >>= unify' n
   unify' n q@(EQN (PI _A _B) f (PI _S _T) g info) =
@@ -446,21 +446,22 @@ rigidRigid pid eqn =
 --         helper info rest k (accumSoFar ++ [vnew])
 
 splitChoice
-  :: ChoiceId
-  -> Nom
+  :: (ChoiceId, Nom)
+  -> ProbId
   -> Type
   -> (VAL, VAL)
   -> Type
   -> VAL
   -> EqnInfo
   -> Contextual () --(Equation, Equation)
-splitChoice cid n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ show cid ++ ", " ++ show n) $  do
-  let origMetas = fmvs t
+splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ show cid ++ ", " ++ show n) $  do
+  (tl, tr) <- splitOnChoice cid t
+  let origMetas = trace ("SPLIT " ++ pp t ++ " on " ++ show cid ++ "  into  " ++ pp tl ++ " ||| " ++ pp tr) $ (fmvs tl) `List.intersect` fmvs tr
   -- withDuplicates info origMetas $ \ freshMetas1 ->
   --   withDuplicates info origMetas $ \ freshMetas2 -> do
   freshMetas1 <- forM origMetas $ \_ -> freshNom
   freshMetas2 <- forM origMetas $ \_ -> freshNom
-  (tl, tr) <- splitOnChoice cid t
+
   let
       mvals1 = (map meta freshMetas1 )
       mvals2 = (map meta freshMetas2 )
@@ -476,7 +477,7 @@ splitChoice cid n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ show cid ++ "
   --     defineSingle info [] orig _T $ VChoice cid n (meta v1) (meta v2)
   trace ("Split return\n  " ++  pp (fst ret) ++ "\n  " ++ pp (snd ret) ) $ return ret
   --First, we push our new problems into the context
-  (simplifySplit (ProbId n) (Unify eq1, Unify eq2))
+  (simplifySplit n (Unify eq1, Unify eq2))
   --Then, we go backwards in the context, re-defining our new variables as we go
   trace ("\n\nRewriting vars with subs " ++ show nomMap) $ rewriteVars nomMap
   cl <- Ctx.getL
@@ -496,7 +497,7 @@ splitChoice cid n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ show cid ++ "
                 rewriteVars nomMap
               Just (n1, n2) -> do
                 --Push the substitution we just defined
-                let ourChoice = VChoice cid n (meta n1) (meta n2)
+                let ourChoice = VChoice cid choiceVar (meta n1) (meta n2)
                 pushR $ Left $ Map.singleton alpha ourChoice
                 --Push the new definition of this variable
                 pushR $ Right $ E alpha _T (DEFN ourChoice) info
