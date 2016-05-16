@@ -104,7 +104,7 @@ simplifySplit n (r1, r2) = do
    x1 <- ProbId <$> freshNom
    x2 <- ProbId <$> freshNom
    _Gam <- ask
-   pushR $
+   trace ("Pushing split eqns " ++ show (x1, x2) ++ " from " ++ show n) $ pushR $
      Right $ Prob x1 (wrapProb _Gam r1) Active [Prob x2 (wrapProb _Gam r2) (FailPending x1) []]
    return ()
 
@@ -495,12 +495,12 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ 
                 pushR $ Right e
                 --Continue going back
                 rewriteVars nomMap
-              Just (n1, n2) -> do
+              Just (n1, n2) -> trace ("Doing rewrite " ++ show (alpha, n1, n2)) $ do
                 --Push the substitution we just defined
                 let ourChoice = VChoice cid choiceVar (meta n1) (meta n2)
                 pushR $ Left $ Map.singleton alpha ourChoice
                 --Push the new definition of this variable
-                pushR $ Right $ E alpha _T (DEFN ourChoice) info
+                --pushR $ Right $ E alpha _T (DEFN ourChoice) info
                 --Push the two new variables that define this old variable
                 pushR $ Right $ E n1 _T HOLE info
                 pushR $ Right $ E n2 _T HOLE (info {isCF = CounterFactual})
