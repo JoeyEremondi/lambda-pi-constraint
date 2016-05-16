@@ -415,7 +415,7 @@ declareWithNom reg env tp ourNom = do
         --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
           Tm.Meta ourNom
   let ourEntry = --trace ("Made fresh meta app " ++ Run.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
-        UC.E ourNom lambdaType UC.HOLE $ UC.EqnInfo UC.Initial reg UC.Factual
+        UC.E ourNom lambdaType UC.HOLE (UC.EqnInfo UC.Initial reg UC.Factual) []
   addConstr $ Constraint Common.startRegion ourEntry
   return $ applyEnvToNom ourNom env
 
@@ -431,7 +431,7 @@ freshTopLevel :: Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
     ourNom <- freshNom "topLevel"
     let ourEntry =
-          UC.E ourNom tp UC.HOLE $ UC.EqnInfo UC.Initial Common.BuiltinRegion UC.Factual
+          UC.E ourNom tp UC.HOLE (UC.EqnInfo UC.Initial Common.BuiltinRegion UC.Factual) []
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNom
 

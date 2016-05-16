@@ -132,7 +132,7 @@ hole info _Gam _T f =
   do check SET (_Pis _Gam _T) `catchError`
        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
      x <- freshNom
-     pushL $ E x (_Pis _Gam _T) HOLE info
+     pushL $ E x (_Pis _Gam _T) HOLE info []
      a <- f =<< (N (Meta x) [] $*$ _Gam)
      goLeft
      return a
@@ -148,7 +148,7 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
-     pushL $ E x _T (DEFN v) info
+     pushL $ E x _T (DEFN v) info []
      pushR (Left (Map.singleton x v))
 
 
@@ -175,7 +175,7 @@ defineSingle info _Gam xtop _T vtop =
   where
     defineGlobalSingle info x _T vinit m = trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $ do
          v <- makeTypeSafe _T vinit
-         pushL $ E x _T (DEFN v) info
+         pushL $ E x _T (DEFN v) info []
          pushR (Left (Map.singleton x v))
          a <- m
          goLeft
@@ -194,7 +194,7 @@ defineSingle info _Gam xtop _T vtop =
   where
     defineGlobalSingle info x _T vinit m = trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $ do
          v <- makeTypeSafe _T vinit
-         pushL $ E x _T (DEFN v) info
+         pushL $ E x _T (DEFN v) info []
          pushR (Left (Map.singleton x v))
          a <- m
          goLeft
@@ -489,7 +489,7 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ 
         me <- Ctx.mpopL
         case me of
           Nothing -> return ()
-          Just e@(E alpha _T HOLE info) ->
+          Just e@(E alpha _T HOLE info pendingVars1) ->
             case Map.lookup alpha nomMap of
               Nothing ->do
                 pushR $ Right e
@@ -502,8 +502,8 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ 
                 --Push the new definition of this variable
                 --pushR $ Right $ E alpha _T (DEFN ourChoice) info
                 --Push the two new variables that define this old variable
-                pushR $ Right $ E n1 _T HOLE info
-                pushR $ Right $ E n2 _T HOLE (info {isCF = CounterFactual})
+                pushR $ Right $ E n1 _T HOLE info $ [(n2, _T)] ++ pendingVars1
+                --pushR $ Right $ E n2 _T HOLE (info {isCF = CounterFactual})
                 --Continue going back
                 rewriteVars nomMap
           Just e -> do
@@ -721,7 +721,7 @@ flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) =
      e <- popL
      ret <- --trace ("FR tryInvert CL\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr) ++ "\n***\n")
        case e of
-           E beta _T HOLE info
+           E beta _T HOLE info _ --TODO pending vars?
              | alpha == beta && alpha `elem` fmvs _Xi ->
                pushL e >> mapM_ pushL _Xi >> block n q
              | alpha == beta -> do
@@ -800,7 +800,7 @@ flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) info) =
      trace "FF popL" $ popL  >>=
        \e ->
          case e of
-           E gamma _T HOLE _
+           E gamma _T HOLE _ _ --TODO pendingVars?
              | gamma == alpha && gamma == beta ->
                block n q >> tryIntersect n (info {creationInfo = CreatedBy n}) alpha _T ds es
              | gamma == alpha ->
@@ -847,10 +847,10 @@ tryIntersect pid info alpha _T ds es =
     ( Just xs, Just ys ) ->
       intersect [] [] _T xs ys >>=
       \m ->
-        case m of --TODO intersect creator?
+        case m of --TODO intersect creator? --TODO pendingVars here?
           Just ( _U, f ) -> hole info [] _U $ \beta -> define pid info [] alpha _T (f beta)
-          Nothing -> trace ("Pushing HOLE for " ++ show alpha) $ pushL (E alpha _T HOLE info)
-    _ -> trace ("TI Default pushing " ++ show alpha) $ pushL (E alpha _T HOLE info)
+          Nothing -> trace ("Pushing HOLE for " ++ show alpha) $ pushL (E alpha _T HOLE info [])
+    _ -> trace ("TI Default pushing " ++ show alpha) $ pushL (E alpha _T HOLE info [])
 
 -- Given the type of $[[alpha]]$ and the two spines, |intersect| produces
 -- a type for $[[beta]]$ and a term with which to solve $[[alpha]]$ given
@@ -1022,7 +1022,7 @@ instantiate pid d@( alpha, _T, f ) =
   trace "inst popL" $ popL >>=
   \e ->
     case e of
-      E beta _U HOLE pid
+      E beta _U HOLE pid _ --TODO pendingVars?
         | alpha == beta -> hole pid [] _T $ \t -> defineSingle pid [] beta _U (f t)
       _ -> pushR (Right e) >> instantiate pid d
 
@@ -1108,7 +1108,7 @@ lower pid _Phi alpha (PI _S _T) =
                                  alpha
                                  (PI _S _T)
                                  (lam x ourApp3))
-lower pid _Phi alpha _T = pushL (E alpha (_Pis _Phi _T) HOLE pid)
+lower pid _Phi alpha _T = pushL (E alpha (_Pis _Phi _T ) HOLE pid [])
 
 -- Both |solver| and |lower| above need to split $\Sigma$-types (possibly
 -- underneath a bunch of parameters) into their components.  For example,
@@ -1196,9 +1196,9 @@ ambulando ns fails theta = do
       -- process entries
       Just (Right e) -> do
         updateVal <- update ns fails theta e
-        case (updateVal, e) of
-          (E a _T HOLE i,  E alpha _T2 HOLE info) -> return ()
-          (E a _T HOLE i,  _) -> error "Bad HOLE update"
+        case (updateVal, e) of --TODO pendingVars
+          (E a _T HOLE i _,  E alpha _T2 HOLE info _) -> return ()
+          (E a _T HOLE i _,  _) -> error "Bad HOLE update"
           _ -> return ()
         --trace ("AMBULANDO updated " ++ pp updateVal) $
         case updateVal of
@@ -1208,9 +1208,9 @@ ambulando ns fails theta = do
             pushL (Prob n p Solved onFails) >> ambulando (n : ns) fails theta
           Prob nfail p (Failed err) onFails ->
             pushL (Prob nfail p (Failed err) onFails) >> ambulando ns (nfail : fails) theta
-          E alpha _T HOLE info ->
+          E alpha _T HOLE info _ -> --TODO pendingVars
             case e of
-              (E _ _ HOLE _) -> lower info [] alpha _T >> ambulando ns fails theta
+              (E _ _ HOLE _ _) -> lower info [] alpha _T >> ambulando ns fails theta
               _ -> error "Bad HOLE update2"
           e' -> pushL e' >> ambulando ns fails theta
 

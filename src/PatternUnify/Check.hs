@@ -420,12 +420,12 @@ validate q = local (const []) $ do
     help B0 = return ()
     --TODO why is this so slow?
     --help (_Del :< E x _ _) | any (x `occursIn`) _Del = throwError "validate: dependency error"
-    help (_Del :< E _ _T HOLE info)      = do
+    help (_Del :< E _ _T HOLE info _)      = do
                                           putL _Del
                                           when (isCF info == Factual) $
                                             check SET _T
                                           help _Del
-    help (_Del :< E _ _T (DEFN v) info)  =
+    help (_Del :< E _ _T (DEFN v) info _)  =
       do  putL _Del
           when (isCF info == Factual) $
             (check SET _T >> check _T v)
