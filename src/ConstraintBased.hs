@@ -324,15 +324,18 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
       unifySets reg ty Tm.Nat g
       cType_ ii g k Tm.Nat
 
-    cType_' ii g (FZero_ f)      ty  =  do
-      cType_ ii g f Tm.Nat
-      fVal <- evaluate ii f g
-      unifySets reg ty (Tm.Fin fVal) g
-    cType_' ii g (FSucc_ k f)  ty  = do
-      cType_ ii g f Tm.Nat
-      fVal <- evaluate ii f g
-      unifySets reg ty (Tm.Fin fVal) g
-      cType_ ii g k Tm.Nat
+    cType_' ii g (FZero_ n)      ty  =  do
+      cType_ ii g n Tm.Nat
+      nVal <- evaluate ii n g
+      --Never can make an element of Fin 0
+      unifySets reg ty (Tm.Fin (Tm.Succ nVal) ) g
+    cType_' ii g (FSucc_ n f)  ty  = do
+      cType_ ii g n Tm.Nat
+      nVal <- evaluate ii n g
+      --Decrease our index each time we check
+      cType_ ii g f (Tm.Fin nVal)
+      unifySets reg ty (Tm.Fin (Tm.Succ nVal)) g
+
 
     cType_' ii g (Nil_ a) ty =
       do
@@ -342,39 +345,42 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           aVal <- evaluate ii a g
           unifySets reg aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
-      do  bVal <- freshType (region a) g
-          k <- fresh (region n) g Tm.Nat
+      do  --bVal <- freshType (region a) g
+          aVal <- evaluate ii a g
+          nVal <- evaluate ii n g
+          --k <- fresh (region n) g Tm.Nat
           --Trickery to get a Type_ to a ConType
-          let kVal = Tm.Succ k
-          unifySets reg ty (mkVec bVal kVal) g
+          --let kSucc = Tm.Succ k
+          unifySets reg ty (mkVec aVal (Tm.Succ nVal)) g
           cType_ ii g a conStar
 
-          aVal <- evaluate ii a g
-          unifySets reg aVal bVal g
+
+          --unifySets reg aVal bVal g
 
           cType_ ii g n Tm.Nat
 
           --Make sure our numbers match
-          nVal <- evaluate ii n g
-          unify reg nVal kVal Tm.Nat g
+
+          --unify reg nVal kSucc Tm.Nat g
 
           --Make sure our new head has the right list type
           cType_ ii g x aVal
           --Make sure our tail has the right length
-          cType_ ii g xs (mkVec bVal k)
+          cType_ ii g xs (mkVec aVal nVal)
 
     cType_' ii g (Refl_ a z) ty =
-      do  bVal <- freshType (region a) g
-          xVal <- fresh (region z) g bVal
-          yVal <- fresh (region z) g bVal
-          unifySets reg ty (mkEq bVal xVal yVal) g
+      do  aVal <- evaluate ii a g
+          --bVal <- freshType (region a) g
+          xVal <- fresh (region z) g aVal
+          yVal <- fresh (region z) g aVal
+          unifySets reg ty (mkEq aVal xVal yVal) g
           --Check that our type argument has kind *
           cType_ ii g a conStar
           --Get evaluation constraint for our type argument
-          aVal <- evaluate ii a g
+
 
           --Check that our given type is the same as our inferred type --TODO is this right?
-          unifySets reg aVal bVal g
+          --unifySets reg aVal bVal g
 
           --Check that the value we're proving on has type A
           cType_ ii g z aVal
@@ -383,5 +389,5 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           zVal <- evaluate ii z g
 
           --Show constraint that the type parameters must match that type
-          unify reg zVal xVal bVal g
-          unify reg zVal yVal bVal g
+          unify reg zVal xVal aVal g
+          unify reg zVal yVal aVal g
