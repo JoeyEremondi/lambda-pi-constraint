@@ -72,7 +72,7 @@ solveEntries :: [Entry] -> Either ErrorResult ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
+    (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
           initialise
           ambulando [] [] Map.empty
@@ -100,7 +100,7 @@ solveEntries !es  =
     --     initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     --     ++ "\nErrorGraph " ++ finalStr
     --   Right _ -> render $ runPretty $ pretty ctx
-  in trace ("\n\n=============\nFinal\n" ++ List.intercalate "\n" (map pp lcx)) $
+  in --trace ("\n\n=============\nFinal\n" ++ List.intercalate "\n" (map pp lcx)) $
     case (finalBadEdges, result) of
       ([], Left err) -> Left $ ErrorResult ctx [StringErr (initLoc, startRegion, err)]
       ([], Right _) ->

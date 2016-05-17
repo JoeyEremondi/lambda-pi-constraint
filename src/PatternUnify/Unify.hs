@@ -37,6 +37,7 @@ import qualified Data.List as List
 
 import Debug.Trace (trace)
 
+
 notSubsetOf :: Ord a
             => Set a -> Set a -> Bool
 a `notSubsetOf` b = not (a `isSubsetOf` b)
@@ -71,7 +72,7 @@ putProb
 putProb x q s =
   do setProblem x
      _Gam <- ask
-     trace ("putProb pushR") (pushR . Right) $ Prob x (wrapProb _Gam q) s []
+     (pushR . Right) $ Prob x (wrapProb _Gam q) s []
 
 pendingSolve
   :: ProbId -> Problem -> [ProbId] -> Contextual ()
@@ -104,14 +105,14 @@ simplifySplit n (r1, r2) = do
    x1 <- ProbId <$> freshNom
    x2 <- ProbId <$> freshNom
    _Gam <- ask
-   trace ("Pushing split eqns " ++ show (x1, x2) ++ " from " ++ show n) $ pushR $
-     Right $ Prob x1 (wrapProb _Gam r1) Active [Prob x2 (wrapProb _Gam r2) (FailPending x1) []]
+   pushR $ Right $
+     Prob x1 (wrapProb _Gam r1) Active [Prob x2 (wrapProb _Gam r2) (FailPending x1) []]
    return ()
 
 
 
 goLeft :: Contextual ()
-goLeft = trace "goLeft" $ popL >>= pushR . Right
+goLeft = popL >>= pushR . Right
 
 -- leftHole info _Gam _T f =
 --   do check SET (_Pis _Gam _T) `catchError`
@@ -134,27 +135,30 @@ hole info _Gam _T f =
      check SET flatToCheck `catchError`
        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
      x <- freshNom
-     pushL $ E x (_Pis _Gam _T) HOLE info []
+     pushL $ E x (_Pis _Gam _T) HOLE info
      a <- f =<< (N (Meta x) [] $*$ _Gam)
      goLeft
      return a
 
 defineGlobal
   :: (ProbId) -> EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\npid: " ++ show pid) $
+defineGlobal pid info x _T vinit m = --trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\npid: " ++ show pid) $
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
      cid <- ChoiceId <$> freshNom
-     let v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid) $ VChoice cid x vsingle freshVar
+     let
+       v = --trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid) $
+          VChoice cid x vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
-     pushL $ E x _T (DEFN v) info []
+     pushL $ E x _T (DEFN v) info
      pushR (Left (Map.singleton x v))
 
 
-     trace "Pushing immediate" $ Ctx.pushImmediate pid (Map.singleton x vinit)
+     --trace "Pushing immediate" $
+     Ctx.pushImmediate pid (Map.singleton x vinit)
      a <- m
      goLeft
      --Ctx.moveDeclRight x newNom
@@ -175,9 +179,9 @@ defineSingle info _Gam xtop _T vtop =
                (lams' _Gam vtop)
                (return ())
   where
-    defineGlobalSingle info x _T vinit m = trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $ do
+    defineGlobalSingle info x _T vinit m = do --trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $ do
          v <- makeTypeSafe _T vinit
-         pushL $ E x _T (DEFN v) info []
+         pushL $ E x _T (DEFN v) info
          pushR (Left (Map.singleton x v))
          a <- m
          goLeft
@@ -194,9 +198,9 @@ defineSingle info _Gam xtop _T vtop =
                (lams' _Gam vtop)
                (return ())
   where
-    defineGlobalSingle info x _T vinit m = trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $ do
+    defineGlobalSingle info x _T vinit m = do --trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $ do
          v <- makeTypeSafe _T vinit
-         pushL $ E x _T (DEFN v) info []
+         pushL $ E x _T (DEFN v) info
          pushR (Left (Map.singleton x v))
          a <- m
          goLeft
@@ -248,13 +252,13 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
-  unify' n q@(EQN _T1 ch@(VChoice cid nchoice r s) _T2 t info) = trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
+  unify' n q@(EQN _T1 ch@(VChoice cid nchoice r s) _T2 t info) = --trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
         splitChoice (cid, nchoice) n _T1 (r, s) _T2 t info
       _ ->
         Ctx.flattenEquation q >>= unify' n
-  unify' n q@(EQN _T1 t _T2 ch@(VChoice cid nchoice r s) info) = trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
+  unify' n q@(EQN _T1 t _T2 ch@(VChoice cid nchoice r s) info) = --trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
         splitChoice (cid, nchoice) n _T1 (r, s) _T2 t info
@@ -456,9 +460,9 @@ splitChoice
   -> VAL
   -> EqnInfo
   -> Contextual () --(Equation, Equation)
-splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ show cid ++ ", " ++ show n) $  do
+splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = do --trace ("SplitChoice " ++ show cid ++ ", " ++ show n) $  do
   (tl, tr) <- splitOnChoice cid t
-  let origMetas = trace ("SPLIT " ++ pp t ++ " on " ++ show cid ++ "  into  " ++ pp tl ++ " ||| " ++ pp tr) $ (fmvs $ unsafeFlatten tl) `List.intersect` (fmvs $ unsafeFlatten tr)
+  let origMetas = (fmvs $ unsafeFlatten tl) `List.intersect` (fmvs $ unsafeFlatten tr)
   -- withDuplicates info origMetas $ \ freshMetas1 ->
   --   withDuplicates info origMetas $ \ freshMetas2 -> do
   --freshMetas1 <- forM origMetas $ \_ -> freshNom
@@ -477,10 +481,12 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ 
   --   _T <- lookupMeta orig
   --   trace ("Defining choice free " ++ pp orig ++ " " ++ pp v1 ++ " " ++ pp v2) $
   --     defineSingle info [] orig _T $ VChoice cid n (meta v1) (meta v2)
-  trace ("Split return\n  " ++  pp (fst ret) ++ "\n  " ++ pp (snd ret) ) $ return ret
+  --trace ("Split return\n  " ++  pp (fst ret) ++ "\n  " ++ pp (snd ret) ) $
+  return ret
 
   --First, we go backwards in the context, re-defining our new variables as we go
-  trace ("\n\nRewriting vars with subs " ++ show nomMap) $ rewriteVars nomMap
+  --trace ("\n\nRewriting vars with subs " ++ show nomMap) $
+  rewriteVars nomMap
   --Then, we push our new problems into the context
   (simplifySplit n (Unify eq1, Unify eq2))
   -- cl <- Ctx.getL
@@ -491,18 +497,18 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ 
       ourSubs nomMap = Map.mapWithKey
         (\norig nnew -> VChoice cid choiceVar (meta norig) (meta nnew)) nomMap
 
-      rewriteEntry :: Map.Map Nom Nom -> Entry -> Entry
+      rewriteEntry :: Map.Map Nom Nom -> Entry -> [Entry]
       rewriteEntry nomMap e = case e of
-        (E alpha _T HOLE info pendingVars1) ->
+        (E alpha _T HOLE info ) ->
           case Map.lookup alpha nomMap of
-            Nothing -> e
-            Just n2 ->
-              E alpha _T HOLE info ((n2, _T) : pendingVars1)
+            Nothing -> [e]
+            Just n2 -> trace ("Adding pending hole " ++ show n2 ++ " to " ++ show alpha) $
+              [E alpha _T HOLE info , E n2 _T HOLE (info {isCF = CounterFactual}) ]
         _ ->
-          substs (Map.toList $ ourSubs nomMap) e
+          [substs (Map.toList $ ourSubs nomMap) e]
       rewriteVars nomMap = do
         --Rewrite all our entries on the lft to have the new split
-        Ctx.modifyL (map $ rewriteEntry nomMap)
+        Ctx.modifyL (concatMap $ rewriteEntry nomMap)
         --Push our new substitution to the right
         pushR $ Left (ourSubs nomMap)
 
@@ -743,7 +749,7 @@ flexRigid _Xi n q@(EQN _ (N (Meta alpha) _) _ _ info) =
      e <- popL
      ret <- --trace ("FR tryInvert CL\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr) ++ "\n***\n")
        case e of
-           E beta _T HOLE info _ --TODO pending vars?
+           E beta _T HOLE info  --TODO pending vars?
              | alpha == beta && alpha `elem` fmvs _Xi ->
                pushL e >> mapM_ pushL _Xi >> block n q
              | alpha == beta -> do
@@ -819,10 +825,10 @@ flexFlex :: ProbId -> Equation -> Contextual ()
 flexFlex n q@(EQN _ (N (Meta alpha) ds) _ (N (Meta beta) es) info) =
   setProblem n >>
   do _Gam <- ask
-     trace "FF popL" $ popL  >>=
+     popL  >>=
        \e ->
          case e of
-           E gamma _T HOLE _ _ --TODO pendingVars?
+           E gamma _T HOLE _
              | gamma == alpha && gamma == beta ->
                block n q >> tryIntersect n (info {creationInfo = CreatedBy n}) alpha _T ds es
              | gamma == alpha ->
@@ -871,8 +877,8 @@ tryIntersect pid info alpha _T ds es =
       \m ->
         case m of --TODO intersect creator? --TODO pendingVars here?
           Just ( _U, f ) -> hole info [] _U $ \beta -> define pid info [] alpha _T (f beta)
-          Nothing -> trace ("Pushing HOLE for " ++ show alpha) $ pushL (E alpha _T HOLE info [])
-    _ -> trace ("TI Default pushing " ++ show alpha) $ pushL (E alpha _T HOLE info [])
+          Nothing -> trace ("Pushing HOLE for " ++ show alpha) $ pushL (E alpha _T HOLE info )
+    _ -> trace ("TI Default pushing " ++ show alpha) $ pushL (E alpha _T HOLE info )
 
 -- Given the type of $[[alpha]]$ and the two spines, |intersect| produces
 -- a type for $[[beta]]$ and a term with which to solve $[[alpha]]$ given
@@ -1041,10 +1047,10 @@ pruneSpine _ _ _ _ _ = return Nothing
 instantiate
   :: EqnInfo -> ( Nom, Type, VAL -> VAL ) -> Contextual ()
 instantiate pid d@( alpha, _T, f ) =
-  trace "inst popL" $ popL >>=
+  popL >>=
   \e ->
     case e of
-      E beta _U HOLE pid _ --TODO pendingVars?
+      E beta _U HOLE pid --TODO pendingVars?
         | alpha == beta -> hole pid [] _T $ \t -> defineSingle pid [] beta _U (f t)
       _ -> pushR (Right e) >> instantiate pid d
 
@@ -1089,10 +1095,10 @@ solver n prob@(All p b) me =
          _S <- flattenChoice _Sch
          _T <- flattenChoice _Tch
          c <- equal SET _S _T
-         trace ("Twins solver comparing " ++ pp _S ++ " ||| " ++ pp _T) $
-           if c
-              then trace "Twins true" $ solver n (allProb x _S (subst x (var x) q)) me
-              else trace "twins false" $ localParams (++ [(x, Twins _S _T)]) $ solver n q me
+         --trace ("Twins solver comparing " ++ pp _S ++ " ||| " ++ pp _T) $
+         if c
+              then solver n (allProb x _S (subst x (var x) q)) me
+              else localParams (++ [(x, Twins _S _T)]) $ solver n q me
 
 -- \newpage
 -- Given the name and type of a metavariable, |lower| attempts to
@@ -1130,7 +1136,7 @@ lower pid _Phi alpha (PI _S _T) =
                                  alpha
                                  (PI _S _T)
                                  (lam x ourApp3))
-lower pid _Phi alpha _T = pushL (E alpha (_Pis _Phi _T ) HOLE pid [])
+lower pid _Phi alpha _T = pushL (E alpha (_Pis _Phi _T ) HOLE pid )
 
 -- Both |solver| and |lower| above need to split $\Sigma$-types (possibly
 -- underneath a bunch of parameters) into their components.  For example,
@@ -1218,9 +1224,9 @@ ambulando ns fails theta = do
       -- process entries
       Just (Right e) -> do
         updateVal <- update ns fails theta e
-        case (updateVal, e) of --TODO pendingVars
-          (E a _T HOLE i _,  E alpha _T2 HOLE info _) -> return ()
-          (E a _T HOLE i _,  _) -> error "Bad HOLE update"
+        case (updateVal, e) of
+          (E a _T HOLE i,  E alpha _T2 HOLE info) -> return ()
+          (E a _T HOLE i,  _) -> error "Bad HOLE update"
           _ -> return ()
         --trace ("AMBULANDO updated " ++ pp updateVal) $
         case updateVal of
@@ -1230,9 +1236,9 @@ ambulando ns fails theta = do
             pushL (Prob n p Solved onFails) >> ambulando (n : ns) fails theta
           Prob nfail p (Failed err) onFails ->
             pushL (Prob nfail p (Failed err) onFails) >> ambulando ns (nfail : fails) theta
-          E alpha _T HOLE info _ -> --TODO pendingVars
+          E alpha _T HOLE info ->
             case e of
-              (E _ _ HOLE _ _) -> lower info [] alpha _T >> ambulando ns fails theta
+              (E _ _ HOLE _) -> lower info [] alpha _T >> ambulando ns fails theta
               _ -> error "Bad HOLE update2"
           e' -> pushL e' >> ambulando ns fails theta
 
@@ -1260,16 +1266,18 @@ update pids failPids subs e = do
       where rs = ys \\ ns
             p' = substs (Map.toList theta) p
     update' ns theta (Prob n p (FailPending failId) onFails)
-      | failId `elem` failPids = trace ("WAKING UP " ++ show n ++ " from fail " ++ show failId) $ Prob n p' Active onFails --Activate if we failed
+      | failId `elem` failPids = trace ("WAKING UP " ++ show n ++ " from fail " ++ show failId ++ "\n  prob: " ++ pp p) $
+          Prob n p' Active onFails --Activate if we failed
       | failId `elem` ns = Prob n p Ignored onFails --Ignore if we solved the problem
       | otherwise = Prob n p' (FailPending failId) onFails --Keep wainting otherwise --TODO other subs?
       where p' = substs (Map.toList theta) p
     update' _ _ e'@(Prob _ _ Solved _) = e'
-    update' _ _ e'@(Prob _ _ (Failed _) _) = e'
+    update' _ _ e'@(Prob _ _ (Failed _) _) =  e'
     update' _ theta e' =
       --trace ("UPDATE SUBS"  ++ pp e' ++ "\n   " ++ show theta ++ "\n\n") $
       substs (Map.toList theta)
              e'
+
 
 
 applySubImmediate :: ProbId -> Subs -> Contextual ()

@@ -36,7 +36,7 @@ import qualified Data.List as List
 
 --import qualified Data.List as List
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 
 data Tel where
@@ -95,7 +95,7 @@ typecheck _T t =
       cbottom <- containsBottom tequal
       return $ case cbottom of
         Nothing -> True
-        Just s -> trace ("Contained bottom with message " ++ s) $ False) `catchError` \s -> trace ("TC False: " ++ s) $ return False
+        Just s -> False) `catchError` \s -> return False
 
 
 makeTypeSafe :: Type -> VAL -> Contextual VAL
@@ -385,7 +385,8 @@ checkProb ident st p@(Unify q) = do
    _TVal <- flattenChoice =<< eval currentSubs _T
    check SET _TVal
    tVal <- flattenChoice =<< eval currentSubs t
-   trace ("Flattened to: " ++ List.intercalate "\n" (map pp [_S, s, _T, t])) $ check _TVal tVal
+   --trace ("Flattened to: " ++ List.intercalate "\n" (map pp [_S, s, _T, t])) $
+   check _TVal tVal
    if st == Solved
    then do
      eq <- isReflexive (EQN _SVal sVal _TVal tVal info)
@@ -425,12 +426,12 @@ validate q = local (const []) $ do
     help B0 = return ()
     --TODO why is this so slow?
     --help (_Del :< E x _ _) | any (x `occursIn`) _Del = throwError "validate: dependency error"
-    help (_Del :< E _ _T HOLE info _)      = do
+    help (_Del :< E _ _T HOLE info)      = do
                                           putL _Del
                                           when (isCF info == Factual) $
                                             check SET _T
                                           help _Del
-    help (_Del :< E _ _T (DEFN v) info _)  =
+    help (_Del :< E _ _T (DEFN v) info)  =
       do  putL _Del
           when (isCF info == Factual) $
             (check SET _T >> check _T v)

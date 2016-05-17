@@ -201,7 +201,7 @@ instance Pretty ProblemState where
 data IsCF = Factual | CounterFactual
   deriving (Eq, Ord, Show, Generic)
 
-data Entry  =  E Nom Type Dec EqnInfo [(Nom, Type)]
+data Entry  =  E Nom Type Dec EqnInfo
             |  Prob ProbId Problem ProblemState [Entry]
   deriving (Show, Generic)
 
@@ -227,7 +227,7 @@ probInfo (All params bnd) =
 
 
 entryInfo :: Entry -> EqnInfo
-entryInfo (E _ _ _ info _) = info
+entryInfo (E _ _ _ info ) = info
 entryInfo (Prob _ prob _ _) = probInfo prob
   where
     probInfo :: Problem -> EqnInfo
@@ -242,14 +242,14 @@ instance Alpha Entry
 instance Subst VAL Entry
 
 instance Occurs Entry where
-    occurrence xs (E _ _T d _ _)    = max (occurrence xs _T) (occurrence xs d)
+    occurrence xs (E _ _T d _ )    = max (occurrence xs _T) (occurrence xs d)
     occurrence xs (Prob _ p _ _)  = occurrence xs p
-    frees isMeta (E _ _T d _ _)     = union (frees isMeta _T) (frees isMeta d)
+    frees isMeta (E _ _T d _ )     = union (frees isMeta _T) (frees isMeta d)
     frees isMeta (Prob _ p _ _)   = frees isMeta p
 
 instance Pretty Entry where
-    pretty (E x _T HOLE _ _)  = (between (text "? :")) <$> (pretty x) <*> (pretty _T)
-    pretty (E x _T (DEFN d) _ _)  = (\ d' -> between (text ":=" <+> d' <+> text ":")) <$>
+    pretty (E x _T HOLE _ )  = (between (text "? :")) <$> (pretty x) <*> (pretty _T )
+    pretty (E x _T (DEFN d) _ )  = (\ d' -> between (text ":=" <+> d' <+> text ":")) <$>
                                    (prettyAt PiSize d) <*> (pretty x) <*> (prettyAt PiSize _T)
     pretty (Prob x p s _) =  (between (text "<=")) <$> ( (between (text "?? :")) <$> (pretty x) <*> (pretty p) ) <*> (pretty s)
 
@@ -509,7 +509,7 @@ lookupMeta x = do
   --look :: Monad m => ContextL -> m Type
   let
     look B0 = error $ "lookupMeta: missing " ++ show x ++ "\nCL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr)
-    look (cx  :< E y t _ _ _)  | x == y     = return t
+    look (cx  :< E y t _ _ )  | x == y     = return t
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _ _) = look cx
     look _ = undefined
@@ -526,7 +526,7 @@ metaSubs = do
 
 
 maybeSub :: Entry -> Maybe (Nom, VAL)
-maybeSub (E y _ (DEFN val) _ _) = Just (y,val)
+maybeSub (E y _ (DEFN val) _ ) = Just (y,val)
 maybeSub _ = Nothing
 
 --We only consider unsolved from the first elements of split defns
@@ -538,13 +538,13 @@ getUnsolvedAndSolved (entry : rest) =
     (uns, solved) = getUnsolvedAndSolved rest
   in
     case entry of
-      E y _ (DEFN valNotFlat) info _ | isCF info == Factual ->
+      E y _ (DEFN valNotFlat) info  | isCF info == Factual ->
         let
           val = unsafeFlatten valNotFlat
         in case fmvs val of
           [] -> (uns, Map.insert y val solved)
           _ -> trace ("Unsolved meta in" ++ pp val) $ ((y, infoRegion info, Just val) : uns, solved)
-      E y _ HOLE info _ | isCF info == Factual ->
+      E y _ HOLE info  | isCF info == Factual ->
         trace ("Unsolved HOLE " ++ show y) $ ((y, infoRegion info, Nothing) : uns, solved)
       _ -> (uns, solved)
 
@@ -553,10 +553,10 @@ metaValue x = look =<< getL
   where
     look :: Monad m => ContextL -> m Type
     look B0 = fail $ "metaValue: missing " ++ show x
-    look (cx  :< E y _ (DEFN val) _ _)  | x == y     = return val
+    look (cx  :< E y _ (DEFN val) _ )  | x == y     = return val
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _ _) = look cx
-    look (cx  :< E y _ HOLE _ _)  | x == y     = return $ meta x
+    look (cx  :< E y _ HOLE _)  | x == y     = return $ meta x
                            | otherwise  = look cx
     look _ = undefined
 
@@ -597,8 +597,8 @@ recordProblem info (ProbId pid) prob = recordProblem' prob 0
 --After we substitute new values, we record the equalities between the subsituted values
 --This lets us get eliminate Function Application edges in our graph
 recordEntrySub :: Entry -> Entry -> Contextual ()
-recordEntrySub (E nm1 tp1 HOLE _ _) (E nm2 tp2 HOLE _ _) = return () --TODO will ever change?
-recordEntrySub (E alpha tp1 (DEFN dec1) _ _) (E _ tp2 (DEFN dec2) info _) =
+recordEntrySub (E nm1 tp1 HOLE _) (E nm2 tp2 HOLE _) = return () --TODO will ever change?
+recordEntrySub (E alpha tp1 (DEFN dec1) _) (E _ tp2 (DEFN dec2) info) =
   recordEqn (DefnUpdate alpha) (EQN tp1 dec1 tp2 dec2 info)
 recordEntrySub (Prob pid prob _ _) (Prob _ prob2 _ _) =
   recordProblemSub pid prob prob2
