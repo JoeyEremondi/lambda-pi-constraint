@@ -140,7 +140,7 @@ equalize _T s t = do
   equalize' _Tflat s tflat
   where
     equalize' :: Type -> VAL -> VAL -> Contextual VAL
-    equalize' _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize'"
+    --equalize' _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize'"
 
     equalize' (SET) (SET) (SET) = return SET
 

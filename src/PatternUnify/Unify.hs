@@ -461,18 +461,18 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ 
   let origMetas = trace ("SPLIT " ++ pp t ++ " on " ++ show cid ++ "  into  " ++ pp tl ++ " ||| " ++ pp tr) $ (fmvs $ unsafeFlatten tl) `List.intersect` (fmvs $ unsafeFlatten tr)
   -- withDuplicates info origMetas $ \ freshMetas1 ->
   --   withDuplicates info origMetas $ \ freshMetas2 -> do
-  freshMetas1 <- forM origMetas $ \_ -> freshNom
+  --freshMetas1 <- forM origMetas $ \_ -> freshNom
   freshMetas2 <- forM origMetas $ \_ -> freshNom
 
   let
-      mvals1 = (map meta freshMetas1 )
+      --mvals1 = (map meta freshMetas1 )
       mvals2 = (map meta freshMetas2 )
-      sub1 = zip origMetas mvals1
+      --sub1 = zip origMetas mvals1
       sub2 = zip origMetas mvals2
-      eq1 = substs sub1 $ EQN _T1 r _T2 tl info
+      eq1 = EQN _T1 r _T2 tl info
       eq2 = substs sub2 $ EQN _T1 s _T2 tr (info {isCF = CounterFactual})
       ret = (eq1, eq2)
-      nomMap = Map.fromList $ zip origMetas $ zip freshMetas1 freshMetas2
+      nomMap = Map.fromList $ zip origMetas freshMetas2
   -- forM triples $ \(orig, v1, v2) -> do
   --   _T <- lookupMeta orig
   --   trace ("Defining choice free " ++ pp orig ++ " " ++ pp v1 ++ " " ++ pp v2) $
@@ -487,30 +487,49 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ 
   return ()
   --trace ("CL after traversing rewriting\n" ++ Ctx.prettyList cl ++ "\nCR after traversing rewriting\n" ++ Ctx.prettyList cr ++ "\n*******\n\n") $ return ()
     where
+      ourSubs nomMap = Map.mapWithKey
+        (\norig nnew -> VChoice cid choiceVar (meta norig) (meta nnew)) nomMap
+
+      rewriteEntry :: Map.Map Nom Nom -> Entry -> Entry
+      rewriteEntry nomMap e = case e of
+        (E alpha _T HOLE info pendingVars1) ->
+          case Map.lookup alpha nomMap of
+            Nothing -> e
+            Just n2 ->
+              E alpha _T HOLE info ((n2, _T) : pendingVars1)
+        _ ->
+          substs (Map.toList $ ourSubs nomMap) e
       rewriteVars nomMap = do
-        me <- Ctx.mpopL
-        case me of
-          Nothing -> return ()
-          Just e@(E alpha _T HOLE info pendingVars1) ->
-            case Map.lookup alpha nomMap of
-              Nothing ->do
-                pushR $ Right e
-                --Continue going back
-                rewriteVars nomMap
-              Just (n1, n2) -> trace ("Doing rewrite " ++ show (alpha, n1, n2)) $ do
-                --Push the substitution we just defined
-                let ourChoice = VChoice cid choiceVar (meta n1) (meta n2)
-                pushR $ Left $ Map.singleton alpha ourChoice
-                --Push the new definition of this variable
-                pushR $ Right $ E alpha _T (DEFN ourChoice) info pendingVars1
-                --Push the two new variables that define this old variable
-                pushR $ Right $ E n1 _T HOLE info [(n2, _T)]
-                --pushR $ Right $ E n2 _T HOLE (info {isCF = CounterFactual})
-                --Continue going back
-                rewriteVars nomMap
-          Just e -> do
-            pushR $ Right e
-            rewriteVars nomMap
+        --Rewrite all our entries on the lft to have the new split
+        Ctx.modifyL (map $ rewriteEntry nomMap)
+        --Push our new substitution to the right
+        pushR $ Left (ourSubs nomMap)
+
+
+      -- rewriteVars nomMap = do
+      --   me <- Ctx.mpopL
+      --   case me of
+      --     Nothing -> return ()
+      --     Just e@(E alpha _T HOLE info pendingVars1) ->
+      --       case Map.lookup alpha nomMap of
+      --         Nothing ->do
+      --           pushR $ Right e
+      --           --Continue going back
+      --           rewriteVars nomMap
+      --         Just (n1, n2) -> trace ("Doing rewrite " ++ show (alpha, n1, n2)) $ do
+      --           --Push the substitution we just defined
+      --           let ourChoice = VChoice cid choiceVar (meta n1) (meta n2)
+      --           pushR $ Left $ Map.singleton alpha ourChoice
+      --           --Push the new definition of this variable
+      --           pushR $ Right $ E alpha _T (DEFN ourChoice) info pendingVars1
+      --           --Push the two new variables that define this old variable
+      --           pushR $ Right $ E n1 _T HOLE info [(n2, _T)]
+      --           --pushR $ Right $ E n2 _T HOLE (info {isCF = CounterFactual})
+      --           --Continue going back
+      --           rewriteVars nomMap
+      --     Just e -> do
+      --       pushR $ Right e
+      --       rewriteVars nomMap
 
 
 
