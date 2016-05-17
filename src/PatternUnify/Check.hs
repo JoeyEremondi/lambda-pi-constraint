@@ -102,9 +102,11 @@ makeTypeSafe :: Type -> VAL -> Contextual VAL
 makeTypeSafe _T t = equalize _T t t
 
 
-check _T t =
+check _Tinit tinit =
   --trace ("****Checking value " ++ pp t ++ " with type " ++ pp _T) $
   do
+    _T <- flattenChoice _Tinit
+    t <- flattenChoice tinit
     tequal <- equalize _T t t
     cbottom <- containsBottom tequal
     case cbottom of
@@ -406,6 +408,8 @@ checkProb ident st (All (Twins _S _T) b) = do
     inScope x (Twins _SVal _TVal) $ checkProb ident st p
 
 
+shouldValidate info = isCF info == Factual
+
 
 validate :: ((ProblemState, EqnInfo) -> Bool) -> Contextual ()
 validate q = local (const []) $ do
@@ -431,7 +435,7 @@ validate q = local (const []) $ do
             (check SET _T >> check _T v)
           help _Del
     help (_Del :< Prob ident p st _)      = do
-                                          checkProb ident st p
+                                          when (shouldValidate $ probInfo p) $ checkProb ident st p
                                           unless (q (st, probInfo p)) $ throwError "validate: bad state"
                                           help _Del
     help _ = undefined

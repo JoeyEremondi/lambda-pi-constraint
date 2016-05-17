@@ -66,8 +66,7 @@ data ErrorResult =
 
 data SolverErr = StringErr (ProbId, Region, String) | GraphErr [ErrorInfo ConstraintInfo]
 
-shouldValidate (Solved, info) | isCF info == Factual = True
-shouldValidate _ = False
+
 
 solveEntries :: [Entry] -> Either ErrorResult ((), Context)
 solveEntries !es  =
@@ -80,7 +79,7 @@ solveEntries !es  =
           --validResult <- validate (const True)
           badEdges <- applyHeuristics defaultHeuristics
           case badEdges of
-            [] -> validate shouldValidate
+            [] -> validate (\_ -> True) -- $shouldValidate
             _ -> return ()
           setMsg  badEdges
           return badEdges

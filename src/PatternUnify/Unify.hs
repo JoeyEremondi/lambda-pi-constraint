@@ -129,7 +129,9 @@ hole
 define
   :: ProbId -> EqnInfo -> [( Nom, Type )] -> Nom -> Type -> VAL -> Contextual ()
 hole info _Gam _T f =
-  do check SET (_Pis _Gam _T) `catchError`
+  do
+     flatToCheck <- flattenChoice $ _Pis _Gam _T
+     check SET flatToCheck `catchError`
        (throwError . (++ "\nwhen creating hole of type " ++ pp (_Pis _Gam _T)))
      x <- freshNom
      pushL $ E x (_Pis _Gam _T) HOLE info []
@@ -456,7 +458,7 @@ splitChoice
   -> Contextual () --(Equation, Equation)
 splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ show cid ++ ", " ++ show n) $  do
   (tl, tr) <- splitOnChoice cid t
-  let origMetas = trace ("SPLIT " ++ pp t ++ " on " ++ show cid ++ "  into  " ++ pp tl ++ " ||| " ++ pp tr) $ (fmvs tl) `List.intersect` fmvs tr
+  let origMetas = trace ("SPLIT " ++ pp t ++ " on " ++ show cid ++ "  into  " ++ pp tl ++ " ||| " ++ pp tr) $ (fmvs $ unsafeFlatten tl) `List.intersect` (fmvs $ unsafeFlatten tr)
   -- withDuplicates info origMetas $ \ freshMetas1 ->
   --   withDuplicates info origMetas $ \ freshMetas2 -> do
   freshMetas1 <- forM origMetas $ \_ -> freshNom
@@ -933,8 +935,8 @@ tryPrune n q _ = do
 prune
   :: [Nom] -> VAL -> Contextual [( Nom, Type, VAL -> VAL )]
 --prune xs t | trace ("In Pruning " ++ (show xs) ++ " from " ++ pp t) False = error "prune"
-prune xs SET = return []
-prune xs (VChoice _ _ s t) = (++) <$> prune xs s <*> prune xs t
+prune xs SET = return [] --TODO only prune first half?
+prune xs (VChoice _ _ s t) = prune xs s --(++) <$>  <*> prune xs t
 prune xs Nat = return []
 prune xs (Fin n) = prune xs n
 prune xs (Vec a n) = (++) <$> prune xs a <*> prune xs n
