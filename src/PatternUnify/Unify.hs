@@ -478,12 +478,13 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ 
   --   trace ("Defining choice free " ++ pp orig ++ " " ++ pp v1 ++ " " ++ pp v2) $
   --     defineSingle info [] orig _T $ VChoice cid n (meta v1) (meta v2)
   trace ("Split return\n  " ++  pp (fst ret) ++ "\n  " ++ pp (snd ret) ) $ return ret
-  --First, we push our new problems into the context
-  (simplifySplit n (Unify eq1, Unify eq2))
-  --Then, we go backwards in the context, re-defining our new variables as we go
+
+  --First, we go backwards in the context, re-defining our new variables as we go
   trace ("\n\nRewriting vars with subs " ++ show nomMap) $ rewriteVars nomMap
-  cl <- Ctx.getL
-  cr <- Ctx.getR
+  --Then, we push our new problems into the context
+  (simplifySplit n (Unify eq1, Unify eq2))
+  -- cl <- Ctx.getL
+  -- cr <- Ctx.getR
   return ()
   --trace ("CL after traversing rewriting\n" ++ Ctx.prettyList cl ++ "\nCR after traversing rewriting\n" ++ Ctx.prettyList cr ++ "\n*******\n\n") $ return ()
     where
