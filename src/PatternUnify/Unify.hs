@@ -502,9 +502,9 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = trace ("SplitChoice " ++ 
                 let ourChoice = VChoice cid choiceVar (meta n1) (meta n2)
                 pushR $ Left $ Map.singleton alpha ourChoice
                 --Push the new definition of this variable
-                --pushR $ Right $ E alpha _T (DEFN ourChoice) info
+                pushR $ Right $ E alpha _T (DEFN ourChoice) info pendingVars1
                 --Push the two new variables that define this old variable
-                pushR $ Right $ E n1 _T HOLE info $ [(n2, _T)] ++ pendingVars1
+                pushR $ Right $ E n1 _T HOLE info [(n2, _T)]
                 --pushR $ Right $ E n2 _T HOLE (info {isCF = CounterFactual})
                 --Continue going back
                 rewriteVars nomMap

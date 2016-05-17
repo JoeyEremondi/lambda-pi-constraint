@@ -136,10 +136,11 @@ equalizeMany _ [] = return $ VBot "Cannot equalize 0 values"
 equalize :: Type -> VAL -> VAL -> Contextual VAL
 equalize _T s t = do
   _Tflat <- flattenChoice _T
-  equalize' _Tflat s t
+  tflat <- flattenChoice t
+  equalize' _Tflat s tflat
   where
     equalize' :: Type -> VAL -> VAL -> Contextual VAL
-    --equalize' _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize'"
+    equalize' _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize'"
 
     equalize' (SET) (SET) (SET) = return SET
 
@@ -377,14 +378,14 @@ checkProb ident st p@(Unify q) = do
    setProblem ident
    currentSubs <- metaSubs
    qflat@(EQN _S s _T t info) <- flattenEquation q
-   !_SVal <-  eval currentSubs _S
+   !_SVal <-  flattenChoice =<< eval currentSubs _S
    check SET _SVal
-   sVal <- eval currentSubs s
+   sVal <- flattenChoice =<< eval currentSubs s
    check _SVal sVal
-   _TVal <- eval currentSubs _T
+   _TVal <- flattenChoice =<< eval currentSubs _T
    check SET _TVal
-   tVal <- eval currentSubs t
-   check _TVal tVal
+   tVal <- flattenChoice =<< eval currentSubs t
+   trace ("Flattened to: " ++ List.intercalate "\n" (map pp [_S, s, _T, t])) $ check _TVal tVal
    if st == Solved
    then do
      eq <- isReflexive (EQN _SVal sVal _TVal tVal info)
