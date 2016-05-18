@@ -502,7 +502,7 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = do --trace ("SplitChoice 
         (E alpha _T HOLE info ) ->
           case Map.lookup alpha nomMap of
             Nothing -> [e]
-            Just n2 -> trace ("Adding pending hole " ++ show n2 ++ " to " ++ show alpha) $
+            Just n2 -> 
               [E alpha _T HOLE info , E n2 _T HOLE (info {isCF = CounterFactual}) ]
         _ ->
           [substs (Map.toList $ ourSubs nomMap) e]
