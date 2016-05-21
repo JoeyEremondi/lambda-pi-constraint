@@ -66,7 +66,7 @@ import PatternUnify.ConstraintInfo
 
 type BadEdges = [Heur.ErrorInfo ConstraintInfo]
 
-type TypeGraph = TG.StandardTypeGraph ConstraintInfo
+type TypeGraph = TG.StandardTypeGraph
 
 data Dec = HOLE | DEFN VAL
   deriving (Show, Generic)
@@ -543,7 +543,7 @@ metaValue x = look =<< getL
 
 
 
-addEqn :: (Fresh m) => info -> Equation -> TG.StandardTypeGraph info -> m (TG.StandardTypeGraph info)
+addEqn :: (Fresh m) => ConstraintInfo -> Equation -> TG.StandardTypeGraph -> m (TG.StandardTypeGraph)
 --Avoid polluting our graph with a bunch of reflexive equations
 addEqn info eqn@(EQN _ v1 _ v2 _) stg | v1 == v2 = return stg
 addEqn info eqn@(EQN _ v1 _ v2 _) stg = --trace ("Adding equation to graph " ++ show eqn) $

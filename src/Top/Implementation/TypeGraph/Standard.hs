@@ -25,17 +25,21 @@ import Utils (internalError)
 
 import Data.Foldable (foldlM)
 
+import PatternUnify.ConstraintInfo as Info
+
+type Info = Info.ConstraintInfo
+
 --import Debug.Trace (trace)
 
-data StandardTypeGraph info = STG
+data StandardTypeGraph = STG
    { referenceMap            :: M.Map VertexId Int{- group number -}
-   , equivalenceGroupMap     :: M.Map Int (EquivalenceGroup info)
+   , equivalenceGroupMap     :: M.Map Int (EquivalenceGroup Info)
    , equivalenceGroupCounter :: Int
    , possibleErrors          :: [VertexId]
    , constraintNumber        :: Tm.Nom
    }
 
-instance Show info => Empty (StandardTypeGraph info) where
+instance Empty (StandardTypeGraph ) where
    empty = STG
       { referenceMap            = M.empty
       , equivalenceGroupMap     = M.empty
@@ -44,7 +48,7 @@ instance Show info => Empty (StandardTypeGraph info) where
       , constraintNumber        = Ln.s2n "constr"
       }
 
-instance Show (StandardTypeGraph info) where
+instance Show (StandardTypeGraph) where
    show stg =
       "(Type graph consists of " ++ show (M.size (equivalenceGroupMap stg)) ++ " equivalence groups)"
 
@@ -77,7 +81,7 @@ addHead original unique (Tm.Meta nm) stg =
     return (vinit, addVertex vinit (VVar, original) stg)
 
 
-instance TypeGraph (StandardTypeGraph info) info where
+instance TypeGraph (StandardTypeGraph) Info where
    addTermGraph synonyms unique tp stg =
          let
            evaldType :: Tm.VAL
@@ -94,7 +98,7 @@ instance TypeGraph (StandardTypeGraph info) info where
                Tm.VChoice _ _ s t -> do
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1
-                 g3 <- addNewEdge (vs, vt) (choiceInfo g2 :: info) g2
+                 g3 <- addNewEdge (vs, vt) (Info.choiceInfo) g2
                  --TODO representative vertex?
                  return (vs, g3)
 
@@ -153,7 +157,7 @@ instance TypeGraph (StandardTypeGraph info) info where
 
    substituteTypeSafe synonyms =
       let
-          rec :: [Tm.Nom] -> Tm.VAL -> StandardTypeGraph info -> Maybe Tm.VAL
+          rec :: [Tm.Nom] -> Tm.VAL -> StandardTypeGraph -> Maybe Tm.VAL
           rec history (Tm.N hd []) stg
             |  (Tm.headVar hd) `elem` history  = Nothing
             |  otherwise         =
@@ -249,7 +253,7 @@ instance TypeGraph (StandardTypeGraph info) info where
      in "digraph G\n{\n" ++ concat (nodeDecls) ++ concat (edgeDecls ++ termEdges) ++ "\n}"
 
 -- Helper functions
-combineClasses :: [VertexId] -> StandardTypeGraph info -> StandardTypeGraph info
+combineClasses :: [VertexId] -> StandardTypeGraph -> StandardTypeGraph
 combineClasses is stg =
       case nub (map (`representativeInGroupOf` stg) is) of
          list@(i:_:_) ->
@@ -258,7 +262,7 @@ combineClasses is stg =
             in addPossibleInconsistentGroup i . createGroup newGroup . foldr removeGroup stg $ eqgroups
          _ -> stg
 
-propagateEquality :: VertexId -> StandardTypeGraph info -> StandardTypeGraph info
+propagateEquality :: VertexId -> StandardTypeGraph -> StandardTypeGraph
 propagateEquality vid stg =
    let (listLeft, listRight) = childrenInGroupOf vid stg
        left  = map (flip representativeInGroupOf stg . child) listLeft
@@ -274,11 +278,11 @@ propagateEquality vid stg =
          else id)
     $ stg
 
-addClique :: Clique -> StandardTypeGraph info -> StandardTypeGraph info
+addClique :: Clique -> StandardTypeGraph -> StandardTypeGraph
 addClique clique =
    updateGroupOf (cliqueRepresentative clique) (insertClique clique) . combineClasses (childrenInClique clique)
 
-propagateRemoval :: VertexId -> StandardTypeGraph info -> StandardTypeGraph info
+propagateRemoval :: VertexId -> StandardTypeGraph -> StandardTypeGraph
 propagateRemoval i stg =
    let (is, new) = splitClass i stg
        ts = map (`childrenInGroupOf` new) is
@@ -297,7 +301,7 @@ propagateRemoval i stg =
            $ new
         else new
 
-splitClass ::  VertexId -> StandardTypeGraph info -> ([VertexId], StandardTypeGraph info)
+splitClass ::  VertexId -> StandardTypeGraph -> ([VertexId], StandardTypeGraph)
 splitClass vid stg =
    let eqgroup   = getGroupOf vid stg
        newGroups = splitGroup eqgroup
@@ -307,13 +311,13 @@ splitClass vid stg =
           | otherwise = stg
    in (results, newGraph)
 
-deleteClique :: Clique -> StandardTypeGraph info -> StandardTypeGraph info
+deleteClique :: Clique -> StandardTypeGraph -> StandardTypeGraph
 deleteClique clique =
    updateGroupOf (cliqueRepresentative clique) (removeClique clique)
 
 -----------------------------------------------------------------
 
-createGroup :: EquivalenceGroup info -> StandardTypeGraph info -> StandardTypeGraph info
+createGroup :: EquivalenceGroup Info -> StandardTypeGraph -> StandardTypeGraph
 createGroup eqgroup stg =
    let newGroupNumber = equivalenceGroupCounter stg
        list = [(i, newGroupNumber) | (i, _) <- vertices eqgroup ]
@@ -324,7 +328,7 @@ createGroup eqgroup stg =
                  , equivalenceGroupCounter = newGroupNumber + 1
                  }
 
-removeGroup :: EquivalenceGroup info -> StandardTypeGraph info -> StandardTypeGraph info
+removeGroup :: EquivalenceGroup Info -> StandardTypeGraph -> StandardTypeGraph
 removeGroup eqgroup stg =
    let vertexIds   = map fst (vertices eqgroup)
        oldGroupNr  = maybeToList (M.lookup (head vertexIds) (referenceMap stg))
@@ -332,45 +336,45 @@ removeGroup eqgroup stg =
           , equivalenceGroupMap = foldr M.delete (equivalenceGroupMap stg) oldGroupNr
           }
 
-updateGroupOf :: VertexId -> (EquivalenceGroup info -> EquivalenceGroup info) -> StandardTypeGraph info -> StandardTypeGraph info
+updateGroupOf :: VertexId -> (EquivalenceGroup Info -> EquivalenceGroup Info) -> StandardTypeGraph -> StandardTypeGraph
 updateGroupOf vid f stg =
    let eqgrp = getGroupOf vid stg
        err  = internalError "Top.TypeGraph.TypeGraphMonad" "updateEquivalenceGroupOf" ("error in lookup map: "++show vid)
        eqnr = M.findWithDefault err vid (referenceMap stg)
    in stg { equivalenceGroupMap = M.insert eqnr (f eqgrp) (equivalenceGroupMap stg) }
 
-maybeGetGroupOf :: VertexId -> StandardTypeGraph info -> Maybe (EquivalenceGroup info)
+maybeGetGroupOf :: VertexId -> StandardTypeGraph -> Maybe (EquivalenceGroup Info)
 maybeGetGroupOf vid stg =
    do eqnr <- M.lookup vid (referenceMap stg)
       let err = internalError "Top.TypeGraph.TypeGraphMonad" "equivalenceGroupOf" "error in lookup map"
       return (M.findWithDefault err eqnr (equivalenceGroupMap stg))
 
-getGroupOf :: VertexId -> StandardTypeGraph info -> EquivalenceGroup info
+getGroupOf :: VertexId -> StandardTypeGraph -> EquivalenceGroup Info
 getGroupOf vid =
    let err = internalError "Top.TypeGraph.Standard" "getGroupOf" ("the function getGroupOf does no longer create an empty group if the vertexId " ++ show vid ++ " doesn't exist")
    in fromMaybe err . maybeGetGroupOf vid
 
-getAllGroups :: StandardTypeGraph info -> [EquivalenceGroup info]
+getAllGroups :: StandardTypeGraph -> [EquivalenceGroup Info]
 getAllGroups = M.elems . equivalenceGroupMap
 
-vertexExists :: VertexId -> StandardTypeGraph info -> Bool
+vertexExists :: VertexId -> StandardTypeGraph -> Bool
 vertexExists vid = isJust . M.lookup vid . referenceMap
 
 -----------------------------------------------------------------------------------
 
-getPossibleInconsistentGroups :: StandardTypeGraph info -> [VertexId]
+getPossibleInconsistentGroups :: StandardTypeGraph -> [VertexId]
 getPossibleInconsistentGroups = possibleErrors
 
-setPossibleInconsistentGroups :: [VertexId] -> StandardTypeGraph info -> StandardTypeGraph info
+setPossibleInconsistentGroups :: [VertexId] -> StandardTypeGraph -> StandardTypeGraph
 setPossibleInconsistentGroups vids stg = stg { possibleErrors = vids }
 
-addPossibleInconsistentGroup :: VertexId -> StandardTypeGraph info -> StandardTypeGraph info
+addPossibleInconsistentGroup :: VertexId -> StandardTypeGraph -> StandardTypeGraph
 addPossibleInconsistentGroup vid stg = stg { possibleErrors = vid : possibleErrors stg }
 
 
 
 
--- addTermGraphM :: (Ln.Fresh m) => Tm.Subs -> Tm.Nom -> Tm.VAL -> StandardTypeGraph info -> m (Tm.Nom, VertexId, StandardTypeGraph info)
+-- addTermGraphM :: (Ln.Fresh m) => Tm.Subs -> Tm.Nom -> Tm.VAL -> StandardTypeGraph -> m (Tm.Nom, VertexId, StandardTypeGraph)
 -- addTermGraphM synonyms unique tp stg =
 --       let
 --         evaldType :: Tm.VAL
@@ -410,20 +414,20 @@ addPossibleInconsistentGroup vid stg = stg { possibleErrors = vid : possibleErro
 --                foldlM foldFn initVal elims
 --------------------------------------------------------------------------------
 {-
-setHeuristics :: [Heuristic info] -> StandardTypeGraph info -> StandardTypeGraph info
+setHeuristics :: [Heuristic info] -> StandardTypeGraph -> StandardTypeGraph
 setHeuristics = setPathHeuristics . const
 
-setPathHeuristics :: (Path (EdgeId, info) -> [Heuristic info]) -> StandardTypeGraph info -> StandardTypeGraph info
+setPathHeuristics :: (Path (EdgeId, info) -> [Heuristic info]) -> StandardTypeGraph -> StandardTypeGraph
 setPathHeuristics f stg = stg {typegraphHeuristics = f}
 
-getPathHeuristics :: StandardTypeGraph info -> Path (EdgeId, info) -> [Heuristic info]
+getPathHeuristics :: StandardTypeGraph -> Path (EdgeId, info) -> [Heuristic info]
 getPathHeuristics = typegraphHeuristics -}
 
 addEqn
   :: (Ln.Fresh m)
-  => info -> (Tm.VAL, Tm.VAL)
-  -> StandardTypeGraph info
-  -> m (StandardTypeGraph info)
+  => Info -> (Tm.VAL, Tm.VAL)
+  -> StandardTypeGraph
+  -> m (StandardTypeGraph)
 addEqn info (v1, v2) stg = do
     (var1, g1) <-  addTermGraph M.empty (Ln.s2n "node") v1 stg
     (var2, g2) <-  addTermGraph M.empty (Ln.s2n "node") v2 g1

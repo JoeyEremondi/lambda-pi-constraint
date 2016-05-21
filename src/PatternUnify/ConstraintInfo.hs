@@ -82,3 +82,5 @@ data CreationInfo = Initial | CreatedBy ProbId
 
 data IsCF = Factual | CounterFactual
   deriving (Eq, Ord, Show, Generic)
+
+choiceInfo = error "TODO"
