@@ -135,11 +135,11 @@ edgeMessage (edgeId, edgeInfo) =
   ++ " " ++ constrStr ++ "\n"
   where
     constrStr = case (UC.edgeType edgeInfo) of
-      (UC.InitConstr _ prob) -> Tm.prettyString prob
+      (UC.InitConstr _) -> "TODO0" -- Tm.prettyString prob
       (UC.DefnUpdate c) -> "TODO1"
       (UC.ProbUpdate c) -> "TODO2"
       (UC.DefineMeta c) -> "TODO3"
-      (UC.DerivedEqn _ prob) -> Tm.prettyString prob
+      (UC.DerivedEqn _) -> "TODO4" --Tm.prettyString prob
 
 
 unsolvedMsg :: [Tm.Nom] -> (Tm.Nom, Common.Region, Maybe Tm.VAL) -> (Common.Region, String)
@@ -431,7 +431,7 @@ freshTopLevel :: Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
     ourNom <- freshNom "topLevel"
     let ourEntry =
-          UC.E ourNom tp UC.HOLE (UC.EqnInfo UC.Initial Common.BuiltinRegion UC.Factual) 
+          UC.E ourNom tp UC.HOLE (UC.EqnInfo UC.Initial Common.BuiltinRegion UC.Factual)
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNom
 

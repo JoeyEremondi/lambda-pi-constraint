@@ -16,7 +16,9 @@
 -- This module defines unification problems, metacontexts and operations
 -- for working on them in the |Contextual| monad.
 
-module PatternUnify.Context where
+module PatternUnify.Context
+  ( module PatternUnify.ConstraintInfo
+  , module PatternUnify.Context) where
 
 import Control.Applicative
 import Control.Monad.Except
@@ -60,6 +62,8 @@ import Text.Parsec (SourcePos)
 import qualified Top.Interface.Substitution as Sub
 import qualified Top.Types.Substitution as TSub
 
+import PatternUnify.ConstraintInfo
+
 type BadEdges = [Heur.ErrorInfo ConstraintInfo]
 
 type TypeGraph = TG.StandardTypeGraph ConstraintInfo
@@ -79,15 +83,7 @@ instance Occurs Dec where
     frees _       HOLE      = []
     frees isMeta  (DEFN t)  = frees isMeta t
 
-data EqnInfo =
-  EqnInfo
-  { creationInfo :: CreationInfo
-  , infoRegion   :: Region
-  , isCF         :: IsCF
-  } deriving (Eq, Show, Generic)
 
-data CreationInfo = Initial | CreatedBy ProbId
-  deriving (Eq, Show, Generic)
 
 
 data Equation = EQN Type VAL Type VAL EqnInfo
@@ -109,18 +105,6 @@ instance Pretty Equation where
             prettyVal :: (Applicative m, LFresh m, MonadReader Size m) => VAL -> m Doc
             prettyVal v = pretty v
 
-data ConstraintInfo = ConstraintInfo
-  { edgeType    :: ConstraintType
-  , edgeEqnInfo :: EqnInfo
-  } deriving (Eq, Show, Generic)
-
-data ConstraintType =
-  InitConstr ProbId Problem
-  | DefnUpdate Nom
-  | ProbUpdate ProbId
-  | DefineMeta Nom
-  | DerivedEqn ProbId Problem
-  deriving (Eq, Show, Generic)
 
 data Problem  =  Unify Equation
               |  All Param (Bind Nom Problem)
@@ -162,8 +146,7 @@ wrapProb ((x, e) : _Gam)  p = All e (bind x (wrapProb _Gam p))
 
 
 
-newtype ProbId = ProbId {probIdToName :: Nom}
-  deriving (Eq, Show, Pretty, Generic)
+
 
 
 instance Alpha ProbId
@@ -198,8 +181,6 @@ instance Pretty ProblemState where
     pretty (Failed e)    = return $ text $ "FAILED: " ++ e
     pretty (FailPending pid)    = return $ text $ "CF IF " ++ show pid ++ " FAILS: "
 
-data IsCF = Factual | CounterFactual
-  deriving (Eq, Ord, Show, Generic)
 
 data Entry  =  E Nom Type Dec EqnInfo
             |  Prob ProbId Problem ProblemState [Entry]

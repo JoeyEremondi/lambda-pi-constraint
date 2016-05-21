@@ -502,7 +502,7 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = do --trace ("SplitChoice 
         (E alpha _T HOLE info ) ->
           case Map.lookup alpha nomMap of
             Nothing -> [e]
-            Just n2 -> 
+            Just n2 ->
               [E alpha _T HOLE info , E n2 _T HOLE (info {isCF = CounterFactual}) ]
         _ ->
           [substs (Map.toList $ ourSubs nomMap) e]
@@ -1066,7 +1066,7 @@ solver :: ProbId -> Problem -> [Entry] -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
 solver n p@(Unify q) me = do
   qFlat <- Ctx.flattenEquation q
-  Ctx.recordProblem (Ctx.DerivedEqn n p) n p
+  Ctx.recordProblem (Ctx.DerivedEqn n) n p
   setProblem n
   b <- isReflexive qFlat
   if b
