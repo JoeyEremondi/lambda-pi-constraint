@@ -334,6 +334,9 @@ sym (EQN _S s _T t pid) = EQN _T t _S s pid
 -- %% function implements the steps shown in Figure~\ref{fig:decompose}.
 -- %% excluding the $\eta$-expansion steps, which are handled by |unify|
 -- %% above.
+
+--Modified to keep expanding rigid rigid as far as we can
+--Until we hit a flex-rigid or flex-flex
 rigidRigid :: EqnInfo -> Equation -> Contextual [Equation]
 rigidRigid pid eqn =
   do
@@ -342,17 +345,22 @@ rigidRigid pid eqn =
     return retEqns
     --TODO need derived edges?
   where
+    findSubRigids :: [Equation] -> Contextual [Equation]
+    findSubRigids inList = do
+      concat <$> mapM rigidRigid' inList
+
+    --If we hit a neutral application,
     rigidRigid' (EQN SET SET SET SET _) = return []
     -- >
     rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T) _) =
-      return [EQN SET _A SET _S pid
+      findSubRigids [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B
                   (_S --> SET)
                   _T pid]
     -- >
     rigidRigid' (EQN SET (SIG _A _B) SET (SIG _S _T) _) =
-      return [EQN SET _A SET _S pid
+      findSubRigids [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B
                   (_S --> SET)
@@ -370,19 +378,19 @@ rigidRigid pid eqn =
                         (N (Var y w') [])
                         es
     rigidRigid' (EQN SET Nat SET Nat _) = return []
-    rigidRigid' (EQN SET (Fin n) SET (Fin n') _) = return [EQN Nat n Nat n' pid]
+    rigidRigid' (EQN SET (Fin n) SET (Fin n') _) = findSubRigids [EQN Nat n Nat n' pid]
     rigidRigid' (EQN SET (Vec a m) SET (Vec b n) _) =
-      return [EQN SET a SET b pid, EQN Nat m Nat n pid]
+      findSubRigids [EQN SET a SET b pid, EQN Nat m Nat n pid]
     --TODO need twins here?
     rigidRigid' (EQN SET (Eq a x y) SET (Eq a' x' y') _) =
-      return[EQN SET a SET a' pid, EQN a x a' x' pid, EQN a y a' y' pid]
+      findSubRigids [EQN SET a SET a' pid, EQN a x a' x' pid, EQN a y a' y' pid]
     rigidRigid' (EQN Nat Zero Nat Zero _) = return []
     rigidRigid' (EQN Nat (Succ m) Nat (Succ n) _) = return [EQN Nat m Nat n pid]
     rigidRigid' (EQN (Fin m) (FZero n) (Fin m') (FZero n') _) =
-      return [EQN Nat n Nat n' pid, EQN Nat m Nat m' pid, EQN Nat m Nat n pid]
+      findSubRigids [EQN Nat n Nat n' pid, EQN Nat m Nat m' pid, EQN Nat m Nat n pid]
     --TODO need twins here?
     rigidRigid' (EQN (Fin m) (FSucc n f) (Fin m') (FSucc n' f') _) =
-      return [EQN Nat n Nat n' pid
+      findSubRigids [EQN Nat n Nat n' pid
              ,EQN Nat m Nat m' pid
              ,EQN Nat m Nat n pid
              ,EQN (Fin n)
@@ -391,10 +399,10 @@ rigidRigid pid eqn =
                   f' pid]
     --TODO need to unify type indices of vectors?
     rigidRigid' (EQN (Vec a Zero) (VNil a') (Vec b Zero) (VNil b') _) =
-      return [EQN SET a SET a' pid, EQN SET b SET b' pid, EQN SET a' SET b' pid]
+      findSubRigids [EQN SET a SET a' pid, EQN SET b SET b' pid, EQN SET a' SET b' pid]
     --TODO need to unify type indices of vectors?
     rigidRigid' (EQN (Vec a (Succ m)) (VCons a' (Succ m') h t) (Vec b (Succ n)) (VCons b' (Succ n') h' t') _) =
-      return [EQN SET a SET a' pid
+      findSubRigids [EQN SET a SET a' pid
              ,EQN SET b SET b' pid
              ,EQN SET a' SET b' pid
              ,EQN Nat m Nat m' pid
@@ -406,7 +414,7 @@ rigidRigid pid eqn =
                   (Vec b n)
                   t' pid]
     rigidRigid' (EQN (Eq a x y) (ERefl a' z) (Eq b x' y') (ERefl b' z') _) =
-      return [EQN SET a SET a' pid
+      findSubRigids [EQN SET a SET a' pid
              ,EQN SET b SET b' pid
              ,EQN SET a' SET b' pid
              ,EQN a x b x' pid
@@ -425,6 +433,12 @@ rigidRigid pid eqn =
     --Anything can rigidly match with Bottom
     rigidRigid' (EQN _ (VBot _) _ _ _ ) = return []
     rigidRigid' (EQN _ _ _ (VBot _) _) = return []
+
+    --If we got to this point with a Neutral app, it's a flex-rigid
+    --That we generated from recursively digging into rigid-rigid
+    rigidRigid' q@(EQN _ (N _ _) _ _ _ ) = return [q]
+    rigidRigid' q@(EQN _ _ _ (N _ _) _ ) = return [q]
+
     --Anything else, we should be able to catch in our type graph
     rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return [] --badRigidRigid eq
 

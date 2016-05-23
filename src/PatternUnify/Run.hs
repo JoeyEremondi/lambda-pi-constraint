@@ -31,6 +31,7 @@ import qualified Data.Maybe as Maybe
 
 import qualified Data.List as List
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import Debug.Trace (trace)
 
@@ -73,7 +74,7 @@ solveEntries !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
     (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
-       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, []) $ do
+       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, [], Set.empty) $ do
           initialise
           ambulando [] [] Map.empty
           --validResult <- validate (const True)
@@ -84,8 +85,8 @@ solveEntries !es  =
           setMsg  badEdges
           return badEdges
           )  --Make sure we don't crash
-    (lcx,rcx,lastProb,_,finalBadEdges) = unsafePerformIO $ do
-        let g = (\(_,_,_,g,_) -> g) ctx
+    (lcx,rcx,lastProb,_,finalBadEdges,_) = unsafePerformIO $ do
+        let g = (\(_,_,_,g,_,_) -> g) ctx
         writeFile "out.dot" (TC.toDot g)
         return ctx
     allEntries = lcx ++ (Either.rights rcx)
@@ -169,7 +170,7 @@ initialsDependingOn (pendGraph, vertToInfo, infoToVert) initialIdents targetIden
 
 
 getContextErrors :: [Entry] -> Context -> Either [(ProbId, Region, Err)] ((), Context)
-getContextErrors startEntries cx@(lcx, rcx, _, _,_) = do
+getContextErrors startEntries cx@(lcx, rcx, _, _,_,_) = do
   let leftErrors = getErrorPairs (trail lcx)
       rightErrors = getErrorPairs (Either.rights rcx)
   case (leftErrors ++ rightErrors) of
