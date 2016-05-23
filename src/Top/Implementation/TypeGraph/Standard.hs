@@ -451,8 +451,8 @@ addEqn
   -> StandardTypeGraph
   -> m (StandardTypeGraph)
 addEqn info (v1, v2) stg = do
-    (var1, g1) <-  addTermGraph M.empty (Ln.s2n "node") v1 stg
-    (var2, g2) <-  addTermGraph M.empty (Ln.s2n "node") v2 g1
+    (var1, g1) <-  addTermGraph M.empty (Ln.s2n "theNode") v1 stg
+    (var2, g2) <-  addTermGraph M.empty (Ln.s2n "theNode") v2 g1
     --edgeNr <- Ln.fresh $ Ln.s2n "edge"
     --let ourEdge = EdgeId var1 var2 $ EdgeNrX edgeNr
     addNewEdge (var1, var2) info g2

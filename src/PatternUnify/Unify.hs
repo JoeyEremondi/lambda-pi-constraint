@@ -149,7 +149,7 @@ defineGlobal pid info x _T vinit m = --trace ("Defining global " ++ show x ++ " 
      cid <- ChoiceId <$> freshNom
      let
        v = --trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid) $
-          VChoice cid x vsingle freshVar
+          vsingle --VChoice cid x vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -1066,7 +1066,10 @@ solver :: ProbId -> Problem -> [Entry] -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
 solver n p@(Unify q) me = do
   qFlat <- Ctx.flattenEquation q
-  Ctx.recordProblem (Ctx.DerivedEqn n $ pp p) n p
+  needRecording <- not <$> Ctx.alreadyRecorded n
+  when needRecording $ do
+    Ctx.recordProblem (Ctx.DerivedEqn n $ pp p) n p
+    Ctx.markProblemInGraph n
   setProblem n
   b <- isReflexive qFlat
   if b

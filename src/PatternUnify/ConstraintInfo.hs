@@ -50,12 +50,12 @@ import qualified Top.Implementation.TypeGraph.ApplyHeuristics as Heur
 
 import Top.Solver (LogEntries)
 
-import Common (Region(..))
+import Common (Region (..))
 import Text.Parsec (SourcePos)
 
 
 newtype ProbId = ProbId {probIdToName :: Nom}
-  deriving (Eq, Show, Pretty, Generic)
+  deriving (Eq, Show, Pretty, Generic, Ord)
 
 data ConstraintInfo = ConstraintInfo
   { edgeType    :: ConstraintType
