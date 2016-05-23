@@ -135,11 +135,11 @@ edgeMessage (edgeId, edgeInfo) =
   ++ " " ++ constrStr ++ "\n"
   where
     constrStr = case (UC.edgeType edgeInfo) of
-      (UC.InitConstr _) -> "TODO0" -- Tm.prettyString prob
+      (UC.InitConstr _ str) -> str -- Tm.prettyString prob
       (UC.DefnUpdate c) -> "TODO1"
       (UC.ProbUpdate c) -> "TODO2"
       (UC.DefineMeta c) -> "TODO3"
-      (UC.DerivedEqn _) -> "TODO4" --Tm.prettyString prob
+      (UC.DerivedEqn _ str) -> str --Tm.prettyString prob
 
 
 unsolvedMsg :: [Tm.Nom] -> (Tm.Nom, Common.Region, Maybe Tm.VAL) -> (Common.Region, String)

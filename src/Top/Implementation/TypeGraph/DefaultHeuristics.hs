@@ -18,13 +18,17 @@ import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
 import Top.Solver
 
+import PatternUnify.ConstraintInfo as Info
+
+type Info = Info.ConstraintInfo
+
 --import Debug.Trace (trace)
 
 -----------------------------------------------------------------------------
 
-defaultHeuristics :: Show info => Path (EdgeId, info) -> [Heuristic info]
+defaultHeuristics :: Path (EdgeId, Info) -> [Heuristic Info]
 defaultHeuristics path =
-   [ highParticipation 1.00 path, firstComeFirstBlamed ]
+   [ avoidDerivedEdges, highParticipation 0.80 path, firstComeFirstBlamed ]
 
 -----------------------------------------------------------------------------
 
@@ -82,6 +86,14 @@ selectConstraintNumbers is =
    Heuristic (
       let f (EdgeId _ _ cnr, _) = return (cnr `elem` is)
       in edgeFilter ("select constraint numbers " ++ show is) f)
+
+
+-- |Select only specific constraint numbers
+avoidDerivedEdges :: Heuristic Info
+avoidDerivedEdges =
+   Heuristic (
+      let f (_, info) = return $ (Info.creationInfo . Info.edgeEqnInfo) info == Info.Initial
+      in edgeFilter ("avoid derived edges ") f)
 
 -- -- |Select only the constraints for which there is evidence in the predicates
 -- -- of the current state that the constraint at hand is incorrect.

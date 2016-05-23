@@ -1066,7 +1066,7 @@ solver :: ProbId -> Problem -> [Entry] -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
 solver n p@(Unify q) me = do
   qFlat <- Ctx.flattenEquation q
-  Ctx.recordProblem (Ctx.DerivedEqn n) n p
+  Ctx.recordProblem (Ctx.DerivedEqn n $ pp p) n p
   setProblem n
   b <- isReflexive qFlat
   if b

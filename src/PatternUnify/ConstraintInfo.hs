@@ -63,11 +63,12 @@ data ConstraintInfo = ConstraintInfo
   } deriving (Eq, Show, Generic)
 
 data ConstraintType =
-  InitConstr ProbId
+  InitConstr ProbId String
   | DefnUpdate Nom
   | ProbUpdate ProbId
   | DefineMeta Nom
-  | DerivedEqn ProbId
+  | DerivedEqn ProbId String
+  | ChoiceEdge Nom
   deriving (Eq, Show, Generic)
 
 data EqnInfo =
