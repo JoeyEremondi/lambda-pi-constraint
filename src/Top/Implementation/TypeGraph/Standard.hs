@@ -53,6 +53,10 @@ instance Show (StandardTypeGraph) where
       "(Type graph consists of " ++ show (M.size (equivalenceGroupMap stg)) ++ " equivalence groups)"
 
 
+allEdges :: StandardTypeGraph -> [(EdgeId, Info)]
+allEdges stg =
+  concatMap edges $ M.elems $ equivalenceGroupMap stg
+
 
 -- addElim subs original unique (Tm.Elim can args) g0 =
 addElim :: (Ln.Fresh m, TypeGraph graph info) => Tm.Subs -> Maybe Tm.VAL -> Tm.Nom -> Tm.Elim -> graph -> m (VertexId, graph)
@@ -95,10 +99,10 @@ instance TypeGraph (StandardTypeGraph) Info where
                Tm.VBot _ -> do
                  vinit <- VertexId <$> Ln.fresh unique
                  return (vinit, addVertex vinit (VertBot, original) stg)
-               Tm.VChoice _ _ s t -> do
+               Tm.VChoice _ alpha s t -> do
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1
-                 g3 <- addNewEdge (vs, vt) (Info.choiceInfo) g2
+                 g3 <- addNewEdge (vs, vt) (Info.choiceInfo alpha) g2
                  --TODO representative vertex?
                  return (vs, g3)
 
@@ -150,7 +154,7 @@ instance TypeGraph (StandardTypeGraph) Info where
       return $ addEdge (EdgeId v1 v2 cnr) info (stg { constraintNumber = ourFresh})
 
    deleteEdge edge@(EdgeId v1 _ _) =
-      propagateRemoval v1 . updateGroupOf v1 (removeEdge edge)
+      removeDerived edge . propagateRemoval v1 . updateGroupOf v1 (removeEdge edge)
 
    verticesInGroupOf i =
       vertices . getGroupOf i
@@ -300,6 +304,24 @@ propagateRemoval i stg =
            . deleteClique cliqueLeft
            $ new
         else new
+
+removeDerived :: EdgeId -> StandardTypeGraph -> StandardTypeGraph
+removeDerived e stg =
+  let
+    edgePairs = allEdges stg
+    [ourInfo] = [info | (someEdge, info) <- edgePairs, someEdge == e]
+    mEdgesToRemove = do
+      ourPid <-
+        case Info.edgeType ourInfo of
+          Info.InitConstr pid _ -> Just pid
+          _ -> Nothing
+      return [eid | (eid, someInfo) <- edgePairs, (Info.creationInfo . Info.edgeEqnInfo) someInfo == Info.CreatedBy ourPid ]
+
+  in
+    case mEdgesToRemove of
+      Nothing -> stg
+      Just edgesToRemove -> foldr deleteEdge stg edgesToRemove
+
 
 splitClass ::  VertexId -> StandardTypeGraph -> ([VertexId], StandardTypeGraph)
 splitClass vid stg =

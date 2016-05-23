@@ -50,7 +50,7 @@ import qualified Top.Implementation.TypeGraph.ApplyHeuristics as Heur
 
 import Top.Solver (LogEntries)
 
-import Common (Region)
+import Common (Region(..))
 import Text.Parsec (SourcePos)
 
 
@@ -84,4 +84,7 @@ data CreationInfo = Initial | CreatedBy ProbId
 data IsCF = Factual | CounterFactual
   deriving (Eq, Ord, Show, Generic)
 
-choiceInfo = error "TODO"
+choiceInfo n =
+  ConstraintInfo
+    (ChoiceEdge n)
+    $ EqnInfo Initial BuiltinRegion Factual
