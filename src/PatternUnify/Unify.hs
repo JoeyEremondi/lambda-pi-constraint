@@ -149,7 +149,7 @@ defineGlobal pid info x _T vinit m = --trace ("Defining global " ++ show x ++ " 
      cid <- ChoiceId <$> freshNom
      let
        v = --trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid) $
-          vsingle --VChoice cid x vsingle freshVar
+          VChoice cid x vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -425,10 +425,10 @@ rigidRigid pid eqn =
              ,EQN b y' b' z' pid
              ,EQN a' z b' z' pid]
     -- >
-    rigidRigid' (EQN _T1 (VChoice _ nchoice r s) _T2 t info) =
-      error "Choice should not be rigid"
-    rigidRigid' (EQN _T1 t _T2 (VChoice _ nchoice r s) info) =
-      error "Choice should not be rigid"
+    -- rigidRigid' (EQN _T1 (VChoice _ nchoice r s) _T2 t info) =
+    --   error "Choice should not be rigid"
+    -- rigidRigid' (EQN _T1 t _T2 (VChoice _ nchoice r s) info) =
+    --   error "Choice should not be rigid"
 
     --Anything can rigidly match with Bottom
     rigidRigid' (EQN _ (VBot _) _ _ _ ) = return []
@@ -436,8 +436,11 @@ rigidRigid pid eqn =
 
     --If we got to this point with a Neutral app, it's a flex-rigid
     --That we generated from recursively digging into rigid-rigid
+    --Same with choice
     rigidRigid' q@(EQN _ (N _ _) _ _ _ ) = return [q]
     rigidRigid' q@(EQN _ _ _ (N _ _) _ ) = return [q]
+    rigidRigid' q@(EQN _ (VChoice _ _ _ _) _ _ _ ) = return [q]
+    rigidRigid' q@(EQN _ _ _ (VChoice _ _ _ _) _ ) = return [q]
 
     --Anything else, we should be able to catch in our type graph
     rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return [] --badRigidRigid eq

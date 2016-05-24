@@ -37,6 +37,7 @@ data StandardTypeGraph = STG
    , equivalenceGroupCounter :: Int
    , possibleErrors          :: [VertexId]
    , constraintNumber        :: Tm.Nom
+   , choiceEdges             :: [(Tm.VAL, Tm.VAL)]
    }
 
 instance Empty (StandardTypeGraph ) where
@@ -46,6 +47,7 @@ instance Empty (StandardTypeGraph ) where
       , equivalenceGroupCounter = 0
       , possibleErrors          = []
       , constraintNumber        = Ln.s2n "constr"
+      , choiceEdges = []
       }
 
 instance Show (StandardTypeGraph) where
@@ -102,7 +104,15 @@ instance TypeGraph (StandardTypeGraph) Info where
                Tm.VChoice _ alpha s t -> do
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1
-                 g3 <- addNewEdge (vs, vt) (Info.choiceInfo alpha) g2
+                 let allChoices = choiceEdges g2
+                     needToAddChoice = (s, t) `elem` allChoices
+                 g3 <-
+                  case needToAddChoice of
+                    True ->
+                      --Add this choice and mark it as added
+                      addNewEdge (vs, vt) (Info.choiceInfo alpha s t)
+                        (g2 {choiceEdges = (s,t) : allChoices})
+                    False -> return g2
                  --TODO representative vertex?
                  return (vs, g3)
 
@@ -217,7 +227,8 @@ instance TypeGraph (StandardTypeGraph) Info where
 
    toDot g =
      let
-       eqGroups = M.elems $ equivalenceGroupMap g
+       --TODO keep singletons? just makes graph easier to read
+       eqGroups = filter ((> 1) . length . vertices) $ M.elems $ equivalenceGroupMap g
        nodePairs = concatMap vertices eqGroups
        theEdges = [(v1, v2) | (EdgeId v1 v2 _,_) <- concatMap (edges) eqGroups]
 
@@ -232,6 +243,7 @@ instance TypeGraph (StandardTypeGraph) Info where
        dotLabel vid _ = show vid
 
        dotEdges :: VertexId -> VertexInfo -> (String)
+       dotEdges _ _ = "" --TODO remove to show derived edges
        dotEdges vid (VertBot, _) = ""
        dotEdges vid (VVar,_) = ("")
        dotEdges vid ((VCon k),_) = ("")

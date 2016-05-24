@@ -140,7 +140,7 @@ edgeMessage (edgeId, edgeInfo) =
       (UC.ProbUpdate c) -> "TODO2"
       (UC.DefineMeta c) -> "TODO3"
       (UC.DerivedEqn _ str) -> str --Tm.prettyString prob
-      (UC.ChoiceEdge alpha) -> "Choice Edge " ++ show alpha
+      (UC.ChoiceEdge alpha s t) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t
 
 
 unsolvedMsg :: [Tm.Nom] -> (Tm.Nom, Common.Region, Maybe Tm.VAL) -> (Common.Region, String)
