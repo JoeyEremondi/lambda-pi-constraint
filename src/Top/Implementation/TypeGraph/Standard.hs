@@ -112,8 +112,8 @@ instance TypeGraph (StandardTypeGraph) Info where
                       (vc, gInter1) <- addHead Nothing unique (Tm.Meta choiceIntermediate) g2
 
                       --Add this choice and mark it as added
-                      gInter2 <- addNewEdge (vs, vc) (Info.choiceInfo Info.LeftChoice alpha s t) gInter1
-                      gRet <- addNewEdge (vt, vc) (Info.choiceInfo Info.RightChoice alpha s t) gInter2
+                      gInter2 <- addNewEdge (vs, vc) (Info.choiceInfo (Tm.choiceRegion cid) Info.LeftChoice alpha s t) gInter1
+                      gRet <- addNewEdge (vt, vc) (Info.choiceInfo (Tm.choiceRegion cid) Info.RightChoice alpha s t) gInter2
                       return (vc, gRet {choiceEdges = ((s,t), vc) : allChoices})
 
                     Just vc -> return (vc, g2)

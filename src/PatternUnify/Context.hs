@@ -57,7 +57,7 @@ import qualified Top.Implementation.TypeGraph.ApplyHeuristics as Heur
 
 import Top.Solver (LogEntries)
 
-import Common (Region)
+import PatternUnify.Tm (Region)
 import Text.Parsec (SourcePos)
 
 import qualified Top.Interface.Substitution as Sub
@@ -72,7 +72,6 @@ type TypeGraph = TG.StandardTypeGraph
 data Dec = HOLE | DEFN VAL
   deriving (Show, Generic)
 
-instance Alpha Region
 instance Subst VAL Region
 
 instance Alpha Dec

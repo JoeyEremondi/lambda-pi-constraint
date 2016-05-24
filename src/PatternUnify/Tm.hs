@@ -33,6 +33,16 @@ import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 
+data Region =
+  SourceRegion
+    { regionFile   :: String
+    , regionLine   :: Int
+    , regionColumn :: Int }
+  | BuiltinRegion
+  deriving (Eq, Ord, Show, Generic)
+
+instance Alpha Region
+
 prettyString :: (Pretty a)
              => a -> String
 prettyString t = render $ runPretty $ pretty t
@@ -62,7 +72,7 @@ data VAL where
 --        ERefl :: VAL -> VAL -> VAL
     deriving (Show, Generic)
 
-newtype ChoiceId = ChoiceId {choiceIdToName :: Nom}
+data ChoiceId = ChoiceId {choiceIdToName :: Nom, choiceRegion :: Region}
   deriving (Eq, Show, Generic)
 instance Alpha ChoiceId
 

@@ -50,7 +50,7 @@ import Top.Implementation.TypeGraph.DefaultHeuristics
 
 import System.IO.Unsafe (unsafePerformIO)
 
-import Common (Region (..), startRegion)
+import PatternUnify.Tm (Region (..))
 
 
 -- Allocate a fresh name so the counter starts from 1, to avoid clashing
@@ -103,7 +103,7 @@ solveEntries !es  =
     --   Right _ -> render $ runPretty $ pretty ctx
   in --trace ("\n\n=============\nFinal\n" ++ List.intercalate "\n" (map pp lcx)) $
     case (finalBadEdges, result) of
-      ([], Left err) -> Left $ ErrorResult ctx [StringErr (initLoc, startRegion, err)]
+      ([], Left err) -> Left $ ErrorResult ctx [StringErr (initLoc, BuiltinRegion, err)]
       ([], Right _) ->
         case getContextErrors es ctx of
           Left [] -> error "Empty Left from getContextErrors"

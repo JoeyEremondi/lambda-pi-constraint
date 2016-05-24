@@ -29,6 +29,8 @@ import Debug.Trace (trace)
 
 import qualified Data.Map as Map
 
+import PatternUnify.Tm (Region (..))
+
 type ConstrContext = [(Common.Name, Tm.VAL)]
 
 data WholeEnv =
@@ -55,11 +57,11 @@ data ConstrainState =
   ConstrainState
   { intStore      :: [Int]
   , sourceMetas   :: [Tm.Nom]
-  , metaLocations :: Map.Map Tm.Nom Common.Region
+  , metaLocations :: Map.Map Tm.Nom Region
   --, quantParams :: [(Tm.Nom, Tm.VAL)]
   }
 
--- getRegionDict :: [Constraint] -> Map.Map Tm.Nom Common.Region
+-- getRegionDict :: [Constraint] -> Map.Map Tm.Nom Region
 -- getRegionDict = foldr foldFun $ Map.singleton (LN.string2Name "builtinLoc") (Common.BuiltinRegion)
 --   where
 --     foldFun cstr dictSoFar =
@@ -86,12 +88,12 @@ addValue x env = env {valueEnv = x : valueEnv env }
 addType :: (Int, Tm.VAL) -> WholeEnv -> WholeEnv
 addType x env = env {typeEnv = x : typeEnv env }
 
-recordSourceMeta :: Common.Region -> Tm.Nom -> ConstraintM ()
+recordSourceMeta :: Region -> Tm.Nom -> ConstraintM ()
 recordSourceMeta reg nm = do
   lift $ (modify $ \x -> x {sourceMetas = (nm : sourceMetas x)
                            ,metaLocations = Map.insert nm reg  $ metaLocations x } )
 
-recordTypeMeta :: Common.Region -> Tm.Nom -> ConstraintM ()
+recordTypeMeta :: Region -> Tm.Nom -> ConstraintM ()
 recordTypeMeta reg nm = do
   lift $ (modify $ \x -> x {metaLocations = Map.insert nm reg  $ metaLocations x } )
 
@@ -105,7 +107,7 @@ constrReflexive e@(UC.Prob _ (UC.Unify (UC.EQN Tm.SET s Tm.SET t _)) _ _ ) =
   (null $ Tm.fmvs s ++ Tm.fmvs t) && s == t
 constrReflexive _ = False
 
-solveConstraintM :: ConstraintM (Tm.Nom, Tm.VAL) -> Either [(Common.Region, String)] (Tm.Type, Tm.VAL, Tm.Subs, Map.Map Tm.Nom Common.Region)
+solveConstraintM :: ConstraintM (Tm.Nom, Tm.VAL) -> Either [(Region, String)] (Tm.Type, Tm.VAL, Tm.Subs, Map.Map Tm.Nom Region)
 solveConstraintM cm =
   let
     (((nom, normalForm), rawConstraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
@@ -131,7 +133,7 @@ solveConstraintM cm =
               map (unsolvedMsg (sourceMetas cstate) ) unsolved
           sms -> map (unsolvedMsg (sourceMetas cstate) ) sms
 
---mkErrorPair :: Run.SolverErr -> (Common.Region, String)
+--mkErrorPair :: Run.SolverErr -> (Region, String)
 mkErrorPair  (Run.StringErr (UC.ProbId ident, reg, msg)) = (reg, msg)
 mkErrorPair  (Run.GraphErr edgeInfos) =
   (UC.infoRegion $ UC.edgeEqnInfo $ snd $ head edgeInfos,
@@ -151,7 +153,7 @@ edgeMessage (edgeId, edgeInfo) =
       (UC.ChoiceEdge _ alpha s t) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t
 
 
-unsolvedMsg :: [Tm.Nom] -> (Tm.Nom, Common.Region, Maybe Tm.VAL) -> (Common.Region, String)
+unsolvedMsg :: [Tm.Nom] -> (Tm.Nom, Region, Maybe Tm.VAL) -> (Region, String)
 unsolvedMsg sourceMetas (nm,reg,_) | not (nm `elem` sourceMetas) =
   ( reg
   , show nm ++ " Could not infer type. Try adding type annotations, or report this as a bug.")
@@ -381,7 +383,7 @@ constrEval (tenv, venv) it =
 --Initially, the only constraint we express is that two types unify
 data Constraint =
   Constraint
-    {conRegion :: Common.Region
+    {conRegion :: Region
     , conEntry :: UC.Entry }
     deriving (Show)
 
@@ -399,14 +401,14 @@ freshInt = do
 
 --We abstract over the environment
 --And return a value which applies the local variables to it
-fresh :: Common.Region -> WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
+fresh :: Region -> WholeEnv -> Tm.VAL -> ConstraintM Tm.VAL
 fresh reg env tp = do
     ourNom <- freshNom $ "α_" ++ Common.regionName reg ++ "__"
     recordTypeMeta reg ourNom
     declareWithNom reg env tp ourNom
 
 
-declareWithNom :: Common.Region -> WholeEnv -> Tm.Type -> Tm.Nom -> ConstraintM Tm.VAL
+declareWithNom :: Region -> WholeEnv -> Tm.Type -> Tm.Nom -> ConstraintM Tm.VAL
 declareWithNom reg env tp ourNom = do
   let
     extendArrow (i,t) arrowSoFar =
@@ -440,11 +442,11 @@ freshTopLevel :: Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
     ourNom <- freshNom "topLevel"
     let ourEntry =
-          UC.E ourNom tp UC.HOLE (UC.EqnInfo UC.Initial Common.BuiltinRegion UC.Factual)
+          UC.E ourNom tp UC.HOLE (UC.EqnInfo UC.Initial BuiltinRegion UC.Factual)
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNom
 
-unify :: Common.Region -> Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
+unify :: Region -> Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
 unify reg v1 v2 tp env = do
     probId <- UC.ProbId <$> freshNom ("??_" ++ Common.regionName reg ++ "_")
     --TODO right to reverse?
@@ -489,7 +491,7 @@ addConstr c = tell [c]
 
 
 
-unknownIdent :: Common.Region -> WholeEnv -> String -> ConstraintM a
+unknownIdent :: Region -> WholeEnv -> String -> ConstraintM a
 unknownIdent reg env s = error $
   show reg ++ "Unknown IIdentifier: " ++ show s
   ++ " in env " ++ show env

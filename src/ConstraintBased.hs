@@ -39,8 +39,8 @@ checker :: TypeChecker
 checker (valNameEnv, typeContext) term =
   let
     toPos (reg, err) = case reg of
-      BuiltinRegion -> (Nothing, err)
-      pos@(SourceRegion _ _ _) -> (Just pos, err)
+      Tm.BuiltinRegion -> (Nothing, err)
+      pos@(Tm.SourceRegion _ _ _) -> (Just pos, err)
     (typeGlobals, typeLocals) = splitContext typeContext
     (valGlobals, valLocals) = splitContext  valNameEnv
     genResult =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term

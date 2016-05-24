@@ -33,14 +33,7 @@ import GHC.Generics
 
 import qualified Unbound.Generics.LocallyNameless as Ln
 
-data Region =
-  SourceRegion
-    { regionFile   :: String
-    , regionLine   :: Int
-    , regionColumn :: Int }
-  | BuiltinRegion
-  deriving (Eq, Ord, Show, Generic)
-
+import PatternUnify.Tm (Region(..))
 
 
 prettySource :: Region -> String

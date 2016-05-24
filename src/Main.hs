@@ -13,6 +13,8 @@ import PatternUnify.Kit
 
 import Top.Implementation.TypeGraph.Class
 
+import PatternUnify.Tm (Region (..))
+
 main :: IO ()
 main = do
   args <- getArgs

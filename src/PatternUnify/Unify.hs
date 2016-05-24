@@ -146,7 +146,7 @@ defineGlobal pid info x _T vinit m = --trace ("Defining global " ++ show x ++ " 
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
-     cid <- ChoiceId <$> freshNom
+     cid <- ChoiceId <$> freshNom <*> return (infoRegion info)
      let
        v = --trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid) $
           VChoice cid x vsingle freshVar
