@@ -28,7 +28,7 @@ type Info = Info.ConstraintInfo
 
 defaultHeuristics :: Path (EdgeId, Info) -> [Heuristic Info]
 defaultHeuristics path =
-   [ avoidDerivedEdges, highParticipation 0.80 path, firstComeFirstBlamed ]
+   [ avoidDerivedEdges, listOfVotes, highParticipation 0.80 path, firstComeFirstBlamed ]
 
 -----------------------------------------------------------------------------
 
@@ -94,6 +94,19 @@ avoidDerivedEdges =
    Heuristic (
       let f (_, info) = return $ (Info.creationInfo . Info.edgeEqnInfo) info == Info.Initial
       in edgeFilter ("avoid derived edges ") f)
+
+
+listOfVotes =
+  Heuristic $ Voting $
+    [ preferChoiceEdges
+    ]
+
+preferChoiceEdges :: (Monad m) => Selector m Info
+preferChoiceEdges = Selector ("Choice edges", f)
+  where
+    f pair@(edge, info) = case Info.edgeType info of
+      ChoiceEdge _ _ _ -> return $ Just (10, "Choice", [edge], info)
+      _ -> return Nothing
 
 -- -- |Select only the constraints for which there is evidence in the predicates
 -- -- of the current state that the constraint at hand is incorrect.

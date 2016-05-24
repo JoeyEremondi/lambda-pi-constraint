@@ -281,9 +281,11 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
               --Ensure that the annotation type and our inferred type unify
               --We have to evaluate ii $ our normal form
               --trace ("INF " ++ show e ++ "\nunifying " ++ show [tyAnnot, tyInferred] ++ "\nenv " ++ show g) $
-              case (tyAnnot, tyInferred) of
+              --Avoid problems that don't affect unification
+              let areSame = ( (null $ Tm.fmvs tyAnnot ++ Tm.fmvs tyInferred) && tyAnnot == tyInferred)
+              case areSame of
                 --Get rid of a bunch of useless constraints
-                (Tm.SET, Tm.SET) -> return ()
+                True -> return ()
                 _ ->
                   unifySets reg tyInferred tyAnnot g
 

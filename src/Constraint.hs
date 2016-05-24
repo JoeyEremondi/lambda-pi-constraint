@@ -18,6 +18,7 @@ import qualified Unbound.Generics.LocallyNameless as LN
 
 import qualified PatternUnify.Tm as Tm
 
+import qualified PatternUnify.Check as Check
 import qualified PatternUnify.Context as UC
 
 import qualified PatternUnify.Run as Run
@@ -98,13 +99,20 @@ runConstraintM :: ConstraintM a -> a
 runConstraintM cm =
   fst $ fst $  runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty  )
 
+--Filter out things that don't affect unification because they have no vars
+constrReflexive :: UC.Entry -> Bool
+constrReflexive e@(UC.Prob _ (UC.Unify (UC.EQN Tm.SET s Tm.SET t _)) _ _ ) =
+  (null $ Tm.fmvs s ++ Tm.fmvs t) && s == t
+constrReflexive _ = False
+
 solveConstraintM :: ConstraintM (Tm.Nom, Tm.VAL) -> Either [(Common.Region, String)] (Tm.Type, Tm.VAL, Tm.Subs, Map.Map Tm.Nom Common.Region)
 solveConstraintM cm =
   let
-    (((nom, normalForm), constraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
+    (((nom, normalForm), rawConstraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
     --regionDict = getRegionDict constraints
     ret = do
-      (_, context@(cl, cr, probId, finalGraph,finalStr,_)) <- Run.solveEntries $ map conEntry constraints
+      (_, context@(cl, cr, probId, finalGraph,finalStr,_)) <-
+        Run.solveEntries $ filter (not . constrReflexive) $  map conEntry rawConstraints
       let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (cl)
       let finalType = Tm.unsafeFlatten $ evalState (UC.metaValue nom) context
       let sourceSubs = Map.map Tm.unsafeFlatten $ Map.filterWithKey (\k _ -> k `elem` sourceMetas cstate) metaSubs

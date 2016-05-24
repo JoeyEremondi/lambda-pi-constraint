@@ -12,6 +12,7 @@
 module Top.Implementation.TypeGraph.Standard where
 
 import Data.List (nub)
+import qualified Data.List as List
 import qualified Data.Map as M
 import Data.Maybe
 import qualified PatternUnify.Tm as Tm
@@ -37,7 +38,7 @@ data StandardTypeGraph = STG
    , equivalenceGroupCounter :: Int
    , possibleErrors          :: [VertexId]
    , constraintNumber        :: Tm.Nom
-   , choiceEdges             :: [(Tm.VAL, Tm.VAL)]
+   , choiceEdges             :: [((Tm.VAL, Tm.VAL), VertexId)]
    }
 
 instance Empty (StandardTypeGraph ) where
@@ -105,16 +106,19 @@ instance TypeGraph (StandardTypeGraph) Info where
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1
                  let allChoices = choiceEdges g2
-                     needToAddChoice = (s, t) `elem` allChoices
-                 g3 <-
-                  case needToAddChoice of
-                    True ->
+                 case List.lookup (s,t) allChoices of
+                    Nothing -> do
+                      choiceIntermediate <- Ln.fresh $ Ln.s2n "_choice"
+                      (vc, gInter1) <- addHead Nothing unique (Tm.Meta choiceIntermediate) g2
+
                       --Add this choice and mark it as added
-                      addNewEdge (vs, vt) (Info.choiceInfo alpha s t)
-                        (g2 {choiceEdges = (s,t) : allChoices})
-                    False -> return g2
+                      gInter2 <- addNewEdge (vs, vc) (Info.choiceInfo alpha s t) gInter1
+                      gRet <- addNewEdge (vt, vc) (Info.choiceInfo alpha s t) gInter2
+                      return (vc, gRet {choiceEdges = ((s,t), vc) : allChoices})
+
+                    Just vc -> return (vc, g2)
                  --TODO representative vertex?
-                 return (vs, g3)
+
 
                Tm.C ctor args -> do
                    fresh1 <- Ln.fresh unique
@@ -228,7 +232,7 @@ instance TypeGraph (StandardTypeGraph) Info where
    toDot g =
      let
        --TODO keep singletons? just makes graph easier to read
-       eqGroups = filter ((> 1) . length . vertices) $ M.elems $ equivalenceGroupMap g
+       eqGroups = equivalenceGroupMap g --filter ((> 1) . length . vertices) $ M.elems $ equivalenceGroupMap g
        nodePairs = concatMap vertices eqGroups
        theEdges = [(v1, v2) | (EdgeId v1 v2 _,_) <- concatMap (edges) eqGroups]
 
@@ -243,7 +247,7 @@ instance TypeGraph (StandardTypeGraph) Info where
        dotLabel vid _ = show vid
 
        dotEdges :: VertexId -> VertexInfo -> (String)
-       dotEdges _ _ = "" --TODO remove to show derived edges
+       --dotEdges _ _ = "" --TODO remove to show derived edges
        dotEdges vid (VertBot, _) = ""
        dotEdges vid (VVar,_) = ("")
        dotEdges vid ((VCon k),_) = ("")
