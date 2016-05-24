@@ -62,13 +62,16 @@ data ConstraintInfo = ConstraintInfo
   , edgeEqnInfo :: EqnInfo
   } deriving (Eq, Show, Generic)
 
+data ChoiceEdge = LeftChoice | RightChoice
+  deriving (Eq, Ord, Show, Generic)
+
 data ConstraintType =
   InitConstr ProbId String
   | DefnUpdate Nom
   | ProbUpdate ProbId
   | DefineMeta Nom
   | DerivedEqn ProbId String
-  | ChoiceEdge Nom VAL VAL
+  | ChoiceEdge ChoiceEdge Nom VAL VAL
   deriving (Eq, Show, Generic)
 
 data EqnInfo =
@@ -84,7 +87,7 @@ data CreationInfo = Initial | CreatedBy ProbId
 data IsCF = Factual | CounterFactual
   deriving (Eq, Ord, Show, Generic)
 
-choiceInfo n x y =
+choiceInfo choice n x y =
   ConstraintInfo
-    (ChoiceEdge n x y)
+    (ChoiceEdge choice n x y)
     $ EqnInfo Initial BuiltinRegion Factual

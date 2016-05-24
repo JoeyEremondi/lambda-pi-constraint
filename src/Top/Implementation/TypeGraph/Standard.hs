@@ -102,18 +102,18 @@ instance TypeGraph (StandardTypeGraph) Info where
                Tm.VBot _ -> do
                  vinit <- VertexId <$> Ln.fresh unique
                  return (vinit, addVertex vinit (VertBot, original) stg)
-               Tm.VChoice _ alpha s t -> do
+               Tm.VChoice cid alpha s t -> do
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1
                  let allChoices = choiceEdges g2
                  case List.lookup (s,t) allChoices of
                     Nothing -> do
-                      choiceIntermediate <- Ln.fresh $ Ln.s2n "_choice"
+                      choiceIntermediate <- Ln.fresh $ Ln.s2n $ "_choice_" ++ show (Tm.choiceIdToName cid)
                       (vc, gInter1) <- addHead Nothing unique (Tm.Meta choiceIntermediate) g2
 
                       --Add this choice and mark it as added
-                      gInter2 <- addNewEdge (vs, vc) (Info.choiceInfo alpha s t) gInter1
-                      gRet <- addNewEdge (vt, vc) (Info.choiceInfo alpha s t) gInter2
+                      gInter2 <- addNewEdge (vs, vc) (Info.choiceInfo Info.LeftChoice alpha s t) gInter1
+                      gRet <- addNewEdge (vt, vc) (Info.choiceInfo Info.RightChoice alpha s t) gInter2
                       return (vc, gRet {choiceEdges = ((s,t), vc) : allChoices})
 
                     Just vc -> return (vc, g2)
@@ -232,7 +232,8 @@ instance TypeGraph (StandardTypeGraph) Info where
    toDot g =
      let
        --TODO keep singletons? just makes graph easier to read
-       eqGroups = equivalenceGroupMap g --filter ((> 1) . length . vertices) $ M.elems $ equivalenceGroupMap g
+       --filter ((> 1) . length . vertices) $
+       eqGroups =  M.elems $ equivalenceGroupMap g
        nodePairs = concatMap vertices eqGroups
        theEdges = [(v1, v2) | (EdgeId v1 v2 _,_) <- concatMap (edges) eqGroups]
 
@@ -247,7 +248,7 @@ instance TypeGraph (StandardTypeGraph) Info where
        dotLabel vid _ = show vid
 
        dotEdges :: VertexId -> VertexInfo -> (String)
-       --dotEdges _ _ = "" --TODO remove to show derived edges
+       dotEdges _ _ = "" --TODO remove to show derived edges
        dotEdges vid (VertBot, _) = ""
        dotEdges vid (VVar,_) = ("")
        dotEdges vid ((VCon k),_) = ("")

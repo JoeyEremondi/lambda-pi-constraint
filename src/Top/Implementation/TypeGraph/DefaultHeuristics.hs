@@ -105,7 +105,7 @@ preferChoiceEdges :: (Monad m) => Selector m Info
 preferChoiceEdges = Selector ("Choice edges", f)
   where
     f pair@(edge, info) = case Info.edgeType info of
-      ChoiceEdge _ _ _ -> return $ Just (10, "Choice", [edge], info)
+      ChoiceEdge Info.LeftChoice _ _ _ -> return $ Just (10, "Choice", [edge], info)
       _ -> return Nothing
 
 -- -- |Select only the constraints for which there is evidence in the predicates
