@@ -101,7 +101,7 @@ solveEntries !es  =
     --     initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     --     ++ "\nErrorGraph " ++ finalStr
     --   Right _ -> render $ runPretty $ pretty ctx
-  in --trace ("\n\n=============\nFinal\n" ++ List.intercalate "\n" (map pp lcx)) $
+  in trace ("\n\n=============\nFinal\n" ++ List.intercalate "\n" (map pp lcx)) $
     case (finalBadEdges, result) of
       ([], Left err) -> Left $ ErrorResult ctx [StringErr (initLoc, BuiltinRegion, err)]
       ([], Right _) ->

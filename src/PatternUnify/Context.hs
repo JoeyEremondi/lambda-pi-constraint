@@ -616,3 +616,10 @@ flattenEquation :: (Fresh m) => Equation -> m Equation
 flattenEquation (EQN _T1 t1 _T2 t2 info) =
   EQN <$> flattenChoice _T1 <*> flattenChoice t1
     <*> flattenChoice _T2 <*> flattenChoice t2 <*> return info
+
+
+finalSub :: ContextL -> SubsList
+finalSub = Maybe.mapMaybe getDef
+  where
+    getDef (E alpha _ (DEFN t) _ ) = Just (alpha, t)
+    getDef _ = Nothing

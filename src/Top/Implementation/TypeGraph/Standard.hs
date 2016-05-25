@@ -326,8 +326,11 @@ removeDerived :: EdgeId -> StandardTypeGraph -> StandardTypeGraph
 removeDerived e stg =
   let
     edgePairs = allEdges stg
-    [ourInfo] = [info | (someEdge, info) <- edgePairs, someEdge == e]
     mEdgesToRemove = do
+      let ourInfoList = [info | (someEdge, info) <- edgePairs, someEdge == e]
+      ourInfo <- case ourInfoList of
+        [ourInfo] -> return ourInfo
+        _ -> Nothing
       ourPid <-
         case Info.edgeType ourInfo of
           Info.InitConstr pid _ -> Just pid

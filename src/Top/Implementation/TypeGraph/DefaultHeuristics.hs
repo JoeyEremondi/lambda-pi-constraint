@@ -18,6 +18,8 @@ import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
 import Top.Solver
 
+import Top.Implementation.TypeGraph.ClassMonadic
+
 import PatternUnify.ConstraintInfo as Info
 
 type Info = Info.ConstraintInfo
@@ -101,11 +103,16 @@ listOfVotes =
     [ preferChoiceEdges
     ]
 
-preferChoiceEdges :: (Monad m) => Selector m Info
+preferChoiceEdges :: (HasTypeGraph m Info) => Selector m Info
 preferChoiceEdges = Selector ("Choice edges", f)
   where
-    f pair@(edge, info) = case Info.edgeType info of
-      ChoiceEdge Info.LeftChoice _ _ _ -> return $ Just (10, "Choice", [edge], info)
+    f pair@(edge@(EdgeId vc _ _), info) = case Info.edgeType info of
+      ChoiceEdge Info.LeftChoice _ _ _ -> do
+        currentConstants <- constantsInGroupOf vc
+        newConstants <- doWithoutEdge pair $ constantsInGroupOf vc
+        case (length currentConstants > length newConstants) of
+          True -> return $ Just (10, "Choice", [edge], info)
+          _ -> return Nothing
       _ -> return Nothing
 
 -- -- |Select only the constraints for which there is evidence in the predicates

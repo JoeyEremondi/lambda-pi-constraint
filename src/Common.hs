@@ -33,7 +33,7 @@ import GHC.Generics
 
 import qualified Unbound.Generics.LocallyNameless as Ln
 
-import PatternUnify.Tm (Region(..))
+import PatternUnify.Tm (Region (..))
 
 
 prettySource :: Region -> String

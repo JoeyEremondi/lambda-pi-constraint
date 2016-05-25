@@ -66,11 +66,11 @@ data ChoiceEdge = LeftChoice | RightChoice
   deriving (Eq, Ord, Show, Generic)
 
 data ConstraintType =
-  InitConstr ProbId String
+  InitConstr ProbId (VAL, VAL)
   | DefnUpdate Nom
   | ProbUpdate ProbId
   | DefineMeta Nom
-  | DerivedEqn ProbId String
+  | DerivedEqn ProbId (VAL, VAL)
   | ChoiceEdge ChoiceEdge Nom VAL VAL
   deriving (Eq, Show, Generic)
 

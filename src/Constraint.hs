@@ -31,6 +31,8 @@ import qualified Data.Map as Map
 
 import PatternUnify.Tm (Region (..))
 
+import qualified Top.Implementation.TypeGraph.Basics as TGBasic
+
 type ConstrContext = [(Common.Name, Tm.VAL)]
 
 data WholeEnv =
@@ -110,6 +112,7 @@ constrReflexive _ = False
 solveConstraintM :: ConstraintM (Tm.Nom, Tm.VAL) -> Either [(Region, String)] (Tm.Type, Tm.VAL, Tm.Subs, Map.Map Tm.Nom Region)
 solveConstraintM cm =
   let
+    getCL (cl, _, _, _, _, _) = cl
     (((nom, normalForm), rawConstraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
     --regionDict = getRegionDict constraints
     ret = do
@@ -118,13 +121,18 @@ solveConstraintM cm =
       let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (cl)
       let finalType = Tm.unsafeFlatten $ evalState (UC.metaValue nom) context
       let sourceSubs = Map.map Tm.unsafeFlatten $ Map.filterWithKey (\k _ -> k `elem` sourceMetas cstate) metaSubs
+      let finalSubs = UC.finalSub cl
       return (finalType, unsolved, sourceSubs)
 
   in
     case ret of
       Left (Run.ErrorResult ctx []) -> error "Left empty with Constraint ret solveResult"
       Left (Run.ErrorResult ctx solverErrs) ->
-        Left $ map (mkErrorPair ) solverErrs
+        let
+          cl = getCL ctx
+          finalSub = UC.finalSub cl
+        in
+          trace ("Final sub: " ++ List.intercalate "\n" (map show finalSub)) $ Left $ map (mkErrorPair finalSub ) solverErrs
         --Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) (mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx) )
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
       Right (_, unsolved, _) -> --trace "solveConstraintM Right with unsolved" $
@@ -134,23 +142,24 @@ solveConstraintM cm =
           sms -> map (unsolvedMsg (sourceMetas cstate) ) sms
 
 --mkErrorPair :: Run.SolverErr -> (Region, String)
-mkErrorPair  (Run.StringErr (UC.ProbId ident, reg, msg)) = (reg, msg)
-mkErrorPair  (Run.GraphErr edgeInfos) =
+mkErrorPair finalSub (Run.StringErr (UC.ProbId ident, reg, msg)) = (reg, msg)
+mkErrorPair finalSub (Run.GraphErr edgeInfos) =
   (UC.infoRegion $ UC.edgeEqnInfo $ snd $ head edgeInfos,
   "Cannot solve the following constraints:\n"
-  ++ concatMap edgeMessage edgeInfos)
+  ++ concatMap (edgeMessage finalSub ) edgeInfos)
 
-edgeMessage (edgeId, edgeInfo) =
+edgeMessage :: Tm.SubsList -> ([TGBasic.EdgeId], UC.ConstraintInfo) -> String
+edgeMessage finalSub (edgeId, edgeInfo) =
   "  " ++ (Common.prettySource $ UC.infoRegion $ UC.edgeEqnInfo edgeInfo)
   ++ " " ++ constrStr ++ "\n"
   where
     constrStr = case (UC.edgeType edgeInfo) of
-      (UC.InitConstr _ str) -> str -- Tm.prettyString prob
+      (UC.InitConstr _ (s,t)) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(initial)" -- Tm.prettyString prob
       (UC.DefnUpdate c) -> "TODO1"
       (UC.ProbUpdate c) -> "TODO2"
       (UC.DefineMeta c) -> "TODO3"
-      (UC.DerivedEqn _ str) -> str --Tm.prettyString prob
-      (UC.ChoiceEdge _ alpha s t) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t
+      (UC.DerivedEqn _ (s,t)) -> Tm.prettyString (Tm.unsafeFlatten $ LN.substs finalSub s) ++ " === " ++ Tm.prettyString (Tm.unsafeFlatten $ LN.substs finalSub t) ++ "(derived)"
+      (UC.ChoiceEdge _ alpha s t) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(choice)"
 
 
 unsolvedMsg :: [Tm.Nom] -> (Tm.Nom, Region, Maybe Tm.VAL) -> (Region, String)

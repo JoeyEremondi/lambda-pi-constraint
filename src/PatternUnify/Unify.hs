@@ -1081,11 +1081,14 @@ instantiate pid d@( alpha, _T, f ) =
 -- parameter.
 solver :: ProbId -> Problem -> [Entry] -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
-solver n p@(Unify q) me = do
+solver n p@(Unify q@(EQN _ s _ t _)) me = do
   qFlat <- Ctx.flattenEquation q
   needRecording <- not <$> Ctx.alreadyRecorded n
   when needRecording $ do
-    Ctx.recordProblem (Ctx.DerivedEqn n $ pp p) n p
+    --TODO check if initial, already added?
+    sFlat <- flattenChoice s
+    tFlat <- flattenChoice t
+    Ctx.recordProblem (Ctx.DerivedEqn n (sFlat,tFlat)) n p
     Ctx.markProblemInGraph n
   setProblem n
   b <- isReflexive qFlat

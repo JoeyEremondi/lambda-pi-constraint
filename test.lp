@@ -14,6 +14,8 @@ let nat1Elim =
 let natIf3 =
   (\_ x y z n ->  nat1Elim _ x y (\ _ _ -> z) n ) :: forall (a :: *) . a -> a -> a -> Nat -> a
 
-let test = natIf3 _ 1 (2 , 2) 3 0
+let test = natIf3 _ (1,1) (2 , 2) (3,3) 0
 
-let test = natIf3 _ (1 , 1) 2 3 0
+--let test1 = natIf3 _ 1 (2 , 2) 3 0
+
+--let test2 = natIf3 _ (1 , 1) 2 3 0
