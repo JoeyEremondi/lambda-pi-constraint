@@ -67,8 +67,6 @@ data ErrorResult =
 
 data SolverErr = StringErr (ProbId, Region, String) | GraphErr [ErrorInfo ConstraintInfo]
 
-
-
 solveEntries :: [Entry] -> Either ErrorResult ((), Context)
 solveEntries !es  =
   let --intercalate "\n" $ map show es
@@ -87,7 +85,10 @@ solveEntries !es  =
           )  --Make sure we don't crash
     (lcx,rcx,lastProb,_,finalBadEdges,_) = unsafePerformIO $ do
         let g = (\(_,_,_,g,_,_) -> g) ctx
-        writeFile "out.dot" (TC.toDot g)
+        let ourEdges = (\(_,_,_,_,e,_) -> e) ctx
+        writeFile "out.dot" (
+          List.intercalate "\n\n\n" $
+            map (\(edgeList, _) -> TC.errorDot edgeList g) ourEdges )
         return ctx
     allEntries = lcx ++ (Either.rights rcx)
     depGraph = problemDependenceGraph allEntries es

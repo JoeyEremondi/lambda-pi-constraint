@@ -58,6 +58,7 @@ class TypeGraph graph info | graph -> info where
    unmarkPossibleErrors    :: graph -> graph
 
    toDot :: graph -> String
+   errorDot :: [EdgeId] -> graph -> String
 
    -------------------------------------------
    -- default definitions

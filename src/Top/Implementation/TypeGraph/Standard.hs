@@ -229,11 +229,19 @@ instance TypeGraph (StandardTypeGraph) Info where
    unmarkPossibleErrors =
       setPossibleInconsistentGroups []
 
-   toDot g =
+   toDot g = toDotGen (M.elems $ equivalenceGroupMap g) g
+
+   errorDot edges g =
+    let
+      verts = List.nub $ concatMap (\(EdgeId v1 v2 _) -> map (flip representativeInGroupOf $ g) [v1,v2]) edges
+      groups = map (flip getGroupOf $ g) verts
+    in toDotGen groups g
+
+toDotGen eqGroups g =
      let
        --TODO keep singletons? just makes graph easier to read
        --filter ((> 1) . length . vertices) $
-       eqGroups =  M.elems $ equivalenceGroupMap g
+
        nodePairs = concatMap vertices eqGroups
        theEdges = [(v1, v2) | (EdgeId v1 v2 _,_) <- concatMap (edges) eqGroups]
 
