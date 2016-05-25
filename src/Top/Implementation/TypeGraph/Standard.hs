@@ -102,7 +102,7 @@ instance TypeGraph (StandardTypeGraph) Info where
                Tm.VBot _ -> do
                  vinit <- VertexId <$> Ln.fresh unique
                  return (vinit, addVertex vinit (VertBot, original) stg)
-               Tm.VChoice cid alpha s t -> do
+               Tm.VChoice cid cuid alpha s t -> do
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1
                  let allChoices = choiceEdges g2

@@ -147,9 +147,10 @@ defineGlobal pid info x _T vinit m = --trace ("Defining global " ++ show x ++ " 
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
      cid <- ChoiceId <$> freshNom <*> return (infoRegion info)
+     cuid <- freshCUID
      let
        v = --trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid) $
-          VChoice cid x vsingle freshVar
+          VChoice cid cuid x vsingle freshVar
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -252,13 +253,13 @@ unify n q  = do
 --  | trace ("Unifying " ++ show n ++ " " ++ pp q) False = error "unify"
   where
   unify' :: ProbId -> Equation -> Contextual ()
-  unify' n q@(EQN _T1 ch@(VChoice cid nchoice r s) _T2 t info) = --trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
+  unify' n q@(EQN _T1 ch@(VChoice cid _ nchoice r s) _T2 t info) = --trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
         splitChoice (cid, nchoice) n _T1 (r, s) _T2 t info
       _ ->
         Ctx.flattenEquation q >>= unify' n
-  unify' n q@(EQN _T1 t _T2 ch@(VChoice cid nchoice r s) info) = --trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
+  unify' n q@(EQN _T1 t _T2 ch@(VChoice cid _ nchoice r s) info) = --trace ("Splitting choice " ++ show n ++ ", " ++ pp q) $
     case (List.intersect (fmvs ch) (fmvs t) ) of
       [] -> do
         splitChoice (cid, nchoice) n _T1 (r, s) _T2 t info
@@ -439,8 +440,8 @@ rigidRigid pid eqn =
     --Same with choice
     rigidRigid' q@(EQN _ (N _ _) _ _ _ ) = return [q]
     rigidRigid' q@(EQN _ _ _ (N _ _) _ ) = return [q]
-    rigidRigid' q@(EQN _ (VChoice _ _ _ _) _ _ _ ) = return [q]
-    rigidRigid' q@(EQN _ _ _ (VChoice _ _ _ _) _ ) = return [q]
+    rigidRigid' q@(EQN _ (VChoice _ _ _ _ _) _ _ _ ) = return [q]
+    rigidRigid' q@(EQN _ _ _ (VChoice _ _ _ _ _) _ ) = return [q]
 
     --Anything else, we should be able to catch in our type graph
     rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return [] --badRigidRigid eq
@@ -501,33 +502,40 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = do --trace ("SplitChoice 
   --trace ("Split return\n  " ++  pp (fst ret) ++ "\n  " ++ pp (snd ret) ) $
   return ret
 
+
+  ourSubs <- Map.fromList <$> forM (Map.toList $ nomMap)
+      (\(norig, nnew) -> do
+        cuid <- freshCUID
+        return $ (norig, VChoice cid cuid choiceVar (meta norig) (meta nnew))
+      )
+  let
+    rewriteEntry :: Entry -> [Entry]
+    rewriteEntry e = case e of
+      (E alpha _T HOLE info ) ->
+        case Map.lookup alpha nomMap of
+          Nothing -> [e]
+          Just n2 ->
+            [E alpha _T HOLE info , E n2 _T HOLE (info {isCF = CounterFactual}) ]
+      _ ->
+        [substs (Map.toList ourSubs) e]
+    rewriteVars = do
+      --Rewrite all our entries on the lft to have the new split
+      Ctx.modifyL (concatMap $ rewriteEntry)
+      --Push our new substitution to the right
+      pushR $ Left (ourSubs)
+
   --First, we go backwards in the context, re-defining our new variables as we go
   --trace ("\n\nRewriting vars with subs " ++ show nomMap) $
-  rewriteVars nomMap
+  rewriteVars
   --Then, we push our new problems into the context
   (simplifySplit n (Unify eq1, Unify eq2))
   -- cl <- Ctx.getL
   -- cr <- Ctx.getR
   return ()
   --trace ("CL after traversing rewriting\n" ++ Ctx.prettyList cl ++ "\nCR after traversing rewriting\n" ++ Ctx.prettyList cr ++ "\n*******\n\n") $ return ()
-    where
-      ourSubs nomMap = Map.mapWithKey
-        (\norig nnew -> VChoice cid choiceVar (meta norig) (meta nnew)) nomMap
 
-      rewriteEntry :: Map.Map Nom Nom -> Entry -> [Entry]
-      rewriteEntry nomMap e = case e of
-        (E alpha _T HOLE info ) ->
-          case Map.lookup alpha nomMap of
-            Nothing -> [e]
-            Just n2 ->
-              [E alpha _T HOLE info , E n2 _T HOLE (info {isCF = CounterFactual}) ]
-        _ ->
-          [substs (Map.toList $ ourSubs nomMap) e]
-      rewriteVars nomMap = do
-        --Rewrite all our entries on the lft to have the new split
-        Ctx.modifyL (concatMap $ rewriteEntry nomMap)
-        --Push our new substitution to the right
-        pushR $ Left (ourSubs nomMap)
+
+
 
 
       -- rewriteVars nomMap = do
@@ -979,7 +987,7 @@ prune
   :: [Nom] -> VAL -> Contextual [( Nom, Type, VAL -> VAL )]
 --prune xs t | trace ("In Pruning " ++ (show xs) ++ " from " ++ pp t) False = error "prune"
 prune xs SET = return [] --TODO only prune first half?
-prune xs (VChoice _ _ s t) = prune xs s --(++) <$>  <*> prune xs t
+prune xs (VChoice _ _ _ s t) = prune xs s --(++) <$>  <*> prune xs t
 prune xs Nat = return []
 prune xs (Fin n) = prune xs n
 prune xs (Vec a n) = (++) <$> prune xs a <*> prune xs n

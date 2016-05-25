@@ -58,7 +58,7 @@ data VAL where
         N :: Head -> [Elim] -> VAL
         C :: Can -> [VAL] -> VAL
         VBot :: String -> VAL
-        VChoice :: ChoiceId -> Nom -> VAL -> VAL -> VAL
+        VChoice :: ChoiceId -> CUID -> Nom -> VAL -> VAL -> VAL
 --        Nat :: VAL
 --        Fin :: VAL -> VAL
 --        Vec :: VAL -> VAL -> VAL
@@ -73,8 +73,15 @@ data VAL where
     deriving (Show, Generic)
 
 data ChoiceId = ChoiceId {choiceIdToName :: Nom, choiceRegion :: Region}
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Ord, Show, Generic)
 instance Alpha ChoiceId
+
+data CUID = CUID {cuidNom :: Nom}
+  deriving (Eq, Ord, Show, Generic)
+instance Alpha CUID
+
+freshCUID :: (Fresh m) => m CUID
+freshCUID = CUID <$> (fresh $ s2n "CUID")
 
 type Type = VAL
 
@@ -190,7 +197,7 @@ maybePar tm = parens
 
 instance Pretty VAL where
   pretty (VBot s) = return $ text "⊥"
-  pretty (VChoice cid _ s t) =
+  pretty (VChoice cid _ _ s t) =
     (\ ps pt -> text ("{{-" ++ show (choiceIdToName cid) ++ "-{") <> ps <> char ',' <+> pt <> text "}}}" )
       <$> pretty s <*> pretty t
   pretty (PI _S (L b)) =
@@ -546,7 +553,7 @@ unions = concat
 instance Occurs VAL where
   occurrence xs (L (B _ b)) = occurrence xs b
   occurrence xs (C _ as) = occurrence xs as
-  occurrence xs (VChoice _ _ s t) = occurrence xs [s,t]
+  occurrence xs (VChoice _ _ _ s t) = occurrence xs [s,t]
   occurrence xs (N (Var y _) as)
     | y `elem` xs = Just (Rigid Strong)
     | otherwise = weaken <$> occurrence xs as
@@ -560,7 +567,7 @@ instance Occurs VAL where
   frees isMeta (VBot s) = []
   frees isMeta (L (B _ t)) = frees isMeta t
   frees isMeta (C _ as) = unions (map (frees isMeta) as)
-  frees isMeta (VChoice _ _ s t) = unions (map (frees isMeta) [s,t])
+  frees isMeta (VChoice _ _ _ s t) = unions (map (frees isMeta) [s,t])
   frees isMeta (N h es) = unions (map (frees isMeta) es) `union` x
     where x =
             case h of
@@ -636,7 +643,7 @@ containsBottom (L v) = do
   containsBottom b
 containsBottom (N v1 elims) = joinErrors <$> mapM elimContainsBottom elims
 containsBottom (C v1 args) = joinErrors <$> mapM containsBottom args
-containsBottom (VChoice _ _ s t) = joinErrors <$> mapM containsBottom [s,t]
+containsBottom (VChoice _ _ _ s t) = joinErrors <$> mapM containsBottom [s,t]
 containsBottom (VBot s) = return $ Just s
 --containsBottom (Choice v1 v2) = joinErrors <$> mapM containsBottom [v1,v2]
 
@@ -655,9 +662,9 @@ flattenChoiceGen shouldFlatten (N v elims) =
 flattenChoiceGen shouldFlatten (C t1 t2) =
   C t1 <$> mapM (flattenChoiceGen shouldFlatten)  t2
 flattenChoiceGen shouldFlatten (VBot t) = return $ VBot t
-flattenChoiceGen shouldFlatten (VChoice cid n t1 t2) =
+flattenChoiceGen shouldFlatten (VChoice cid cuid n t1 t2) =
   case shouldFlatten cid of
-    Nothing ->  VChoice cid n <$> flattenChoiceGen shouldFlatten t1 <*> flattenChoiceGen shouldFlatten t2
+    Nothing ->  VChoice cid cuid n <$> flattenChoiceGen shouldFlatten t1 <*> flattenChoiceGen shouldFlatten t2
     Just f -> flattenChoiceGen shouldFlatten $ f (t1,t2)
 
 flattenChoiceElim :: (Fresh m) => (ChoiceId -> Maybe ((VAL,VAL) -> VAL)) -> Elim -> m Elim
@@ -706,8 +713,8 @@ eval g (N u as) =
   do elims <- mapM (mapElimM (eval g)) as
      evalHead g u %%% elims
 eval g (C c as) = C c <$> (mapM (eval g) as)
-eval g (VChoice cid n s t) =
-  VChoice cid n <$> eval g s <*> eval g t
+eval g (VChoice cid cuid n s t) =
+  VChoice cid cuid n <$> eval g s <*> eval g t
 eval g (VBot s) = return $ VBot s
 
 
@@ -743,8 +750,9 @@ elim (VCons _ _ h t) theElim@(VecElim a m mn mc (Succ n)) =
   do sub <- elim t theElim
      mc $$$ [n, h, t, sub]
 elim (ERefl _ z) theElim@(EqElim a m mr x y) = mr $$ z
-elim (VChoice cid n s t) theElim =
-  VChoice cid n <$> elim s theElim <*> elim t theElim
+elim (VChoice cid _ n s t) theElim = do
+  cuid <- freshCUID
+  VChoice cid cuid n <$> elim s theElim <*> elim t theElim
 elim (VBot s) elim = return $ VBot s --TODO better error?
 elim t a = badElim $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
