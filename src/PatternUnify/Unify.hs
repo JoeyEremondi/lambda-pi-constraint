@@ -150,7 +150,7 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
      cuid <- freshCUID
      let
        v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
-          VChoice cid cuid x vsingle freshVar
+          vsingle --VChoice cid cuid x vsingle freshVar
 
      Ctx.recordChoice  _T x vsingle freshVar info
      --check _T v `catchError`
@@ -1093,14 +1093,19 @@ instantiate pid d@( alpha, _T, f ) =
 -- parameter.
 solver :: ProbId -> Problem -> [Entry] -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
-solver n p@(Unify q@(EQN _ s _ t _)) me = do
+solver n p@(Unify q@(EQN _ s _ t info)) me = do
   qFlat <- Ctx.flattenEquation q
   needRecording <- not <$> Ctx.alreadyRecorded n
   when needRecording $ do
     --TODO check if initial, already added?
     sFlat <- flattenChoice s
     tFlat <- flattenChoice t
-    Ctx.recordProblem (Ctx.DerivedEqn n (sFlat,tFlat)) n p
+    let
+      probType =
+        case Ctx.creationInfo info of
+          Initial -> Ctx.InitConstr n (sFlat, tFlat)
+          CreatedBy _ -> Ctx.DerivedEqn n (sFlat,tFlat)
+    Ctx.recordProblem probType n p
     Ctx.markProblemInGraph n
   setProblem n
   b <- isReflexive qFlat

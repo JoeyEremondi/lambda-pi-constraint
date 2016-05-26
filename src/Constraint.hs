@@ -502,8 +502,8 @@ addConstr c = tell [c]
 
 unknownIdent :: Region -> WholeEnv -> String -> ConstraintM a
 unknownIdent reg env s = error $
-  show reg ++ "Unknown IIdentifier: " ++ show s
-  ++ " in env " ++ show env
+  show reg ++ "Unknown Identifier: " ++ show s
+  -- ++ " in env " ++ show env
 
 
 

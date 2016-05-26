@@ -87,8 +87,10 @@ solveEntries !es  =
         let g = (\(_,_,_,g,_,_) -> g) ctx
         let ourEdges = (\(_,_,_,_,e,_) -> e) ctx
         writeFile "out.dot" (
-          List.intercalate "\n\n\n" $
-            map (\(edgeList, _) -> TC.errorDot edgeList g) ourEdges )
+          TC.toDot g
+          -- List.intercalate "\n\n\n" $
+          --   map (\(edgeList, _) -> TC.errorDot edgeList g) ourEdges
+            )
         return ctx
     allEntries = lcx ++ (Either.rights rcx)
     depGraph = problemDependenceGraph allEntries es
