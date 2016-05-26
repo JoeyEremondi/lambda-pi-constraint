@@ -152,10 +152,7 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
        v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
           VChoice cid cuid x vsingle freshVar
 
-     constrMeta <- meta <$> freshNom
-     --Record our choice in our graph
-     Ctx.recordEqn (Ctx.ChoiceEdge Ctx.LeftChoice x vsingle freshVar) (EQN _T vsingle _T constrMeta info)
-     Ctx.recordEqn (Ctx.ChoiceEdge Ctx.RightChoice x vsingle freshVar) (EQN _T freshVar _T constrMeta info)
+     Ctx.recordChoice  _T x vsingle freshVar info
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -514,18 +511,20 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = do --trace ("SplitChoice 
         return $ (norig, VChoice cid cuid choiceVar (meta norig) (meta nnew))
       )
   let
-    rewriteEntry :: Entry -> [Entry]
+    rewriteEntry :: Entry -> Contextual [Entry]
     rewriteEntry e = case e of
       (E alpha _T HOLE info ) ->
         case Map.lookup alpha nomMap of
-          Nothing -> [e]
-          Just n2 ->
-            [E alpha _T HOLE info , E n2 _T HOLE (info {isCF = CounterFactual}) ]
+          Nothing -> return [e]
+          Just n2 -> do
+            --TODO modify info here?
+            Ctx.recordChoice  _T alpha (meta alpha) (meta n2) info
+            return [E alpha _T HOLE info , E n2 _T HOLE (info {isCF = CounterFactual}) ]
       _ ->
-        [substs (Map.toList ourSubs) e]
+        return [substs (Map.toList ourSubs) e]
     rewriteVars = do
       --Rewrite all our entries on the lft to have the new split
-      Ctx.modifyL (concatMap $ rewriteEntry)
+      Ctx.modifyLM (\l -> concat <$> mapM rewriteEntry l)
       --Push our new substitution to the right
       pushR $ Left (ourSubs)
 

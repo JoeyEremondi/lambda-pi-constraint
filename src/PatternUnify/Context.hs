@@ -577,6 +577,12 @@ recordProblem info (ProbId pid) prob = recordProblem' prob 0
           newProb = substs [(nm, var newVar)] prob
       recordProblem' newProb (i+1)
 
+recordChoice  _T x vsingle freshVar info = do
+  constrMeta <- meta <$> freshNom
+  --Record our choice in our graph
+  recordEqn (ChoiceEdge LeftChoice x vsingle freshVar) (EQN _T vsingle _T constrMeta info)
+  recordEqn (ChoiceEdge RightChoice x vsingle freshVar) (EQN _T freshVar _T constrMeta info)
+
 -- --TODO do we need this? record problem substs?
 -- recordEntry :: Entry -> Contextual ()
 -- recordEntry (E nm tp HOLE) = return ()
