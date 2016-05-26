@@ -28,6 +28,8 @@ import Top.Implementation.TypeGraph.Path
 
 import Unbound.Generics.LocallyNameless (runFreshM)
 
+import Debug.Trace (trace)
+
 --import Top.Types
 
 -----------------------------------------------------------------------
@@ -128,7 +130,7 @@ consistent eqgroup =
    case constants eqgroup of
       []  -> True
       [_] -> null [ () | (_, (VApp _ _, _)) <- vertices eqgroup ]
-      _   -> False
+      l   -> trace ("Consistent fail " ++ show l ++ "   " ++ show eqgroup) $ False
 
 equalPaths  :: S.Set VertexId -> VertexId -> [VertexId] -> EquivalenceGroup info -> TypeGraphPath info
 equalPaths without start targets eqgroup =

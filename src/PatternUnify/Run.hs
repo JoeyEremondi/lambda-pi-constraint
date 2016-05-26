@@ -110,7 +110,7 @@ solveEntries !es  =
           Left [] -> error "Empty Left from getContextErrors"
           Left errList -> Left $ ErrorResult ctx $ map (\(loc, reg, err) -> StringErr (loc, reg, err)) errList
           Right x -> Right x
-      (edgeList, _) ->
+      (edgeList, _) -> trace ("EDGELIST\n  " ++ List.intercalate "\n  " (map show edgeList)) $
         Left $ ErrorResult ctx [GraphErr edgeList]
 
 

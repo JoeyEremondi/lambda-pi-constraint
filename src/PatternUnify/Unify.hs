@@ -142,15 +142,20 @@ hole info _Gam _T f =
 
 defineGlobal
   :: (ProbId) -> EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal pid info x _T vinit m = --trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\npid: " ++ show pid) $
+defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\npid: " ++ show pid) $
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
      cid <- ChoiceId <$> freshNom <*> return (infoRegion info)
      cuid <- freshCUID
      let
-       v = --trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid) $
+       v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
           VChoice cid cuid x vsingle freshVar
+
+     constrMeta <- meta <$> freshNom
+     --Record our choice in our graph
+     Ctx.recordEqn (Ctx.ChoiceEdge Ctx.LeftChoice x vsingle freshVar) (EQN _T vsingle _T constrMeta info)
+     Ctx.recordEqn (Ctx.ChoiceEdge Ctx.RightChoice x vsingle freshVar) (EQN _T freshVar _T constrMeta info)
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))

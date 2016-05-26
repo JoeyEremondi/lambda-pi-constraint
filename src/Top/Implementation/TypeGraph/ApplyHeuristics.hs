@@ -26,6 +26,8 @@ import Utils (internalError)
 
 import qualified PatternUnify.Tm as Tm
 
+import Debug.Trace (trace)
+
 --import Debug.Trace (trace)
 
 type ErrorInfo info = ([EdgeId], info)
@@ -139,7 +141,7 @@ allErrorPaths =
       paths2  <- infiniteTypePaths cGraph
       let errorPath = reduceNumberOfPaths (simplifyPath (altList (paths1 ++ paths2)))
       retVal <- expandPath errorPath
-      return retVal
+      return $ trace ("ALL ERROR PATHS " ++ show retVal) $ retVal
 
 ----------------------------
 
