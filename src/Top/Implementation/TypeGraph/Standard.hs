@@ -38,7 +38,7 @@ data StandardTypeGraph = STG
    , equivalenceGroupCounter :: Int
    , possibleErrors          :: [VertexId]
    , constraintNumber        :: Tm.Nom
-   , choiceEdges             :: [((Tm.VAL, Tm.VAL), VertexId)]
+   , choiceEdges             :: [(Tm.CUID, VertexId)]
    }
 
 instance Empty (StandardTypeGraph ) where
@@ -106,15 +106,16 @@ instance TypeGraph (StandardTypeGraph) Info where
                  (vs, g1) <- addTermGraph synonyms unique s stg
                  (vt, g2) <- addTermGraph synonyms unique t g1
                  let allChoices = choiceEdges g2
-                 case List.lookup (s,t) allChoices of
+                 case List.lookup cuid allChoices of
                     Nothing -> do
-                      choiceIntermediate <- Ln.fresh $ Ln.s2n $ "_choice_" ++ show (Tm.choiceIdToName cid)
-                      (vc, gInter1) <- addHead Nothing unique (Tm.Meta choiceIntermediate) g2
+                      --choiceIntermediate <- Ln.fresh $ Ln.s2n $ "_choice_" ++ show (Tm.choiceIdToName cid)
+                      (vc, gInter1) <- addHead Nothing unique (Tm.Meta $ Tm.cuidNom cuid) g2
 
                       --Add this choice and mark it as added
-                      gInter2 <- addNewEdge (vs, vc) (Info.choiceInfo (Tm.choiceRegion cid) Info.LeftChoice alpha s t) gInter1
-                      gRet <- addNewEdge (vt, vc) (Info.choiceInfo (Tm.choiceRegion cid) Info.RightChoice alpha s t) gInter2
-                      return (vc, gRet {choiceEdges = ((s,t), vc) : allChoices})
+                      --gInter2 <- addNewEdge (vs, vc) (Info.choiceInfo (Tm.choiceRegion cid) Info.LeftChoice alpha s t) gInter1
+                      --gRet <- addNewEdge (vt, vc) (Info.choiceInfo (Tm.choiceRegion cid) Info.RightChoice alpha s t) gInter2
+                      let gRet = gInter1
+                      return (vc, gRet {choiceEdges = (cuid, vc) : allChoices})
 
                     Just vc -> return (vc, g2)
                  --TODO representative vertex?
