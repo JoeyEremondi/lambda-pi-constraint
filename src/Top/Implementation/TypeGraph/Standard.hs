@@ -248,7 +248,7 @@ toDotGen eqGroups g =
        --filter ((> 1) . length . vertices) $
 
        nodePairs = concatMap vertices eqGroups
-       theEdges = [(v1, v2) | (EdgeId v1 v2 _,_) <- concatMap (edges) eqGroups]
+       theEdges = [(v1, v2, info) | (EdgeId v1 v2 _,info) <- concatMap (edges) eqGroups]
 
        dotLabel :: VertexId -> VertexInfo -> (String)
        dotLabel vid (VertBot,_) = "Bottom"
@@ -259,6 +259,19 @@ toDotGen eqGroups g =
        dotLabel vid (VElim _ _, Just tm) = "Elim " ++ show vid ++ " " ++ Tm.prettyString tm
 
        dotLabel vid _ = show vid
+
+       edgeColor tp = case tp of
+         Info.InitConstr _ -> "black"
+         Info.DerivedEqn _ -> "red"
+         Info.ChoiceEdge _ _ _ -> "blue"
+
+         _ -> "green"
+
+       edgeName tp = case tp of
+         Info.InitConstr pid -> show $ Info.probIdToName pid
+         Info.DerivedEqn pid ->  "(" ++ (show $ Info.probIdToName pid)++ ")"
+         Info.DefineMeta alpha -> "DEF " ++ show alpha
+         _ -> ""
 
        dotEdges :: VertexId -> VertexInfo -> (String)
        dotEdges _ _ = "" --TODO remove to show derived edges
@@ -281,7 +294,7 @@ toDotGen eqGroups g =
         [show v ++ " [label = \"" ++ show v ++ ": " ++ dotLabel v vinfo ++ "\" ];\n" | (v, vinfo) <- nodePairs ]
         --[show num ++ " [label = \"" ++ s ++ "\" ];\n" | s <- termNames ]
        edgeDecls =
-          [show n1 ++ " -> " ++ show n2 ++ " [dir=none] ;\n" | (n1, n2) <- theEdges ]
+          [show n1 ++ " -> " ++ show n2 ++ " [dir=none, label = \"" ++ edgeName edgeType ++ "\", color = " ++ edgeColor edgeType ++ "] ;\n" | (n1, n2, info) <- theEdges, edgeType <- [Info.edgeType info]  ]
 
 
      in "digraph G\n{\n" ++ concat (nodeDecls) ++ concat (edgeDecls ++ termEdges) ++ "\n}"
@@ -346,7 +359,7 @@ removeDerived e stg =
         _ -> Nothing
       ourPid <-
         case Info.edgeType ourInfo of
-          Info.InitConstr pid _ -> Just pid
+          Info.InitConstr pid -> Just pid
           _ -> Nothing
       return [eid | (eid, someInfo) <- edgePairs, (Info.creationInfo . Info.edgeEqnInfo) someInfo == Info.CreatedBy ourPid ]
 

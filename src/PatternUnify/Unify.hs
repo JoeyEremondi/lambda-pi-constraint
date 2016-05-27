@@ -152,6 +152,8 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
        v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
           vsingle --VChoice cid cuid x vsingle freshVar
 
+     --TODO who created? Adjust info
+     Ctx.recordDefn x _T vsingle info
      Ctx.recordChoice  _T x vsingle freshVar info
      --check _T v `catchError`
      --   (throwError .
@@ -191,7 +193,9 @@ defineSingle info _Gam xtop _T vtop =
 
          --Ctx.moveDeclRight x newNom
          --Add our final value to the type graph
-         Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
+         --TODO who created? Adjust info
+         Ctx.recordDefn x _T v info
+         --Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
          return a
 
 
@@ -1095,18 +1099,6 @@ solver :: ProbId -> Problem -> [Entry] -> Contextual ()
 --solver n prob | trace ("solver " ++ show [show n, pp prob]) False = error "solver"
 solver n p@(Unify q@(EQN _ s _ t info)) me = do
   qFlat <- Ctx.flattenEquation q
-  needRecording <- not <$> Ctx.alreadyRecorded n
-  when needRecording $ do
-    --TODO check if initial, already added?
-    sFlat <- flattenChoice s
-    tFlat <- flattenChoice t
-    let
-      probType =
-        case Ctx.creationInfo info of
-          Initial -> Ctx.InitConstr n (sFlat, tFlat)
-          CreatedBy _ -> Ctx.DerivedEqn n (sFlat,tFlat)
-    Ctx.recordProblem probType n p
-    Ctx.markProblemInGraph n
   setProblem n
   b <- isReflexive qFlat
   if b
@@ -1247,6 +1239,10 @@ ambulando ns fails theta = do
   cr <- Ctx.getR
   --(trace ("\n******\nAMBULANDO CL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nAMBULANDO CR:\n" ++ List.intercalate "\n" (map pp cr) ++ "\n******\n") popR)
   x <- popR -- >>= \x -> trace ("Ambulando popped " ++ maybe "Nothing" pp x) $
+  --Record entry in the graph
+  case x of
+    Just (Right entry) -> Ctx.recordEntry entry
+    _ -> return ()
   case x of
       -- if right context is empty, stop
       Nothing                   --Make sure our final substitutions are applied

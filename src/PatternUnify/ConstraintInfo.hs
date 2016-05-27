@@ -60,18 +60,19 @@ newtype ProbId = ProbId {probIdToName :: Nom}
 data ConstraintInfo = ConstraintInfo
   { edgeType    :: ConstraintType
   , edgeEqnInfo :: EqnInfo
+  , edgeEqn     :: (VAL, VAL)
   } deriving (Eq, Show, Generic)
 
 data ChoiceEdge = LeftChoice | RightChoice
   deriving (Eq, Ord, Show, Generic)
 
 data ConstraintType =
-  InitConstr ProbId (VAL, VAL)
+  InitConstr ProbId
   | DefnUpdate Nom
   | ProbUpdate ProbId
   | DefineMeta Nom
-  | DerivedEqn ProbId (VAL, VAL)
-  | ChoiceEdge ChoiceEdge Nom VAL VAL
+  | DerivedEqn ProbId
+  | ChoiceEdge ChoiceEdge Nom (VAL, VAL)
   deriving (Eq, Show, Generic)
 
 data EqnInfo =
@@ -87,7 +88,8 @@ data CreationInfo = Initial | CreatedBy ProbId
 data IsCF = Factual | CounterFactual
   deriving (Eq, Ord, Show, Generic)
 
-choiceInfo reg choice n x y =
-  ConstraintInfo
-    (ChoiceEdge choice n x y)
-    $ EqnInfo Initial reg Factual
+-- choiceInfo reg choice n x y =
+--   ConstraintInfo
+--     (ChoiceEdge choice n)
+--     (EqnInfo Initial reg Factual)
+--     (x,y)

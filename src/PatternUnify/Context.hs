@@ -261,7 +261,7 @@ instance Pretty RSubs where
 
 type ContextL  = Bwd Entry
 type ContextR  = [Either RSubs Entry]
-type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges, Set.Set ProbId)
+type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges, Set.Set (Either Nom ProbId))
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -405,13 +405,21 @@ pushImmediate pid theta   = --trace ("Push subs " ++ show s) $
   modifyR (Left (RSubImmediate pid theta) : )
 
 
-markProblemInGraph :: ProbId -> Contextual ()
-markProblemInGraph newPid = modify (\ (x, y, pid, z, s, set) -> (x, y, pid, z, s, Set.insert newPid set))
+markDefInGraph :: Nom -> Contextual ()
+markDefInGraph alpha = modify (\ (x, y, pid, z, s, set) -> (x, y, pid, z, s, Set.insert (Left alpha) set))
 
-alreadyRecorded :: ProbId -> Contextual Bool
-alreadyRecorded newPid = do
+markProblemInGraph :: ProbId -> Contextual ()
+markProblemInGraph newPid = modify (\ (x, y, pid, z, s, set) -> (x, y, pid, z, s, Set.insert (Right newPid) set))
+
+probAlreadyRecorded :: ProbId -> Contextual Bool
+probAlreadyRecorded newPid = do
   (x, y, pid, z, s, set) <- get
-  return $ newPid `Set.member` set
+  return $ Right newPid `Set.member` set
+
+defAlreadyRecorded :: Nom -> Contextual Bool
+defAlreadyRecorded alpha = do
+  (x, y, pid, z, s, set) <- get
+  return $ Left alpha `Set.member` set
 
 setProblem :: ProbId -> Contextual ()
 setProblem pid = modify (\ (x, y, _, z, s, set) -> (x, y, pid, z, s, set))
@@ -558,9 +566,11 @@ addEqn info eqn@(EQN _ v1 _ v2 _) stg = --trace ("Adding equation to graph " ++ 
     TG.addEqn info (v1, v2) stg
 
 recordEqn :: ConstraintType -> Equation -> Contextual ()
-recordEqn ctype eqn@(EQN _ _ _ _ eqinfo) = do
+recordEqn ctype eqn@(EQN _ sc _ tc eqinfo) = do
+  s <- flattenChoice sc
+  t <- flattenChoice tc
   gCurrent <- getGraph
-  let cinfo = ConstraintInfo ctype eqinfo
+  let cinfo = ConstraintInfo ctype eqinfo (s,t)
   newG <- addEqn cinfo eqn gCurrent
   setGraph newG
 
@@ -580,8 +590,29 @@ recordProblem info (ProbId pid) prob = recordProblem' prob 0
 recordChoice  _T x vsingle freshVar info = do
   constrMeta <- meta <$> freshNom
   --Record our choice in our graph
-  recordEqn (ChoiceEdge LeftChoice x vsingle freshVar) (EQN _T vsingle _T constrMeta info)
-  recordEqn (ChoiceEdge RightChoice x vsingle freshVar) (EQN _T freshVar _T constrMeta info)
+  recordEqn (ChoiceEdge LeftChoice x (vsingle, freshVar)) (EQN _T vsingle _T constrMeta info)
+  recordEqn (ChoiceEdge RightChoice x (vsingle, freshVar)) (EQN _T freshVar _T constrMeta info)
+
+
+recordDefn :: Nom -> Type -> VAL -> EqnInfo -> Contextual ()
+recordDefn alpha _T t info = do
+  recordEqn (DefineMeta alpha) (EQN _T (meta alpha) _T t info)
+  markDefInGraph alpha
+
+recordEntry :: Entry -> Contextual ()
+recordEntry (E alpha _T HOLE info) = return ()
+recordEntry (E alpha _T (DEFN t) info) = do
+  b <- defAlreadyRecorded alpha
+  unless b $ recordDefn alpha _T t info
+recordEntry (Prob pid prob _ _) = do
+  b <- probAlreadyRecorded pid
+  let
+    edgeType =
+      case creationInfo (probInfo prob) of
+        Initial -> InitConstr pid
+        _ -> DerivedEqn pid
+  unless b $ recordProblem edgeType pid prob
+  markProblemInGraph pid
 
 -- --TODO do we need this? record problem substs?
 -- recordEntry :: Entry -> Contextual ()
@@ -604,8 +635,9 @@ recordProblemSub :: ProbId -> Problem -> Problem -> Contextual ()
 recordProblemSub (ProbId pid) prob1 prob2 = helper' prob1 prob2 0
   where
     helper' (Unify (EQN t1 v1 t2 v2 _)) (Unify (EQN t1' v1' t2' v2' creator)) _ = do
-      recordEqn (ProbUpdate $ ProbId pid) $ EQN t1 v1 t1' v1' creator
-      recordEqn (ProbUpdate $ ProbId pid) $ EQN t2 v2 t2' v2' creator
+        recordEqn (ProbUpdate $ ProbId pid) $ EQN t1' v1 t2' v2' creator
+      --recordEqn (ProbUpdate $ ProbId pid) $ EQN t1 v1 t1' v1' creator
+      --recordEqn (ProbUpdate $ ProbId pid) $ EQN t2 v2 t2' v2' creator
     helper' (All tp bnd1) (All _ bnd2) i = do
       (nm1, prob1) <- unbind bnd1
       (nm2, prob2) <- unbind bnd2

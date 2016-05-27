@@ -153,13 +153,16 @@ edgeMessage finalSub (edgeId, edgeInfo) =
   "  " ++ (Common.prettySource $ UC.infoRegion $ UC.edgeEqnInfo edgeInfo)
   ++ " " ++ constrStr ++ "\n"
   where
-    constrStr = case (UC.edgeType edgeInfo) of
-      (UC.InitConstr _ (s,t)) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(initial)" -- Tm.prettyString prob
-      (UC.DefnUpdate c) -> "TODO1"
-      (UC.ProbUpdate c) -> "TODO2"
-      (UC.DefineMeta c) -> "TODO3"
-      (UC.DerivedEqn _ (s,t)) -> Tm.prettyString (Tm.unsafeFlatten $ LN.substs finalSub s) ++ " === " ++ Tm.prettyString (Tm.unsafeFlatten $ LN.substs finalSub t) ++ "(derived)"
-      (UC.ChoiceEdge _ alpha s t) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(choice)"
+    (s,t) = UC.edgeEqn edgeInfo
+    constrStr = Tm.prettyString s ++ " === " ++ Tm.prettyString t
+    -- constrStr = case (UC.edgeType edgeInfo) of
+    --   (UC.InitConstr _) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(initial)" -- Tm.prettyString prob
+    --   -- (UC.DefnUpdate c) -> "TODO1"
+    --   -- (UC.ProbUpdate c) -> "TODO2"
+    --   (UC.DefineMeta c) -> "TODO3"
+    --   (UC.DerivedEqn _)  ->
+    --     Tm.prettyString (Tm.unsafeFlatten $ LN.substs finalSub s) ++ " === " ++    Tm.prettyString (Tm.unsafeFlatten $ LN.substs finalSub t) ++ "(derived)"
+    --   (UC.ChoiceEdge _ alpha (s,t)) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(choice)"
 
 
 unsolvedMsg :: [Tm.Nom] -> (Tm.Nom, Region, Maybe Tm.VAL) -> (Region, String)
