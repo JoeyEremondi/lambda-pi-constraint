@@ -199,25 +199,6 @@ defineSingle info _Gam xtop _T vtop =
          return a
 
 
-defineSingle info _Gam xtop _T vtop =
-  defineGlobalSingle info xtop
-               (_Pis _Gam _T)
-               (lams' _Gam vtop)
-               (return ())
-  where
-    defineGlobalSingle info x _T vinit m = do --trace ("Defining single global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T) $ do
-         v <- makeTypeSafe _T vinit
-         pushL $ E x _T (DEFN v) info
-         pushR (Left (Map.singleton x v))
-         a <- m
-         goLeft
-
-         --Ctx.moveDeclRight x newNom
-         --Add our final value to the type graph
-         Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
-         return a
-
-
 
 -- %endif
 -- \subsection{Unification}
