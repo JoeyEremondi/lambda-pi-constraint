@@ -154,7 +154,7 @@ edgeMessage finalSub (edgeId, edgeInfo) =
   ++ " " ++ constrStr ++ "\n"
   where
     (s,t) = UC.edgeEqn edgeInfo
-    constrStr = Tm.prettyString s ++ " === " ++ Tm.prettyString t
+    constrStr = Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "   " ++ show (UC.edgeType edgeInfo)
     -- constrStr = case (UC.edgeType edgeInfo) of
     --   (UC.InitConstr _) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(initial)" -- Tm.prettyString prob
     --   -- (UC.DefnUpdate c) -> "TODO1"

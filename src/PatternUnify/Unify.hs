@@ -890,7 +890,7 @@ tryIntersect pid info alpha _T ds es =
       intersect [] [] _T xs ys >>=
       \m ->
         case m of --TODO intersect creator? --TODO pendingVars here?
-          Just ( _U, f ) -> hole info [] _U $ \beta -> define pid (info {creationInfo = CreatedBy n}) [] alpha _T (f beta)
+          Just ( _U, f ) -> hole info [] _U $ \beta -> define pid (info {creationInfo = CreatedBy pid}) [] alpha _T (f beta)
           Nothing -> trace ("Pushing HOLE for " ++ show alpha) $ pushL (E alpha _T HOLE info )
     _ -> trace ("TI Default pushing " ++ show alpha) $ pushL (E alpha _T HOLE info )
 

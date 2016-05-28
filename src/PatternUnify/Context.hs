@@ -634,8 +634,8 @@ recordEntrySub (Prob pid prob _ _) (Prob _ prob2 _ _) =
 recordProblemSub :: ProbId -> Problem -> Problem -> Contextual ()
 recordProblemSub (ProbId pid) prob1 prob2 = helper' prob1 prob2 0
   where
-    helper' (Unify (EQN t1 v1 t2 v2 _)) (Unify (EQN t1' v1' t2' v2' creator)) _ = do
-        recordEqn (ProbUpdate $ ProbId pid) $ EQN t1' v1 t2' v2' creator
+    helper' (Unify (EQN t1 v1 t2 v2 _)) (Unify (EQN t1' v1' t2' v2' info)) _ = do
+        recordEqn (ProbUpdate $ ProbId pid) $ EQN t1' v1 t2' v2' (info {creationInfo = CreatedBy $ ProbId pid})
       --recordEqn (ProbUpdate $ ProbId pid) $ EQN t1 v1 t1' v1' creator
       --recordEqn (ProbUpdate $ ProbId pid) $ EQN t2 v2 t2' v2' creator
     helper' (All tp bnd1) (All _ bnd2) i = do
