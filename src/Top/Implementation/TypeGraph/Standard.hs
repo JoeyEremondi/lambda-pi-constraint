@@ -24,7 +24,7 @@ import Top.Types
 import qualified Unbound.Generics.LocallyNameless as Ln
 import Utils (internalError)
 
-import Data.Foldable (foldlM)
+import Data.Foldable (foldlM, foldrM)
 
 import PatternUnify.ConstraintInfo as Info
 
@@ -39,6 +39,7 @@ data StandardTypeGraph = STG
    , possibleErrors          :: [VertexId]
    , constraintNumber        :: Tm.Nom
    , choiceEdges             :: [(Tm.CUID, VertexId)]
+   , termNodes               :: M.Map Tm.Nom [(VertexId, Tm.VAL)]
    }
 
 instance Empty (StandardTypeGraph ) where
@@ -86,6 +87,17 @@ addHead original unique (Tm.Meta nm) stg =
     vinit = VertexId nm
   in
     return (vinit, addVertex vinit (VVar, original) stg)
+
+addTermVert :: VertexId -> Tm.VAL -> M.Map Tm.Nom [(VertexId, Tm.VAL)] -> M.Map Tm.Nom [(VertexId, Tm.VAL)]
+addTermVert vid t oldDict =
+  let
+    alphas = Tm.fmvs t
+    foldFn alpha d =
+      case M.lookup alpha d of
+        Nothing -> M.insert alpha [(vid,t)] d
+        Just oldList -> M.insert alpha ((vid,t):oldList) d
+  in
+    foldr foldFn oldDict alphas
 
 
 instance TypeGraph (StandardTypeGraph) Info where
@@ -139,25 +151,35 @@ instance TypeGraph (StandardTypeGraph) Info where
 
                    foldlM foldFn initVal args
 
-                --Insert function application
-               Tm.N hd elims -> do
-                  vinit <- VertexId <$> Ln.fresh unique
-                  initVal <- addHead original unique hd stg
-                  let foldFn (vlast, glast) elim = do
-                        (vnew, subGraph) <- addElim synonyms original unique elim glast
-                        vid <-  VertexId <$> Ln.fresh unique
-                        return
-                         ( vid
-                         , addVertex vid (VElim vlast vnew, original) subGraph)
-                  foldlM foldFn initVal elims
-               Tm.L bnd -> do
-                  (nm, body) <- Ln.unbind bnd
-                  (vbody, subGraph1) <- addTermGraph synonyms unique body stg
-                  (vparam, subGraph2) <- addTermGraph synonyms unique (Tm.var nm) subGraph1
-                  vid <- VertexId <$> Ln.fresh unique
-                  return
-                   ( vid
-                   , addVertex vid (VLam vparam vbody, original) subGraph2)
+               --We can treat a lone meta or program variable as a node
+               Tm.N hd [] ->
+                 addHead original unique hd stg
+
+               tm -> do
+                 newVertex <- VertexId <$> Ln.fresh unique
+                 let newg = addVertex newVertex (VTerm, Just tm) stg
+                 return (newVertex, newg {termNodes = addTermVert newVertex tm (termNodes newg)})
+
+
+              --   --Insert function application
+              --  Tm.N hd elims -> do
+              --     vinit <- VertexId <$> Ln.fresh unique
+              --     initVal <- addHead original unique hd stg
+              --     let foldFn (vlast, glast) elim = do
+              --           (vnew, subGraph) <- addElim synonyms original unique elim glast
+              --           vid <-  VertexId <$> Ln.fresh unique
+              --           return
+              --            ( vid
+              --            , addVertex vid (VElim vlast vnew, original) subGraph)
+              --     foldlM foldFn initVal elims
+              --  Tm.L bnd -> do
+              --     (nm, body) <- Ln.unbind bnd
+              --     (vbody, subGraph1) <- addTermGraph synonyms unique body stg
+              --     (vparam, subGraph2) <- addTermGraph synonyms unique (Tm.var nm) subGraph1
+              --     vid <- VertexId <$> Ln.fresh unique
+              --     return
+              --      ( vid
+              --      , addVertex vid (VLam vparam vbody, original) subGraph2)
 
 
 
@@ -255,8 +277,7 @@ toDotGen eqGroups g =
        dotLabel vid (VVar,_) = "Meta " ++ show vid
        dotLabel vid ((VCon k),_) = show k
        dotLabel vid (VApp _ _, Just tm) = "App " ++ show vid ++ " " ++ Tm.prettyString tm
-       dotLabel vid (VLam _ _, Just tm) = "Lam " ++ show vid ++ " " ++ Tm.prettyString tm
-       dotLabel vid (VElim _ _, Just tm) = "Elim " ++ show vid ++ " " ++ Tm.prettyString tm
+       dotLabel vid _ = error "dotLabel"
 
        dotLabel vid _ = show vid
 
@@ -278,15 +299,16 @@ toDotGen eqGroups g =
        dotEdges vid (VertBot, _) = ""
        dotEdges vid (VVar,_) = ("")
        dotEdges vid ((VCon k),_) = ("")
-       dotEdges vid ((VLam k1 k2),_) =
-         (show vid ++ " -> " ++ show k1 ++ " [style = dashed, label = \"L\"];//1\n"
-           ++ show vid ++ " -> " ++ show k2 ++ " [style = dashed, label = \"R\"];//2\n")
+      --  dotEdges vid ((VLam k1 k2),_) =
+      --    (show vid ++ " -> " ++ show k1 ++ " [style = dashed, label = \"L\"];//1\n"
+      --      ++ show vid ++ " -> " ++ show k2 ++ " [style = dashed, label = \"R\"];//2\n")
        dotEdges vid ((VApp k1 k2),_) =
          (show vid ++ " -> " ++ show k1  ++ " [style = dashed, label = \"L\"];//3\n"
            ++ show vid ++ " -> " ++ show k2 ++ " [style = dashed, label = \"R\"];//4\n")
-       dotEdges vid ((VElim k1 k2),_) =
-         (show vid ++ " -> " ++ show k1 ++ " [style = dashed, label = \"L\"];//5\n"
-           ++ show vid ++ " -> " ++ show k2 ++ " [style = dashed, label = \"R\"];//6\n")
+      --  dotEdges vid ((VElim k1 k2),_) =
+      --    (show vid ++ " -> " ++ show k1 ++ " [style = dashed, label = \"L\"];//5\n"
+      --      ++ show vid ++ " -> " ++ show k2 ++ " [style = dashed, label = \"R\"];//6\n")
+       dotDeges vid _ = error "dotEdges"
 
        termEdges = map (uncurry dotEdges) nodePairs
 
@@ -298,6 +320,27 @@ toDotGen eqGroups g =
 
 
      in "digraph G\n{\n" ++ concat (nodeDecls) ++ concat (edgeDecls ++ termEdges) ++ "\n}"
+
+
+processUpdate :: (Ln.Fresh m) => Info -> Tm.Subs -> StandardTypeGraph -> m StandardTypeGraph
+processUpdate info theta stg = do
+  let
+    alphas = M.keys theta
+    vertsToUpdate =
+      [ (termVid, Ln.substs (M.toList theta) oldTerm) |
+        alpha <- alphas,
+        Just termList <- [M.lookup alpha (termNodes stg)],
+        (termVid, oldTerm) <- termList]
+    foldFun :: (Ln.Fresh m) => (VertexId, Tm.VAL) -> StandardTypeGraph -> m StandardTypeGraph
+    foldFun (vid, newVal) g = do
+      (newVid, g1) <- addTermGraph M.empty (Ln.s2n "theNode") newVal g
+      g2 <- addNewEdge (newVid, vid) info g
+      return g2
+  gRet <- foldrM foldFun stg vertsToUpdate
+  --Mark the updates on these terms as performed
+  let newDict = M.filterWithKey (\alpha _ -> not (alpha `elem` alphas)) (termNodes gRet)
+  return $ gRet {termNodes = newDict}
+
 
 -- Helper functions
 combineClasses :: [VertexId] -> StandardTypeGraph -> StandardTypeGraph

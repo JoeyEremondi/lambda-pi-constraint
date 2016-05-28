@@ -23,7 +23,12 @@ data Constant = Con Tm.Can | ConElim Tm.CanElim | CApp | BoundVar Tm.Nom
 
 newtype VertexId = VertexId Tm.Nom deriving (Eq, Ord)
 type VertexInfo  = (VertexKind, Maybe Tm.VAL)
-data VertexKind  = VVar | VCon Constant | VLam VertexId VertexId | VApp VertexId VertexId | VElim VertexId VertexId | VertBot
+data VertexKind  =
+  VVar
+  | VCon Constant
+  | VTerm
+  | VApp VertexId VertexId
+  | VertBot
    deriving (Show, Eq, Ord)
 
 instance Show VertexId where
