@@ -68,8 +68,9 @@ data ChoiceEdge = LeftChoice | RightChoice
 
 data ConstraintType =
   InitConstr ProbId
-  | DefnUpdate Nom
-  | ProbUpdate ProbId
+  | MetaUpdate (Nom, VAL)
+  -- | DefnUpdate Nom
+  -- | ProbUpdate ProbId
   | DefineMeta Nom
   | DerivedEqn ProbId
   | ChoiceEdge ChoiceEdge Nom (VAL, VAL)

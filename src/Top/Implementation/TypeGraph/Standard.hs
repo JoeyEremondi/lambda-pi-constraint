@@ -40,6 +40,7 @@ data StandardTypeGraph = STG
    , constraintNumber        :: Tm.Nom
    , choiceEdges             :: [(Tm.CUID, VertexId)]
    , termNodes               :: M.Map Tm.Nom [(VertexId, Tm.VAL)]
+   , collectedUpdates        :: M.Map Tm.Nom (Tm.VAL, (Tm.VAL, Tm.VAL) -> Info)
    }
 
 instance Empty (StandardTypeGraph ) where
@@ -50,6 +51,8 @@ instance Empty (StandardTypeGraph ) where
       , possibleErrors          = []
       , constraintNumber        = Ln.s2n "constr"
       , choiceEdges = []
+      , termNodes = M.empty
+      , collectedUpdates = M.empty
       }
 
 instance Show (StandardTypeGraph) where
@@ -60,6 +63,18 @@ instance Show (StandardTypeGraph) where
 allEdges :: StandardTypeGraph -> [(EdgeId, Info)]
 allEdges stg =
   concatMap edges $ M.elems $ equivalenceGroupMap stg
+
+
+addCollectedUpdates :: (Ln.Fresh m) => VertexId -> Tm.VAL -> StandardTypeGraph -> m StandardTypeGraph
+addCollectedUpdates vid oldVal stg =
+  foldrM foldFun stg (Tm.fmvs oldVal)
+    where
+      foldFun alpha g =
+        case M.lookup alpha (collectedUpdates g) of
+          Nothing -> return g
+          Just (alphaVal, info) -> do
+            let newVal = Ln.subst alpha alphaVal oldVal
+            addUpdateEdge vid (info) oldVal newVal g
 
 
 -- addElim subs original unique (Tm.Elim can args) g0 =
@@ -157,8 +172,11 @@ instance TypeGraph (StandardTypeGraph) Info where
 
                tm -> do
                  newVertex <- VertexId <$> Ln.fresh unique
-                 let newg = addVertex newVertex (VTerm, Just tm) stg
-                 return (newVertex, newg {termNodes = addTermVert newVertex tm (termNodes newg)})
+                 let newg =
+                       (addVertex newVertex (VTerm, Just tm) stg)
+                         {termNodes = addTermVert newVertex tm (termNodes newg)}
+                 gRet <- addCollectedUpdates newVertex tm newg
+                 return (newVertex, gRet)
 
 
               --   --Insert function application
@@ -321,25 +339,26 @@ toDotGen eqGroups g =
 
      in "digraph G\n{\n" ++ concat (nodeDecls) ++ concat (edgeDecls ++ termEdges) ++ "\n}"
 
+addUpdateEdge vid info oldVal newVal g = do
+  (newVid, g1) <- addTermGraph M.empty (Ln.s2n "theNode") newVal g
+  addNewEdge (newVid, vid) (info (oldVal, newVal)) g
 
-processUpdate :: (Ln.Fresh m) => Info -> Tm.Subs -> StandardTypeGraph -> m StandardTypeGraph
-processUpdate info theta stg = do
+
+processUpdate :: (Ln.Fresh m) => ((Tm.VAL, Tm.VAL) -> Info) -> (Tm.Nom, Tm.VAL) -> StandardTypeGraph -> m StandardTypeGraph
+processUpdate info (alpha, alphaVal) stg = do
   let
-    alphas = M.keys theta
     vertsToUpdate =
-      [ (termVid, Ln.substs (M.toList theta) oldTerm) |
-        alpha <- alphas,
+      [ (termVid, oldTerm, Ln.subst alpha alphaVal oldTerm) |
         Just termList <- [M.lookup alpha (termNodes stg)],
         (termVid, oldTerm) <- termList]
-    foldFun :: (Ln.Fresh m) => (VertexId, Tm.VAL) -> StandardTypeGraph -> m StandardTypeGraph
-    foldFun (vid, newVal) g = do
-      (newVid, g1) <- addTermGraph M.empty (Ln.s2n "theNode") newVal g
-      g2 <- addNewEdge (newVid, vid) info g
-      return g2
+    foldFun :: (Ln.Fresh m) => (VertexId, Tm.VAL, Tm.VAL) -> StandardTypeGraph -> m StandardTypeGraph
+    foldFun (vid, oldVal, newVal) g =
+      addUpdateEdge vid info oldVal newVal g
   gRet <- foldrM foldFun stg vertsToUpdate
   --Mark the updates on these terms as performed
-  let newDict = M.filterWithKey (\alpha _ -> not (alpha `elem` alphas)) (termNodes gRet)
-  return $ gRet {termNodes = newDict}
+  let newDict = M.filterWithKey (\beta _ -> alpha /= beta) (termNodes gRet)
+  return $ gRet {termNodes = newDict,
+    collectedUpdates = M.insert alpha (alphaVal, info) (collectedUpdates gRet)}
 
 
 -- Helper functions

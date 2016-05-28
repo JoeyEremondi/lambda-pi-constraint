@@ -1237,7 +1237,8 @@ ambulando ns fails theta = do
       Just (Left (RSubImmediate pid sub)) -> do
         applySubImmediate pid sub
         ambulando ns fails theta
-      Just (Left (RSubs theta')) -> ambulando ns fails (compSubs theta theta')
+      Just (Left (RSubs theta')) -> do
+        ambulando ns fails (compSubs theta theta')
       -- process entries
       Just (Right e) -> do
         updateVal <- update ns fails theta e
@@ -1267,7 +1268,7 @@ update :: [ProbId] -> [ProbId] -> Subs -> Entry -> Contextual Entry
 update pids failPids subs e = do
   let newE = update' pids subs e
   --Record our substitutions, letting us get rid of function applications
-  Ctx.recordEntrySub e newE
+  --Ctx.recordUpdate e newE
   return newE
   where
     update' :: [ProbId] -> Subs -> Entry -> Entry

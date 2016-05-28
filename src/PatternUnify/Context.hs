@@ -597,6 +597,7 @@ recordChoice  _T x vsingle freshVar info = do
 recordDefn :: Nom -> Type -> VAL -> EqnInfo -> Contextual ()
 recordDefn alpha _T t info = do
   recordEqn (DefineMeta alpha) (EQN _T (meta alpha) _T t info)
+  recordUpdate info (alpha, t)
   markDefInGraph alpha
 
 recordEntry :: Entry -> Contextual ()
@@ -620,34 +621,42 @@ recordEntry (Prob pid prob _ _) = do
 -- recordEntry (E nm tp (DEFN dec)) = recordEqn _ (EQN tp (meta nm) tp dec)
 -- recordEntry (Prob pid prob st) = recordProblem pid prob --TODO look at state?
 
+
+recordUpdate :: EqnInfo -> (Nom, VAL) -> Contextual ()
+recordUpdate info sub = do
+    gCurrent <- getGraph
+    newG <- TG.processUpdate (\ pr -> ConstraintInfo (MetaUpdate sub) info pr) sub gCurrent
+    setGraph newG
+
+
 --After we substitute new values, we record the equalities between the subsituted values
 --This lets us get eliminate Function Application edges in our graph
-recordEntrySub :: Entry -> Entry -> Contextual ()
-recordEntrySub (E nm1 tp1 HOLE _) (E nm2 tp2 HOLE _) = return () --TODO will ever change?
-recordEntrySub (E alpha tp1 (DEFN dec1) _) (E _ tp2 (DEFN dec2) info) =
-  recordEqn (DefnUpdate alpha) (EQN tp1 dec1 tp2 dec2 info)
-recordEntrySub (Prob pid prob _ _) (Prob _ prob2 _ _) =
-  recordProblemSub pid prob prob2
+-- recordEntrySub :: Entry -> Entry -> Contextual ()
+-- recordEntrySub (E nm1 tp1 HOLE _) (E nm2 tp2 HOLE _) = return () --TODO will ever change?
+-- recordEntrySub (E alpha tp1 (DEFN dec1) _) (E _ tp2 (DEFN dec2) info) =
+--   recordEqn (DefnUpdate alpha) (EQN tp1 dec1 tp2 dec2 info)
+-- recordEntrySub (Prob pid prob _ _) (Prob _ prob2 _ _) =
+--   recordProblemSub pid prob prob2
 
---Decompose the problems in parallel, creating matching
---names for their quantified variables
-recordProblemSub :: ProbId -> Problem -> Problem -> Contextual ()
-recordProblemSub (ProbId pid) prob1 prob2 = helper' prob1 prob2 0
-  where
-    helper' (Unify (EQN t1 v1 t2 v2 _)) (Unify (EQN t1' v1' t2' v2' info)) _ = do
-        recordEqn (ProbUpdate $ ProbId pid) $ EQN t1' v1 t2' v2' (info {creationInfo = CreatedBy $ ProbId pid})
-      --recordEqn (ProbUpdate $ ProbId pid) $ EQN t1 v1 t1' v1' creator
-      --recordEqn (ProbUpdate $ ProbId pid) $ EQN t2 v2 t2' v2' creator
-    helper' (All tp bnd1) (All _ bnd2) i = do
-      (nm1, prob1) <- unbind bnd1
-      (nm2, prob2) <- unbind bnd2
-      --Create a unique (but not fresh) name for our quanitified variable
-      --in the scope of this problem
-      let newVarBase = name2String pid ++ "_quant"
-          newVar = makeName newVarBase i
-          newProb1 = substs [(nm1, var newVar)] prob1
-          newProb2 = substs [(nm2, var newVar)] prob2
-      helper' newProb1 newProb2 (i+1)
+-- --Decompose the problems in parallel, creating matching
+-- --names for their quantified variables
+-- recordProblemSub :: ProbId -> Problem -> Problem -> Contextual ()
+-- recordProblemSub (ProbId pid) prob1 prob2 = helper' prob1 prob2 0
+--   where
+--     helper' (Unify (EQN t1 v1 t2 v2 _)) (Unify (EQN t1' v1' t2' v2' info)) _ = do
+--         recordEqn (ProbUpdate $ ProbId pid) $ EQN t1' v1 t2' v2' (info {creationInfo = CreatedBy $ ProbId pid})
+--       --recordEqn (ProbUpdate $ ProbId pid) $ EQN t1 v1 t1' v1' creator
+--       --recordEqn (ProbUpdate $ ProbId pid) $ EQN t2 v2 t2' v2' creator
+--     helper' (All tp bnd1) (All _ bnd2) i = do
+--       (nm1, prob1) <- unbind bnd1
+--       (nm2, prob2) <- unbind bnd2
+--       --Create a unique (but not fresh) name for our quanitified variable
+--       --in the scope of this problem
+--       let newVarBase = name2String pid ++ "_quant"
+--           newVar = makeName newVarBase i
+--           newProb1 = substs [(nm1, var newVar)] prob1
+--           newProb2 = substs [(nm2, var newVar)] prob2
+--       helper' newProb1 newProb2 (i+1)
 
 
 flattenEquation :: (Fresh m) => Equation -> m Equation
