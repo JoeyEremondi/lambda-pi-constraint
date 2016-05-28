@@ -172,10 +172,10 @@ instance TypeGraph (StandardTypeGraph) Info where
 
                tm -> do
                  newVertex <- VertexId <$> Ln.fresh unique
-                 let newg =
+                 let g1 =
                        (addVertex newVertex (VTerm, Just tm) stg)
-                         {termNodes = addTermVert newVertex tm (termNodes newg)}
-                 gRet <- addCollectedUpdates newVertex tm newg
+                     g2 = g1 {termNodes = addTermVert newVertex tm (termNodes g1)}
+                 gRet <- addCollectedUpdates newVertex tm g2
                  return (newVertex, gRet)
 
 
@@ -295,7 +295,7 @@ toDotGen eqGroups g =
        dotLabel vid (VVar,_) = "Meta " ++ show vid
        dotLabel vid ((VCon k),_) = show k
        dotLabel vid (VApp _ _, Just tm) = "App " ++ show vid ++ " " ++ Tm.prettyString tm
-       dotLabel vid _ = error "dotLabel"
+       dotLabel vid (VTerm, Just tm) = show vid ++ " TERM: " ++ Tm.prettyString tm
 
        dotLabel vid _ = show vid
 
@@ -326,7 +326,7 @@ toDotGen eqGroups g =
       --  dotEdges vid ((VElim k1 k2),_) =
       --    (show vid ++ " -> " ++ show k1 ++ " [style = dashed, label = \"L\"];//5\n"
       --      ++ show vid ++ " -> " ++ show k2 ++ " [style = dashed, label = \"R\"];//6\n")
-       dotDeges vid _ = error "dotEdges"
+       dotEdges vid _ = ""
 
        termEdges = map (uncurry dotEdges) nodePairs
 
@@ -341,7 +341,7 @@ toDotGen eqGroups g =
 
 addUpdateEdge vid info oldVal newVal g = do
   (newVid, g1) <- addTermGraph M.empty (Ln.s2n "theNode") newVal g
-  addNewEdge (newVid, vid) (info (oldVal, newVal)) g
+  addNewEdge (newVid, vid) (info (oldVal, newVal)) g1
 
 
 processUpdate :: (Ln.Fresh m) => ((Tm.VAL, Tm.VAL) -> Info) -> (Tm.Nom, Tm.VAL) -> StandardTypeGraph -> m StandardTypeGraph
