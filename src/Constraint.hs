@@ -158,7 +158,7 @@ edgeMessage finalSub (edgeId, edgeInfo) =
     t = (Tm.unsafeFlatten $ LN.substs finalSub tinit)
     hintString = case (UC.maybeHint edgeInfo) of
       Nothing -> ""
-      Just hint -> "\n      HINT: " ++ hint
+      Just hint -> "\n    HINT: " ++ hint
     constrStr = Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "   " ++ show (UC.edgeType edgeInfo)
       ++ hintString
     -- constrStr = case (UC.edgeType edgeInfo) of

@@ -85,6 +85,14 @@ data EqnInfo =
   , isCF         :: IsCF
   } deriving (Eq, Show, Generic)
 
+
+constraintPid :: ConstraintInfo -> Maybe ProbId
+constraintPid info = case edgeType info of
+  InitConstr pid -> Just pid
+  DerivedEqn pid -> Just pid
+  _ -> Nothing
+
+
 data CreationInfo = Initial | CreatedBy ProbId
   deriving (Eq, Show, Generic)
 

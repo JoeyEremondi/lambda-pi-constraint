@@ -435,10 +435,21 @@ removeDerived e stg =
         [ourInfo] -> return ourInfo
         _ -> Nothing
       ourPid <-
-        case Info.edgeType ourInfo of
-          Info.InitConstr pid -> Just pid
-          _ -> Nothing
-      return [eid | (eid, someInfo) <- edgePairs, (Info.creationInfo . Info.edgeEqnInfo) someInfo == Info.CreatedBy ourPid ]
+        Info.constraintPid ourInfo
+      let childEdges = [eid | (eid, someInfo) <- edgePairs, (Info.creationInfo . Info.edgeEqnInfo) someInfo == Info.CreatedBy ourPid ]
+      let
+        mCreator =
+          case (creationInfo $ edgeEqnInfo ourInfo) of
+            Info.Initial -> Nothing
+            Info.CreatedBy pid -> Just pid
+      --When we diagnose a non-parent ID, we also remove its parent
+      let parentEdges =
+            [eid
+              | Just creator <- [mCreator]
+              , (eid, someInfo) <- edgePairs
+              , Just potentialCreatorId <- [Info.constraintPid someInfo]
+              , creator == potentialCreatorId ]
+      return $ childEdges ++ parentEdges
 
   in
     case mEdgesToRemove of
