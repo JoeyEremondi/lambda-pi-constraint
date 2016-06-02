@@ -18,12 +18,20 @@ import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
 import Top.Solver
 
+import qualified Data.List as List
+import qualified Data.Maybe as Maybe
+
 import Top.Implementation.TypeGraph.ClassMonadic
 
 import PatternUnify.ConstraintInfo as Info
 import PatternUnify.Tm as Tm
+import PatternUnify.Check as Check
+
+import Control.Monad
+
 
 type Info = Info.ConstraintInfo
+
 
 --import Debug.Trace (trace)
 
@@ -120,16 +128,32 @@ preferChoiceEdges = Selector ("Choice edges", f)
       _ -> return Nothing
 
 
+
+instance HasTwoTypes ConstraintInfo where
+   getTwoTypes = Info.edgeEqn
+
 ctorPermutation :: (HasTypeGraph m Info) => Selector m Info
 ctorPermutation = Selector ("Constructor isomorphism", f)
   where
     f pair@(edge@(EdgeId vc _ _), info) = do
-      (t1, t2) <- getSubstitutedTypes info
-      case (t1, t2) of
-        (Just (Tm.C can args), Just (Tm.C can2 args2)) | can == can2 ->
-          return _
-        _ -> return _
-      return _
+      let rawT = typeOfValues info
+      mT <- substituteTypeSafe rawT
+      (mt1, mt2) <- getSubstitutedTypes info
+      case (mt1, mt2, mT) of
+        (Just t1@(Tm.C can args), Just t2@(Tm.C can2 args2), Just _T) | can == can2 -> do
+          maybeMatches <- forM (List.permutations args2) $ \permut -> do
+             if Check.unsafeEqual _T (Tm.C can args) (Tm.C can permut) then
+                 return $ Just permut
+               else
+                 return Nothing
+          case (Maybe.catMaybes maybeMatches) of
+            [] ->
+              return Nothing
+            (match : _) -> do
+              let hint = "Rearrange arguments to match " ++ Tm.prettyString t1 ++ " to " ++ Tm.prettyString t2
+              return $ Just (10, "Mismatched arguments", [edge], info {maybeHint = Just hint})
+
+        _ -> return Nothing
 
 -- -- |Select only the constraints for which there is evidence in the predicates
 -- -- of the current state that the constraint at hand is incorrect.

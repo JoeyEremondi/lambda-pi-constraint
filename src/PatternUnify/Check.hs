@@ -358,6 +358,14 @@ equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ====
       Nothing -> True
       _ -> False
 
+unsafeEqual :: Type -> VAL -> VAL -> Bool
+unsafeEqual _T s t =
+  case fst (runContextual initContext $ equal _T s t) of
+    Left _ -> False
+    Right b -> b
+
+
+
 (<->) :: Type -> Type -> Contextual Bool
 _S <-> _T = equal SET _S _T
 

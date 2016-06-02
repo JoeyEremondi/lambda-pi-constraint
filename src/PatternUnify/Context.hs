@@ -65,6 +65,8 @@ import qualified Top.Types.Substitution as TSub
 
 import PatternUnify.ConstraintInfo
 
+import qualified Top.Util.Empty as Empty
+
 type BadEdges = [Heur.ErrorInfo ConstraintInfo]
 
 type TypeGraph = TG.StandardTypeGraph
@@ -262,6 +264,9 @@ instance Pretty RSubs where
 type ContextL  = Bwd Entry
 type ContextR  = [Either RSubs Entry]
 type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges, Set.Set (Either Nom ProbId))
+
+initContext :: Context
+initContext = (B0, [], error "initial problem ID", Empty.empty, [], Set.empty)
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -566,11 +571,11 @@ addEqn info eqn@(EQN _ v1 _ v2 _) stg = --trace ("Adding equation to graph " ++ 
     TG.addEqn info (v1, v2) stg
 
 recordEqn :: ConstraintType -> Equation -> Contextual ()
-recordEqn ctype eqn@(EQN _ sc _ tc eqinfo) = do
+recordEqn ctype eqn@(EQN _T sc _ tc eqinfo) = do
   s <- flattenChoice sc
   t <- flattenChoice tc
   gCurrent <- getGraph
-  let cinfo = ConstraintInfo ctype eqinfo (s,t) Nothing
+  let cinfo = ConstraintInfo ctype eqinfo (s,t) _T Nothing
   newG <- addEqn cinfo eqn gCurrent
   setGraph newG
 
@@ -597,7 +602,7 @@ recordChoice  _T x vsingle freshVar info = do
 recordDefn :: Nom -> Type -> VAL -> EqnInfo -> Contextual ()
 recordDefn alpha _T t info = do
   recordEqn (DefineMeta alpha) (EQN _T (meta alpha) _T t info)
-  recordUpdate info (alpha, t)
+  recordUpdate info _T (alpha, t)
   markDefInGraph alpha
 
 recordEntry :: Entry -> Contextual ()
@@ -622,10 +627,10 @@ recordEntry (Prob pid prob _ _) = do
 -- recordEntry (Prob pid prob st) = recordProblem pid prob --TODO look at state?
 
 
-recordUpdate :: EqnInfo -> (Nom, VAL) -> Contextual ()
-recordUpdate info sub = do
+recordUpdate :: EqnInfo -> Type -> (Nom, VAL) -> Contextual ()
+recordUpdate info _T sub = do
     gCurrent <- getGraph
-    newG <- TG.processUpdate (\ pr -> ConstraintInfo (MetaUpdate sub) info pr Nothing) sub gCurrent
+    newG <- TG.processUpdate (\ pr -> ConstraintInfo (MetaUpdate sub) info pr _T Nothing) sub gCurrent
     setGraph newG
 
 
