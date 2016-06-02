@@ -17,6 +17,8 @@ import Top.Types.Primitive
 import Top.Types.Substitution
 import Top.Types.Synonym
 import Utils (internalError)
+
+import qualified PatternUnify.Tm as Tm
 {-
 -- |There are two reasons why two types cannot be unified: either two (different) type constants clash (they
 -- should be the same), or a type variable should be unified with a composed type that contains this same
@@ -124,3 +126,21 @@ unifiableList typesynonyms (t1:t2:ts) =
 unifiableList _ _ = True
 
 -}
+
+-- |Find the most general type for two types that are equal under type synonyms
+-- (i.e., the least number of expansions)
+firstOrderUnify ::  Tm.VAL -> Tm.VAL -> Maybe Tm.VAL
+firstOrderUnify t1 t2 =
+   case (t1,t2) of
+      ((Tm.N (Tm.Meta i) []), (Tm.N (Tm.Meta _) [])) -> Just (Tm.meta i)
+      ((Tm.C s ss),(Tm.C t tt))
+         | s == t  ->
+              do let f = uncurry firstOrderUnify
+                 xs <- mapM f (zip ss tt)
+                 Just $ Tm.C s xs
+         | otherwise ->
+              Nothing
+
+      _ -> case (t1 == t2) of
+        True -> Just t1
+        False -> Nothing

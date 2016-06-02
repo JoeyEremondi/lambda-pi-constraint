@@ -28,9 +28,10 @@ import Top.Implementation.TypeGraph.Path
 
 import Unbound.Generics.LocallyNameless (runFreshM)
 
+
 import Debug.Trace (trace)
 
---import Top.Types
+import Top.Types (firstOrderUnify)
 
 -----------------------------------------------------------------------
 -- * Representation of an equivalence group
@@ -222,7 +223,7 @@ typeOfGroup synonyms eqgroup
 -- Todo: improve
 theBestType :: Tm.Subs -> [Tm.VAL] -> Tm.VAL
 theBestType synonyms tps =
-   let f t1 t2 = fromMaybe t1 ((error "TODO equalUnderSyn") synonyms t1 t2)
+   let f t1 t2 = fromMaybe t1 (firstOrderUnify t1 t2)
    in foldr1 f tps
 
 -- Check for some invariants: identity if everything is okay, otherwise an internal error
