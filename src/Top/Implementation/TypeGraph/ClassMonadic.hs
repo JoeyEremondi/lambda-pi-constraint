@@ -101,22 +101,22 @@ allPathsListWithout set v1 vs = useTypeGraph (TG.allPathsListWithout set v1 vs)
 -- substitution and term graph
 substituteVariable :: HasTypeGraph m info => Tm.Nom -> m Tm.VAL
 substituteVariable i =
-   do synonyms <- error "getTypeSynonyms1"
+   do synonyms <- return M.empty
       useTypeGraph (TG.substituteVariable synonyms i)
 
 substituteType :: HasTypeGraph m info => Tm.VAL -> m Tm.VAL
 substituteType tp =
-   do synonyms <- error "getTypeSynonyms2"
+   do synonyms <- return M.empty
       useTypeGraph (TG.substituteType synonyms tp)
 
 substituteTypeSafe :: HasTypeGraph m info => Tm.VAL -> m (Maybe Tm.VAL)
 substituteTypeSafe tp =
-   do synonyms <- error "getTypeSynonyms3"
+   do synonyms <- return M.empty
       useTypeGraph (TG.substituteTypeSafe synonyms tp)
 
 makeSubstitution   :: HasTypeGraph m info => m [(VertexId, Tm.VAL)]
 makeSubstitution =
-   do synonyms <- error "getTypeSynonyms4"
+   do synonyms <- return M.empty
       useTypeGraph (TG.makeSubstitution synonyms)
 
 typeFromTermGraph :: HasTypeGraph m info => VertexId -> m Tm.VAL

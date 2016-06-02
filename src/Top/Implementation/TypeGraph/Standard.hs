@@ -28,6 +28,9 @@ import Data.Foldable (foldlM, foldrM)
 
 import PatternUnify.ConstraintInfo as Info
 
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Maybe
+
 type Info = Info.ConstraintInfo
 
 --import Debug.Trace (trace)
@@ -218,26 +221,38 @@ instance TypeGraph (StandardTypeGraph) Info where
    verticesInGroupOf i =
       vertices . getGroupOf i
 
-   substituteTypeSafe synonyms =
+   substituteTypeSafe synonyms v g =
       let
-          rec :: [Tm.Nom] -> Tm.VAL -> StandardTypeGraph -> Maybe Tm.VAL
-          rec history (Tm.N hd []) stg
-            |  (Tm.headVar hd) `elem` history  = Nothing
+          recElim history (Tm.Elim con vals) stg =
+            Tm.Elim con <$> mapM  (\arg -> rec history arg stg) vals
+
+          rec :: [Tm.Nom] -> Tm.VAL -> StandardTypeGraph -> Ln.FreshMT Maybe Tm.VAL
+          rec history (Tm.N hd elims) stg
+            |  (Tm.headVar hd) `elem` history  = lift Nothing
             |  otherwise         =
                   case maybeGetGroupOf (VertexId (Tm.headVar hd)) stg of
-                     Nothing ->
-                        Just (Tm.N hd [])
+                     Nothing -> do
+                        newElims <- mapM (\arg -> recElim history arg stg) elims
+                        return (Tm.N hd newElims)
                      Just _ ->
-                        do newtp <- typeOfGroup synonyms (getGroupOf (VertexId (Tm.headVar hd)) stg)
-                           case newtp of
-                              vval@(Tm.N hdj [])  -> Just vval -- (Tm.headVar hdj)
-                              _      -> rec ((Tm.headVar hd):history) newtp stg
-
-          rec _ tp@(Tm.C con []) _ = Just tp
+                        do newHead <- lift $ typeOfGroup synonyms (getGroupOf (VertexId (Tm.headVar hd)) stg)
+                           newElims <- mapM (\arg -> recElim history arg stg) elims
+                           case newHead of
+                              vval@(Tm.N hdj [])  ->  vval Tm.%%% newElims  -- (Tm.headVar hdj)
+                              _     -> do
+                                newVal <- newHead Tm.%%% newElims
+                                rec ((Tm.headVar hd):history) newVal stg
 
           rec history (Tm.C con argList) stg =
             Tm.C con <$> mapM (\arg -> rec history arg stg) argList
-       in rec []
+
+          rec history (Tm.L bnd) stg = do
+            (x, body) <- Ln.unbind bnd
+            newBody <- rec history body stg
+            return $ Tm.L $ Ln.bind x newBody
+
+          rec _ tm _ = error $  "Sub type safe" ++ show tm
+       in Ln.runFreshMT $ rec [] v g
 
    edgesFrom i =
       let p (EdgeId v1 v2 _, _) = v1 == i || v2 == i

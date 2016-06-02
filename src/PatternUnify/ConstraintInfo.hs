@@ -58,11 +58,11 @@ newtype ProbId = ProbId {probIdToName :: Nom}
   deriving (Eq, Show, Pretty, Generic, Ord)
 
 data ConstraintInfo = ConstraintInfo
-  { edgeType    :: ConstraintType
-  , edgeEqnInfo :: EqnInfo
-  , edgeEqn     :: (VAL, VAL)
-  , typeOfValues    :: Type
-  , maybeHint   :: Maybe String
+  { edgeType     :: ConstraintType
+  , edgeEqnInfo  :: EqnInfo
+  , edgeEqn      :: (VAL, VAL)
+  , typeOfValues :: Type
+  , maybeHint    :: Maybe String
   } deriving (Eq, Show, Generic)
 
 data ChoiceEdge = LeftChoice | RightChoice

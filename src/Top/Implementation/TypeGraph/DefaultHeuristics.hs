@@ -113,6 +113,7 @@ avoidDerivedEdges =
 listOfVotes =
   Heuristic $ Voting $
     [ preferChoiceEdges
+    , ctorPermutation
     ]
 
 preferChoiceEdges :: (HasTypeGraph m Info) => Selector m Info
