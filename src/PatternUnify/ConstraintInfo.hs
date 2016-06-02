@@ -61,6 +61,7 @@ data ConstraintInfo = ConstraintInfo
   { edgeType    :: ConstraintType
   , edgeEqnInfo :: EqnInfo
   , edgeEqn     :: (VAL, VAL)
+  , maybeHint   :: Maybe String 
   } deriving (Eq, Show, Generic)
 
 data ChoiceEdge = LeftChoice | RightChoice

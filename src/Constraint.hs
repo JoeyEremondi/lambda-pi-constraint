@@ -153,7 +153,9 @@ edgeMessage finalSub (edgeId, edgeInfo) =
   "  " ++ (Common.prettySource $ UC.infoRegion $ UC.edgeEqnInfo edgeInfo)
   ++ " " ++ constrStr ++ "\n"
   where
-    (s,t) = UC.edgeEqn edgeInfo
+    (sinit,tinit) = UC.edgeEqn edgeInfo
+    s = (Tm.unsafeFlatten $ LN.substs finalSub sinit)
+    t = (Tm.unsafeFlatten $ LN.substs finalSub tinit)
     constrStr = Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "   " ++ show (UC.edgeType edgeInfo)
     -- constrStr = case (UC.edgeType edgeInfo) of
     --   (UC.InitConstr _) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(initial)" -- Tm.prettyString prob

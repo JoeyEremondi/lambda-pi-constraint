@@ -570,7 +570,7 @@ recordEqn ctype eqn@(EQN _ sc _ tc eqinfo) = do
   s <- flattenChoice sc
   t <- flattenChoice tc
   gCurrent <- getGraph
-  let cinfo = ConstraintInfo ctype eqinfo (s,t)
+  let cinfo = ConstraintInfo ctype eqinfo (s,t) Nothing
   newG <- addEqn cinfo eqn gCurrent
   setGraph newG
 
@@ -625,7 +625,7 @@ recordEntry (Prob pid prob _ _) = do
 recordUpdate :: EqnInfo -> (Nom, VAL) -> Contextual ()
 recordUpdate info sub = do
     gCurrent <- getGraph
-    newG <- TG.processUpdate (\ pr -> ConstraintInfo (MetaUpdate sub) info pr) sub gCurrent
+    newG <- TG.processUpdate (\ pr -> ConstraintInfo (MetaUpdate sub) info pr Nothing) sub gCurrent
     setGraph newG
 
 

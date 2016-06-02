@@ -21,6 +21,7 @@ import Top.Solver
 import Top.Implementation.TypeGraph.ClassMonadic
 
 import PatternUnify.ConstraintInfo as Info
+import PatternUnify.Tm as Tm
 
 type Info = Info.ConstraintInfo
 
@@ -117,6 +118,18 @@ preferChoiceEdges = Selector ("Choice edges", f)
           True -> return $ Just (10, "Choice", [edge], info)
           _ -> return Nothing
       _ -> return Nothing
+
+
+ctorPermutation :: (HasTypeGraph m Info) => Selector m Info
+ctorPermutation = Selector ("Constructor isomorphism", f)
+  where
+    f pair@(edge@(EdgeId vc _ _), info) = do
+      (t1, t2) <- getSubstitutedTypes info
+      case (t1, t2) of
+        (Just (Tm.C can args), Just (Tm.C can2 args2)) | can == can2 ->
+          return _
+        _ -> return _
+      return _
 
 -- -- |Select only the constraints for which there is evidence in the predicates
 -- -- of the current state that the constraint at hand is incorrect.
