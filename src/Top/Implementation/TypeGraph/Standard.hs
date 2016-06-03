@@ -119,6 +119,9 @@ addTermVert vid t oldDict =
 
 
 instance TypeGraph (StandardTypeGraph) Info where
+
+   getEdgeCreator = initialCreator
+
    addTermGraph synonyms unique tp stg =
          let
            evaldType :: Tm.VAL
@@ -297,13 +300,14 @@ instance TypeGraph (StandardTypeGraph) Info where
       groups = map (flip getGroupOf $ g) verts
     in toDotGen groups g
 
+
 toDotGen eqGroups g =
      let
        --TODO keep singletons? just makes graph easier to read
        --filter ((> 1) . length . vertices) $
 
        nodePairs = concatMap vertices eqGroups
-       theEdges = [(v1, v2, info) | (EdgeId v1 v2 _,info) <- concatMap (edges) eqGroups]
+       theEdges = [(v1, v2, info) | (EdgeId v1 v2 _,info) <- List.nub $ concatMap (edges) eqGroups]
 
        dotLabel :: VertexId -> VertexInfo -> (String)
        dotLabel vid (VertBot,_) = "Bottom"
@@ -321,11 +325,12 @@ toDotGen eqGroups g =
 
          _ -> "green"
 
-       edgeName tp = case tp of
-         Info.InitConstr pid -> show $ Info.probIdToName pid
-         Info.DerivedEqn pid ->  "(" ++ (show $ Info.probIdToName pid)++ ")"
-         Info.DefineMeta alpha -> "DEF " ++ show alpha
-         _ -> ""
+       edgeName tp =
+         case tp of
+             Info.InitConstr pid -> show $ Info.probIdToName pid
+             Info.DerivedEqn pid ->  "(" ++ (show $ Info.probIdToName pid)++ ")"
+             Info.DefineMeta alpha -> "DEF " ++ show alpha
+             _ -> ""
 
        dotEdges :: VertexId -> VertexInfo -> (String)
        dotEdges _ _ = "" --TODO remove to show derived edges
@@ -348,8 +353,13 @@ toDotGen eqGroups g =
        nodeDecls =
         [show v ++ " [label = \"" ++ show v ++ ": " ++ dotLabel v vinfo ++ "\" ];\n" | (v, vinfo) <- nodePairs ]
         --[show num ++ " [label = \"" ++ s ++ "\" ];\n" | s <- termNames ]
+       creator info = creationInfo $ edgeEqnInfo info
        edgeDecls =
-          [show n1 ++ " -> " ++ show n2 ++ " [dir=none, label = \"" ++ edgeName edgeType ++ "\", color = " ++ edgeColor edgeType ++ "] ;\n" | (n1, n2, info) <- theEdges, edgeType <- [Info.edgeType info]  ]
+          [show n1
+          ++ " -> " ++ show n2
+          ++ " [dir=none, label = \""
+          ++ edgeName edgeType ++ " " ++ show (creator info)
+          ++ "\", color = " ++ edgeColor edgeType ++ "] ;\n" | (n1, n2, info) <- theEdges, edgeType <- [Info.edgeType info]  ]
 
 
      in "digraph G\n{\n" ++ concat (nodeDecls) ++ concat (edgeDecls ++ termEdges) ++ "\n}"
@@ -424,6 +434,32 @@ propagateRemoval i stg =
            . deleteClique cliqueLeft
            $ new
         else new
+
+--TODO abstract out parent edges fn
+
+
+initialCreator :: StandardTypeGraph -> (EdgeId, Info) -> Maybe (EdgeId, Info)
+initialCreator stg (edge, info) =
+  let
+    edgePairs = allEdges stg
+    helper (thisEdge,ourInfo) lastEdge =
+      case (creationInfo $ edgeEqnInfo ourInfo) of
+        Info.Initial -> lastEdge
+        Info.CreatedBy creator ->
+          let
+            parentEdges =
+                [(eid, someInfo)
+                  | (eid, someInfo) <- edgePairs
+                  , Just potentialCreatorId <- [Info.constraintPid someInfo]
+                  , creator == potentialCreatorId ]
+            parentEdge = case parentEdges of
+               [] -> error "No parent for "
+               [x] -> x
+               _ -> error "Too many parents"
+          in
+            helper parentEdge $ Just parentEdge
+  in
+    helper (edge,info) Nothing
 
 removeDerived :: EdgeId -> StandardTypeGraph -> StandardTypeGraph
 removeDerived e stg =

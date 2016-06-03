@@ -16,6 +16,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.ClassMonadic
+import qualified Top.Implementation.TypeGraph.Class as Class
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
 --import Top.Interface.Qualification hiding (contextReduction)
@@ -140,8 +141,14 @@ allErrorPaths =
       paths1  <- constantClashPaths toCheck
       paths2  <- infiniteTypePaths cGraph
       let errorPath = reduceNumberOfPaths (simplifyPath (altList (paths1 ++ paths2)))
-      retVal <- expandPath errorPath
-      return $ trace ("ALL ERROR PATHS " ++ show retVal) $ retVal
+      expanded <- expandPath errorPath
+      let
+        edgeTform stg e =
+          case Class.getEdgeCreator stg e of
+            Nothing -> e
+            Just x -> x
+      creatorPath <- useTypeGraph $ \stg -> mapPath (edgeTform stg) expanded
+      return $ expanded :|: creatorPath
 
 ----------------------------
 

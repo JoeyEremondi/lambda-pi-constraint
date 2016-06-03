@@ -57,6 +57,8 @@ class TypeGraph graph info | graph -> info where
    getMarkedPossibleErrors :: graph -> [VertexId]
    unmarkPossibleErrors    :: graph -> graph
 
+   getEdgeCreator :: graph -> (EdgeId, info) -> Maybe (EdgeId, info)
+
    toDot :: graph -> String
    errorDot :: [EdgeId] -> graph -> String
 

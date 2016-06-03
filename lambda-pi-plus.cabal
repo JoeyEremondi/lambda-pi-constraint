@@ -35,6 +35,7 @@ executable lambda-pi-plus
     , PatternUnify.Run
     , PatternUnify.Tm
     , PatternUnify.Unify
+    , PatternUnify.ConstraintInfo
 
     , Top.Implementation.TypeGraph.Basics
     , Top.Implementation.TypeGraph.Class
