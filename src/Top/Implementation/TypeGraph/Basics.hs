@@ -18,7 +18,7 @@ import qualified Unbound.Generics.LocallyNameless as Ln
 
 -----------------------------------------------------------------------------------------
 
-data Constant = Con Tm.Can | ConElim Tm.CanElim | CApp | BoundVar Tm.Nom
+data Constant = Con Tm.Can | ConElim Tm.CanElim | CApp | BoundVar Tm.Nom | NeutralTerm Tm.OrderedNeutral
   deriving (Eq, Ord, Show)
 
 newtype VertexId = VertexId Tm.Nom deriving (Eq, Ord)

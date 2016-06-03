@@ -148,7 +148,8 @@ allErrorPaths =
             Nothing -> e
             Just x -> x
       creatorPath <- useTypeGraph $ \stg -> mapPath (edgeTform stg) expanded
-      return $ expanded :|: creatorPath
+      let retVal = expanded --creatorPath --expanded :|: creatorPath
+      return $ trace ("ALL ERR PATHS " ++ show expanded ++ "\n\nROOT ERR PATHS " ++ show creatorPath) $ retVal
 
 ----------------------------
 

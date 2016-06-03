@@ -20,4 +20,4 @@ let natIf3 =
 
 let test1 = natIf3 _ 1 (Nil Nat) 3 0
 
-let test2 = natIf3 _ (Nil Nat) 2 3 0
+--let test2 = natIf3 _ (Nil Nat) 2 3 0

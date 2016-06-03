@@ -178,9 +178,15 @@ instance TypeGraph (StandardTypeGraph) Info where
 
                tm -> do
                  newVertex <- VertexId <$> Ln.fresh unique
-                 let g1 =
-                       (addVertex newVertex (VTerm, Just tm) stg)
-                     g2 = g1 {termNodes = addTermVert newVertex tm (termNodes g1)}
+                 cBot <- Tm.containsBottom tm
+                 g1 <-
+                    case (Tm.fmvs tm, cBot) of
+                      ([], Nothing) -> do
+                        vo <- Tm.makeOrdered tm
+                        return (addVertex newVertex (VCon (NeutralTerm vo), Just tm) stg)
+                      _ ->
+                        return (addVertex newVertex (VTerm, Just tm) stg)
+                 let g2 = g1 {termNodes = addTermVert newVertex tm (termNodes g1)}
                  gRet <- addCollectedUpdates newVertex tm g2
                  return (newVertex, gRet)
 
@@ -330,6 +336,7 @@ toDotGen eqGroups g =
              Info.InitConstr pid -> show $ Info.probIdToName pid
              Info.DerivedEqn pid ->  "(" ++ (show $ Info.probIdToName pid)++ ")"
              Info.DefineMeta alpha -> "DEF " ++ show alpha
+             Info.MetaUpdate (alpha, v) -> "MUPD " ++ show alpha ++ " := " ++ Tm.prettyString v
              _ -> ""
 
        dotEdges :: VertexId -> VertexInfo -> (String)

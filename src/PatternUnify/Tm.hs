@@ -33,6 +33,8 @@ import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 
+import Control.Monad (forM, mapM, zipWithM)
+
 data Region =
   SourceRegion
     { regionFile   :: String
@@ -85,6 +87,84 @@ freshCUID = CUID <$> (fresh $ s2n "CUID")
 
 type Type = VAL
 
+--Lets us store neutral terms in our graph
+data OrderedNeutral = OrderedNeutral Nom VAL
+  deriving (Show, Generic)
+
+makeOrdered :: (Fresh m) => VAL -> m OrderedNeutral
+makeOrdered v = do
+  x <- freshNom
+  return $ OrderedNeutral x v 
+
+instance Eq OrderedNeutral where
+  (OrderedNeutral _ v1) == (OrderedNeutral _ v2) =
+    untypedEqual v1 v2
+
+instance Ord OrderedNeutral where
+  compare (OrderedNeutral x1 v1) (OrderedNeutral x2 v2) =
+    if (untypedEqual v1 v2) then
+      EQ
+    else if (x1 == x2) then
+      error ("Non-equal terms with equal labels " ++ pp v1 ++ "   " ++ pp v2)
+    else
+      compare x1 x2
+
+
+untypedEqual :: VAL -> VAL -> Bool
+untypedEqual x y = runFreshM $ helper x y
+  where
+    elimHelper :: (Fresh m) => Elim -> Elim -> m Bool
+    elimHelper (Elim c1 args1) (Elim c2 args2)
+      | c1 /= c2 = return False
+      | otherwise = List.and <$> zipWithM helper args1 args2
+    helper :: (Fresh m) => VAL -> VAL -> m Bool
+    helper f1@(L x) f2@(L y) = do
+       n <- freshNom
+       b1 <- f1 $$ var n
+       b2 <- f2 $$ var n
+       helper b1 b2
+    helper (N h1 elims1) (N h2 elims2) =
+      do
+        let
+          eqHead = case (h1, h2) of
+            (Var x1 _, Var x2 _) -> x1 == x2
+            _ -> error "Can't do untyped equal with metas"
+        eqElims <- zipWithM elimHelper elims1 elims2
+        return $ List.and (eqHead : eqElims)
+    helper (C c1 args1) (C c2 args2)
+      | c1 /= c2 = return False
+      | otherwise = List.and <$> zipWithM helper args1 args2
+    helper (VChoice x1 x2 x3 x4 x5) y = error "Should only untyped check flattened"
+    helper _ _ = return False
+
+-- data ElimRep =
+--   ElimRep CanElim [ValRep]
+--   deriving (Eq, Ord, Show, Generic)
+--
+-- data ValRep =
+--   LRep Nom ValRep
+--   | NRep Nom [ElimRep]
+--   | CRep Can [ValRep]
+--   deriving (Eq, Ord, Show, Generic)
+--
+-- toValRep :: (Fresh m) => VAL -> m ValRep
+-- toValRep (L v) = do
+--   (x, body) <- unbind v
+--   newBody <- toValRep body
+--   return $ LRep x newBody
+-- toValRep (N h elims) =
+--   case h of
+--     (Var h1 _) -> NRep h1 (map toElimRep elims)
+--     (Meta h) -> error "No ValRep for meta"
+--   --NRep v1 <$> (mapM toElimRep elims)
+-- toValRep (C v1 v2) = _
+-- toValRep (VBot v) = _
+-- toValRep (VChoice v1 v2 v3 v4 v5) = _
+--
+-- toElimRep :: (Fresh m) => Elim -> m ElimRep
+-- toElimRep e = _
+
+
 data Can
   = Set
   | Pi
@@ -101,6 +181,7 @@ data Can
   | CFin
   | CFZero
   | CFSucc
+--  | NeutralGraphTerm ValRep --Only to be used in graph
   deriving (Eq, Show, Generic, Ord)
 
 data Twin
@@ -754,7 +835,7 @@ elim (VChoice cid _ n s t) theElim = do
   cuid <- freshCUID
   VChoice cid cuid n <$> elim s theElim <*> elim t theElim
 elim (VBot s) elim = return $ VBot s --TODO better error?
-elim t a = badElim $ "bad elimination of " ++ pp t ++ " by " ++ pp a
+elim t a = return $ VBot $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 badElim s = errorWithStackTrace s
 
