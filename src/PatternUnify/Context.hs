@@ -43,6 +43,8 @@ import Unbound.Generics.LocallyNameless.Unsafe (unsafeUnbind)
 import PatternUnify.Kit
 import PatternUnify.Tm
 
+import PatternUnify.SolverConfig
+
 --import Debug.Trace (trace)
 
 import Data.List (union)
@@ -263,10 +265,10 @@ instance Pretty RSubs where
 
 type ContextL  = Bwd Entry
 type ContextR  = [Either RSubs Entry]
-type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges, Set.Set (Either Nom ProbId))
+type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges, Set.Set (Either Nom ProbId), SolverConfig)
 
 initContext :: Context
-initContext = (B0, [], error "initial problem ID", Empty.empty, [], Set.empty)
+initContext = (B0, [], error "initial problem ID", Empty.empty, [], Set.empty, SolverConfig True True)
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -294,7 +296,7 @@ instance Pretty Param where
 type Params  = [(Nom, Param)]
 
 instance Pretty Context where
-    pretty (cl, cr, _, _, _, _) =  pair <$>  (prettyEntries (trail cl)) <*>
+    pretty (cl, cr, _, _, _, _, _) =  pair <$>  (prettyEntries (trail cl)) <*>
                                ( vcat <$> (mapM f cr) )
       where
         pair cl' cr' = cl' $+$ text "*" $+$ cr'
@@ -362,16 +364,16 @@ runContextual cx =
    runIdentity . flip runStateT cx . runFreshMT . runExceptT . flip runReaderT [] . unContextual
 
 modifyL :: (ContextL -> ContextL) -> Contextual ()
-modifyL f = modify (\ (x, y, pid, gr, s, set) -> (f x, y, pid, gr, s, set))
+modifyL f = modify (\ (x, y, pid, gr, s, set, conf) -> (f x, y, pid, gr, s, set, conf))
 
 modifyLM :: (ContextL -> Contextual ContextL) -> Contextual ()
 modifyLM f = do
-  (x, y, pid, gr, s, set) <- get
+  (x, y, pid, gr, s, set, conf) <- get
   fx <- f x
-  put (fx, y, pid, gr, s, set)
+  put (fx, y, pid, gr, s, set, conf)
 
 modifyR :: (ContextR -> ContextR) -> Contextual ()
-modifyR f = modify (\ (x, y, pid, gr, s, set) -> (x, f y, pid, gr, s, set))
+modifyR f = modify (\ (x, y, pid, gr, s, set, conf) -> (x, f y, pid, gr, s, set, conf))
 
 pushL :: Entry -> Contextual ()
 -- pushL e@((E alpha _ HOLE _)) | (show alpha) == "α_3_19__16" = trace ("pushL " ++ pp e) $ do
@@ -411,29 +413,31 @@ pushImmediate pid theta   = --trace ("Push subs " ++ show s) $
 
 
 markDefInGraph :: Nom -> Contextual ()
-markDefInGraph alpha = modify (\ (x, y, pid, z, s, set) -> (x, y, pid, z, s, Set.insert (Left alpha) set))
+markDefInGraph alpha = modify (\ (x, y, pid, z, s, set, conf) -> (x, y, pid, z, s, Set.insert (Left alpha) set, conf))
 
 markProblemInGraph :: ProbId -> Contextual ()
-markProblemInGraph newPid = modify (\ (x, y, pid, z, s, set) -> (x, y, pid, z, s, Set.insert (Right newPid) set))
+markProblemInGraph newPid = modify $
+  \ (x, y, pid, z, s, set, conf) ->
+    (x, y, pid, z, s, Set.insert (Right newPid) set, conf)
 
 probAlreadyRecorded :: ProbId -> Contextual Bool
 probAlreadyRecorded newPid = do
-  (x, y, pid, z, s, set) <- get
+  (x, y, pid, z, s, set, _) <- get
   return $ Right newPid `Set.member` set
 
 defAlreadyRecorded :: Nom -> Contextual Bool
 defAlreadyRecorded alpha = do
-  (x, y, pid, z, s, set) <- get
+  (x, y, pid, z, s, set, _) <- get
   return $ Left alpha `Set.member` set
 
 setProblem :: ProbId -> Contextual ()
-setProblem pid = modify (\ (x, y, _, z, s, set) -> (x, y, pid, z, s, set))
+setProblem pid = modify (\ (x, y, _, z, s, set, conf) -> (x, y, pid, z, s, set, conf) :: Context)
 
 setGraph :: TypeGraph -> Contextual ()
-setGraph g = modify (\ (x, y, z, _, s, set) -> (x, y, z, g, s, set))
+setGraph g = modify (\ (x, y, z, _, s, set, conf) -> (x, y, z, g, s, set, conf))
 
 setMsg :: BadEdges -> Contextual ()
-setMsg s = modify (\(x,y,z,g,_,set) -> (x,y,z,g,s,set))
+setMsg s = modify (\(x,y,z,g,_,set, conf) -> (x,y,z,g,s,set, conf))
 
 pushSubs :: Subs -> Contextual ()
 pushSubs n   =
@@ -469,13 +473,13 @@ popR = do
         []          -> return Nothing
 
 getL :: MonadState Context m => m ContextL
-getL = gets (\(x,_,_,_,_,_) -> x)
+getL = gets (\(x,_,_,_,_,_,_) -> x)
 
 getR :: Contextual ContextR
-getR = gets (\(_,x,_,_,_,_) -> x)
+getR = gets (\(_,x,_,_,_,_,_) -> x)
 
 getGraph :: Contextual (TypeGraph)
-getGraph = gets (\(_,_,_,g,_,_) -> g)
+getGraph = gets (\(_,_,_,g,_,_,_) -> g)
 
 putL :: ContextL -> Contextual ()
 putL x = modifyL (const x)

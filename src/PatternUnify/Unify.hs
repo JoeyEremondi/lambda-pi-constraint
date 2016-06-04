@@ -153,7 +153,7 @@ defineGlobal pid info x _T vinit m = trace ("Defining global in problem " ++ sho
      cuid <- freshCUID
      let
        v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
-          vsingle --VChoice cid cuid x vsingle freshVar
+          VChoice cid cuid x vsingle freshVar
 
      --TODO who created? Adjust info
      Ctx.recordDefn x _T vsingle info

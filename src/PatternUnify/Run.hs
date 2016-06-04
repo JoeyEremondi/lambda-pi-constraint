@@ -106,7 +106,7 @@ solveEntries !es  =
     --   Right _ -> render $ runPretty $ pretty ctx
   in trace ("\n\n=============\nFinal\n" ++ List.intercalate "\n" (map pp lcx)) $
     case (finalBadEdges, result) of
-      ([], Left err) -> Left $ ErrorResult ctx [StringErr (initLoc, BuiltinRegion, err)]
+      ([], Left err) -> trace ("ERR NO EDGES") $ Left $ ErrorResult ctx [StringErr (initLoc, BuiltinRegion, err)]
       ([], Right _) ->
         case getContextErrors es ctx of
           Left [] -> error "Empty Left from getContextErrors"
