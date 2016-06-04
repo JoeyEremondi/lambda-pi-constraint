@@ -39,8 +39,8 @@ type Info = Info.ConstraintInfo
 
 defaultHeuristics :: Path (EdgeId, Info) -> [Heuristic Info]
 defaultHeuristics path =
-   [ --avoidDerivedEdges
-   listOfVotes
+   [ avoidDerivedEdges
+   , listOfVotes
    , highParticipation 0.80 path
    , firstComeFirstBlamed ]
 
@@ -103,11 +103,11 @@ selectConstraintNumbers is =
 
 
 -- |Select only specific constraint numbers
--- avoidDerivedEdges :: Heuristic Info
--- avoidDerivedEdges =
---    Heuristic (
---       let f (_, info) = return $ (Info.creationInfo . Info.edgeEqnInfo) info == Info.Initial
---       in edgeFilter ("avoid derived edges ") f)
+avoidDerivedEdges :: Heuristic Info
+avoidDerivedEdges =
+   Heuristic (
+      let f (_, info) = return $ (Info.creationInfo . Info.edgeEqnInfo) info == Info.Initial
+      in edgeFilter ("avoid derived edges ") f)
 
 
 listOfVotes =

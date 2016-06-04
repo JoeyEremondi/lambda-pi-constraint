@@ -89,12 +89,15 @@ type Type = VAL
 
 --Lets us store neutral terms in our graph
 data OrderedNeutral = OrderedNeutral Nom VAL
-  deriving (Show, Generic)
+  deriving (Generic)
+
+instance Show OrderedNeutral where
+  show (OrderedNeutral _ v) = prettyString v
 
 makeOrdered :: (Fresh m) => VAL -> m OrderedNeutral
 makeOrdered v = do
   x <- freshNom
-  return $ OrderedNeutral x v 
+  return $ OrderedNeutral x v
 
 instance Eq OrderedNeutral where
   (OrderedNeutral _ v1) == (OrderedNeutral _ v2) =

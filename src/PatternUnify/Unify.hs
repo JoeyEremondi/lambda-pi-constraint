@@ -57,7 +57,7 @@ active n q = putProb n (Unify q) Active
 
 block n q = putProb n (Unify q) Blocked
 
-failed n q e = trace ("FAILING " ++ show n ++ ": " ++ e) $
+failed n q e = trace ("FAILING " ++ show n ++ ": " ++ e ++ "  eqn " ++ show q) $
   putProb n
           (Unify q)
           (Failed e)
@@ -150,7 +150,7 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
      cuid <- freshCUID
      let
        v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
-          vsingle --VChoice cid cuid x vsingle freshVar
+          VChoice cid cuid x vsingle freshVar
 
      --TODO who created? Adjust info
      Ctx.recordDefn x _T vsingle info
@@ -168,7 +168,7 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
      goLeft
      --Ctx.moveDeclRight x newNom
      --Add our final value to the type graph
-     Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
+     --Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
      return a
 
 define mpid info _Gam x _T v =
@@ -220,13 +220,13 @@ defineSingle info _Gam xtop _T vtop =
 eqn
   :: (Fresh m)
   => m Type -> m VAL -> m Type -> m VAL -> m EqnInfo -> m Equation
-eqn ma mx mb my mpid =
+eqn ma mx mb my minfo =
   do a <- ma
      b <- mb
      x <- mx
      y <- my
-     pid <- mpid
-     return $ EQN a x b y pid --TODO keep probId?
+     info <- minfo
+     return $ EQN a x b y info --TODO keep probId?
 
 munify :: (Fresh m)
        => m Equation -> m Problem
@@ -478,8 +478,8 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = do --trace ("SplitChoice 
       mvals2 = (map meta freshMetas2 )
       --sub1 = zip origMetas mvals1
       sub2 = zip origMetas mvals2
-      eq1 = EQN _T1 r _T2 tl info
-      eq2 = substs sub2 $ EQN _T1 s _T2 tr (info {isCF = CounterFactual})
+      eq1 = EQN _T1 r _T2 tl (info {creationInfo = CreatedBy n})
+      eq2 = substs sub2 $ EQN _T1 s _T2 tr (info {creationInfo = CreatedBy n, isCF = CounterFactual})
       ret = (eq1, eq2)
       nomMap = Map.fromList $ zip origMetas freshMetas2
   -- forM triples $ \(orig, v1, v2) -> do

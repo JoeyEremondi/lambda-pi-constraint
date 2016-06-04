@@ -16,8 +16,10 @@ let natIf3 =
 
 --let myPair = (3,3) :: exists (x :: Nat) . Nat
 
---let test = natIf3 _ myPair myPair myPair 0
+--let test = natIf3 _ 1 ((\x -> x) :: Nat -> Nat) 3 0
 
-let test1 = natIf3 _ 1 (Nil Nat) 3 0
+--let test1 = natIf3 _ 1 (Nil Nat) 3 0
 
---let test2 = natIf3 _ (Nil Nat) 2 3 0
+--let natNil = Nil Nat
+
+let test2 = natIf3 _ 1 (Nil *) 3 0
