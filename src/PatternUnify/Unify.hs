@@ -105,8 +105,11 @@ simplifySplit n (r1, r2) = do
    x1 <- ProbId <$> freshNom
    x2 <- ProbId <$> freshNom
    _Gam <- ask
-   pushR $ Right $
-     Prob x1 (wrapProb _Gam r1) Active [Prob x2 (wrapProb _Gam r2) (FailPending x1) []]
+   --TODO keep failPending structure?
+   pushR $ Right $ Prob x2 (wrapProb _Gam r2) Active [] --(FailPending x1) []
+   pushR $ Right $  Prob x1 (wrapProb _Gam r1) Active []
+   --pushR $ Right $
+   --  Prob x1 (wrapProb _Gam r1) Active [Prob x2 (wrapProb _Gam r2) (FailPending x1) []]
    return ()
 
 
@@ -142,7 +145,7 @@ hole info _Gam _T f =
 
 defineGlobal
   :: (ProbId) -> EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\npid: " ++ show pid) $
+defineGlobal pid info x _T vinit m = trace ("Defining global in problem " ++ show pid ++  " , VAR Is " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\npid: " ++ show pid) $
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
@@ -150,11 +153,11 @@ defineGlobal pid info x _T vinit m = trace ("Defining global " ++ show x ++ " :=
      cuid <- freshCUID
      let
        v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
-          VChoice cid cuid x vsingle freshVar
+          vsingle --VChoice cid cuid x vsingle freshVar
 
      --TODO who created? Adjust info
      Ctx.recordDefn x _T vsingle info
-     Ctx.recordChoice  _T x vsingle freshVar info
+     --Ctx.recordChoice  _T x vsingle freshVar info
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))

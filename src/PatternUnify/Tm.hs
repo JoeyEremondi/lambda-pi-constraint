@@ -325,7 +325,7 @@ instance Pretty VAL where
             prettyAt ArgSize _T
 
   -- >
-  pretty (L b) = wrapDoc LamSize $ (text "\\" <+>) <$> prettyLam b
+  pretty (L b) = wrapDoc LamSize $ (text "λ" <+>) <$> prettyLam b
     where prettyLam u =
             lunbind u $
             \( x, t ) ->
@@ -587,6 +587,11 @@ etaContract (PAIR s t) =
          , as' == bs' -> return $ N x as'
        ( s', t' ) -> return $ PAIR s' t'
 etaContract (C c as) = C c <$> (mapM etaContract as)
+etaContract (VBot s) = return $ VBot s
+etaContract (VChoice cid cuid alpha s t) = do
+  sNew <- etaContract s
+  tNew <- etaContract t
+  return (VChoice cid cuid alpha sNew tNew)
 
 
 occursIn :: (Alpha t, Typeable a)

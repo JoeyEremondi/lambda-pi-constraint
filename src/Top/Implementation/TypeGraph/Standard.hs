@@ -340,7 +340,7 @@ toDotGen eqGroups g =
              _ -> ""
 
        dotEdges :: VertexId -> VertexInfo -> (String)
-       dotEdges _ _ = "" --TODO remove to show derived edges
+       --dotEdges _ _ = "" --TODO remove to show derived edges
        dotEdges vid (VertBot, _) = ""
        dotEdges vid (VVar,_) = ("")
        dotEdges vid ((VCon k),_) = ("")
