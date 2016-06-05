@@ -13,16 +13,20 @@ import PatternUnify.Kit
 
 import Top.Implementation.TypeGraph.Class
 
+import PatternUnify.SolverConfig
 import PatternUnify.Tm (Region (..))
+import qualified Data.List as List
 
 main :: IO ()
 main = do
-  args <- getArgs
+  argsWithFlags <- getArgs
+  let config = SolverConfig (not $ "--noCF" `Prelude.elem` argsWithFlags) (not $ "--noGraph" `Prelude.elem` argsWithFlags)
+  let args = filter (not . (List.isPrefixOf "--")) argsWithFlags
   case args of
     [] ->
-      repLP CB.checker True
+      repLP (CB.checker config) True
     (fileName:_) -> do
-      compileFile (lp CB.checker) (True, [], lpve, lpte) fileName
+      compileFile (lp $ CB.checker config) (True, [], lpve, lpte) fileName
       return ()
 
 type LpInterp = Interpreter ITerm_ CTerm_ Tm.VAL Tm.VAL CTerm_ Tm.VAL

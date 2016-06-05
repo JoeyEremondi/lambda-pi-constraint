@@ -472,6 +472,9 @@ popR = do
         (x  : cx')  -> putR cx' >> return (Just x)
         []          -> return Nothing
 
+getConfig :: Contextual SolverConfig
+getConfig = gets (\(_,_,_,_,_,_,c) -> c)
+
 getL :: MonadState Context m => m ContextL
 getL = gets (\(x,_,_,_,_,_,_) -> x)
 

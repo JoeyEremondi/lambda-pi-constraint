@@ -35,6 +35,8 @@ import qualified Top.Implementation.TypeGraph.Standard as TG
 
 import qualified Data.List as List
 
+import PatternUnify.SolverConfig
+
 import Debug.Trace (trace)
 
 
@@ -151,13 +153,18 @@ defineGlobal pid info x _T vinit m = trace ("Defining global in problem " ++ sho
      vsingle <- makeTypeSafe _T vinit
      cid <- ChoiceId <$> freshNom <*> return (infoRegion info)
      cuid <- freshCUID
+     config <- Ctx.getConfig
      let
        v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
-          VChoice cid cuid x vsingle freshVar
-
+          case (useCF config) of
+            True -> VChoice cid cuid x vsingle freshVar
+            False -> vsingle
      --TODO who created? Adjust info
-     Ctx.recordDefn x _T vsingle info
-     --Ctx.recordChoice  _T x vsingle freshVar info
+     when (useTypeGraph config) $
+      Ctx.recordDefn x _T vsingle info
+
+     when (useTypeGraph config && useCF config) $
+       Ctx.recordChoice  _T x vsingle freshVar info
      --check _T v `catchError`
      --   (throwError .
      --    (++ "\nwhen defining " ++ pp x ++ " : " ++ pp _T ++ " to be " ++ pp v))
@@ -192,12 +199,14 @@ defineSingle info _Gam xtop _T vtop =
          pushL $ E x _T (DEFN v) info
          pushR (Left (Map.singleton x v))
          a <- m
+         config <- Ctx.getConfig
          goLeft
 
          --Ctx.moveDeclRight x newNom
          --Add our final value to the type graph
          --TODO who created? Adjust info
-         Ctx.recordDefn x _T v info
+         when (useTypeGraph config) $
+           Ctx.recordDefn x _T v info
          --Ctx.recordEqn (Ctx.DefineMeta x) (EQN _T (meta x) _T v info)
          return a
 
@@ -505,8 +514,10 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = do --trace ("SplitChoice 
         case Map.lookup alpha nomMap of
           Nothing -> return [e]
           Just n2 -> do
+            config <- Ctx.getConfig
             --TODO modify info here?
-            Ctx.recordChoice  _T alpha (meta alpha) (meta n2) info
+            when (useTypeGraph config) $
+              Ctx.recordChoice  _T alpha (meta alpha) (meta n2) info
             return [E alpha _T HOLE info , E n2 _T HOLE (info {isCF = CounterFactual}) ]
       _ ->
         return [substs (Map.toList ourSubs) e]
@@ -1221,11 +1232,12 @@ ambulando :: [ProbId] -> [ProbId] -> Subs -> Contextual ()
 ambulando ns fails theta = do
   cl <- Ctx.getL
   cr <- Ctx.getR
+  config <- Ctx.getConfig
   --(trace ("\n******\nAMBULANDO CL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nAMBULANDO CR:\n" ++ List.intercalate "\n" (map pp cr) ++ "\n******\n") popR)
   x <- popR -- >>= \x -> trace ("Ambulando popped " ++ maybe "Nothing" pp x) $
   --Record entry in the graph
   case x of
-    Just (Right entry) -> Ctx.recordEntry entry
+    Just (Right entry) -> when (useTypeGraph config) $ Ctx.recordEntry entry
     _ -> return ()
   case x of
       -- if right context is empty, stop
