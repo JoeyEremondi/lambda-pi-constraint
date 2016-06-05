@@ -33,6 +33,8 @@ import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import PatternUnify.SolverConfig
+
 import Debug.Trace (trace)
 
 --import qualified Unbound.Generics.LocallyNameless as LN
@@ -67,12 +69,12 @@ data ErrorResult =
 
 data SolverErr = StringErr (ProbId, Region, String) | GraphErr [ErrorInfo ConstraintInfo]
 
-solveEntries :: [Entry] -> Either ErrorResult ((), Context)
-solveEntries !es  =
+solveEntries :: SolverConfig -> [Entry] -> Either ErrorResult ((), Context)
+solveEntries conf !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
     (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
-       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, [], Set.empty) $ do
+       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, [], Set.empty, conf) $ do
           initialise
           ambulando [] [] Map.empty
           --validResult <- validate (const True)
@@ -83,9 +85,9 @@ solveEntries !es  =
           setMsg  badEdges
           return badEdges
           )  --Make sure we don't crash
-    (lcx,rcx,lastProb,_,finalBadEdges,_) = unsafePerformIO $ do
-        let g = (\(_,_,_,g,_,_) -> g) ctx
-        let ourEdges = (\(_,_,_,_,e,_) -> e) ctx
+    (lcx,rcx,lastProb,_,finalBadEdges,_,_) = unsafePerformIO $ do
+        let g = (\(_,_,_,g,_,_,_) -> g) ctx
+        let ourEdges = (\(_,_,_,_,e,_,_) -> e) ctx
         writeFile "out.dot" (
           TC.toDot g
           -- List.intercalate "\n\n\n" $
@@ -173,7 +175,7 @@ initialsDependingOn (pendGraph, vertToInfo, infoToVert) initialIdents targetIden
 
 
 getContextErrors :: [Entry] -> Context -> Either [(ProbId, Region, Err)] ((), Context)
-getContextErrors startEntries cx@(lcx, rcx, _, _,_,_) = do
+getContextErrors startEntries cx@(lcx, rcx, _, _,_,_,_) = do
   let leftErrors = getErrorPairs (trail lcx)
       rightErrors = getErrorPairs (Either.rights rcx)
   case (leftErrors ++ rightErrors) of

@@ -19,6 +19,7 @@ import Constraint hiding (cToUnifForm, iToUnifForm)
 
 import qualified Data.List as List
 
+import PatternUnify.SolverConfig
 import qualified PatternUnify.Tm as Tm
 
 
@@ -35,8 +36,8 @@ mapFst f (a,b) = (f a, b)
 --  List.intercalate "\n" $
 --  map (\(reg, err) -> show reg ++ ": " ++ err ) pairs
 
-checker :: TypeChecker
-checker (valNameEnv, typeContext) term =
+checker :: SolverConfig -> TypeChecker
+checker config (valNameEnv, typeContext) term =
   let
     toPos (reg, err) = case reg of
       Tm.BuiltinRegion -> (Nothing, err)
@@ -44,7 +45,7 @@ checker (valNameEnv, typeContext) term =
     (typeGlobals, typeLocals) = splitContext typeContext
     (valGlobals, valLocals) = splitContext  valNameEnv
     genResult =  getConstraints (WholeEnv valLocals typeLocals valGlobals typeGlobals) term
-    soln = solveConstraintM genResult
+    soln = solveConstraintM config genResult
     -- solvedString = case solvedMetas of
     --   Left _ -> ""
     --   Right pairs ->
