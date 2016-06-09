@@ -687,3 +687,17 @@ finalSub = Maybe.mapMaybe getDef
   where
     getDef (E alpha _ (DEFN t) _ ) = Just (alpha, t)
     getDef _ = Nothing
+
+--Check if a problem is just a trivial variable assignment, to avoid redundant edges
+
+singleVarEntry :: Entry -> Contextual Bool
+singleVarEntry (Prob _ prob _ _) = singleVarProb prob
+singleVarEntry _ = return False
+
+singleVarProb :: Problem -> Contextual Bool
+singleVarProb (Unify (EQN _ (N (Meta alpha) []) _ _ _)) = return True
+singleVarProb (Unify (EQN _ _ _ (N (Meta alpha) []) _)) = return True
+singleVarProb (All _ p2) = do
+  (x, p) <- unbind p2
+  singleVarProb p
+singleVarProb _ = return False

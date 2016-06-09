@@ -327,7 +327,8 @@ toDotGen eqGroups g =
        edgeColor tp = case tp of
          Info.InitConstr _ -> "black"
          Info.DerivedEqn _ -> "red"
-         Info.ChoiceEdge _ _ _ -> "blue"
+         Info.ChoiceEdge LeftChoice _ _ -> "blue"
+         Info.ChoiceEdge RightChoice _ _ -> "cyan"
 
          _ -> "green"
 

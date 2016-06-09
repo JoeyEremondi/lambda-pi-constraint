@@ -106,7 +106,7 @@ simplifySplit n (r1, r2) = do
    setProblem n
    x1 <- ProbId <$> freshNom
    x2 <- ProbId <$> freshNom
-   _Gam <- ask
+   _Gam <- trace ("Simplifying split " ++ show (probIdToName n) ++ " into " ++ show (probIdToName x1) ++ " and " ++ show (probIdToName x2)) $ ask
    --TODO keep failPending structure?
    pushR $ Right $ Prob x2 (wrapProb _Gam r2) Active [] --(FailPending x1) []
    pushR $ Right $  Prob x1 (wrapProb _Gam r1) Active []
@@ -443,8 +443,12 @@ rigidRigid pid eqn =
     rigidRigid' q@(EQN _ _ _ (VChoice _ _ _ _ _) _ ) = return [q]
 
     --Anything else, we should be able to catch in our type graph
-    rigidRigid' eq@(EQN t1 v1 t2 v2 _) = return [] --badRigidRigid eq
-
+    rigidRigid' eq@(EQN t1 v1 t2 v2 _) = do
+      conf <- Ctx.getConfig
+      if (useTypeGraph conf) then
+        return [] --badRigidRigid eq
+      else
+        badRigidRigid eq
 
 -- withDuplicate
 --   :: EqnInfo
@@ -568,15 +572,15 @@ splitChoice (cid, choiceVar) n _T1 (r, s) _T2 t info = do --trace ("SplitChoice 
 
 
 
--- badRigidRigid
---   :: Equation -> Contextual [Equation]
--- badRigidRigid (EQN t1 v1 t2 v2 _) =
---   throwError $
---   "Cannot rigidly match (" ++
---   prettyString v1 ++
---   " : " ++
---   prettyString t1 ++
---   ")  with (" ++ prettyString v2 ++ " : " ++ prettyString t2 ++ ")"
+badRigidRigid
+  :: Equation -> Contextual [Equation]
+badRigidRigid (EQN t1 v1 t2 v2 _) =
+  throwError $
+  "Cannot rigidly match (" ++
+  prettyString v1 ++
+  " : " ++
+  prettyString t1 ++
+  ")  with (" ++ prettyString v2 ++ " : " ++ prettyString t2 ++ ")"
 
 -- When we have the same rigid variable (or twins) at the head on both
 -- sides, we proceed down the spine, demanding that projections are
@@ -1236,8 +1240,11 @@ ambulando ns fails theta = do
   --(trace ("\n******\nAMBULANDO CL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nAMBULANDO CR:\n" ++ List.intercalate "\n" (map pp cr) ++ "\n******\n") popR)
   x <- popR -- >>= \x -> trace ("Ambulando popped " ++ maybe "Nothing" pp x) $
   --Record entry in the graph
+
   case x of
-    Just (Right entry) -> when (useTypeGraph config) $ Ctx.recordEntry entry
+    Just (Right entry) -> do
+      isSingle <- Ctx.singleVarEntry entry
+      when (useTypeGraph config && not isSingle) $ Ctx.recordEntry entry
     _ -> return ()
   case x of
       -- if right context is empty, stop

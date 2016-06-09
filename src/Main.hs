@@ -13,14 +13,14 @@ import PatternUnify.Kit
 
 import Top.Implementation.TypeGraph.Class
 
+import qualified Data.List as List
 import PatternUnify.SolverConfig
 import PatternUnify.Tm (Region (..))
-import qualified Data.List as List
 
 main :: IO ()
 main = do
   argsWithFlags <- getArgs
-  let config = SolverConfig (not $ "--noCF" `Prelude.elem` argsWithFlags) (not $ "--noGraph" `Prelude.elem` argsWithFlags)
+  let config = SolverConfig (not $ "--noCF" `Prelude.elem` argsWithFlags) (not $ "--noTypeGraph" `Prelude.elem` argsWithFlags)
   let args = filter (not . (List.isPrefixOf "--")) argsWithFlags
   case args of
     [] ->
