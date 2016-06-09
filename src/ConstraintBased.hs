@@ -22,6 +22,8 @@ import qualified Data.List as List
 import PatternUnify.SolverConfig
 import qualified PatternUnify.Tm as Tm
 
+import PatternUnify.ConstraintInfo as UC
+
 
 --import Debug.Trace (trace)
 
@@ -75,7 +77,7 @@ getConstraints env term =
     finalType <- iType0_ env term
     finalVar <- freshTopLevel Tm.SET
     finalValue <- evaluate 0 (L startRegion $ Inf_ term) env
-    unifySets startRegion finalType (Tm.meta finalVar) env
+    unifySets UC.TypeOfProgram (show term) startRegion finalType (Tm.meta finalVar) env
     return (finalVar, finalValue)
 
 iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
@@ -130,14 +132,14 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
       =     case typeLookup x g of
               Just ty        ->  return ty
               Nothing        ->  unknownIdent reg g (render (iPrint_ 0 0 (builtin $ Free_ x)))
-    iType_' ii g (funExp :$: argExp)
+    iType_' ii g e@(funExp :$: argExp)
       =     do
                 fnType <- iType_ ii g funExp
                 piArg <- freshType (region argExp) g
                 piBodyFn <- fresh (region funExp) g (piArg Tm.--> Tm.SET) --TODO star to star?
 
                 --trace ("APP " ++ show (iPrint_ 0 0 lit) ++ "\n  fn type, unifying " ++ Tm.prettyString fnType ++ "  WITH  " ++ Tm.prettyString (Tm.PI piArg piBodyFn)) $
-                unifySets reg (fnType) (Tm.PI piArg piBodyFn) g
+                unifySets _ (show e)  reg (fnType) (Tm.PI piArg piBodyFn) g
 
                 --Ensure that the argument has the proper type
                 cType_ ii g argExp piArg
@@ -252,7 +254,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
       pairType <- iType_ ii g pr
       sType <- freshType (region pr) g
       tType <- fresh (region pr) g (sType Tm.--> conStar)
-      unifySets reg pairType (Tm.SIG sType tType) g
+      unifySets ElimEdge (show it) reg pairType (Tm.SIG sType tType) g
       --Head has the type of the first elem
       return sType
 
@@ -260,7 +262,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
       pairType <- iType_ ii g pr
       sType <- freshType (region pr) g
       tType <- fresh (region pr) g (sType Tm.--> conStar)
-      unifySets reg pairType (Tm.SIG sType tType) g
+      unifySets ElimEdge (show it) reg pairType (Tm.SIG sType tType) g
       prVal <- evaluate ii (L reg $ Inf_ pr) g
       headVal <- prVal Tm.%% Tm.Hd
       --Head has second type, with first val given as argument
@@ -288,7 +290,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
                 --Get rid of a bunch of useless constraints
                 True -> return ()
                 _ ->
-                  unifySets reg tyInferred tyAnnot g
+                  unifySets SignatureCheck (show ct) reg tyInferred tyAnnot g
 
     --Special case when we have metavariable in type
     cType_' ii g (Lam_ body) fnTy = do
@@ -302,10 +304,10 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
               builtin $ Free_ (Local ii)
             --TODO g or newEnv?
         argVal <- return $ Tm.var argName --evalInEnv g $ Tm.var argName --iToUnifForm ii newEnv arg
-        unifySets reg fnTy (Tm.PI argTy returnTyFn)  g
+        unifySets FnType (show ct) reg fnTy (Tm.PI argTy returnTyFn)  g
         returnTy <- freshType (region body) newEnv
         appedTy <- (returnTyFn Tm.$$ argVal)
-        unifySets reg returnTy appedTy newEnv
+        unifySets FnBody (show ct) reg returnTy appedTy newEnv
         --unify  returnTyFn (Tm.lam argName returnTy) (argTy Tm.--> conStar) g --TODO is argVal good?
         --Convert bound instances of our variable into free ones
         let subbedBody = cSubst_ 0 arg body
@@ -314,7 +316,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
     cType_' ii g (Pair_ x y) sigTy = do
       sType <- freshType (region x) g
       tType <- fresh (region y) g (sType Tm.--> conStar)
-      unifySets reg sigTy (Tm.SIG sType tType) g
+      unifySets Ctor (show ct) reg sigTy (Tm.SIG sType tType) g
       --Head has the type of the first elem
       cType_ ii g x sType
       --Tail type depends on given argument
@@ -322,31 +324,31 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
       appedTy <- (tType Tm.$$ fstVal)
       cType_ ii g y appedTy
 
-    cType_' ii g Zero_      ty  =  unifySets reg ty Tm.Nat g
+    cType_' ii g Zero_      ty  =  unifySets Ctor (show ct) reg ty Tm.Nat g
     cType_' ii g (Succ_ k)  ty  = do
-      unifySets reg ty Tm.Nat g
+      unifySets Ctor (show ct) reg ty Tm.Nat g
       cType_ ii g k Tm.Nat
 
     cType_' ii g (FZero_ n)      ty  =  do
       cType_ ii g n Tm.Nat
       nVal <- evaluate ii n g
       --Never can make an element of Fin 0
-      unifySets reg ty (Tm.Fin (Tm.Succ nVal) ) g
+      unifySets Ctor (show ct) reg ty (Tm.Fin (Tm.Succ nVal) ) g
     cType_' ii g (FSucc_ n f)  ty  = do
       cType_ ii g n Tm.Nat
       nVal <- evaluate ii n g
       --Decrease our index each time we check
       cType_ ii g f (Tm.Fin nVal)
-      unifySets reg ty (Tm.Fin (Tm.Succ nVal)) g
+      unifySets Ctor (show ct) reg ty (Tm.Fin (Tm.Succ nVal)) g
 
 
     cType_' ii g (Nil_ a) ty =
       do
           bVal <- freshType reg g
-          unifySets reg ty (mkVec bVal Tm.Zero) g
+          unifySets Ctor (show ct) reg ty (mkVec bVal Tm.Zero) g
           cType_ ii g a conStar
           aVal <- evaluate ii a g
-          unifySets reg aVal bVal g
+          unifySets Ctor (show ct) reg aVal bVal g
     cType_' ii g (Cons_ a n x xs) ty  =
       do  --bVal <- freshType (region a) g
           aVal <- evaluate ii a g
@@ -354,7 +356,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           --k <- fresh (region n) g Tm.Nat
           --Trickery to get a Type_ to a ConType
           --let kSucc = Tm.Succ k
-          unifySets reg ty (mkVec aVal (Tm.Succ nVal)) g
+          unifySets Ctor (show ct) reg ty (mkVec aVal (Tm.Succ nVal)) g
           cType_ ii g a conStar
 
 
@@ -376,7 +378,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           --bVal <- freshType (region a) g
           xVal <- fresh (region z) g aVal
           yVal <- fresh (region z) g aVal
-          unifySets reg ty (mkEq aVal xVal yVal) g
+          unifySets Ctor (show ct) reg ty (mkEq aVal xVal yVal) g
           --Check that our type argument has kind *
           cType_ ii g a conStar
           --Get evaluation constraint for our type argument
@@ -392,5 +394,5 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           zVal <- evaluate ii z g
 
           --Show constraint that the type parameters must match that type
-          unify reg zVal xVal aVal g
-          unify reg zVal yVal aVal g
+          unify Ctor (show ct) reg zVal xVal aVal g
+          unify Ctor (show ct) reg zVal yVal aVal g

@@ -60,6 +60,7 @@ inMininalSet path =
 -- each edge in all error paths.
 -- Default ratio = 1.0  (100 percent)
 --   (the ratio determines which scores compared to the best are accepted)
+--Altered from the original to consider edges by their root creator edge
 highParticipation :: Show info => Double -> Path (EdgeId, info) -> Heuristic info
 highParticipation ratio path =
    Heuristic (Filter ("Participation ratio [ratio="++show ratio++"]") selectTheBest)

@@ -65,6 +65,21 @@ data ConstraintInfo = ConstraintInfo
   , maybeHint    :: Maybe String
   } deriving (Eq, Show, Generic)
 
+data ProgramContext =
+  AppFnType Nom
+  | Application Int Nom [Nom]
+  | TypeOfProgram
+  | VarDecl
+  | ElimEdge
+  | SignatureCheck
+  | FnType
+  | FnBody
+  | Ctor
+  deriving (Eq, Ord, Show, Generic)
+
+instance Alpha ProgramContext
+instance Subst VAL ProgramContext
+
 data ChoiceEdge = LeftChoice | RightChoice
   deriving (Eq, Ord, Show, Generic)
 
@@ -80,9 +95,11 @@ data ConstraintType =
 
 data EqnInfo =
   EqnInfo
-  { creationInfo :: CreationInfo
-  , infoRegion   :: Region
-  , isCF         :: IsCF
+  { creationInfo   :: CreationInfo
+  , infoRegion     :: Region
+  , isCF           :: IsCF
+  , programContext :: ProgramContext
+  , typeOfString   :: String
   } deriving (Eq, Show, Generic)
 
 

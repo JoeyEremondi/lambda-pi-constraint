@@ -446,7 +446,7 @@ declareWithNom reg env tp ourNom = do
         --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
           Tm.Meta ourNom
   let ourEntry = --trace ("Made fresh meta app " ++ Run.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
-        UC.E ourNom lambdaType UC.HOLE (UC.EqnInfo UC.Initial reg UC.Factual)
+        UC.E ourNom lambdaType UC.HOLE (UC.EqnInfo UC.Initial reg UC.Factual UC.VarDecl (error "str for varDecl"))
   addConstr $ Constraint Common.startRegion ourEntry
   return $ applyEnvToNom ourNom env
 
@@ -462,22 +462,23 @@ freshTopLevel :: Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
     ourNom <- freshNom "topLevel"
     let ourEntry =
-          UC.E ourNom tp UC.HOLE (UC.EqnInfo UC.Initial BuiltinRegion UC.Factual)
+          UC.E ourNom tp UC.HOLE (UC.EqnInfo UC.Initial BuiltinRegion UC.Factual UC.TypeOfProgram "top level fn")
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNom
 
-unify :: Region -> Tm.VAL -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
-unify reg v1 v2 tp env = do
+unify :: UC.ProgramContext -> String -> Region -> Tm.VAL -> Tm.VAL -> Tm.Type -> WholeEnv -> ConstraintM ()
+unify progCtx typeOfStr reg v1 v2 tp env = do
     probId <- UC.ProbId <$> freshNom ("??_" ++ Common.regionName reg ++ "_")
     --TODO right to reverse?
     let currentQuants = reverse $ typeEnv env
-        prob = UC.Unify $ UC.EQN tp v1 tp v2 (UC.EqnInfo UC.Initial reg UC.Factual)
+        prob = UC.Unify $ UC.EQN tp v1 tp v2 (UC.EqnInfo UC.Initial reg UC.Factual progCtx typeOfStr)
     let newCon = --trace ("**WRAP " ++ Tm.prettyString prob ++ " QUANTS " ++ show currentQuants ) $
           wrapProblemForalls currentQuants env prob
     let ourEntry = UC.Prob probId newCon UC.Active []
     addConstr $ Constraint reg  ourEntry
 
-unifySets reg v1 v2 env = unify reg v1 v2 Tm.SET env
+unifySets :: UC.ProgramContext -> String -> Region -> Tm.VAL -> Tm.VAL -> WholeEnv -> ConstraintM ()
+unifySets progCtx typeOfStr reg v1 v2 env = unify progCtx typeOfStr reg v1 v2 Tm.SET env
 
 wrapProblemForalls :: [(Int, Tm.Type)] -> WholeEnv -> UC.Problem -> UC.Problem
 wrapProblemForalls [] env prob = prob

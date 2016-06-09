@@ -22,4 +22,4 @@ let natIf3 =
 
 --let natNil = Nil Nat
 
-let test2 = natIf3 _ (Nil *) 2 3 0
+let test2 = (natIf3 _) (Nil *) 2 3 0
