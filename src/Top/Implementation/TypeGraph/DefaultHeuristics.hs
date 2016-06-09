@@ -41,7 +41,7 @@ defaultHeuristics :: Path (EdgeId, Info) -> [Heuristic Info]
 defaultHeuristics path =
    [ --avoidDerivedEdges
    listOfVotes
-   , highParticipation 0.80 path
+   , highParticipation 1.0 path
    , firstComeFirstBlamed ]
 
 -----------------------------------------------------------------------------

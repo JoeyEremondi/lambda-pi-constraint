@@ -294,6 +294,18 @@ unify n q  = do
                 [Unify (EQN _A a _C c info), eq1]
     where
           -- >
+  --Special case: when we have a single variable, we just assign a value
+  --The key here is that we give our info, so that the edge update doesn't
+  --look like an update, but a constraint
+  -- unify' n q@(EQN _T (N (Meta alpha) []) _ t info) =
+  --   do
+  --     setProblem n
+  --     tryPrune n q $ define n (info ) [] alpha _T t
+  -- --Same as above, flipped
+  -- unify' n q@(EQN _ t _T (N (Meta alpha) []) info) =
+  --   do
+  --     setProblem n
+  --     tryPrune n (sym q) $ define n (info ) [] alpha _T t
   unify' n q@(EQN _ (N (Meta _) _) _ (N (Meta _) _) info) =
     do
       setProblem n
@@ -1243,8 +1255,8 @@ ambulando ns fails theta = do
 
   case x of
     Just (Right entry) -> do
-      isSingle <- Ctx.singleVarEntry entry
-      when (useTypeGraph config && not isSingle) $ Ctx.recordEntry entry
+      --isSingle <- Ctx.singleVarEntry entry
+      when (useTypeGraph config) $ Ctx.recordEntry entry
     _ -> return ()
   case x of
       -- if right context is empty, stop
