@@ -291,6 +291,12 @@ locFree x = builtin $ Free_ x
 globalApp :: ITerm_ -> CTerm_ -> Located ITerm_'
 globalApp x y = builtin $ x :$: y
 
+showIt :: ITerm_ -> String
+showIt = render . (iPrint_ 0 0)
+
+showCt :: CTerm_ -> String
+showCt = render . (cPrint_ 0 0)
+
 iPrint_ :: Int -> Int -> ITerm_ -> Doc
 iPrint_ p ii (L _ it) = iPrint_' p ii it
   where

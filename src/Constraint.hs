@@ -147,13 +147,13 @@ solveConstraintM config cm =
 mkErrorPair finalSub (Run.StringErr (UC.ProbId ident, reg, msg)) = (reg, msg)
 mkErrorPair finalSub (Run.GraphErr edgeInfos) =
   (UC.infoRegion $ UC.edgeEqnInfo $ snd $ head edgeInfos,
-  "Cannot solve the following constraints:\n"
+  "Cannot solve the following constraints:\n\n"
   ++ concatMap (edgeMessage finalSub ) edgeInfos)
 
 edgeMessage :: Tm.SubsList -> ([TGBasic.EdgeId], UC.ConstraintInfo) -> String
 edgeMessage finalSub (edgeId, edgeInfo) =
   "  " ++ (Common.prettySource $ UC.infoRegion $ UC.edgeEqnInfo edgeInfo)
-  ++ " " ++ constrStr ++ "\n"
+  ++ " Mismatch in type of " ++ (UC.typeOfString $ UC.edgeEqnInfo edgeInfo) ++ "\n    " ++ constrStr ++ "\n"
   where
     (sinit,tinit) = UC.edgeEqn edgeInfo
     s = (Tm.unsafeFlatten $ LN.substs finalSub sinit)
@@ -161,7 +161,7 @@ edgeMessage finalSub (edgeId, edgeInfo) =
     hintString = case (UC.maybeHint edgeInfo) of
       Nothing -> ""
       Just hint -> "\n    HINT: " ++ hint
-    constrStr = Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "   " ++ show (UC.edgeType edgeInfo)
+    constrStr = Tm.prettyString s ++ " =/= " ++ Tm.prettyString t ++ "   " ++ show (UC.edgeType edgeInfo)
       ++ hintString
     -- constrStr = case (UC.edgeType edgeInfo) of
     --   (UC.InitConstr _) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(initial)" -- Tm.prettyString prob
