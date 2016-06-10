@@ -135,7 +135,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
       =     case typeLookup x g of
               Just ty        ->  return ty
               Nothing        ->  unknownIdent reg g (render (iPrint_ 0 0 (builtin $ Free_ x)))
-    iType_' ii g e -- @(funExp :$: argExp)
+    iType_' ii g e@(_ :$: _)
       =     do
                 let
                   unravelApp (L _ (f :$: g)) accum = unravelApp f (g : accum)
@@ -147,13 +147,13 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                       piArg <- freshType (region argExp) g
                       return (piArg)
 
-                topFnTypeVar@(Tm.N (Tm.Meta fnNom) []) <- freshType (region topFn) g
+                topFnTypeVar@(Tm.N (Tm.Meta fnNom) _) <- freshType (region topFn) g
                 vars <- mapM  mkVars args
-                let varNoms = map (\ (Tm.N (Tm.Meta alpha) []) -> alpha ) vars
+                let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
 
                 topFnTypeVal <- iType_ ii g topFn
                 unifySets (AppFnType fnNom) (show topFn) (region topFn) topFnTypeVal topFnTypeVar g
-                retTypeVar@(Tm.N (Tm.Meta retNom) []) <- freshType (region lit) g
+                retTypeVar@(Tm.N (Tm.Meta retNom) _) <- freshType (region lit) g
                 let
 
                   progContextFor argNum = Application argNum fnNom varNoms retNom
