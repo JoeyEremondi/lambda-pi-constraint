@@ -67,7 +67,8 @@ data ConstraintInfo = ConstraintInfo
 
 data ProgramContext =
   AppFnType Nom
-  | Application Int Nom [Nom]
+  | AppRetType Nom
+  | Application Int Nom [Nom] Nom
   | TypeOfProgram
   | VarDecl
   | ElimEdge

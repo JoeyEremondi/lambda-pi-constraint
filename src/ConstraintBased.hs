@@ -24,6 +24,9 @@ import qualified PatternUnify.Tm as Tm
 
 import PatternUnify.ConstraintInfo as UC
 
+import Control.Monad (forM)
+import Data.Foldable (foldlM)
+
 
 --import Debug.Trace (trace)
 
@@ -132,26 +135,47 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
       =     case typeLookup x g of
               Just ty        ->  return ty
               Nothing        ->  unknownIdent reg g (render (iPrint_ 0 0 (builtin $ Free_ x)))
-    iType_' ii g e@(funExp :$: argExp)
+    iType_' ii g e -- @(funExp :$: argExp)
       =     do
-                fnType <- iType_ ii g funExp
-                piArg <- freshType (region argExp) g
-                piBodyFn <- fresh (region funExp) g (piArg Tm.--> Tm.SET) --TODO star to star?
+                let
+                  unravelApp (L _ (f :$: g)) accum = unravelApp f (g : accum)
+                  unravelApp f accum = (f, accum)
 
-                --trace ("APP " ++ show (iPrint_ 0 0 lit) ++ "\n  fn type, unifying " ++ Tm.prettyString fnType ++ "  WITH  " ++ Tm.prettyString (Tm.PI piArg piBodyFn)) $
-                unifySets _ (show e)  reg (fnType) (Tm.PI piArg piBodyFn) g
+                  (topFn, args) = unravelApp lit []
 
-                --Ensure that the argument has the proper type
-                cType_ ii g argExp piArg
+                  mkVars argExp = do
+                      piArg <- freshType (region argExp) g
+                      return (piArg)
 
-                --Get a type for the evaluation of the argument
-                argVal <- evaluate ii argExp g
+                topFnTypeVar@(Tm.N (Tm.Meta fnNom) []) <- freshType (region topFn) g
+                vars <- mapM  mkVars args
+                let varNoms = map (\ (Tm.N (Tm.Meta alpha) []) -> alpha ) vars
 
-                --Our resulting type is the application of our arg type into the
-                --body of the pi type
-                retType <- piBodyFn Tm.$$ argVal
-                --trace ("APP " ++ show (iPrint_ 0 0 lit) ++ "\n  return " ++ Tm.prettyString retType) $
-                return retType
+                topFnTypeVal <- iType_ ii g topFn
+                unifySets (AppFnType fnNom) (show topFn) (region topFn) topFnTypeVal topFnTypeVar g
+                retTypeVar@(Tm.N (Tm.Meta retNom) []) <- freshType (region lit) g
+                let
+
+                  progContextFor argNum = Application argNum fnNom varNoms retNom
+
+                  doUnif (fnType, argNum) (argExp, piArg) = do
+                    piBodyFn <- fresh (region argExp) g (piArg Tm.--> Tm.SET)
+                    unifySets (progContextFor argNum) (show e)  reg (fnType) (Tm.PI piArg piBodyFn) g
+                    --Ensure that the argument has the proper type
+                    cType_ ii g argExp piArg
+                    --Get a type for the evaluation of the argument
+                    argVal <- evaluate ii argExp g
+                    --Our resulting type is the application of our arg type into the
+                    --body of the pi type
+                    retType <- piBodyFn Tm.$$ argVal
+                    --trace ("APP " ++ show (iPrint_ 0 0 lit) ++ "\n  return " ++ Tm.prettyString retType) $
+                    return (retType, argNum + 1)
+
+                --Make a nice variable referring to our return type, easy to find in graph
+                (retType, _) <- foldlM doUnif (topFnTypeVar, 1) $ zip args vars
+                unifySets (AppRetType retNom) ("result of application " ++ show it) reg retType retTypeVar g
+                return retTypeVar
+
 
     iType_' ii g Nat_                  =  return conStar
     iType_' ii g (NatElim_ m mz ms n)  =
