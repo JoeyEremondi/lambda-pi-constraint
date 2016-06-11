@@ -76,8 +76,6 @@ type TypeGraph = TG.StandardTypeGraph
 data Dec = HOLE | DEFN VAL
   deriving (Show, Generic)
 
-instance Subst VAL Region
-
 instance Alpha Dec
 instance Subst VAL Dec
 

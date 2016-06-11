@@ -66,9 +66,10 @@ data ConstraintInfo = ConstraintInfo
   } deriving (Eq, Show, Generic)
 
 data ProgramContext =
-  AppFnType Nom
+  AppFnType Region VAL
   | AppRetType Nom
-  | Application Int Nom [Nom] Nom
+  --App region, argNum, fn type, arg types, return type, free vars
+  | Application Region Int [Nom] Nom [VAL]
   | TypeOfProgram
   | VarDecl
   | ElimEdge
@@ -76,10 +77,11 @@ data ProgramContext =
   | FnType
   | FnBody
   | Ctor
-  deriving (Eq, Ord, Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance Alpha ProgramContext
 instance Subst VAL ProgramContext
+instance Subst VAL Region
 
 data ChoiceEdge = LeftChoice | RightChoice
   deriving (Eq, Ord, Show, Generic)

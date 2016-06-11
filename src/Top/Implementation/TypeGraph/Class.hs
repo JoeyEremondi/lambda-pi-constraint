@@ -45,6 +45,8 @@ class TypeGraph graph info | graph -> info where
    allPathsList        :: VertexId -> [VertexId] -> graph -> TypeGraphPath info
    allPathsListWithout :: S.Set VertexId -> VertexId -> [VertexId] -> graph -> TypeGraphPath info
 
+   allEdges :: graph -> [(EdgeId, info)]
+
    -- substitution and term graph
    substituteVariable :: Tm.Subs -> Tm.Nom -> graph -> Tm.VAL
    substituteType     :: Tm.Subs -> Tm.VAL  -> graph -> Tm.VAL

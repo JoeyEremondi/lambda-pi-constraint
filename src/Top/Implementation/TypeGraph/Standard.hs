@@ -63,9 +63,7 @@ instance Show (StandardTypeGraph) where
       "(Type graph consists of " ++ show (M.size (equivalenceGroupMap stg)) ++ " equivalence groups)"
 
 
-allEdges :: StandardTypeGraph -> [(EdgeId, Info)]
-allEdges stg =
-  concatMap edges $ M.elems $ equivalenceGroupMap stg
+
 
 
 addCollectedUpdates :: (Ln.Fresh m) => VertexId -> Tm.VAL -> StandardTypeGraph -> m StandardTypeGraph
@@ -211,7 +209,8 @@ instance TypeGraph (StandardTypeGraph) Info where
               --      ( vid
               --      , addVertex vid (VLam vparam vbody, original) subGraph2)
 
-
+   allEdges stg =
+     concatMap edges $ M.elems $ equivalenceGroupMap stg
 
    addVertex v info =
       createGroup (insertVertex v info emptyGroup)

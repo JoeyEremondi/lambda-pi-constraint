@@ -16,6 +16,7 @@ import Top.Implementation.TypeGraph.ApplyHeuristics (expandPath)
 import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
+import qualified Top.Implementation.TypeGraph.Class as Class
 import Top.Solver
 
 import qualified Data.List as List
@@ -29,6 +30,7 @@ import PatternUnify.Check as Check
 
 import Control.Monad
 
+import Unbound.Generics.LocallyNameless.Unsafe  (unsafeUnbind)
 
 type Info = Info.ConstraintInfo
 
@@ -156,6 +158,40 @@ ctorPermutation = Selector ("Constructor isomorphism", f)
               return $ Just (10, "Mismatched arguments", [edge], info {maybeHint = Just hint})
 
         _ -> return Nothing
+
+--Useful helper method
+
+
+
+appHeuristic :: (HasTypeGraph m Info) => Selector m Info
+appHeuristic = Selector ("Function Application", f)
+  where
+    maxArgs :: Tm.Type -> Maybe Int
+    maxArgs _T = maxArgsHelper _T 0
+      where
+        maxArgsHelper (Tm.PI _S (Tm.L body)) accum =
+          maxArgsHelper (snd $ unsafeUnbind body) (1+accum)
+        maxArgsHelper (Tm.N (Tm.Meta _) _) _ = Nothing
+        maxArgsHelper _T accum =  Just accum
+
+    f pair@(edge@(EdgeId vc _ _), info) | (Application reg argNum args retTp frees) <- (programContext $ edgeEqnInfo info) = do
+      --let (fnTyEdge:_) = [x | x <- edges]
+      edges <- allEdges
+      let (fnTy, fnAppEdge) : _ = [(fTy, pr) | pr <- edges, AppFnType subReg fTy <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
+
+      mFullFnTp <- doWithoutEdge fnAppEdge $ substituteTypeSafe fnTy
+      case mFullFnTp of
+        Just fullFnTp -> do
+          let fnMax = maxArgs fullFnTp
+          case (fnMax) of
+            (Just n) | n < length args -> do
+              let hint = "Function expected at most " ++ show n ++ " arguments, but you gave " ++ show (length args)
+              return $ Just (10, "Too many arguments", [edge], info {maybeHint = Just hint})
+            _ -> do
+              return Nothing
+        _ -> return Nothing
+
+    f _ = return Nothing
 
 -- -- |Select only the constraints for which there is evidence in the predicates
 -- -- of the current state that the constraint at hand is incorrect.
