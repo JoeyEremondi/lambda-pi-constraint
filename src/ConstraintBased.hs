@@ -80,7 +80,7 @@ getConstraints env term =
     finalType <- iType0_ env term
     finalVar <- freshTopLevel Tm.SET
     finalValue <- evaluate 0 (L startRegion $ Inf_ term) env
-    unifySets UC.TypeOfProgram (show term) startRegion finalType (Tm.meta finalVar) env
+    unifySets UC.TypeOfProgram (showIt term) startRegion finalType (Tm.meta finalVar) env
     return (finalVar, finalValue)
 
 iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
@@ -152,7 +152,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                 let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
 
                 topFnTypeVal <- iType_ ii g topFn
-                unifySets (AppFnType reg topFnTypeVal) (show topFn) (region topFn) topFnTypeVar topFnTypeVal g
+                unifySets (AppFnType reg topFnTypeVal) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
                 retTypeVar@(Tm.N (Tm.Meta retNom) _) <- freshType (region lit) g
                 let
                   freeVars = map snd $ reverse $ valueEnv g
@@ -160,7 +160,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
 
                   doUnif (fnType, argNum) (argExp, piArg) = do
                     piBodyFn <- fresh (region argExp) g (piArg Tm.--> Tm.SET)
-                    unifySets (progContextFor argNum) (show e)  reg (fnType) (Tm.PI piArg piBodyFn) g
+                    unifySets (progContextFor argNum) (showIt lit)  reg (fnType) (Tm.PI piArg piBodyFn) g
                     --Ensure that the argument has the proper type
                     cType_ ii g argExp piArg
                     --Get a type for the evaluation of the argument

@@ -117,6 +117,7 @@ listOfVotes =
   Heuristic $ Voting $
     [ preferChoiceEdges
     , ctorPermutation
+    , appHeuristic
     ]
 
 preferChoiceEdges :: (HasTypeGraph m Info) => Selector m Info
