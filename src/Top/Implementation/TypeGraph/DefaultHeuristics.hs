@@ -30,6 +30,8 @@ import PatternUnify.Check as Check
 
 import Control.Monad
 
+import qualified Unbound.Generics.LocallyNameless as Ln
+
 import Unbound.Generics.LocallyNameless.Unsafe  (unsafeUnbind)
 
 type Info = Info.ConstraintInfo
@@ -174,6 +176,22 @@ appHeuristic = Selector ("Function Application", f)
           maxArgsHelper (snd $ unsafeUnbind body) (1+accum)
         maxArgsHelper (Tm.N (Tm.Meta _) _) _ = Nothing
         maxArgsHelper _T accum =  Just accum
+
+    --Try to add arguments to fix any mismatches in our function
+    matchArgs :: (Ln.Fresh m) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(Int, Nom, Type)])
+    matchArgs fnTy argTys retTy = helper fnTy argTys retTy 1 []
+      where
+        helper fnTy [] retTy _ accum
+          | Check.unsafeEqual Tm.SET fnTy retTy = return $ Just accum
+        helper (Tm.PI _S _T) ((argVal, argTy) : argsRest) retTy i accum
+          | Check.unsafeEqual Tm.SET _S argTy = do
+            _TVal <- _T Tm.$$ argVal
+            helper _TVal argsRest retTy (i+1) accum
+          | otherwise = do
+            argName <- Tm.freshNom
+            _TVal <- _T Tm.$$ (Tm.var argName)
+            helper _TVal argsRest retTy (i+1) $ (i,argName,_S) : accum
+        helper _ _ _ _ _ = return Nothing
 
     f pair@(edge@(EdgeId vc _ _), info) | (Application reg argNum args retTp frees) <- (programContext $ edgeEqnInfo info) = do
       --let (fnTyEdge:_) = [x | x <- edges]
