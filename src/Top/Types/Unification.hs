@@ -19,6 +19,11 @@ import Top.Types.Synonym
 import Utils (internalError)
 
 import qualified PatternUnify.Tm as Tm
+
+import qualified Unbound.Generics.LocallyNameless as Ln
+
+import Debug.Trace (trace)
+
 {-
 -- |There are two reasons why two types cannot be unified: either two (different) type constants clash (they
 -- should be the same), or a type variable should be unified with a composed type that contains this same
@@ -132,7 +137,20 @@ unifiableList _ _ = True
 firstOrderUnify ::  Tm.VAL -> Tm.VAL -> Maybe Tm.VAL
 firstOrderUnify t1 t2 =
    case (t1,t2) of
-      ((Tm.N (Tm.Meta i) []), (Tm.N (Tm.Meta _) [])) -> Just (Tm.meta i)
+      --Variables unify with anything
+      ((Tm.N (Tm.Meta i) []), x) -> Just x
+      ((x, Tm.N (Tm.Meta i) [])) -> Just x
+      --TODO don't assume functions ignore arguments?
+      (e1@(Tm.L _), e2@(Tm.L _)) -> Ln.runFreshM $ do
+        x <- Ln.fresh $ Ln.s2n "foUnif__"
+        body1 <- e1 Tm.$$ Tm.var x
+        body2 <- e2 Tm.$$ Tm.var x
+        case (firstOrderUnify body1 body2) of
+          Nothing -> return Nothing
+          Just bodyRet ->
+            return $ Just $ Tm.L $ Ln.bind x bodyRet
+
+
       ((Tm.C s ss),(Tm.C t tt))
          | s == t  ->
               do let f = uncurry firstOrderUnify
@@ -143,4 +161,4 @@ firstOrderUnify t1 t2 =
 
       _ -> case (t1 == t2) of
         True -> Just t1
-        False -> Nothing
+        False -> trace ("FO UNIFY CATCH ALL FALSE " ++ Tm.prettyString t1 ++ "   " ++ Tm.prettyString t2) $ Nothing

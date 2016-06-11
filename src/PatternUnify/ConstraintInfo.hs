@@ -67,7 +67,7 @@ data ConstraintInfo = ConstraintInfo
 
 data ProgramContext =
   AppFnType Region VAL
-  | AppRetType Nom
+  | AppRetType Region Nom
   --App region, argNum, fn type, arg types, return type, free vars
   | Application Region Int [(VAL, Nom)] Nom [VAL]
   | TypeOfProgram
@@ -78,6 +78,12 @@ data ProgramContext =
   | FnBody
   | Ctor
   deriving (Eq, Show, Generic)
+
+applicationEdgeRegion :: ProgramContext -> Maybe Region
+applicationEdgeRegion (AppFnType reg _) = Just reg
+applicationEdgeRegion (Application reg _ _ _ _) = Just reg
+applicationEdgeRegion (AppRetType reg _) = Just reg
+applicationEdgeRegion _ = Nothing
 
 instance Alpha ProgramContext
 instance Subst VAL ProgramContext

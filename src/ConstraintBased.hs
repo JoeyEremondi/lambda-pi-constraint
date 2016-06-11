@@ -174,7 +174,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
 
                 --Make a nice variable referring to our return type, easy to find in graph
                 (retType, _) <- foldlM doUnif (topFnTypeVar, 1) $ zip args vars
-                unifySets (AppRetType retNom) ("result of application " ++ showIt lit) reg retType retTypeVar g
+                unifySets (AppRetType reg retNom) ("result of application " ++ showIt lit) reg retType retTypeVar g
                 return retTypeVar
 
 

@@ -36,10 +36,12 @@ import Unbound.Generics.LocallyNameless.Unsafe  (unsafeUnbind)
 
 import qualified Control.Monad as Monad
 
+import Debug.Trace (trace)
+
 type Info = Info.ConstraintInfo
 
 
---import Debug.Trace (trace)
+
 
 -----------------------------------------------------------------------------
 
@@ -195,24 +197,30 @@ appHeuristic = Selector ("Function Application", f)
             helper _TVal argsList retTy (i+1) $ (i,argName,_S) : accum
         helper _ _ _ _ _ = return Nothing
 
-    f pair@(edge@(EdgeId vc _ _), info) | (Application reg argNum args retTpNom frees) <- (programContext $ edgeEqnInfo info) = do
+    f pair@(edge@(EdgeId vc _ _), info) | Just reg <- (applicationEdgeRegion $ programContext $ edgeEqnInfo info) = trace "APP HEURISTIC" $  do
       --let (fnTyEdge:_) = [x | x <- edges]
+
       edges <- allEdges
+      let (Application reg argNum args retTpNom frees) : _ = [pcon | edge <- edges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
       let (fnTy, fnAppEdge) : _ = [(fTy, pr) | pr <- edges, AppFnType subReg fTy <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
-      mRetTy <- substituteTypeSafe $ Tm.meta retTpNom
-
-      argMaybeList <- forM args $ \(aval, aty) -> do
-        retVal <- substituteTypeSafe aval
-        retTy <- substituteTypeSafe $ Tm.meta aty
-        return $ case (retVal, retTy) of
-          (Just x, Just y) ->
-            Just (x,y)
-          _ -> Nothing
-
-      let maybeArgList = Monad.sequence argMaybeList
+      let (fnRetEdge ) : _ = [(pr) | pr <- edges, AppRetType subReg _ <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
 
 
-      mFullFnTp <- doWithoutEdge fnAppEdge $ substituteTypeSafe fnTy
+
+      (mFullFnTp, maybeArgList, mRetTy) <- doWithoutEdges [fnAppEdge, fnRetEdge] $ do
+        fullFn <- substituteTypeSafe fnTy
+        argMaybeList <- forM args $ \(aval, aty) -> do
+          retVal <- substituteTypeSafe aval
+          retTy <- substituteTypeSafe $ Tm.meta aty
+          return $ case (retVal, retTy) of
+            (Just x, Just y) ->
+              Just (x,y)
+            _ -> Nothing
+        mRetTy <- substituteTypeSafe $ Tm.meta retTpNom
+
+        return (fullFn, Monad.sequence argMaybeList, mRetTy)
+
+
       case mFullFnTp of
         Just fullFnTp -> do
           let fnMax = maxArgs fullFnTp
@@ -223,8 +231,11 @@ appHeuristic = Selector ("Function Application", f)
                 return $ Just (10, "Too many arguments", [edge], info {maybeHint = Just hint})
               | Just retTy <- mRetTy, Just args <- maybeArgList,  n < length args ->
                 case (Ln.runFreshM $ matchArgs fnTy args retTy ) of
-                  _ -> return Nothing
-            _ -> do
+                  Just x -> do
+                    let hint = "Function expected " ++ show n ++ " arguments, but you gave " ++ show (length args)
+                    return $ Just (10, "Too few arguments", [edge], info {maybeHint = Just hint})
+                  _ -> trace "MATCH ARGS NOTHING" $ return Nothing
+            _ -> trace ("BAD FNMAX " ++ show (fnMax, (retTpNom, mRetTy), maybeArgList, length args)) $  do
               return Nothing
         _ -> return Nothing
 
