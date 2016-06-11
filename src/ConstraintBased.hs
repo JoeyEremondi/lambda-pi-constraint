@@ -149,6 +149,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
 
                 topFnTypeVar@(Tm.N (Tm.Meta fnNom) _) <- freshType (region topFn) g
                 vars <- mapM  mkVars args
+                argVals <- mapM (\x -> evaluate ii x g) args
                 let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
 
                 topFnTypeVal <- iType_ ii g topFn
@@ -156,7 +157,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                 retTypeVar@(Tm.N (Tm.Meta retNom) _) <- freshType (region lit) g
                 let
                   freeVars = map snd $ reverse $ valueEnv g
-                  progContextFor argNum = Application reg argNum varNoms retNom freeVars
+                  progContextFor argNum = Application reg argNum (zip argVals varNoms) retNom freeVars
 
                   doUnif (fnType, argNum) (argExp, piArg) = do
                     piBodyFn <- fresh (region argExp) g (piArg Tm.--> Tm.SET)

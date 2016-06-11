@@ -69,7 +69,7 @@ data ProgramContext =
   AppFnType Region VAL
   | AppRetType Nom
   --App region, argNum, fn type, arg types, return type, free vars
-  | Application Region Int [Nom] Nom [VAL]
+  | Application Region Int [(VAL, Nom)] Nom [VAL]
   | TypeOfProgram
   | VarDecl
   | ElimEdge

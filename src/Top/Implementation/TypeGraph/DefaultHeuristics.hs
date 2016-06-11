@@ -34,6 +34,8 @@ import qualified Unbound.Generics.LocallyNameless as Ln
 
 import Unbound.Generics.LocallyNameless.Unsafe  (unsafeUnbind)
 
+import qualified Control.Monad as Monad
+
 type Info = Info.ConstraintInfo
 
 
@@ -183,29 +185,45 @@ appHeuristic = Selector ("Function Application", f)
       where
         helper fnTy [] retTy _ accum
           | Check.unsafeEqual Tm.SET fnTy retTy = return $ Just accum
-        helper (Tm.PI _S _T) ((argVal, argTy) : argsRest) retTy i accum
+        helper (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum
           | Check.unsafeEqual Tm.SET _S argTy = do
             _TVal <- _T Tm.$$ argVal
             helper _TVal argsRest retTy (i+1) accum
           | otherwise = do
             argName <- Tm.freshNom
             _TVal <- _T Tm.$$ (Tm.var argName)
-            helper _TVal argsRest retTy (i+1) $ (i,argName,_S) : accum
+            helper _TVal argsList retTy (i+1) $ (i,argName,_S) : accum
         helper _ _ _ _ _ = return Nothing
 
-    f pair@(edge@(EdgeId vc _ _), info) | (Application reg argNum args retTp frees) <- (programContext $ edgeEqnInfo info) = do
+    f pair@(edge@(EdgeId vc _ _), info) | (Application reg argNum args retTpNom frees) <- (programContext $ edgeEqnInfo info) = do
       --let (fnTyEdge:_) = [x | x <- edges]
       edges <- allEdges
       let (fnTy, fnAppEdge) : _ = [(fTy, pr) | pr <- edges, AppFnType subReg fTy <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
+      mRetTy <- substituteTypeSafe $ Tm.meta retTpNom
+
+      argMaybeList <- forM args $ \(aval, aty) -> do
+        retVal <- substituteTypeSafe aval
+        retTy <- substituteTypeSafe $ Tm.meta aty
+        return $ case (retVal, retTy) of
+          (Just x, Just y) ->
+            Just (x,y)
+          _ -> Nothing
+
+      let maybeArgList = Monad.sequence argMaybeList
+
 
       mFullFnTp <- doWithoutEdge fnAppEdge $ substituteTypeSafe fnTy
       case mFullFnTp of
         Just fullFnTp -> do
           let fnMax = maxArgs fullFnTp
           case (fnMax) of
-            (Just n) | n < length args -> do
-              let hint = "Function expected at most " ++ show n ++ " arguments, but you gave " ++ show (length args)
-              return $ Just (10, "Too many arguments", [edge], info {maybeHint = Just hint})
+            (Just n)
+              | n < length args -> do
+                let hint = "Function expected at most " ++ show n ++ " arguments, but you gave " ++ show (length args)
+                return $ Just (10, "Too many arguments", [edge], info {maybeHint = Just hint})
+              | Just retTy <- mRetTy, Just args <- maybeArgList,  n < length args ->
+                case (Ln.runFreshM $ matchArgs fnTy args retTy ) of
+                  _ -> return Nothing
             _ -> do
               return Nothing
         _ -> return Nothing
