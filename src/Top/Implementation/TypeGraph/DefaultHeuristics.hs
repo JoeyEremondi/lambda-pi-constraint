@@ -208,8 +208,9 @@ appHeuristic = Selector ("Function Application", f)
       --let (fnTyEdge:_) = [x | x <- edges]
 
       edges <- allEdges
-      let appEdges = [edge | edge <- edges, Just subReg <- [applicationEdgeRegion $ programContext $ edgeEqnInfo info], subReg == reg]
-      let (Application reg argNum args retTpNom frees) : _ = [pcon | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
+      let appEdges = [edge | edge <- edges, Just subReg <- [applicationEdgeRegion $ programContext $ edgeEqnInfo (snd edge)], subReg == reg]
+      let (Application reg argNum args retTpNom frees) : _ = trace ("APP EDGES " ++ (List.intercalate "\n  " (map show appEdges) ++ "========================")) $
+            [pcon | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
       let argAppEdges  = [edge | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
       let (fnTy, fnStr, fnAppEdge) : _ = [(fTy, fnStr, pr) | pr <- appEdges, AppFnType subReg fnStr fTy <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
       let (fnRetEdge ) : _ = [(pr) | pr <- appEdges, AppRetType subReg _ <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
@@ -218,7 +219,7 @@ appHeuristic = Selector ("Function Application", f)
 
 
 
-      (mFullFnTp, maybeArgList, mRetTy) <- doWithoutEdges argAppEdges $ do
+      (mFullFnTp, maybeArgList, mRetTy) <- doWithoutEdges appEdges $ do
         fullFn <- substituteTypeSafe fnTy
         argMaybeList <- forM args $ \(aval, aty) -> do
           retVal <- substituteTypeSafe aval
@@ -254,8 +255,8 @@ appHeuristic = Selector ("Function Application", f)
                     let hint = "Function expected " ++ show n ++ " arguments, but you gave "
                           ++ show (length args) ++ ". Try (" ++ show fnStr ++ ") "
                           ++ List.intercalate " " (map (argStr . fst) matchList)
-                          ++ "\n      where"
-                          ++ List.intercalate "        \n" (Maybe.catMaybes $ map argTypeHints matchList)
+                          ++ "\n      where\n        "
+                          ++ List.intercalate "\n        " (Maybe.catMaybes $ map argTypeHints matchList)
                     return $ Just (10, "Too few arguments", [edge], info {maybeHint = Just hint})
                   _ -> trace "MATCH ARGS NOTHING" $ return Nothing
             _ -> trace ("BAD FNMAX " ++ show (fnMax, (retTpNom, mRetTy), maybeArgList, length args)) $  do
