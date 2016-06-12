@@ -31,6 +31,8 @@ import PatternUnify.ConstraintInfo as Info
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe
 
+import Debug.Trace (trace)
+
 type Info = Info.ConstraintInfo
 
 --import Debug.Trace (trace)
@@ -236,7 +238,7 @@ instance TypeGraph (StandardTypeGraph) Info where
 
           rec :: [Tm.Nom] -> Tm.VAL -> StandardTypeGraph -> Ln.FreshMT Maybe Tm.VAL
           rec history (Tm.N hd elims) stg
-            |  (Tm.headVar hd) `elem` history  = lift Nothing
+            |  (Tm.headVar hd) `elem` history  = trace "STS Head in history" $ lift Nothing
             |  otherwise         =
                   case maybeGetGroupOf (VertexId (Tm.headVar hd)) stg of
                      Nothing -> do

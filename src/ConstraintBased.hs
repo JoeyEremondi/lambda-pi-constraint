@@ -152,8 +152,9 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                 argVals <- mapM (\x -> evaluate ii x g) args
                 let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
 
+
                 topFnTypeVal <- iType_ ii g topFn
-                unifySets (AppFnType reg topFnTypeVal) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
+                unifySets (AppFnType reg (showIt topFn) topFnTypeVal) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
                 retTypeVar@(Tm.N (Tm.Meta retNom) _) <- freshType (region lit) g
                 let
                   freeVars = map snd $ reverse $ valueEnv g

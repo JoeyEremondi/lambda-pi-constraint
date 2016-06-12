@@ -38,6 +38,8 @@ import qualified Control.Monad as Monad
 
 import Debug.Trace (trace)
 
+import Top.Types.Unification (firstOrderUnify)
+
 type Info = Info.ConstraintInfo
 
 
@@ -182,32 +184,41 @@ appHeuristic = Selector ("Function Application", f)
         maxArgsHelper _T accum =  Just accum
 
     --Try to add arguments to fix any mismatches in our function
-    matchArgs :: (Ln.Fresh m) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(Int, Nom, Type)])
+    matchArgs :: (Ln.Fresh m) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(VAL, Maybe Type)])
     matchArgs fnTy argTys retTy = helper fnTy argTys retTy 1 []
       where
-        helper fnTy [] retTy _ accum
-          | Check.unsafeEqual Tm.SET fnTy retTy = return $ Just accum
+        helper fnTy [] retTy i accum
+          | Just ret <- trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy) $ firstOrderUnify fnTy retTy = return $ Just $ reverse accum
+          | (Tm.PI _S _T) <- fnTy = do
+            do
+              argVal <- Tm.var <$> Tm.freshNom
+              _TVal <- _T Tm.$$ argVal
+              helper _TVal [] retTy (i+1) $ (argVal, Just _S) : accum
         helper (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum
-          | Check.unsafeEqual Tm.SET _S argTy = do
+          | Just unifArgTy <- firstOrderUnify _S argTy = do
             _TVal <- _T Tm.$$ argVal
-            helper _TVal argsRest retTy (i+1) accum
+            helper _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
           | otherwise = do
-            argName <- Tm.freshNom
-            _TVal <- _T Tm.$$ (Tm.var argName)
-            helper _TVal argsList retTy (i+1) $ (i,argName,_S) : accum
+            argVal <- Tm.var <$> Tm.freshNom
+            _TVal <- _T Tm.$$ argVal
+            helper _TVal argsList retTy (i+1) $ (argVal, Just _S) : accum
         helper _ _ _ _ _ = return Nothing
 
     f pair@(edge@(EdgeId vc _ _), info) | Just reg <- (applicationEdgeRegion $ programContext $ edgeEqnInfo info) = trace "APP HEURISTIC" $  do
       --let (fnTyEdge:_) = [x | x <- edges]
 
       edges <- allEdges
-      let (Application reg argNum args retTpNom frees) : _ = [pcon | edge <- edges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
-      let (fnTy, fnAppEdge) : _ = [(fTy, pr) | pr <- edges, AppFnType subReg fTy <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
-      let (fnRetEdge ) : _ = [(pr) | pr <- edges, AppRetType subReg _ <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
+      let appEdges = [edge | edge <- edges, Just subReg <- [applicationEdgeRegion $ programContext $ edgeEqnInfo info], subReg == reg]
+      let (Application reg argNum args retTpNom frees) : _ = [pcon | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
+      let argAppEdges  = [edge | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
+      let (fnTy, fnStr, fnAppEdge) : _ = [(fTy, fnStr, pr) | pr <- appEdges, AppFnType subReg fnStr fTy <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
+      let (fnRetEdge ) : _ = [(pr) | pr <- appEdges, AppRetType subReg _ <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
+
+      let edgeContext = programContext $ edgeEqnInfo info
 
 
 
-      (mFullFnTp, maybeArgList, mRetTy) <- doWithoutEdges [fnAppEdge, fnRetEdge] $ do
+      (mFullFnTp, maybeArgList, mRetTy) <- doWithoutEdges argAppEdges $ do
         fullFn <- substituteTypeSafe fnTy
         argMaybeList <- forM args $ \(aval, aty) -> do
           retVal <- substituteTypeSafe aval
@@ -220,6 +231,9 @@ appHeuristic = Selector ("Function Application", f)
 
         return (fullFn, Monad.sequence argMaybeList, mRetTy)
 
+      let
+        argTypeHints (v, Just t) = Just $  Tm.prettyString v ++ " :: " ++ Tm.prettyString t
+        argTypeHints _ = Nothing
 
       case mFullFnTp of
         Just fullFnTp -> do
@@ -229,10 +243,19 @@ appHeuristic = Selector ("Function Application", f)
               | n < length args -> do
                 let hint = "Function expected at most " ++ show n ++ " arguments, but you gave " ++ show (length args)
                 return $ Just (10, "Too many arguments", [edge], info {maybeHint = Just hint})
-              | Just retTy <- mRetTy, Just args <- maybeArgList,  n < length args ->
+              | Just retTy <- mRetTy
+              , Just args <- maybeArgList
+              ,  n > length args
+              -- , (AppFnType _ _ _ ) <- edgeContext
+               ->
                 case (Ln.runFreshM $ matchArgs fnTy args retTy ) of
-                  Just x -> do
-                    let hint = "Function expected " ++ show n ++ " arguments, but you gave " ++ show (length args)
+                  Just matchList -> do
+                    let argStr t = "(" ++ Tm.prettyString t ++ ")"
+                    let hint = "Function expected " ++ show n ++ " arguments, but you gave "
+                          ++ show (length args) ++ ". Try (" ++ show fnStr ++ ") "
+                          ++ List.intercalate " " (map (argStr . fst) matchList)
+                          ++ "\n      where"
+                          ++ List.intercalate "        \n" (Maybe.catMaybes $ map argTypeHints matchList)
                     return $ Just (10, "Too few arguments", [edge], info {maybeHint = Just hint})
                   _ -> trace "MATCH ARGS NOTHING" $ return Nothing
             _ -> trace ("BAD FNMAX " ++ show (fnMax, (retTpNom, mRetTy), maybeArgList, length args)) $  do

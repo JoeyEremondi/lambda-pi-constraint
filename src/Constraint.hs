@@ -161,9 +161,11 @@ edgeMessage finalSub (edgeId, edgeInfo) =
     hintString = case (UC.maybeHint edgeInfo) of
       Nothing -> ""
       Just hint -> "\n    HINT: " ++ hint
-    constrStr = Tm.prettyString s ++ " =/= " ++ Tm.prettyString t ++ "   |||   " ++ show (UC.edgeType edgeInfo)
-      ++ show (UC.edgeEqnInfo edgeInfo)
+    constrStr = Tm.prettyString s ++ " =/= " ++ Tm.prettyString t
       ++ hintString
+      ++ "\n        " ++ show (UC.edgeType edgeInfo)
+      ++ show (UC.edgeEqnInfo edgeInfo)
+
     -- constrStr = case (UC.edgeType edgeInfo) of
     --   (UC.InitConstr _) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(initial)" -- Tm.prettyString prob
     --   -- (UC.DefnUpdate c) -> "TODO1"

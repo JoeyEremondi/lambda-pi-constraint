@@ -66,7 +66,7 @@ data ConstraintInfo = ConstraintInfo
   } deriving (Eq, Show, Generic)
 
 data ProgramContext =
-  AppFnType Region VAL
+  AppFnType Region String Type
   | AppRetType Region Nom
   --App region, argNum, fn type, arg types, return type, free vars
   | Application Region Int [(VAL, Nom)] Nom [VAL]
@@ -80,7 +80,7 @@ data ProgramContext =
   deriving (Eq, Show, Generic)
 
 applicationEdgeRegion :: ProgramContext -> Maybe Region
-applicationEdgeRegion (AppFnType reg _) = Just reg
+applicationEdgeRegion (AppFnType reg _ _) = Just reg
 applicationEdgeRegion (Application reg _ _ _ _) = Just reg
 applicationEdgeRegion (AppRetType reg _) = Just reg
 applicationEdgeRegion _ = Nothing
