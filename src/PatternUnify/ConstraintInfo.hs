@@ -129,11 +129,12 @@ data ConstraintType =
 
 data EqnInfo =
   EqnInfo
-  { creationInfo   :: CreationInfo
-  , infoRegion     :: Region
-  , isCF           :: IsCF
-  , programContext :: ProgramContext
-  , typeOfString   :: String
+  { creationInfo     :: CreationInfo
+  , infoRegion       :: Region
+  , isCF             :: IsCF
+  , programContext   :: ProgramContext
+  , typeOfString     :: String
+  , initialCreatorId :: Maybe ProbId
   } deriving (Eq, Show, Generic)
 
 
