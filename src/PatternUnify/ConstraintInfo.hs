@@ -66,10 +66,10 @@ data ConstraintInfo = ConstraintInfo
   } deriving (Eq, Show, Generic)
 
 data ProgramContext =
-  AppFnType Region String Type
+  AppFnType Region String Nom
   | AppRetType Region Nom
   --App region, argNum, fn type, arg types, return type, free vars
-  | Application Region Int [(VAL, Nom)] Nom [VAL]
+  | Application Region Int [(VAL, Nom)] Nom [Nom]
   | TypeOfProgram
   | VarDecl
   | ElimEdge
@@ -86,8 +86,33 @@ applicationEdgeRegion (AppRetType reg _) = Just reg
 applicationEdgeRegion _ = Nothing
 
 instance Alpha ProgramContext
-instance Subst VAL ProgramContext
-instance Subst VAL Region
+
+instance Alpha EqnInfo
+
+
+instance Alpha ProbId
+instance Subst VAL ProbId
+
+instance Alpha IsCF
+
+instance Subst VAL IsCF
+
+instance Subst VAL ProgramContext where
+  subst _ _ a = a
+  substs _ a = a
+instance Subst VAL Region where
+  subst _ _ a = a
+  substs _ a = a
+instance Subst VAL EqnInfo where
+  subst _ _ a = a
+  substs _ a = a
+
+
+instance Alpha CreationInfo
+--NEVER traverse into cosntraint info for substitution
+instance Subst VAL ConstraintInfo where
+  subst _ _ a = a
+  substs _ a = a
 
 data ChoiceEdge = LeftChoice | RightChoice
   deriving (Eq, Ord, Show, Generic)

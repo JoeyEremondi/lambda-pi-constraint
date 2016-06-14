@@ -154,10 +154,10 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
 
 
                 topFnTypeVal <- trace ("APP CALLING ITYPE " ++ showIt topFn) $ iType_ ii g topFn
-                unifySets (AppFnType reg (showIt topFn) topFnTypeVal) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
+                unifySets (AppFnType reg (showIt topFn) fnNom) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
                 retTypeVar@(Tm.N (Tm.Meta retNom) _) <- freshType (region lit) g
                 let
-                  freeVars = map snd $ reverse $ valueEnv g
+                  freeVars = List.nub $ concatMap (Tm.fvs . snd) $ reverse $ valueEnv g
                   progContextFor argNum = Application reg argNum (zip argVals varNoms) retNom freeVars
 
                   doUnif (fnType, argNum) (argExp, piArg) = do

@@ -220,15 +220,15 @@ appHeuristic = Selector ("Function Application", f)
 
 
       (mFullFnTp, maybeArgList, mRetTy) <- doWithoutEdges appEdges $ do
-        fullFn <- substituteTypeSafe fnTy
+        fullFn <- trace ("FULL FN") $ substituteTypeSafe $ Tm.meta fnTy
         argMaybeList <- trace ("MAYBE ARG LIST from " ++ show args) $ forM args $ \(aval, aty) -> do
-          retVal <- substituteTypeSafe aval
-          retTy <- substituteTypeSafe $ Tm.meta aty
+          retVal <- trace ("RETVAL SUB") $ substituteTypeSafe $ aval
+          retTy <- trace ("RET TY SUB") $ substituteTypeSafe $ Tm.meta aty
           return $ case (retVal, retTy) of
             (Just x, Just y) ->
               Just (x,y)
             _ -> Nothing
-        mRetTy <- substituteTypeSafe $ Tm.meta retTpNom
+        mRetTy <- trace ("META RETTY SUB") $ substituteTypeSafe $ Tm.meta retTpNom
 
         return (fullFn, Monad.sequence argMaybeList, mRetTy)
 
@@ -238,8 +238,8 @@ appHeuristic = Selector ("Function Application", f)
 
 
         argPermuts args = args : (permutations args)
-        makeMatch  retTy permut  =  Ln.runFreshM $ matchArgs fnTy permut retTy
-        ourMatch retTy args = case Maybe.catMaybes $ map (makeMatch retTy) (argPermuts args) of
+        makeMatch  localFnType retTy permut  =  Ln.runFreshM $ matchArgs localFnType permut retTy
+        ourMatch localFnType retTy args = case Maybe.catMaybes $ map (makeMatch localFnType  retTy) (argPermuts args) of
           [] -> Nothing
           (h:_) -> Just h
 
@@ -256,7 +256,7 @@ appHeuristic = Selector ("Function Application", f)
               --,  n >= length args
               -- , (AppFnType _ _ _ ) <- edgeContext
                ->
-                case ourMatch retTy actualArgs of
+                case ourMatch fullFnTp retTy actualArgs of
                   Just matchList -> do
                     let argStr t = "(" ++ Tm.prettyString t ++ ")"
                     let expectedArgsStr

@@ -122,23 +122,25 @@ instance TypeGraph (StandardTypeGraph) Info where
 
    getEdgeCreator = initialCreator
 
-   addTermGraph synonyms unique tp stg =
+   addTermGraph synonyms unique tpNotFlat stg = do
+         tp <-   Tm.flattenChoice tpNotFlat
          let
            evaldType :: Tm.VAL
-           evaldType = Ln.runFreshM $ Tm.eval synonyms tp
+           evaldType =  Ln.runFreshM $ Tm.eval synonyms tp
            (newtp, original) = (evaldType, Just tp)
                 -- case expandToplevelTC synonyms tp of
                 --    Nothing -> (tp, Nothing)
                 --    Just x  -> (x, Just tp)
-         in case newtp of
+         case newtp of
                --TODO use meta as central node?
                Tm.VBot _ -> do
                  vinit <- VertexId <$> Ln.fresh unique
                  return (vinit, addVertex vinit (VertBot, original) stg)
                Tm.VChoice cid cuid alpha s t ->
+                 error "Choice handled by recordChoice"
                  --Just ignore second half of choice, edge to variable
                  --added when choice was generated
-                 addTermGraph synonyms unique s stg
+                 --addTermGraph synonyms unique s stg
               --  do
               --    (vs, g1) <- addTermGraph synonyms unique s stg
               --    (vt, g2) <- addTermGraph synonyms unique t g1
@@ -231,7 +233,7 @@ instance TypeGraph (StandardTypeGraph) Info where
    verticesInGroupOf i =
       vertices . getGroupOf i
 
-   substituteTypeSafe synonyms v g =
+   substituteTypeSafe synonyms v g = trace ("SUB TYPE SAFE " ++ Tm.prettyString v) $
       let
           recElim history (Tm.Elim con vals) stg =
             Tm.Elim con <$> mapM  (\arg -> rec history arg stg) vals

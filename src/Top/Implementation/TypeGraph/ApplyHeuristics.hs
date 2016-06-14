@@ -139,7 +139,7 @@ allErrorPaths =
       cGraph  <- childrenGraph is
       let toCheck = nub $ concat (is : [ [a,b] | ((a,b),_) <- cGraph ])
       paths1  <- constantClashPaths toCheck
-      paths2  <- infiniteTypePaths cGraph
+      paths2  <- trace ("CONST CLASH PATH\n" ++ show paths1 ++"\n\n\n") $  infiniteTypePaths cGraph
       let errorPath = reduceNumberOfPaths (simplifyPath (altList (paths1 ++ paths2)))
       expanded <- expandPath errorPath
       let

@@ -92,9 +92,9 @@ data Equation = EQN Type VAL Type VAL EqnInfo
   deriving (Show, Generic)
 
 instance Alpha Equation
-instance Alpha EqnInfo
-instance Subst VAL Equation
-instance Subst VAL EqnInfo
+
+instance Subst VAL Equation where
+
 
 instance Occurs Equation where
     occurrence xs (EQN _S s _T t _) = occurrence xs [_S, s, _T, t]
@@ -151,8 +151,6 @@ wrapProb ((x, e) : _Gam)  p = All e (bind x (wrapProb _Gam p))
 
 
 
-instance Alpha ProbId
-instance Subst VAL ProbId
 
 
 
@@ -168,10 +166,7 @@ data ProblemState =
 
 instance Alpha ProblemState
 instance Subst VAL ProblemState
-instance Alpha IsCF
-instance Alpha CreationInfo
-instance Subst VAL IsCF
-instance Subst VAL CreationInfo
+
 
 
 instance Pretty ProblemState where
