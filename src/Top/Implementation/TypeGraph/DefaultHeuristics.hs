@@ -164,7 +164,7 @@ ctorPermutation = Selector ("Constructor isomorphism", f)
               return Nothing
             (match : _) -> do
               let hint = "Rearrange arguments to match " ++ Tm.prettyString t1 ++ " to " ++ Tm.prettyString t2
-              return $ Just (10, "Mismatched arguments", [edge], info {maybeHint = Just hint})
+              return $ Just (8, "Mismatched arguments", [edge], info {maybeHint = Just $ Maybe.fromMaybe hint (maybeHint info)})
 
         _ -> return Nothing
 
@@ -221,7 +221,7 @@ appHeuristic = Selector ("Function Application", f)
 
       (mFullFnTp, maybeArgList, mRetTy) <- doWithoutEdges appEdges $ do
         fullFn <- substituteTypeSafe fnTy
-        argMaybeList <- forM args $ \(aval, aty) -> do
+        argMaybeList <- trace ("MAYBE ARG LIST from " ++ show args) $ forM args $ \(aval, aty) -> do
           retVal <- substituteTypeSafe aval
           retTy <- substituteTypeSafe $ Tm.meta aty
           return $ case (retVal, retTy) of
@@ -236,6 +236,13 @@ appHeuristic = Selector ("Function Application", f)
         argTypeHints (v, Just t) = Just $  Tm.prettyString v ++ " :: " ++ Tm.prettyString t
         argTypeHints _ = Nothing
 
+
+        argPermuts args = args : (permutations args)
+        makeMatch  retTy permut  =  Ln.runFreshM $ matchArgs fnTy permut retTy
+        ourMatch retTy args = case Maybe.catMaybes $ map (makeMatch retTy) (argPermuts args) of
+          [] -> Nothing
+          (h:_) -> Just h
+
       case mFullFnTp of
         Just fullFnTp -> do
           let fnMax = maxArgs fullFnTp
@@ -245,21 +252,31 @@ appHeuristic = Selector ("Function Application", f)
                 let hint = "Function expected at most " ++ show n ++ " arguments, but you gave " ++ show (length args)
                 return $ Just (10, "Too many arguments", [edge], info {maybeHint = Just hint})
               | Just retTy <- mRetTy
-              , Just args <- maybeArgList
-              ,  n > length args
+              , Just actualArgs <- maybeArgList
+              --,  n >= length args
               -- , (AppFnType _ _ _ ) <- edgeContext
                ->
-                case (Ln.runFreshM $ matchArgs fnTy args retTy ) of
+                case ourMatch retTy actualArgs of
                   Just matchList -> do
                     let argStr t = "(" ++ Tm.prettyString t ++ ")"
-                    let hint = "Function expected " ++ show n ++ " arguments, but you gave "
-                          ++ show (length args) ++ ". Try (" ++ show fnStr ++ ") "
+                    let expectedArgsStr
+                          | length matchList > length args =
+                            "Function expected " ++ show n ++ " arguments, but you gave "
+                               ++ show (length args)
+                          | length matchList == length args =
+                            "Function arguments in the wrong order"
+                    let
+                      argHintsList = (Maybe.catMaybes $ map argTypeHints matchList)
+                      whereStr [] = ""
+                      whereStr l = "\n      where\n        "
+                        ++ List.intercalate "\n        " l
+
+                    let hint = expectedArgsStr ++ ". Try (" ++ show fnStr ++ ") "
                           ++ List.intercalate " " (map (argStr . fst) matchList)
-                          ++ "\n      where\n        "
-                          ++ List.intercalate "\n        " (Maybe.catMaybes $ map argTypeHints matchList)
-                    return $ Just (10, "Too few arguments", [edge], info {maybeHint = Just hint})
+                          ++ whereStr argHintsList
+                    return $ Just (100, "Too few or mismatched arguments", [edge], info {maybeHint = Just hint})
                   _ -> trace "MATCH ARGS NOTHING" $ return Nothing
-            _ -> trace ("BAD FNMAX " ++ show (fnMax, (retTpNom, mRetTy), maybeArgList, length args)) $  do
+            _ -> trace ("BAD FNMAX " ++ fnStr ++ "  " ++ show (fnMax, (retTpNom, mRetTy), maybeArgList, length args)) $  do
               return Nothing
         _ -> return Nothing
 

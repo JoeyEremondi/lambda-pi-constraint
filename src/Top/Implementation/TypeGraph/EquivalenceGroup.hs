@@ -16,7 +16,7 @@ module Top.Implementation.TypeGraph.EquivalenceGroup
    , emptyGroup, insertVertex, insertEdge, insertClique, combineGroups
    , vertices, constants, edges, equalPaths
    , removeEdge, removeClique, splitGroup
-   , typeOfGroup, consistent, checkGroup
+   , typeOfGroup, consistent, checkGroup, typesOfGroup
    ) where
 
 import Data.List
@@ -31,9 +31,11 @@ import Unbound.Generics.LocallyNameless (runFreshM)
 
 import Debug.Trace (trace)
 
-import Top.Types (firstOrderUnify)
+import Top.Types (firstOrderUnify, unifyToList)
 
 import Debug.Trace (trace)
+
+import Data.Foldable (foldrM)
 
 -----------------------------------------------------------------------
 -- * Representation of an equivalence group
@@ -220,6 +222,16 @@ typeOfGroup synonyms eqgroup
     allApplies    =       [ (l, r)  |  (_, (VApp l r, _))  <- vertices eqgroup  ]
     allOriginals  =       [ tp      |  (_, (_, Just tp))   <- vertices eqgroup  ]
 
+--Instead of failing, try to list the possible values for the group
+typesOfGroup :: Tm.Subs -> EquivalenceGroup info -> [Tm.VAL]
+typesOfGroup synonyms eqgroup =  (allTypes synonyms allOriginals)
+  where
+    allVariables  =       [ i       |  (VertexId i, _)     <- vertices eqgroup  ]
+    allConstants  =  nub  [ s       |  (_, (VCon s, _))    <- vertices eqgroup  ]
+    allApplies    =       [ (l, r)  |  (_, (VApp l r, _))  <- vertices eqgroup  ]
+    allOriginals  =       [ tp      |  (_, (_, Just tp))   <- vertices eqgroup  ]
+
+
 -- If I cannot select a best type at this point, an arbitary type is returned.
 -- This is because I cannot see "inside" the types
 -- Todo: improve
@@ -227,6 +239,10 @@ theBestType :: Tm.Subs -> [Tm.VAL] -> Tm.VAL
 theBestType synonyms tps =
    let f t1 t2 = fromMaybe t1 (firstOrderUnify t1 t2)
    in foldr1 f tps
+
+allTypes :: Tm.Subs -> [Tm.VAL] -> [Tm.VAL]
+allTypes synonyms (fstType:tps) =
+   foldrM unifyToList fstType tps
 
 -- Check for some invariants: identity if everything is okay, otherwise an internal error
 checkGroup :: EquivalenceGroup info -> EquivalenceGroup info

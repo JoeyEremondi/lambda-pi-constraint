@@ -34,6 +34,8 @@ import qualified Data.Map as Map
 import PatternUnify.Tm (Region (..))
 
 import qualified Top.Implementation.TypeGraph.Basics as TGBasic
+import qualified Top.Implementation.TypeGraph.Class as TGClass
+import qualified Top.Implementation.TypeGraph.Standard as Standard
 
 type ConstrContext = [(Common.Name, Tm.VAL)]
 
@@ -115,6 +117,7 @@ solveConstraintM :: SolverConfig -> ConstraintM (Tm.Nom, Tm.VAL) -> Either [(Reg
 solveConstraintM config cm =
   let
     getCL (cl, _, _, _, _, _,_) = cl
+    getFinalGraph (_, _, _, fg, _, _,_) = fg
     (((nom, normalForm), rawConstraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
     --regionDict = getRegionDict constraints
     ret = do
@@ -134,7 +137,7 @@ solveConstraintM config cm =
           cl = getCL ctx
           finalSub = UC.finalSub cl
         in
-          trace ("Final sub: " ++ List.intercalate "\n" (map show finalSub)) $ Left $ map (mkErrorPair finalSub ) solverErrs
+          trace ("Final sub: " ++ List.intercalate "\n" (map show finalSub)) $ Left $ map (mkErrorPair (getFinalGraph ctx) ) solverErrs
         --Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) (mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx) )
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
       Right (_, unsolved, _) -> --trace "solveConstraintM Right with unsolved" $
@@ -144,20 +147,21 @@ solveConstraintM config cm =
           sms -> map (unsolvedMsg (sourceMetas cstate) ) sms
 
 --mkErrorPair :: Run.SolverErr -> (Region, String)
-mkErrorPair finalSub (Run.StringErr (UC.ProbId ident, reg, msg)) = (reg, msg)
-mkErrorPair finalSub (Run.GraphErr edgeInfos) =
+mkErrorPair finalGraph (Run.StringErr (UC.ProbId ident, reg, msg)) = (reg, msg)
+mkErrorPair finalGraph (Run.GraphErr edgeInfos) =
   (UC.infoRegion $ UC.edgeEqnInfo $ snd $ head edgeInfos,
   "Cannot solve the following constraints:\n\n"
-  ++ concatMap (edgeMessage finalSub ) edgeInfos)
+  ++ concatMap (edgeMessage finalGraph ) edgeInfos)
 
-edgeMessage :: Tm.SubsList -> ([TGBasic.EdgeId], UC.ConstraintInfo) -> String
-edgeMessage finalSub (edgeId, edgeInfo) =
+edgeMessage :: Standard.StandardTypeGraph -> ([TGBasic.EdgeId], UC.ConstraintInfo) -> String
+edgeMessage finalGraph (edgeIds@[edgeId], edgeInfo) =
   "  " ++ (Common.prettySource $ UC.infoRegion $ UC.edgeEqnInfo edgeInfo)
   ++ " Mismatch in type of " ++ (UC.typeOfString $ UC.edgeEqnInfo edgeInfo) ++ "\n    " ++ constrStr ++ "\n"
   where
+    TGBasic.EdgeId v1 v2 _ = edgeId
+    [s,t] = Standard.typesInGroupOf v1 finalGraph
+
     (sinit,tinit) = UC.edgeEqn edgeInfo
-    s = (Tm.unsafeFlatten $ LN.substs finalSub sinit)
-    t = (Tm.unsafeFlatten $ LN.substs finalSub tinit)
     hintString = case (UC.maybeHint edgeInfo) of
       Nothing -> ""
       Just hint -> "\n    HINT: " ++ hint

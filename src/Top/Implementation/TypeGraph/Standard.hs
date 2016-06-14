@@ -624,6 +624,10 @@ setPathHeuristics f stg = stg {typegraphHeuristics = f}
 getPathHeuristics :: StandardTypeGraph -> Path (EdgeId, info) -> [Heuristic info]
 getPathHeuristics = typegraphHeuristics -}
 
+typesInGroupOf :: VertexId -> StandardTypeGraph -> [Tm.VAL]
+typesInGroupOf v stg = typesOfGroup M.empty $ getGroupOf v stg
+
+
 addEqn
   :: (Ln.Fresh m)
   => Info -> (Tm.VAL, Tm.VAL)

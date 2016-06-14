@@ -21,6 +21,9 @@ import qualified Unbound.Generics.LocallyNameless as Ln
 data Constant = Con Tm.Can | ConElim Tm.CanElim | CApp | BoundVar Tm.Nom | NeutralTerm Tm.OrderedNeutral
   deriving (Eq, Ord, Show)
 
+constantToTerm :: Constant -> Tm.VAL
+constantToTerm c = error "TODO CTT"
+
 newtype VertexId = VertexId Tm.Nom deriving (Eq, Ord)
 type VertexInfo  = (VertexKind, Maybe Tm.VAL)
 data VertexKind  =

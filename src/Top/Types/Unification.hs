@@ -136,29 +136,34 @@ unifiableList _ _ = True
 -- (i.e., the least number of expansions)
 firstOrderUnify ::  Tm.VAL -> Tm.VAL -> Maybe Tm.VAL
 firstOrderUnify t1 t2 =
+   case unifyToList t1 t2 of
+     [x] -> Just x
+     _ -> Nothing
+
+unifyToList :: Tm.VAL -> Tm.VAL -> [Tm.VAL]
+unifyToList t1 t2 =
    case (t1,t2) of
       --Variables unify with anything
-      ((Tm.N (Tm.Meta i) []), x) -> Just x
-      ((x, Tm.N (Tm.Meta i) [])) -> Just x
+      ((Tm.N (Tm.Meta i) []), x) -> [x]
+      ((x, Tm.N (Tm.Meta i) [])) -> [x]
       --TODO don't assume functions ignore arguments?
-      (e1@(Tm.L _), e2@(Tm.L _)) -> Ln.runFreshM $ do
-        x <- Ln.fresh $ Ln.s2n "foUnif__"
-        body1 <- e1 Tm.$$ Tm.var x
-        body2 <- e2 Tm.$$ Tm.var x
-        case (firstOrderUnify body1 body2) of
-          Nothing -> return Nothing
-          Just bodyRet ->
-            return $ Just $ Tm.L $ Ln.bind x bodyRet
+      (e1@(Tm.L _), e2@(Tm.L _)) -> do
+        let
+          (x, body1, body2) = Ln.runFreshM $ do
+            xm <- Ln.fresh $ Ln.s2n "foUnif__"
+            body1m <- e1 Tm.$$ Tm.var x
+            body2m <- e2 Tm.$$ Tm.var x
+            return (xm, body1m, body2m)
+        bodyRet <- unifyToList body1 body2
+        return $  Tm.L $ Ln.bind x bodyRet
 
 
       ((Tm.C s ss),(Tm.C t tt))
          | s == t  ->
-              do let f = uncurry firstOrderUnify
+              do let f = uncurry unifyToList
                  xs <- mapM f (zip ss tt)
-                 Just $ Tm.C s xs
-         | otherwise ->
-              Nothing
+                 return $ Tm.C s xs
 
       _ -> case (t1 == t2) of
-        True -> Just t1
-        False -> trace ("FO UNIFY CATCH ALL FALSE " ++ Tm.prettyString t1 ++ "   " ++ Tm.prettyString t2) $ Nothing
+        True -> return t1
+        False -> [t1, t2]

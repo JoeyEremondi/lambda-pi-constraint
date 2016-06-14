@@ -28,7 +28,7 @@ import Control.Monad (forM)
 import Data.Foldable (foldlM)
 
 
---import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 --import qualified Solver
 
@@ -136,14 +136,14 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
               Just ty        ->  return ty
               Nothing        ->  unknownIdent reg g (render (iPrint_ 0 0 (builtin $ Free_ x)))
     iType_' ii g e@(_ :$: _)
-      =     do
+      =     trace ("CHECKING APP " ++ showIt lit) $ do
                 let
                   unravelApp (L _ (f :$: g)) accum = unravelApp f (g : accum)
                   unravelApp f accum = (f, accum)
 
                   (topFn, args) = unravelApp lit []
 
-                  mkVars argExp = do
+                  mkVars argExp = trace ("UNRAVELED APP INTO " ++ showIt topFn ++ "  and  " ++ show (map showCt args) ) $ do
                       piArg <- freshType (region argExp) g
                       return (piArg)
 
@@ -153,7 +153,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                 let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
 
 
-                topFnTypeVal <- iType_ ii g topFn
+                topFnTypeVal <- trace ("APP CALLING ITYPE " ++ showIt topFn) $ iType_ ii g topFn
                 unifySets (AppFnType reg (showIt topFn) topFnTypeVal) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
                 retTypeVar@(Tm.N (Tm.Meta retNom) _) <- freshType (region lit) g
                 let
@@ -164,7 +164,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                     piBodyFn <- fresh (region argExp) g (piArg Tm.--> Tm.SET)
                     unifySets (progContextFor argNum) (showIt lit)  reg (fnType) (Tm.PI piArg piBodyFn) g
                     --Ensure that the argument has the proper type
-                    cType_ ii g argExp piArg
+                    trace ("APP CALLING CTYPE " ++ showCt argExp) $ cType_ ii g argExp piArg
                     --Get a type for the evaluation of the argument
                     argVal <- evaluate ii argExp g
                     --Our resulting type is the application of our arg type into the
