@@ -140,6 +140,9 @@ firstOrderUnify t1 t2 =
      [x] -> Just x
      _ -> Nothing
 
+isMetaNeutral (Tm.N (Tm.Meta _ ) (_:_)) = True
+isMetaNeutral _ = False
+
 unifyToList :: Tm.VAL -> Tm.VAL -> [Tm.VAL]
 unifyToList t1 t2 =
    case (t1,t2) of
@@ -166,4 +169,4 @@ unifyToList t1 t2 =
 
       _ -> case (t1 == t2) of
         True -> return t1
-        False -> [t1, t2]
+        False -> filter (not . isMetaNeutral) [t1, t2]

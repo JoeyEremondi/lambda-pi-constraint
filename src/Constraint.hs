@@ -159,13 +159,13 @@ edgeMessage finalGraph (edgeIds@[edgeId], edgeInfo) =
   ++ " Mismatch in type of " ++ (UC.typeOfString $ UC.edgeEqnInfo edgeInfo) ++ "\n    " ++ constrStr ++ "\n"
   where
     TGBasic.EdgeId v1 v2 _ = edgeId
-    [s,t] = Standard.typesInGroupOf v1 finalGraph
+    allTypes = List.nub $ Standard.typesInGroupOf v1 finalGraph
 
-    (sinit,tinit) = UC.edgeEqn edgeInfo
+    --(sinit,tinit) = UC.edgeEqn edgeInfo
     hintString = case (UC.maybeHint edgeInfo) of
       Nothing -> ""
       Just hint -> "\n    HINT: " ++ hint
-    constrStr = Tm.prettyString s ++ " =/= " ++ Tm.prettyString t
+    constrStr = (List.intercalate " =/= " $ map Tm.prettyString allTypes)
       ++ hintString
       ++ "\n        " ++ show (UC.edgeType edgeInfo)
       ++ show (UC.edgeEqnInfo edgeInfo)
