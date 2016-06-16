@@ -594,7 +594,7 @@ recordProblem info (ProbId pid) prob = recordProblem' prob 0
 
 recordChoice :: Type -> Nom -> VAL -> VAL -> EqnInfo -> Contextual ()
 recordChoice  _T x vsingle freshVar info = trace ("RECORDING choice " ++ show x ++ " to " ++ show freshVar) $ do
-  constrNom <- freshNom
+  constrNom <- fresh $ s2n "chInter"
   let constrMeta = meta constrNom
   --Record our choice in our graph
   recordEqn (ChoiceEdge LeftChoice x (vsingle, freshVar)) (EQN _T (meta x) _T constrMeta info)
