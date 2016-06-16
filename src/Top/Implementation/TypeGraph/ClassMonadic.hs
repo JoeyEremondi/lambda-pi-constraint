@@ -146,6 +146,9 @@ theUnifyTerms info t1 t2 =
 
 makeFixpointSubst = error "TODO fixpointSubst"
 
+getDot :: HasTypeGraph m info =>  m String
+getDot = useTypeGraph $ TG.toDot
+
 -- makeFixpointSubst :: HasTypeGraph m info => m FixpointSubstitution
 -- makeFixpointSubst =
 --    do xs <- makeSubstitution

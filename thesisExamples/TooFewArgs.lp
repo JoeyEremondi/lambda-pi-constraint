@@ -1,3 +1,3 @@
-let myFun = (\ a x y -> x) :: forall (a :: *) . a -> a -> a
+let myFun = (\ x y -> x) :: Nat -> Nat -> Nat
 
-let myApp = (myFun _ 0) :: Nat
+let myApp = (myFun 0) :: Nat

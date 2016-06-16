@@ -147,18 +147,19 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                       piArg <- freshType (region argExp) g
                       return (piArg)
 
-                topFnTypeVar@(Tm.N (Tm.Meta fnNom) _) <- freshType (region topFn) g
+                --TODO Get rid of unused vars
+                --topFnTypeVar@(Tm.N (Tm.Meta fnNom) _) <- freshType (region topFn) g
                 vars <- mapM  mkVars args
                 argVals <- mapM (\x -> evaluate ii x g) args
-                let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
+                --let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
 
 
                 topFnTypeVal <- trace ("APP CALLING ITYPE " ++ showIt topFn) $ iType_ ii g topFn
-                unifySets (AppFnType reg (showIt topFn) fnNom) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
+                --unifySets (AppFnType reg (showIt topFn) topFnTypeVal) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
                 retTypeVar@(Tm.N (Tm.Meta retNom) _) <- freshType (region lit) g
                 let
                   freeVars = List.nub $ concatMap (Tm.fvs . snd) $ reverse $ valueEnv g
-                  progContextFor argNum = Application reg argNum (zip argVals varNoms) retNom freeVars
+                  progContextFor argNum = Application reg argNum (showIt topFn) topFnTypeVal (zip argVals vars) retTypeVar freeVars
 
                   doUnif (fnType, argNum) (argExp, piArg) = do
                     piBodyFn <- fresh (region argExp) g (piArg Tm.--> Tm.SET)
@@ -174,8 +175,8 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
                     return (retType, argNum + 1)
 
                 --Make a nice variable referring to our return type, easy to find in graph
-                (retType, _) <- foldlM doUnif (topFnTypeVar, 1) $ zip args vars
-                unifySets (AppRetType reg retNom) ("result of application " ++ showIt lit) reg retType retTypeVar g
+                (retType, _) <- foldlM doUnif (topFnTypeVal, 1) $ zip args vars
+                unifySets (AppRetType reg retTypeVar) ("result of application " ++ showIt lit) reg retType retTypeVar g
                 return retTypeVar
 
 

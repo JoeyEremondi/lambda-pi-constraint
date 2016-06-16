@@ -202,33 +202,34 @@ appHeuristic = Selector ("Function Application", f)
             argVal <- Tm.var <$> Tm.freshNom
             _TVal <- _T Tm.$$ argVal
             helper _TVal argsList retTy (i+1) $ (argVal, Just _S) : accum
-        helper _ _ _ _ _ = return Nothing
+        helper fnTy argTys retTy i accum = trace ("MATCH ARGS FAIL " ++ show (Tm.prettyString fnTy, map (fmap Tm.prettyString) argTys, Tm.prettyString retTy, i, accum)) $  return Nothing
 
     f pair@(edge@(EdgeId vc _ _), info) | Just reg <- (applicationEdgeRegion $ programContext $ edgeEqnInfo info) = trace "APP HEURISTIC" $  do
       --let (fnTyEdge:_) = [x | x <- edges]
 
       edges <- allEdges
       let appEdges = [edge | edge <- edges, Just subReg <- [applicationEdgeRegion $ programContext $ edgeEqnInfo (snd edge)], subReg == reg]
-      let (Application reg argNum args retTpNom frees) : _ = trace ("APP EDGES " ++ (List.intercalate "\n  " (map show appEdges) ++ "========================")) $
-            [pcon | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
-      let argAppEdges  = [edge | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
-      let (fnTy, fnStr, fnAppEdge) : _ = [(fTy, fnStr, pr) | pr <- appEdges, AppFnType subReg fnStr fTy <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
-      let (fnRetEdge ) : _ = [(pr) | pr <- appEdges, AppRetType subReg _ <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
+      let (Application reg argNum fnStr rawFnTy rawArgs rawRetType frees) : _ = trace ("APP EDGES " ++ (List.intercalate "\n  " (map show appEdges) ++ "========================")) $
+            [pcon | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _ _ _) <- [pcon]]
+      --let argAppEdges  = [edge | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
+      --let (fnTy, fnStr, fnAppEdge) : _ = _[(fTy, fnStr, pr) | pr <- appEdges, AppFnType subReg fnStr fTy <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
+      --let (fnRetEdge ) : _ = [(pr) | pr <- appEdges, AppRetType subReg _ <- [programContext $ edgeEqnInfo $ snd pr], subReg == reg]
 
       let edgeContext = programContext $ edgeEqnInfo info
 
 
 
       (mFullFnTp, maybeArgList, mRetTy) <- doWithoutEdges appEdges $ do
-        fullFn <- trace ("FULL FN") $ substituteTypeSafe $ Tm.meta fnTy
-        argMaybeList <- trace ("MAYBE ARG LIST from " ++ show args) $ forM args $ \(aval, aty) -> do
+        limitedDot <- getDot
+        fullFn <- trace ("\n\nLIMITED DOT\n\n\n" ++ limitedDot ++ "\n\n\n") $ substituteTypeSafe $ rawFnTy
+        argMaybeList <- trace ("MAYBE ARG LIST from " ++ show rawArgs) $ forM rawArgs $ \(aval, aty) -> do
           retVal <- trace ("RETVAL SUB") $ substituteTypeSafe $ aval
-          retTy <- trace ("RET TY SUB") $ substituteTypeSafe $ Tm.meta aty
+          retTy <- trace ("RET TY SUB") $ substituteTypeSafe $ aty
           return $ case (retVal, retTy) of
             (Just x, Just y) ->
               Just (x,y)
             _ -> Nothing
-        mRetTy <- trace ("META RETTY SUB") $ substituteTypeSafe $ Tm.meta retTpNom
+        mRetTy <- trace ("META RETTY SUB") $ substituteTypeSafe $  rawRetType
 
         return (fullFn, Monad.sequence argMaybeList, mRetTy)
 
@@ -243,14 +244,20 @@ appHeuristic = Selector ("Function Application", f)
           [] -> Nothing
           (h:_) -> Just h
 
+      let numArgsProvided = length rawArgs
+
       case mFullFnTp of
         Just fullFnTp -> do
-          let fnMax = maxArgs fullFnTp
-          case (fnMax) of
-            (Just n)
-              | n < length args -> do
-                let hint = "Function expected at most " ++ show n ++ " arguments, but you gave " ++ show (length args)
-                return $ Just (10, "Too many arguments", [edge], info {maybeHint = Just hint})
+          let
+            fnMax = case maxArgs fullFnTp of
+              Just n -> n
+              Nothing -> numArgsProvided
+          case () of
+            ()
+              | fnMax < numArgsProvided -> do
+                let hint = "Function expected at most " ++ show fnMax ++ " arguments, but you gave " ++ show (numArgsProvided)
+                trace ("HINT TOO MANY") $ return $ Just (10, "Too many arguments", [edge], info {maybeHint = Just hint})
+
               | Just retTy <- mRetTy
               , Just actualArgs <- maybeArgList
               --,  n >= length args
@@ -260,10 +267,10 @@ appHeuristic = Selector ("Function Application", f)
                   Just matchList -> do
                     let argStr t = "(" ++ Tm.prettyString t ++ ")"
                     let expectedArgsStr
-                          | length matchList > length args =
-                            "Function expected " ++ show n ++ " arguments, but you gave "
-                               ++ show (length args)
-                          | length matchList == length args =
+                          | length matchList > numArgsProvided =
+                            "Function expected " ++ show fnMax ++ " arguments, but you gave "
+                               ++ show (numArgsProvided)
+                          | length matchList == numArgsProvided =
                             "Function arguments in the wrong order"
                     let
                       argHintsList = (Maybe.catMaybes $ map argTypeHints matchList)
@@ -274,9 +281,9 @@ appHeuristic = Selector ("Function Application", f)
                     let hint = expectedArgsStr ++ ". Try (" ++ show fnStr ++ ") "
                           ++ List.intercalate " " (map (argStr . fst) matchList)
                           ++ whereStr argHintsList
-                    return $ Just (100, "Too few or mismatched arguments", [edge], info {maybeHint = Just hint})
-                  _ -> trace "MATCH ARGS NOTHING" $ return Nothing
-            _ -> trace ("BAD FNMAX " ++ fnStr ++ "  " ++ show (fnMax, (retTpNom, mRetTy), maybeArgList, length args)) $  do
+                    trace ("HINT TOO FEW OR MISMATCH") $ return $ Just (100, "Too few or mismatched arguments", [edge], info {maybeHint = Just hint})
+                  _ -> trace ("MATCHLIST NOTHING " ++ fnStr ++ "  " ++ show (fnMax, (rawRetType, mRetTy), maybeArgList, numArgsProvided)) $ return Nothing
+            _ -> trace ("BAD FNMAX " ++ fnStr ++ "  " ++ show (fnMax, (rawRetType, mRetTy), maybeArgList, numArgsProvided)) $  do
               return Nothing
         _ -> return Nothing
 
