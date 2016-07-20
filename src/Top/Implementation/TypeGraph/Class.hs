@@ -64,7 +64,8 @@ class TypeGraph graph info | graph -> info where
    toDot :: graph -> String
    errorDot :: [EdgeId] -> graph -> String
 
-   recordVar :: Tm.Nom -> Tm.VAL -> graph -> graph
+   recordVar :: Tm.Nom -> Tm.Param -> graph -> graph
+   getVarTypes :: graph -> [(Tm.Nom, Tm.Param)]
 
    -------------------------------------------
    -- default definitions

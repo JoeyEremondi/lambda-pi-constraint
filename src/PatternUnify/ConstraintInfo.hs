@@ -151,6 +151,8 @@ data CreationInfo = Initial | CreatedBy ProbId
 data IsCF = Factual | CounterFactual
   deriving (Eq, Ord, Show, Generic)
 
+
+
 -- choiceInfo reg choice n x y =
 --   ConstraintInfo
 --     (ChoiceEdge choice n)

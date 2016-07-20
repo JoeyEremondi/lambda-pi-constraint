@@ -360,9 +360,14 @@ equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ====
       Nothing -> True
       _ -> False
 
-unsafeEqual :: Type -> VAL -> VAL -> Bool
-unsafeEqual _T s t =
-  case fst (runContextual initContext $ equal _T s t) of
+unsafeEqual :: [(Nom, Param)] -> Type -> VAL -> VAL -> Bool
+unsafeEqual vars _T s t =
+  let
+    result =
+      runContextual initContext $
+      localParams (vars ++ ) $
+      equal _T s t
+  in case fst result of
     Left _ -> False
     Right b -> b
 

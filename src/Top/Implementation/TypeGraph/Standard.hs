@@ -46,7 +46,7 @@ data StandardTypeGraph = STG
    , choiceEdges             :: [(Tm.CUID, VertexId)]
    , termNodes               :: M.Map Tm.Nom [(VertexId, Tm.VAL)]
    , collectedUpdates        :: M.Map Tm.Nom (Tm.VAL, (Tm.VAL, Tm.VAL) -> Info)
-   , varTypes                :: [(Tm.Nom, Tm.VAL)]
+   , varTypes                :: [(Tm.Nom, Tm.Param)]
    }
 
 instance Empty (StandardTypeGraph ) where
@@ -123,6 +123,8 @@ addTermVert vid t oldDict =
 instance TypeGraph (StandardTypeGraph) Info where
 
    recordVar n _T g = g {varTypes = (n,_T) : varTypes g}
+
+   getVarTypes = varTypes
 
    getEdgeCreator = initialCreator
 

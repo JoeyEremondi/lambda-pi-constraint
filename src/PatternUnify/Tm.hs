@@ -1066,3 +1066,8 @@ finmsVType m   --piv_ (Nat) "n" $ \n ->
 
 finRetVType m =
   piv_ Nat "finRet_n" $ \n -> piv_ (Fin $ n) "finRet_f" $ \f -> m $$$ [n, f]
+
+
+
+data Param = P Type | Twins Type Type
+   deriving (Show, Generic)

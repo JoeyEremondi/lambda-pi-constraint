@@ -152,10 +152,11 @@ ctorPermutation = Selector ("Constructor isomorphism", f)
       let rawT = typeOfValues info
       mT <- substituteTypeSafe rawT
       (mt1, mt2) <- getSubstitutedTypes info
+      vars <- useTypeGraph Class.getVarTypes
       case (mt1, mt2, mT) of
         (Just t1@(Tm.C can args), Just t2@(Tm.C can2 args2), Just _T) | can == can2 -> do
           maybeMatches <- forM (List.permutations args2) $ \permut -> do
-             if Check.unsafeEqual _T (Tm.C can args) (Tm.C can permut) then
+             if Check.unsafeEqual vars _T (Tm.C can args) (Tm.C can permut) then
                  return $ Just permut
                else
                  return Nothing

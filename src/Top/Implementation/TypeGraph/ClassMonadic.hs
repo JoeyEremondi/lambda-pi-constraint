@@ -149,8 +149,8 @@ makeFixpointSubst = error "TODO fixpointSubst"
 getDot :: HasTypeGraph m info =>  m String
 getDot = useTypeGraph $ TG.toDot
 
-recordVar :: HasTypeGraph m info => Tm.Nom -> Tm.VAL -> m ()
-recordVar n v = changeTypeGraph $ TG.recordVar n v
+recordVar :: HasTypeGraph m info => Tm.Nom -> Tm.Param ->  m ()
+recordVar n p = changeTypeGraph $ TG.recordVar n p
 
 -- makeFixpointSubst :: HasTypeGraph m info => m FixpointSubstitution
 -- makeFixpointSubst =
