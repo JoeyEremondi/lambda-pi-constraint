@@ -18,7 +18,7 @@ import Prelude hiding (elem, notElem)
 import qualified Data.Set as Set
 import PatternUnify.Check (check, checkProb, equal, isReflexive, typecheck, makeTypeSafe)
 import PatternUnify.Context (Contextual, Dec (..), Entry (..), Equation (..),
-                             Param (..), ProbId (..), Problem (..),
+                             ProbId (..), Problem (..),
                              ProblemState (..), addEqn, allProb, allTwinsProb,
                              localParams, lookupMeta, lookupVar, modifyL, popL,
                              popR, pushL, pushR, setProblem,

@@ -495,7 +495,7 @@ wrapProblemForalls ((i, tp) : trest) env prob =
     Just (Tm.N ourVar _) = valueLookup (Common.Local i) env
     ourNom = Tm.headVar ourVar
   in
-    UC.All (UC.P tp) $ LN.bind ourNom subVal
+    UC.All (Tm.P tp) $ LN.bind ourNom subVal
 
 
 freshType reg env = fresh reg env Tm.SET
