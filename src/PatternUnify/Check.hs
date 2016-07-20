@@ -36,7 +36,7 @@ import qualified Data.List as List
 
 --import qualified Data.List as List
 
---import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 
 data Tel where
@@ -152,17 +152,19 @@ equalize _T s t = do
          _U1   <- infer u
          _V1   <- infer v
          _U <- equalize' SET _U1 _V1
-         (as', _T')  <-
-            equalizeSpine _U (N umatched []) as as2
-         eq   <- --trace ("equalize'd spines " ++ show (map pp as') ++ " : " ++ pp _T') $
-           (_T <-> _T') --TODO make fail
-         case eq of
-           True -> return $ N umatched as'
-           False ->
-             return $ VBot $
-               "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
-               ++ "\n After inferring head type " ++ pp _U
-               ++ "\nin value " ++ pp (N umatched as')
+         spineResult <- equalizeSpine _U (N umatched []) as as2
+         case spineResult of
+           Right (as', _T')  -> do
+             eq   <- --trace ("equalize'd spines " ++ show (map pp as') ++ " : " ++ pp _T') $
+               (_T <-> _T') --TODO make fail
+             case eq of
+               True -> return $ N umatched as'
+               False ->
+                 return $ VBot $
+                   "Didn't match expected type " ++ pp _T ++ " with inferred type " ++ pp _T'
+                   ++ "\n After inferring head type " ++ pp _U
+                   ++ "\nin value " ++ pp (N umatched as')
+           Left s -> return $ VBot s
     equalize' (C c as)   (C v bs) (C v2 bs2) | v == v2  =  do
                                    tel <- canTy (c, as) v --TODO source of bias?
                                    C v <$> equalizeTel tel bs bs2
@@ -271,18 +273,18 @@ equalizeTel tel vals1 vals2 = equalizeTel' tel vals1 vals2 []
     -- checkTel (Ask _ _)    []      = throwError "Underapplied canonical constructor"
 
 
-equalizeSpine :: Type -> VAL -> [Elim] -> [Elim] -> Contextual ([Elim], Type)
-equalizeSpine _T u spine1 spine2 = equalizeSpine' _T u spine1 spine2 []
+equalizeSpine :: Type -> VAL -> [Elim] -> [Elim] -> Contextual (Either String ([Elim], Type))
+equalizeSpine _T u spine1 spine2 = trace ("EQ SPINE: " ++ prettyString _T ++ " ||| " ++ prettyString u ++ " ||| " ++ (show $ map prettyString spine1) ++ " ||| " ++ (show $ map prettyString spine2)) $  equalizeSpine' _T u spine1 spine2 []
   where
-    equalizeSpine' :: Type -> VAL -> [Elim] -> [Elim] -> [Elim] -> Contextual ([Elim], Type)
+    equalizeSpine' :: Type -> VAL -> [Elim] -> [Elim] -> [Elim] -> Contextual (Either String ([Elim], Type))
 
-    equalizeSpine' _T           u  [] [] accum = return (accum, _T)
+    equalizeSpine' _T           u  [] [] accum = return $ Right  (accum, _T)
 
     equalizeSpine' (PI _S _T)   u  (A s:ts)  (A s2:ts2) accum  = do
       sf <- equalize _S s s2
       uf <- equalize (PI _S _T) u u
-      bind5 equalizeSpine' (_T $$ sf) (uf $$ sf) (return ts) (return ts2)
-        (return $ accum ++ [A sf])
+      (bind5 equalizeSpine' (_T $$ sf) (uf $$ sf) (return ts) (return ts2)
+        (return $ accum ++ [A sf]))
 
     equalizeSpine' (SIG _S _T)  u  (Hd:ts) (Hd:ts2) accum   =
       bind5 equalizeSpine' (return _S) (u %% Hd) (return ts) (return ts2) (return $ accum ++ [Hd])
@@ -344,7 +346,7 @@ equalizeSpine _T u spine1 spine2 = equalizeSpine' _T u spine1 spine2 []
         (VBot $ "Bad eliminator " ++ pp s ++ " for value " ++ pp u ++ " of type " ++ pp ty)
         (VBot $ "Bad eliminator " ++ pp s2 ++ " for value " ++ pp u ++ " of type " ++ pp ty)
         ts ts2 (accum ++ [EBot "TODO Elim 1"])
-    equalizeSpine' _ _ _ _ accum = error "TODO better equalizeSpine cases"
+    equalizeSpine' w x y z accum = return $ Left "Equalize Spine error" --error $ "TODO better equalizeSpine cases " ++ show (w,x,y,z)
       --throwError $ "equalizeSpine': type " ++ pp ty
                                                -- ++ " does not permit " ++ pp s
 

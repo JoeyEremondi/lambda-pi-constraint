@@ -46,6 +46,7 @@ data StandardTypeGraph = STG
    , choiceEdges             :: [(Tm.CUID, VertexId)]
    , termNodes               :: M.Map Tm.Nom [(VertexId, Tm.VAL)]
    , collectedUpdates        :: M.Map Tm.Nom (Tm.VAL, (Tm.VAL, Tm.VAL) -> Info)
+   , varTypes                :: [(Tm.Nom, Tm.VAL)]
    }
 
 instance Empty (StandardTypeGraph ) where
@@ -58,6 +59,7 @@ instance Empty (StandardTypeGraph ) where
       , choiceEdges = []
       , termNodes = M.empty
       , collectedUpdates = M.empty
+      , varTypes = []
       }
 
 instance Show (StandardTypeGraph) where
@@ -119,6 +121,8 @@ addTermVert vid t oldDict =
 
 
 instance TypeGraph (StandardTypeGraph) Info where
+
+   recordVar n _T g = g {varTypes = (n,_T) : varTypes g}
 
    getEdgeCreator = initialCreator
 
@@ -628,6 +632,8 @@ getPathHeuristics = typegraphHeuristics -}
 
 typesInGroupOf :: VertexId -> StandardTypeGraph -> [Tm.VAL]
 typesInGroupOf v stg = typesOfGroup M.empty $ getGroupOf v stg
+
+
 
 
 addEqn

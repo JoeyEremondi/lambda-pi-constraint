@@ -583,7 +583,12 @@ recordProblem :: ConstraintType -> ProbId -> Problem -> Contextual ()
 recordProblem info (ProbId pid) prob = recordProblem' prob 0
   where
     recordProblem' (Unify q) _ = recordEqn info q
-    recordProblem' (All tp bnd) i = do
+    recordProblem' (All param bnd) i = do
+      let
+        tp =
+          case param of
+            (P tp) -> tp
+            (Twins tp _) -> tp --TODO what to do in case of twins?
       (nm, prob) <- unbind bnd
       --Create a unique (but not fresh) name for our quanitified variable
       --in the scope of this problem
@@ -591,6 +596,7 @@ recordProblem info (ProbId pid) prob = recordProblem' prob 0
           newVar = makeName newVarBase i
           newProb = substs [(nm, var newVar)] prob
       recordProblem' newProb (i+1)
+      CM.recordVar newVar tp
 
 recordChoice :: Type -> Nom -> VAL -> VAL -> EqnInfo -> Contextual ()
 recordChoice  _T x vsingle freshVar info = trace ("RECORDING choice " ++ show x ++ " to " ++ show freshVar) $ do

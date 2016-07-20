@@ -87,7 +87,7 @@ iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
-iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
+iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
   do
     result <- iType_' iiGlobal g it
     return $ --trace ("===>  RET ITYPE " ++ show (iPrint_ 0 0 lit) ++ " :: " ++ Tm.prettyString result) $
@@ -132,8 +132,8 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
               return conStar
 
     iType_' ii g (Free_ x)
-      =     case typeLookup x g of
-              Just ty        ->  return ty
+      =     trace ("Looking up free " ++ show x) $ case typeLookup x g of
+              Just ty        ->  trace ("Inferred free " ++ Tm.prettyString ty) $ return ty
               Nothing        ->  unknownIdent reg g (render (iPrint_ 0 0 (builtin $ Free_ x)))
     iType_' ii g e@(_ :$: _)
       =     trace ("CHECKING APP " ++ showIt lit) $ do
@@ -301,7 +301,7 @@ iType_ iiGlobal g lit@(L reg it) = --trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) 
 
 
 cType_ :: Int -> WholeEnv -> CTerm_ -> ConType -> ConstraintM ()
-cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0 0 lct) ++ " :: " ++ Tm.prettyString globalTy) $
+cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0 lct) ++ " :: " ++ Tm.prettyString globalTy) $
   cType_' iiGlobal g ct globalTy
   where
     cType_' ii g (Inf_ e) tyAnnot
@@ -400,7 +400,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           --Make sure our tail has the right length
           cType_ ii g xs (mkVec aVal nVal)
 
-    cType_' ii g (Refl_ a z) ty =
+    cType_' ii g (Refl_ a z) ty = trace ("REFL CHECK " ++ show z ++ "   ty   " ++ show ty) $
       do  aVal <- evaluate ii a g
           --bVal <- freshType (region a) g
           xVal <- fresh (region z) g aVal
@@ -421,5 +421,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = --trace ("CTYPE " ++ show (cPrint_ 0
           zVal <- evaluate ii z g
 
           --Show constraint that the type parameters must match that type
-          unify Ctor (showCt lct) reg zVal xVal aVal g
-          unify Ctor (showCt lct) reg zVal yVal aVal g
+          trace ("REFL1 check unifying " ++ Tm.prettyString zVal ++ "  |||  " ++ Tm.prettyString xVal) $
+            unify Ctor (showCt lct) reg zVal xVal aVal g
+          trace ("REFL2 check unifying " ++ Tm.prettyString zVal ++ "  |||  " ++ Tm.prettyString yVal) $
+            unify Ctor (showCt lct) reg zVal yVal aVal g

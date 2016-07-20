@@ -166,9 +166,9 @@ edgeMessage finalGraph (edgeIds@[edgeId], edgeInfo) =
       Nothing -> ""
       Just hint -> "\n    HINT: " ++ hint
     constrStr = (List.intercalate " =/= " $ map Tm.prettyString allTypes)
-      ++ hintString
-      ++ "\n        " ++ show (UC.edgeType edgeInfo)
-      ++ show (UC.edgeEqnInfo edgeInfo)
+      ++ hintString ++ "\n"
+      -- ++ "\n        " ++ show (UC.edgeType edgeInfo)
+       ++ show ( edgeId)
 
     -- constrStr = case (UC.edgeType edgeInfo) of
     --   (UC.InitConstr _) -> Tm.prettyString s ++ " === " ++ Tm.prettyString t ++ "(initial)" -- Tm.prettyString prob
