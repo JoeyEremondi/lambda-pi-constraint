@@ -1071,3 +1071,10 @@ finRetVType m =
 
 data Param = P Type | Twins Type Type
    deriving (Show, Generic)
+
+modifyParam :: Monad m => (Type -> m (Maybe Type)) -> Param -> m (Maybe Param)
+modifyParam f (P t)  = fmap (fmap P) (f t)
+modifyParam f (Twins p1 p2) = do
+  r1 <- (f p1)
+  r2 <- (f p2)
+  return $ Twins <$> r1 <*> r2 

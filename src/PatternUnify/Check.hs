@@ -361,7 +361,7 @@ equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ====
       _ -> False
 
 unsafeEqual :: [(Nom, Param)] -> Type -> VAL -> VAL -> Bool
-unsafeEqual vars _T s t =
+unsafeEqual vars _T s t = trace ("Unsafe Equal comparing " ++ pp s ++ "   to   " ++ pp t ++ "   of type  " ++ pp _T) $
   let
     result =
       runContextual initContext $

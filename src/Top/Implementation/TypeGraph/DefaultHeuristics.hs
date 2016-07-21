@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS -Wall #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
@@ -152,9 +154,15 @@ ctorPermutation = Selector ("Constructor isomorphism", f)
       let rawT = typeOfValues info
       mT <- substituteTypeSafe rawT
       (mt1, mt2) <- getSubstitutedTypes info
-      vars <- useTypeGraph Class.getVarTypes
-      case (mt1, mt2, mT) of
-        (Just t1@(Tm.C can args), Just t2@(Tm.C can2 args2), Just _T) | can == can2 -> do
+      rawVars <- useTypeGraph Class.getVarTypes
+      let
+        fixVar :: (HasTypeGraph m Info) => Tm.Param -> m (Maybe Tm.Param)
+        fixVar = Tm.modifyParam (substituteTypeSafe)
+      mVarList <- forM rawVars $ \(n,p) -> fmap (fmap (n,)) $ fixVar p
+      let mVars = forM mVarList id 
+      --fixedVars <- forM vars $ \(n,p) -> (\x -> (n,x)) <$> (Tm.modifyParam (substituteTypeSafe []) p)
+      case (mt1, mt2, mT, mVars) of
+        (Just t1@(Tm.C can args), Just t2@(Tm.C can2 args2), Just _T, Just vars) | can == can2 -> do
           maybeMatches <- forM (List.permutations args2) $ \permut -> do
              if Check.unsafeEqual vars _T (Tm.C can args) (Tm.C can permut) then
                  return $ Just permut
