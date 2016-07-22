@@ -159,7 +159,7 @@ ctorPermutation = Selector ("Constructor isomorphism", f)
         fixVar :: (HasTypeGraph m Info) => Tm.Param -> m (Maybe Tm.Param)
         fixVar = Tm.modifyParam (substituteTypeSafe)
       mVarList <- forM rawVars $ \(n,p) -> fmap (fmap (n,)) $ fixVar p
-      let mVars = forM mVarList id 
+      let mVars = forM mVarList id
       --fixedVars <- forM vars $ \(n,p) -> (\x -> (n,x)) <$> (Tm.modifyParam (substituteTypeSafe []) p)
       case (mt1, mt2, mT, mVars) of
         (Just t1@(Tm.C can args), Just t2@(Tm.C can2 args2), Just _T, Just vars) | can == can2 -> do
@@ -194,7 +194,7 @@ appHeuristic = Selector ("Function Application", f)
 
     --Try to add arguments to fix any mismatches in our function
     matchArgs :: (Ln.Fresh m) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(VAL, Maybe Type)])
-    matchArgs fnTy argTys retTy = helper fnTy argTys retTy 1 []
+    matchArgs fnTy argTys retTy = trace ("MATCH ARGS fn " ++ Tm.prettyString fnTy ++ "  argsTy  " ++ show (map (fmap Tm.prettyString) argTys) ++ "   retTy  " ++ Tm.prettyString retTy) $  helper fnTy argTys retTy 1 []
       where
         helper fnTy [] retTy i accum
           | Just ret <- trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy) $ firstOrderUnify fnTy retTy = return $ Just $ reverse accum
@@ -217,7 +217,8 @@ appHeuristic = Selector ("Function Application", f)
       --let (fnTyEdge:_) = [x | x <- edges]
 
       edges <- allEdges
-      let appEdges = [edge | edge <- edges, Just subReg <- [applicationEdgeRegion $ programContext $ edgeEqnInfo (snd edge)], subReg == reg]
+      --TODO don't clear out right edges from choice? Preserve CF edges?
+      let appEdges = [edge | edge <- edges, Just subReg <- [applicationEdgeRegion $ programContext $ edgeEqnInfo (snd edge)], subReg == reg, not (isRightEdge $ edgeType $ snd edge)]
       let (Application reg argNum fnStr rawFnTy rawArgs rawRetType frees) : _ = trace ("APP EDGES " ++ (List.intercalate "\n  " (map show appEdges) ++ "========================")) $
             [pcon | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _ _ _) <- [pcon]]
       --let argAppEdges  = [edge | edge <- appEdges , pcon <- [programContext $ edgeEqnInfo $ snd edge] , (Application _ _ _ _ _) <- [pcon]]
@@ -238,9 +239,9 @@ appHeuristic = Selector ("Function Application", f)
             (Just x, Just y) ->
               Just (x,y)
             _ -> Nothing
-        mRetTy <- trace ("META RETTY SUB") $ substituteTypeSafe $  rawRetType
+        mRetTy <- trace ("META RETTY SUB, subbing " ++ Tm.prettyString rawRetType) $ substituteTypeSafe $  rawRetType
 
-        return (fullFn, Monad.sequence argMaybeList, mRetTy)
+        trace ("Final Ret Type " ++ ( show $ fmap Tm.prettyString mRetTy)) $ return (fullFn, Monad.sequence argMaybeList, mRetTy)
 
       let
         argTypeHints (v, Just t) = Just $  Tm.prettyString v ++ " :: " ++ Tm.prettyString t
@@ -255,7 +256,7 @@ appHeuristic = Selector ("Function Application", f)
 
       let numArgsProvided = length rawArgs
 
-      case mFullFnTp of
+      trace ("HEUR GROUP evaled " ++ show (Tm.prettyString rawFnTy, map (fmap Tm.prettyString) rawArgs, Tm.prettyString rawRetType) ++ "  ||||||||||||     to " ++ show (Tm.prettyString <$> mFullFnTp, map (fmap Tm.prettyString) <$> maybeArgList, Tm.prettyString <$> mRetTy)) $ case mFullFnTp of
         Just fullFnTp -> do
           let
             fnMax = case maxArgs fullFnTp of

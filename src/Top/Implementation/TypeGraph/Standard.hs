@@ -254,12 +254,14 @@ instance TypeGraph (StandardTypeGraph) Info where
                         return (Tm.N hd newElims)
                      Just _ ->
                         do newHead <- lift $ typeOfGroup synonyms (getGroupOf (VertexId (Tm.headVar hd)) stg)
-                           newElims <- mapM (\arg -> recElim history arg stg) elims
+                           newElims <- trace ("HEAD GROUP OF " ++ show hd ++ "   is " ++ Tm.prettyString newHead) $  mapM (\arg -> recElim history arg stg) elims
                            case newHead of
-                              vval@(Tm.N hdj [])  ->  vval Tm.%%% newElims  -- (Tm.headVar hdj)
+                              vval@(Tm.N hdj [])  ->  do
+                                ret <- vval Tm.%%% newElims  -- (Tm.headVar hdj)
+                                trace ("STS Var Result " ++ Tm.prettyString ret) $ return ret
                               _     -> do
                                 newVal <- newHead Tm.%%% newElims
-                                rec ((Tm.headVar hd):history) newVal stg
+                                trace ("STS Other Result " ++ Tm.prettyString newVal) $ rec ((Tm.headVar hd):history) newVal stg
 
           rec history (Tm.C con argList) stg =
             Tm.C con <$> mapM (\arg -> rec history arg stg) argList
@@ -268,6 +270,9 @@ instance TypeGraph (StandardTypeGraph) Info where
             (x, body) <- Ln.unbind bnd
             newBody <- rec history body stg
             return $ Tm.L $ Ln.bind x newBody
+
+          rec history (Tm.VChoice c1 c2 c3 s t) stg =
+            Tm.VChoice c1 c2 c3 <$> rec history s stg <*> rec history t stg
 
           rec _ tm _ = error $  "Sub type safe" ++ show tm
        in Ln.runFreshMT $ rec [] v g

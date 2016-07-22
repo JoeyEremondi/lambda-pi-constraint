@@ -1077,4 +1077,4 @@ modifyParam f (P t)  = fmap (fmap P) (f t)
 modifyParam f (Twins p1 p2) = do
   r1 <- (f p1)
   r2 <- (f p2)
-  return $ Twins <$> r1 <*> r2 
+  return $ Twins <$> r1 <*> r2

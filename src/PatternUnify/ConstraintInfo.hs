@@ -85,6 +85,10 @@ applicationEdgeRegion (Application reg _ _ _ _ _ _) = Just reg
 applicationEdgeRegion (AppRetType reg _) = Just reg
 applicationEdgeRegion _ = Nothing
 
+isRightEdge :: ConstraintType -> Bool
+isRightEdge = error ""
+
+
 instance Alpha ProgramContext
 
 instance Alpha EqnInfo
