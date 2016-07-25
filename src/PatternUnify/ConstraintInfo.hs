@@ -86,7 +86,8 @@ applicationEdgeRegion (AppRetType reg _) = Just reg
 applicationEdgeRegion _ = Nothing
 
 isRightEdge :: ConstraintType -> Bool
-isRightEdge = error ""
+isRightEdge (ChoiceEdge RightChoice _ _) = True
+isRightEdge _ = False
 
 
 instance Alpha ProgramContext

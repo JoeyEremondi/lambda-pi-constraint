@@ -23,4 +23,4 @@ let pNPlus0isN =
   :: forall n :: Nat . Eq Nat n (plus n 0)
 
 
-let inst = (\n -> pNPlus0isN n) :: forall (n :: Nat) . Eq Nat (plus (Succ n) 0) (Succ n)
+let inst = (\n -> pNPlus0isN (Succ n)) :: forall (n :: Nat) . Eq Nat (plus 0 (Succ n)) (Succ n)
