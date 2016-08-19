@@ -28,7 +28,7 @@ import Control.Monad (forM)
 import Data.Foldable (foldlM)
 
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 --import qualified Solver
 
@@ -87,7 +87,7 @@ iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
 iType0_ = iType_ 0
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
-iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
+iType_ iiGlobal g lit@(L reg it) =
   do
     result <- iType_' iiGlobal g it
     return $ --trace ("===>  RET ITYPE " ++ show (iPrint_ 0 0 lit) ++ " :: " ++ Tm.prettyString result) $
@@ -132,18 +132,18 @@ iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
               return conStar
 
     iType_' ii g (Free_ x)
-      =     trace ("Looking up free " ++ show x) $ case typeLookup x g of
-              Just ty        ->  trace ("Inferred free " ++ Tm.prettyString ty) $ return ty
+      =     case typeLookup x g of
+              Just ty        ->  return ty
               Nothing        ->  unknownIdent reg g (render (iPrint_ 0 0 (builtin $ Free_ x)))
     iType_' ii g e@(_ :$: _)
-      =     trace ("CHECKING APP " ++ showIt lit) $ do
+      =     do
                 let
                   unravelApp (L _ (f :$: g)) accum = unravelApp f (g : accum)
                   unravelApp f accum = (f, accum)
 
                   (topFn, args) = unravelApp lit []
 
-                  mkVars argExp = trace ("UNRAVELED APP INTO " ++ showIt topFn ++ "  and  " ++ show (map showCt args) ) $ do
+                  mkVars argExp = do
                       piArg <- freshType (region argExp) g
                       return (piArg)
 
@@ -154,7 +154,7 @@ iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
                 --let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
 
 
-                topFnTypeVal <- trace ("APP CALLING ITYPE " ++ showIt topFn) $ iType_ ii g topFn
+                topFnTypeVal <- iType_ ii g topFn
                 --unifySets (AppFnType reg (showIt topFn) topFnTypeVal) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
                 retTypeVar@(Tm.N (Tm.Meta retNom) _) <- freshType (region lit) g
                 let
@@ -165,7 +165,7 @@ iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
                     piBodyFn <- fresh (region argExp) g (piArg Tm.--> Tm.SET)
                     unifySets (progContextFor argNum) (showIt lit)  reg (fnType) (Tm.PI piArg piBodyFn) g
                     --Ensure that the argument has the proper type
-                    trace ("APP CALLING CTYPE " ++ showCt argExp) $ cType_ ii g argExp piArg
+                    cType_ ii g argExp piArg
                     --Get a type for the evaluation of the argument
                     argVal <- evaluate ii argExp g
                     --Our resulting type is the application of our arg type into the
@@ -301,7 +301,7 @@ iType_ iiGlobal g lit@(L reg it) = trace ("ITYPE " ++ show (iPrint_ 0 0 lit)) $
 
 
 cType_ :: Int -> WholeEnv -> CTerm_ -> ConType -> ConstraintM ()
-cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0 lct) ++ " :: " ++ Tm.prettyString globalTy) $
+cType_ iiGlobal g lct@(L reg ct) globalTy =
   cType_' iiGlobal g ct globalTy
   where
     cType_' ii g (Inf_ e) tyAnnot
@@ -400,7 +400,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0
           --Make sure our tail has the right length
           cType_ ii g xs (mkVec aVal nVal)
 
-    cType_' ii g (Refl_ a z) ty = trace ("REFL CHECK " ++ show z ++ "   ty   " ++ show ty) $
+    cType_' ii g (Refl_ a z) ty =
       do  aVal <- evaluate ii a g
           --bVal <- freshType (region a) g
           xVal <- fresh (region z) g aVal
@@ -421,7 +421,7 @@ cType_ iiGlobal g lct@(L reg ct) globalTy = trace ("CTYPE " ++ show (cPrint_ 0 0
           zVal <- evaluate ii z g
 
           --Show constraint that the type parameters must match that type
-          trace ("REFL1 check unifying " ++ Tm.prettyString zVal ++ "  |||  " ++ Tm.prettyString xVal) $
-            unify Ctor (showCt lct) reg zVal xVal aVal g
-          trace ("REFL2 check unifying " ++ Tm.prettyString zVal ++ "  |||  " ++ Tm.prettyString yVal) $
-            unify Ctor (showCt lct) reg zVal yVal aVal g
+
+          unify Ctor (showCt lct) reg zVal xVal aVal g
+
+          unify Ctor (showCt lct) reg zVal yVal aVal g

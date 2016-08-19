@@ -27,7 +27,7 @@ import qualified PatternUnify.Run as Run
 
 import Control.Monad.Identity (runIdentity)
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 import qualified Data.Map as Map
 
@@ -137,7 +137,8 @@ solveConstraintM config cm =
           cl = getCL ctx
           finalSub = UC.finalSub cl
         in
-          trace ("Final sub: " ++ List.intercalate "\n" (map show finalSub)) $ Left $ map (mkErrorPair (getFinalGraph ctx) ) solverErrs
+          --trace ("Final sub: " ++ List.intercalate "\n" (map show finalSub)) $
+          Left $ map (mkErrorPair (getFinalGraph ctx) ) solverErrs
         --Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) (mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx) )
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
       Right (_, unsolved, _) -> --trace "solveConstraintM Right with unsolved" $
@@ -309,7 +310,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
           Just x -> return  x
           Nothing ->
             return $ case fv of
-              Common.Global nm -> trace ("Giving " ++ show nm ++ " global Nom " ++ Tm.prettyString (Tm.vv nm)) $
+              Common.Global nm ->
                 Tm.vv nm
               Common.Local i ->
                 error "LocalName should always be in env, Free_"
@@ -334,7 +335,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
       Common.Fin_ n ->
         Tm.Fin <$> cToUnifForm ii env n
 
-      Common.NatElim_ m mz ms n -> trace ("**NATELIM: " ++ show n) $ do
+      Common.NatElim_ m mz ms n -> do
         spine <- Tm.NatElim <$> (cToUnifForm ii env m) <*> (cToUnifForm ii env mz) <*> (cToUnifForm ii env ms)
         hd <- (cToUnifForm ii env n)
         hdVal <- evalInEnv env hd
@@ -342,7 +343,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
         hdVal Tm.%% spineVal
 
 
-      Common.FinElim_ m mz ms n f -> trace "%2" $  do
+      Common.FinElim_ m mz ms n f -> do
         hd <- (cToUnifForm ii env f)
         spine <- Tm.FinElim <$> (cToUnifForm ii env m) <*> (cToUnifForm ii env mz) <*> (cToUnifForm ii env ms) <*> (cToUnifForm ii env n)
         hdVal <- evalInEnv env hd
@@ -352,7 +353,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
       Common.Vec_ a n ->
         Tm.Vec <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env n)
 
-      Common.VecElim_ a m mn mc n xs -> trace "%3" $  do
+      Common.VecElim_ a m mn mc n xs -> do
         hd <- (cToUnifForm ii env xs)
         spine <- Tm.VecElim <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env m) <*> (cToUnifForm ii env mn) <*> (cToUnifForm ii env mc) <*> (cToUnifForm ii env n)
         hdVal <- evalInEnv env hd
@@ -361,7 +362,7 @@ iToUnifForm ii env ltm@(Common.L _ tm) = --trace ("ITO " ++ render (Common.iPrin
       Common.Eq_ a x y ->
         Tm.Eq <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env x) <*> (cToUnifForm ii env y)
 
-      Common.EqElim_ a m mr x y eq  -> trace "%4" $ do
+      Common.EqElim_ a m mr x y eq  -> do
         hd <- (cToUnifForm ii env eq)
         spine <- Tm.EqElim <$> (cToUnifForm ii env a) <*> (cToUnifForm ii env m) <*> (cToUnifForm ii env mr) <*> (cToUnifForm ii env x) <*> (cToUnifForm ii env y)
         hdVal <- evalInEnv env hd

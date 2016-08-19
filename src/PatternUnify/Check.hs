@@ -36,7 +36,7 @@ import qualified Data.List as List
 
 --import qualified Data.List as List
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 
 data Tel where
@@ -274,7 +274,8 @@ equalizeTel tel vals1 vals2 = equalizeTel' tel vals1 vals2 []
 
 
 equalizeSpine :: Type -> VAL -> [Elim] -> [Elim] -> Contextual (Either String ([Elim], Type))
-equalizeSpine _T u spine1 spine2 = trace ("EQ SPINE: " ++ prettyString _T ++ " ||| " ++ prettyString u ++ " ||| " ++ (show $ map prettyString spine1) ++ " ||| " ++ (show $ map prettyString spine2)) $  equalizeSpine' _T u spine1 spine2 []
+equalizeSpine _T u spine1 spine2 = --trace ("EQ SPINE: " ++ prettyString _T ++ " ||| " ++ prettyString u ++ " ||| " ++ (show $ map prettyString spine1) ++ " ||| " ++ (show $ map prettyString spine2)) $
+  equalizeSpine' _T u spine1 spine2 []
   where
     equalizeSpine' :: Type -> VAL -> [Elim] -> [Elim] -> [Elim] -> Contextual (Either String ([Elim], Type))
 
@@ -361,7 +362,7 @@ equal _T s t = --trace ("Equal comparing " ++ pp _T ++ " ||| " ++ pp s ++ " ====
       _ -> False
 
 unsafeEqual :: [(Nom, Param)] -> Type -> VAL -> VAL -> Bool
-unsafeEqual vars _T s t = trace ("Unsafe Equal comparing " ++ pp s ++ "   to   " ++ pp t ++ "   of type  " ++ pp _T) $
+unsafeEqual vars _T s t = --trace ("Unsafe Equal comparing " ++ pp s ++ "   to   " ++ pp t ++ "   of type  " ++ pp _T) $
   let
     result =
       runContextual initContext $

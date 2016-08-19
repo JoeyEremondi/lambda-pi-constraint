@@ -32,7 +32,7 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 import GHC.Generics
 
 import Unbound.Generics.LocallyNameless hiding (join, restrict)
@@ -544,9 +544,11 @@ getUnsolvedAndSolved (entry : rest) =
           val = unsafeFlatten valNotFlat
         in case fmvs val of
           [] -> (uns, Map.insert y val solved)
-          _ -> trace ("Unsolved meta in" ++ pp val) $ ((y, infoRegion info, Just val) : uns, solved)
+          _ -> --trace ("Unsolved meta in" ++ pp val) $
+            ((y, infoRegion info, Just val) : uns, solved)
       E y _ HOLE info  | isCF info == Factual ->
-        trace ("Unsolved HOLE " ++ show y) $ ((y, infoRegion info, Nothing) : uns, solved)
+        --trace ("Unsolved HOLE " ++ show y) $
+        ((y, infoRegion info, Nothing) : uns, solved)
       _ -> (uns, solved)
 
 metaValue :: MonadState Context m => Nom -> m VAL
@@ -593,7 +595,8 @@ recordProblem info (ProbId pid) prob = recordProblem' prob 0
       CM.recordVar newVar param
 
 recordChoice :: Type -> Nom -> VAL -> VAL -> EqnInfo -> Contextual ()
-recordChoice  _T x vsingle freshVar info = trace ("RECORDING choice " ++ show x ++ " to " ++ show freshVar) $ do
+recordChoice  _T x vsingle freshVar info = --trace ("RECORDING choice " ++ show x ++ " to " ++ show freshVar) $
+ do
   constrNom <- fresh $ s2n "chInter"
   let constrMeta = meta constrNom
   --Record our choice in our graph

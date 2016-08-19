@@ -31,11 +31,9 @@ import PatternUnify.ConstraintInfo as Info
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe
 
-import Debug.Trace (trace)
 
 type Info = Info.ConstraintInfo
 
---import Debug.Trace (trace)
 
 data StandardTypeGraph = STG
    { referenceMap            :: M.Map VertexId Int{- group number -}
@@ -239,14 +237,14 @@ instance TypeGraph (StandardTypeGraph) Info where
    verticesInGroupOf i =
       vertices . getGroupOf i
 
-   substituteTypeSafe synonyms v g = trace ("SUB TYPE SAFE " ++ Tm.prettyString v) $
+   substituteTypeSafe synonyms v g = --trace ("SUB TYPE SAFE " ++ Tm.prettyString v) $
       let
           recElim history (Tm.Elim con vals) stg =
             Tm.Elim con <$> mapM  (\arg -> rec history arg stg) vals
 
           rec :: [Tm.Nom] -> Tm.VAL -> StandardTypeGraph -> Ln.FreshMT Maybe Tm.VAL
           rec history (Tm.N hd elims) stg
-            |  (Tm.headVar hd) `elem` history  = trace "STS Head in history" $ lift Nothing
+            |  (Tm.headVar hd) `elem` history  = lift Nothing
             |  otherwise         =
                   case maybeGetGroupOf (VertexId (Tm.headVar hd)) stg of
                      Nothing -> do
@@ -254,14 +252,14 @@ instance TypeGraph (StandardTypeGraph) Info where
                         return (Tm.N hd newElims)
                      Just _ ->
                         do newHead <- lift $ typeOfGroup synonyms (getGroupOf (VertexId (Tm.headVar hd)) stg)
-                           newElims <- trace ("HEAD GROUP OF " ++ show hd ++ "   is " ++ Tm.prettyString newHead) $  mapM (\arg -> recElim history arg stg) elims
+                           newElims <- mapM (\arg -> recElim history arg stg) elims
                            case newHead of
                               vval@(Tm.N hdj [])  ->  do
                                 ret <- vval Tm.%%% newElims  -- (Tm.headVar hdj)
-                                trace ("STS Var Result " ++ Tm.prettyString ret) $ return ret
+                                return ret
                               _     -> do
                                 newVal <- newHead Tm.%%% newElims
-                                trace ("STS Other Result " ++ Tm.prettyString newVal) $ rec ((Tm.headVar hd):history) newVal stg
+                                rec ((Tm.headVar hd):history) newVal stg
 
           rec history (Tm.C con argList) stg =
             Tm.C con <$> mapM (\arg -> rec history arg stg) argList

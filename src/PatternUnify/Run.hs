@@ -35,7 +35,7 @@ import qualified Data.Set as Set
 
 import PatternUnify.SolverConfig
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 --import qualified Unbound.Generics.LocallyNameless as LN
 
@@ -73,7 +73,7 @@ solveEntries :: SolverConfig -> [Entry] -> Either ErrorResult ((), Context)
 solveEntries conf !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
+    (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, [], Set.empty, conf) $ do
           initialise
           ambulando [] [] Map.empty
@@ -106,15 +106,16 @@ solveEntries conf !es  =
     --     initialContextString ++ "\n<<<<<<<<<<<<<<<<<<<<\n"
     --     ++ "\nErrorGraph " ++ finalStr
     --   Right _ -> render $ runPretty $ pretty ctx
-  in trace ("\n\n=============\nFinal\n" ++ List.intercalate "\n" (map pp lcx)) $
+  in --trace ("\n\n=============\nFinal\n" ++ List.intercalate "\n" (map pp lcx)) $
     case (finalBadEdges, result) of
-      ([], Left err) -> trace ("ERR NO EDGES") $ Left $ ErrorResult ctx [StringErr (initLoc, BuiltinRegion, err)]
+      ([], Left err) -> --trace ("ERR NO EDGES") $
+        Left $ ErrorResult ctx [StringErr (initLoc, BuiltinRegion, err)]
       ([], Right _) ->
         case getContextErrors es ctx of
           Left [] -> error "Empty Left from getContextErrors"
           Left errList -> Left $ ErrorResult ctx $ map (\(loc, reg, err) -> StringErr (loc, reg, err)) errList
           Right x -> Right x
-      (edgeList, _) -> trace ("EDGELIST\n  " ++ List.intercalate "\n  " (map show edgeList)) $
+      (edgeList, _) -> --trace ("EDGELIST\n  " ++ List.intercalate "\n  " (map show edgeList)) $
         Left $ ErrorResult ctx [GraphErr edgeList]
 
 

@@ -37,7 +37,7 @@ import qualified Data.List as List
 
 import PatternUnify.SolverConfig
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 
 notSubsetOf :: Ord a
@@ -59,7 +59,7 @@ active n q = putProb n (Unify q) Active
 
 block n q = putProb n (Unify q) Blocked
 
-failed n q e = trace ("FAILING " ++ show n ++ ": " ++ e ++ "  eqn " ++ show q) $
+failed n q e = --trace ("FAILING " ++ show n ++ ": " ++ e ++ "  eqn " ++ show q) $
   putProb n
           (Unify q)
           (Failed e)
@@ -106,7 +106,7 @@ simplifySplit n (r1, r2) = do
    setProblem n
    x1 <- ProbId <$> freshNom
    x2 <- ProbId <$> freshNom
-   _Gam <- trace ("Simplifying split " ++ show (probIdToName n) ++ " into " ++ show (probIdToName x1) ++ " and " ++ show (probIdToName x2)) $ ask
+   _Gam <- ask --trace ("Simplifying split " ++ show (probIdToName n) ++ " into " ++ show (probIdToName x1) ++ " and " ++ show (probIdToName x2)) $
    --TODO keep failPending structure?
    pushR $ Right $ Prob x2 (wrapProb _Gam r2) Active [] --(FailPending x1) []
    pushR $ Right $  Prob x1 (wrapProb _Gam r1) Active []
@@ -147,7 +147,7 @@ hole info _Gam _T f =
 
 defineGlobal
   :: (ProbId) -> EqnInfo -> Nom -> Type -> VAL -> Contextual a -> Contextual a
-defineGlobal pid info x _T vinit m = trace ("Defining global in problem " ++ show pid ++  " , VAR Is " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\npid: " ++ show pid) $
+defineGlobal pid info x _T vinit m = --trace ("Defining global in problem " ++ show pid ++  " , VAR Is " ++ show x ++ " := " ++ pp vinit ++ " : " ++ pp _T ++ "\npid: " ++ show pid) $
   hole (info {isCF = CounterFactual}) [] _T $ \freshVar@(N (Meta newNom) _) -> do
      ctxr <- Ctx.getR
      vsingle <- makeTypeSafe _T vinit
@@ -155,7 +155,7 @@ defineGlobal pid info x _T vinit m = trace ("Defining global in problem " ++ sho
      cuid <- freshCUID
      config <- Ctx.getConfig
      let
-       v = trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
+       v = --trace ("Fresh choice var " ++ show freshVar ++ " cid " ++ show cid ++ "\n    defining " ++ show x) $
           case (useCF config) of
             True -> VChoice cid cuid x vsingle freshVar
             False -> vsingle
@@ -921,8 +921,8 @@ tryIntersect pid info alpha _T ds es =
       \m ->
         case m of --TODO intersect creator? --TODO pendingVars here?
           Just ( _U, f ) -> hole info [] _U $ \beta -> define pid (info {creationInfo = CreatedBy pid}) [] alpha _T (f beta)
-          Nothing -> trace ("Pushing HOLE for " ++ show alpha) $ pushL (E alpha _T HOLE info )
-    _ -> trace ("TI Default pushing " ++ show alpha) $ pushL (E alpha _T HOLE info )
+          Nothing -> pushL (E alpha _T HOLE info )
+    _ -> pushL (E alpha _T HOLE info )
 
 -- Given the type of $[[alpha]]$ and the two spines, |intersect| produces
 -- a type for $[[beta]]$ and a term with which to solve $[[alpha]]$ given
@@ -1318,7 +1318,7 @@ update pids failPids subs e = do
       where rs = ys \\ ns
             p' = substs (Map.toList theta) p
     update' ns theta (Prob n p (FailPending failId) onFails)
-      | failId `elem` failPids = trace ("WAKING UP " ++ show n ++ " from fail " ++ show failId ++ "\n  prob: " ++ pp p) $
+      | failId `elem` failPids = --trace ("WAKING UP " ++ show n ++ " from fail " ++ show failId ++ "\n  prob: " ++ pp p) $
           Prob n p' Active onFails --Activate if we failed
       | failId `elem` ns = Prob n p Ignored onFails --Ignore if we solved the problem
       | otherwise = Prob n p' (FailPending failId) onFails --Keep wainting otherwise --TODO other subs?
