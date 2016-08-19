@@ -1,10 +1,10 @@
 -- addition of natural numbers
-let plus = (\ y x ->
-  (natElim
+let plus =
+  natElim
     ( \ _ -> Nat -> Nat )           -- motive
     ( \ n -> n )                    -- case for Zero
     ( \ p rec n -> Succ (rec n) )   -- case for Succ
-  ) x y ) :: Nat -> Nat -> Nat
+
 
 -- Leibniz prinicple (look at the type signature)
 let leibniz =
@@ -15,12 +15,16 @@ let leibniz =
      Eq a x y -> Eq b (f x) (f y)
 
 
+
 -- the other direction requires induction on N:
 let pNPlus0isN =
   natElim ( \ n -> Eq Nat (plus n 0) n )
           ( Refl Nat 0 )
           ( \ n' rec -> leibniz Nat Nat Succ (plus n' 0) n' rec )
-  :: forall n :: Nat . Eq Nat n (plus n 0)
+  :: forall n :: Nat . Eq Nat (plus n 0) n
 
 
-let inst = (\n -> pNPlus0isN (Succ n)) :: forall (n :: Nat) . Eq Nat (plus 0 (Succ n)) (Succ n)
+-- the other direction requires induction on N:
+let succPlus =
+  (\n -> pNPlus0isN (Succ n))
+  :: forall n :: Nat . Eq Nat  (Succ n) (plus (Succ n) 0)

@@ -1,16 +1,18 @@
-{-#  OPTIONS --type-in-type #-}
 module BadRefl where
 
---open import Relation.Binary.PropositionalEquality
+open import AgdaPrelude
 
-open import Data.Nat
+plus =
+  natElim
+    ( \ _ -> Nat -> Nat )           -- motive
+    ( \ n -> n )                    -- case for Zero
+    ( \ p rec n -> Succ (rec n) )   -- case for Succ
 
-Nat = ℕ
-Zero = 0
-Succ = suc
+-- the other direction requires induction on N:
+postulate pNPlus0isN : (n : Nat) -> Eq Nat (plus n Zero) n
 
-data Eq : (a : Set) -> a -> a -> Set where
-  Refl : (a : Set) -> (x : a) -> Eq a x x
 
-badRefl :  Eq (Nat -> Nat) (\x -> x) (\x -> Zero)
-badRefl = (Refl _ (\x -> x))
+-- the other direction requires induction on N:
+succPlus : (n : Nat) -> Eq Nat  (Succ n) (plus (Succ n) Zero)
+succPlus =
+  (\n -> pNPlus0isN (Succ n))
