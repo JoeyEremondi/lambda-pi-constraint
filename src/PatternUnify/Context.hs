@@ -617,7 +617,7 @@ recordEntry :: Entry -> Contextual ()
 recordEntry (E alpha _T HOLE info) = return ()
 recordEntry (E alpha _T (DEFN t) info) = do
   b <- defAlreadyRecorded alpha
-  unless b $ recordDefn alpha _T t info
+  unless (b || isImpliedEquality info) $ recordDefn alpha _T t info
 recordEntry (Prob pid prob _ _) = do
   b <- probAlreadyRecorded pid
   let

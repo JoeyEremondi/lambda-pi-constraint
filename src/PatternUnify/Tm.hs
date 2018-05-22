@@ -381,14 +381,14 @@ prettyElims hdText elims =
       return hdText
     (A arg : rest) -> do
       arg' <- pretty arg --TODO parens?
-      prettyElims (hdText <+> arg' ) rest
+      prettyElims ( (parens hdText) <+> (parens arg') ) rest
     (EBot _ : rest) -> do
       prettyElims (hdText <+> text "⊥" ) rest
 
     (Elim can args : rest ) -> do
       can' <- pretty can
       args' <- mapM pretty args
-      prettyElims ((parens $ can' <+> hsep args') <+> hdText) rest
+      prettyElims ((parens $ can' <+> hsep (map parens args')) <+> hdText) rest
 --prettyElims hdText elims = error $ "Bad pretty elims " ++ show hdText ++ " " ++ show elims
 
 

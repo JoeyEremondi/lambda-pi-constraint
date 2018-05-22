@@ -140,6 +140,7 @@ data EqnInfo =
   , programContext   :: ProgramContext
   , typeOfString     :: String
   , initialCreatorId :: Maybe ProbId
+  , isImpliedEquality :: Bool
   } deriving (Eq, Show, Generic)
 
 

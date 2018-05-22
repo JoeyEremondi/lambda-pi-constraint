@@ -2,6 +2,8 @@ module BadRefl
 
 import IdrisPrelude
 
+%hide Prelude.Nat.Nat
+
 plus : Nat -> Nat -> Nat
 plus =
   natElim

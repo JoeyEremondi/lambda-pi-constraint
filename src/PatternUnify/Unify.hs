@@ -37,7 +37,7 @@ import qualified Data.List as List
 
 import PatternUnify.SolverConfig
 
---import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 
 notSubsetOf :: Ord a
@@ -160,10 +160,10 @@ defineGlobal pid info x _T vinit m = --trace ("Defining global in problem " ++ s
             True -> VChoice cid cuid x vsingle freshVar
             False -> vsingle
      --TODO who created? Adjust info
-     when (useTypeGraph config) $
-      Ctx.recordDefn x _T vsingle info
+     when (useTypeGraph config && not (isImpliedEquality info)) $
+      trace ("RECORDING DEFN" ++ show (x, vsingle)) $  Ctx.recordDefn x _T vsingle info
 
-     when (useTypeGraph config && useCF config) $
+     when (useTypeGraph config && useCF config ) $
        Ctx.recordChoice  _T x vsingle freshVar info
      --check _T v `catchError`
      --   (throwError .
@@ -822,7 +822,9 @@ tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k =
   \m ->
     case m of
       Nothing -> k
-      Just v -> active n q >> define n (info {creationInfo = CreatedBy n}) [] alpha _T v
+      --We don't add an edge to our constraint graph if alpha has no spine
+      --Since that equality is already implied
+      Just v -> active n q >> define n (info {creationInfo = CreatedBy n, isImpliedEquality = (null es)}) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = error $ "tryInvert: " ++ show q
 

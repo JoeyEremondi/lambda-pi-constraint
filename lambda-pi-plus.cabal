@@ -44,7 +44,7 @@ executable lambda-pi-plus
 
 
   -- other-extensions:
-  build-depends:       base >=4.7 && <4.9
+  build-depends:       base
                        , mtl
                        , parsec
                        , pretty
