@@ -1027,6 +1027,7 @@ prune xs (PI _S _T) = (++) <$> prune xs _S <*> prune xs _T
 prune xs (SIG _S _T) = (++) <$> prune xs _S <*> prune xs _T
 prune xs (PAIR s t) = (++) <$> prune xs s <*> prune xs t
 prune xs (L b) = prune xs =<< (snd <$> unbind b)
+prune xs (Marked s v) = prune xs v
 prune xs neut@(N (Var z _) es)
   | z `elem` xs =
     throwError $

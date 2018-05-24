@@ -35,6 +35,8 @@ import qualified Data.Maybe as Maybe
 
 import Control.Monad (forM, mapM, zipWithM)
 
+import Debug.Trace (trace)
+
 data Region =
   SourceRegion
     { regionFile   :: String
@@ -61,6 +63,8 @@ data VAL where
         C :: Can -> [VAL] -> VAL
         VBot :: String -> VAL
         VChoice :: ChoiceId -> CUID -> Nom -> VAL -> VAL -> VAL
+        Marked :: String -> VAL -> VAL 
+        
 --        Nat :: VAL
 --        Fin :: VAL -> VAL
 --        Vec :: VAL -> VAL -> VAL
@@ -73,6 +77,9 @@ data VAL where
 --        VCons :: VAL -> VAL -> VAL -> VAL -> VAL
 --        ERefl :: VAL -> VAL -> VAL
     deriving (Show, Generic)
+
+unmark (Marked _ v) = v
+unmark v = v
 
 data ChoiceId = ChoiceId {choiceIdToName :: Nom, choiceRegion :: Region}
   deriving (Eq, Ord, Show, Generic)
@@ -280,6 +287,7 @@ maybePar tm = parens
 
 
 instance Pretty VAL where
+  pretty (Marked s _) = return $ text s
   pretty (VBot s) = return $ text "⊥"
   pretty (VChoice cid _ _ s t) =
     (\ ps pt -> text ("{{-" ++ show (choiceIdToName cid) ++ "-{") <> ps <> char ',' <+> pt <> text "}}}" )
@@ -588,6 +596,7 @@ etaContract (PAIR s t) =
        ( s', t' ) -> return $ PAIR s' t'
 etaContract (C c as) = C c <$> (mapM etaContract as)
 etaContract (VBot s) = return $ VBot s
+etaContract (Marked s v) = (Marked s) <$> etaContract v
 etaContract (VChoice cid cuid alpha s t) = do
   sNew <- etaContract s
   tNew <- etaContract t
@@ -652,11 +661,13 @@ instance Occurs VAL where
     | y `elem` xs = Just (Rigid Strong)
     | otherwise = const Flexible <$> occurrence xs as
   occurrence xs (VBot s) = Nothing
+  occurrence xs (Marked s v) = occurrence xs v
   --occurrence xs _ = Nothing --TODO occurrence cases
   frees isMeta (VBot s) = []
   frees isMeta (L (B _ t)) = frees isMeta t
   frees isMeta (C _ as) = unions (map (frees isMeta) as)
   frees isMeta (VChoice _ _ _ s t) = unions (map (frees isMeta) [s,t])
+  frees isMeta (Marked s v) = frees isMeta v
   frees isMeta (N h es) = unions (map (frees isMeta) es) `union` x
     where x =
             case h of
@@ -734,6 +745,7 @@ containsBottom (N v1 elims) = joinErrors <$> mapM elimContainsBottom elims
 containsBottom (C v1 args) = joinErrors <$> mapM containsBottom args
 containsBottom (VChoice _ _ _ s t) = joinErrors <$> mapM containsBottom [s,t]
 containsBottom (VBot s) = return $ Just s
+containsBottom (Marked s v) = containsBottom v
 --containsBottom (Choice v1 v2) = joinErrors <$> mapM containsBottom [v1,v2]
 
 elimContainsBottom :: (Fresh m) => Elim -> m (Maybe String)
@@ -755,6 +767,7 @@ flattenChoiceGen shouldFlatten (VChoice cid cuid n t1 t2) =
   case shouldFlatten cid of
     Nothing ->  VChoice cid cuid n <$> flattenChoiceGen shouldFlatten t1 <*> flattenChoiceGen shouldFlatten t2
     Just f -> flattenChoiceGen shouldFlatten $ f (t1,t2)
+flattenChoiceGen shouldFlatten (Marked s v) = (Marked s) <$> (flattenChoiceGen shouldFlatten v)     
 
 flattenChoiceElim :: (Fresh m) => (ChoiceId -> Maybe ((VAL,VAL) -> VAL)) -> Elim -> m Elim
 flattenChoiceElim shouldFlatten (Elim e1 e2) = Elim e1 <$> mapM (flattenChoiceGen shouldFlatten)  e2
@@ -793,7 +806,7 @@ compSubs newDict oldDict =
 --Map.union new (Map.map (dictSubsts new) old)
 eval :: (Fresh m)
      => Subs -> VAL -> m VAL
---eval g t | trace ("Eval " ++ pp t ++ "\n  Subs: " ++ show g) False = error "Eval"
+-- eval g t | trace ("Eval " ++ pp t ++ "\n  Subs: " ++ show g) False = error "Eval"
 eval g (L b) =
   do ( x, t ) <- unbind b
      sub <- eval g t
@@ -805,6 +818,7 @@ eval g (C c as) = C c <$> (mapM (eval g) as)
 eval g (VChoice cid cuid n s t) =
   VChoice cid cuid n <$> eval g s <*> eval g t
 eval g (VBot s) = return $ VBot s
+eval g (Marked s v) = (Marked s) <$> eval g v
 
 
 
@@ -814,7 +828,7 @@ evalHead g hv =
                   g of
     Just u      --trace ("HEAD found " ++ show (pp hv, show g)) $
      ->
-      u
+      Marked (show hv) u
     Nothing -> N hv []
 
 elim :: (Fresh m)
@@ -843,6 +857,7 @@ elim (VChoice cid _ n s t) theElim = do
   cuid <- freshCUID
   VChoice cid cuid n <$> elim s theElim <*> elim t theElim
 elim (VBot s) elim = return $ VBot s --TODO better error?
+elim (Marked s v) el =  elim v el 
 elim t a = return $ VBot $ "bad elimination of " ++ pp t ++ " by " ++ pp a
 
 badElim s = errorWithStackTrace s

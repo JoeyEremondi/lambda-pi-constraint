@@ -509,7 +509,7 @@ lookupMeta x = do
   cr <- getR
   --look :: Monad m => ContextL -> m Type
   let
-    look B0 = error $ "lookupMeta: missing " ++ show x ++ "\nCL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr)
+    look B0 = error $ "lookupMeta: missing " ++ show x  ++ "\nCL:\n" ++ List.intercalate "\n" (map pp cl) ++ "\nCR\n" ++ List.intercalate "\n" (map pp cr)
     look (cx  :< E y t _ _ )  | x == y     = return t
                            | otherwise  = look cx
     look (cx  :< Prob _ _ _ _) = look cx

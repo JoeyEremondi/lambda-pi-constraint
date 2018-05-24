@@ -137,7 +137,7 @@ equalize :: Type -> VAL -> VAL -> Contextual VAL
 equalize _T s t = do
   _Tflat <- flattenChoice _T
   tflat <- flattenChoice t
-  equalize' _Tflat s tflat
+  equalize' (unmark _Tflat) (unmark s) (unmark tflat)
   where
     equalize' :: Type -> VAL -> VAL -> Contextual VAL
     --equalize' _T t t2 | trace ("Equalizing " ++ pp _T ++ " ||| " ++ pp t ++ " ||| " ++ pp t2 ++ "\n** ") False = error "equalize'"

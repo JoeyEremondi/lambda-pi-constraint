@@ -16,3 +16,5 @@ cabal.sandbox.config
 *.hp
 *.out
 .stack-work/
+*.agdai
+*.ibc
