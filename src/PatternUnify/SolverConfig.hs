@@ -4,4 +4,5 @@ data SolverConfig =
   SolverConfig
   { useCF        :: Bool
   , useTypeGraph :: Bool
+  , useDot       :: Bool
   }

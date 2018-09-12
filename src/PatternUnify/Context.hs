@@ -261,7 +261,7 @@ type ContextR  = [Either RSubs Entry]
 type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges, Set.Set (Either Nom ProbId), SolverConfig)
 
 initContext :: Context
-initContext = (B0, [], error "initial problem ID", Empty.empty, [], Set.empty, SolverConfig True True)
+initContext = (B0, [], error "initial problem ID", Empty.empty, [], Set.empty, SolverConfig True True True)
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)

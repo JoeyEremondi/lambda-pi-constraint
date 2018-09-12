@@ -54,6 +54,8 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import PatternUnify.Tm (Region (..))
 
+import Control.Monad(when)
+
 
 -- Allocate a fresh name so the counter starts from 1, to avoid clashing
 -- with s2n (which generates names with index 0):
@@ -88,7 +90,7 @@ solveEntries conf !es  =
     (lcx,rcx,lastProb,_,finalBadEdges,_,_) = unsafePerformIO $ do
         let g = (\(_,_,_,g,_,_,_) -> g) ctx
         let ourEdges = (\(_,_,_,_,e,_,_) -> e) ctx
-        writeFile "out.dot" (
+        when (useDot conf) $ writeFile "out.dot" (
           TC.toDot g
           -- List.intercalate "\n\n\n" $
           --   map (\(edgeList, _) -> TC.errorDot edgeList g) ourEdges

@@ -24,7 +24,7 @@ source-repository head
 executable lambda-pi-plus
   -- -prof -fprof-auto -fprof-auto -fprof-cafs
   ghc-options:
-        -O2  -Wall -fprof-auto -fprof-auto -fprof-cafs -rtsopts
+        -O2  -Wall -prof -fprof-auto -fprof-auto -fprof-cafs -rtsopts
   main-is:             Main.hs
   other-modules:
     ConstraintBased

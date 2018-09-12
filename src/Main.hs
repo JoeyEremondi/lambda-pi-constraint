@@ -20,7 +20,7 @@ import PatternUnify.Tm (Region (..))
 main :: IO ()
 main = do
   argsWithFlags <- getArgs
-  let config = SolverConfig (not $ "--noCF" `Prelude.elem` argsWithFlags) (not $ "--noTypeGraph" `Prelude.elem` argsWithFlags)
+  let config = SolverConfig (not $ "--noCF" `Prelude.elem` argsWithFlags) (not $ "--noTypeGraph" `Prelude.elem` argsWithFlags) (not $ "--noDot" `Prelude.elem` argsWithFlags)
   let args = filter (not . (List.isPrefixOf "--")) argsWithFlags
   case args of
     [] ->
