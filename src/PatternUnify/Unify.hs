@@ -352,14 +352,20 @@ sym (EQN _S s _T t pid) = EQN _T t _S s pid
 rigidRigid :: EqnInfo -> Equation -> Contextual [Equation]
 rigidRigid pid eqn =
   do
-    retEqns <- rigidRigid' eqn
+    conf <- Ctx.getConfig
+    findSubRigids :: [Equation] -> Contextual [Equation]
+    findSubRigids inList =
+      if (useTypeGraph conf)
+         then
+           do concat <$> mapM rigidRigid' inList
+              retEqns <- rigidRigid' eqn
+         else
+           return inList
     --forM retEqns recordEqn --TODO only record in unify?
     return retEqns
     --TODO need derived edges?
   where
-    findSubRigids :: [Equation] -> Contextual [Equation]
-    findSubRigids inList = do
-      concat <$> mapM rigidRigid' inList
+
 
     --If we hit a neutral application,
     rigidRigid' (EQN SET SET SET SET _) = return []
