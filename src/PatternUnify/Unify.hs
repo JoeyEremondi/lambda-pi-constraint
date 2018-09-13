@@ -13,7 +13,7 @@ import Data.List ((\\))
 import qualified Data.Map as Map
 import Data.Maybe (isNothing)
 import Data.Set (Set, isSubsetOf)
-import Prelude hiding (elem, notElem) 
+import Prelude hiding (elem, notElem)
 --import qualified Data.List as List
 import qualified Data.Set as Set
 import PatternUnify.Check (check, checkProb, equal, isReflexive, typecheck, makeTypeSafe)
@@ -160,7 +160,7 @@ defineGlobal pid info x _T vinit m = --trace ("Defining global in problem " ++ s
             True -> VChoice cid cuid x vsingle freshVar
             False -> vsingle
      --TODO who created? Adjust info
-     when (useTypeGraph config ) $
+     when (useTypeGraph config && not (isImpliedEquality info)) $
       trace ("RECORDING DEFN" ++ show (x, vsingle)) $  Ctx.recordDefn x _T vsingle info
 
      when (useTypeGraph config && useCF config ) $
@@ -826,8 +826,7 @@ tryInvert n q@(EQN _ (N (Meta alpha) es) _ s info) _T k =
       Nothing -> k
       --We don't add an edge to our constraint graph if alpha has no spine
       --Since that equality is already implied
-      -- isImpliedEquality = (null es)
-      Just v -> active n q >> define n (info {creationInfo = CreatedBy n }) [] alpha _T v
+      Just v -> active n q >> define n (info {creationInfo = CreatedBy n, isImpliedEquality = (null es)}) [] alpha _T v
 -- %if False
 tryInvert _ _ q _ = error $ "tryInvert: " ++ show q
 

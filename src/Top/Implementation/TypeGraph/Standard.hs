@@ -279,10 +279,6 @@ instance TypeGraph (StandardTypeGraph) Info where
       let p (EdgeId v1 v2 _, _) = v1 == i || v2 == i
       in filter p . edges . getGroupOf i
 
-   edgeBetween i j =
-        let p (EdgeId v1 v2 _, _) = (v1, v2) `elem` [(i,j),(j,i)]
-        in not . null . filter p . edges . getGroupOf i
-
    allPathsListWithout without v1 vs =
       equalPaths without v1 vs . getGroupOf v1
 
@@ -297,7 +293,7 @@ instance TypeGraph (StandardTypeGraph) Info where
 
    typeFromTermGraph vid stg =
       case [ tp | (x, (tp, _)) <- verticesInGroupOf vid stg, vid == x ] of
-         [VCon (Con s)]   -> Tm.C s [] 
+         [VCon (Con s)]   -> Tm.C s []
          [VCon (ConElim s)]   -> error "ConElim from term graph"
          [VApp a b] ->
            case typeFromTermGraph a stg of
@@ -655,7 +651,4 @@ addEqn info (v1, v2) stg = do
     (var2, g2) <-  addTermGraph M.empty (Ln.s2n "theNode") v2 g1
     --edgeNr <- Ln.fresh $ Ln.s2n "edge"
     --let ourEdge = EdgeId var1 var2 $ EdgeNrX edgeNr
-    case edgeBetween var1 var2 g2 of
-      True -> return g2
-      False ->
-        addNewEdge (var1, var2) info g2
+    addNewEdge (var1, var2) info g2
