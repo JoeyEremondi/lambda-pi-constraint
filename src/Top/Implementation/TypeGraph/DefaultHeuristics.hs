@@ -168,7 +168,7 @@ ctorPermutation = Selector ("Constructor isomorphism", f)
                  return $ Just permut
                else
                  return Nothing
-          case (Maybe.catMaybes maybeMatches) of
+          case (filter (/= args2) $ Maybe.catMaybes maybeMatches) of
             [] ->
               return Nothing
             (match : _) -> do

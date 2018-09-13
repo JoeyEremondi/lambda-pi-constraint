@@ -27,7 +27,7 @@ import qualified PatternUnify.Run as Run
 
 import Control.Monad.Identity (runIdentity)
 
---import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 import qualified Data.Map as Map
 
@@ -143,10 +143,11 @@ solveConstraintM config cm =
       Left (Run.ErrorResult ctx []) -> error "Left empty with Constraint ret solveResult"
       Left (Run.ErrorResult ctx rawSolverErrs) ->
         let
-          solverErrs = map (removeSingleTypeGroups (getFinalGraph ctx)) rawSolverErrs
+          
+          solverErrs = List.nubBy (eqBy errLoc) $ map (removeSingleTypeGroups (getFinalGraph ctx)) rawSolverErrs
           cl = getCL ctx
           finalSub = UC.finalSub cl
-        in case solverErrs of
+        in trace ( "Solver errs   " ++ show (map errLoc solverErrs)) $ case solverErrs of
           [] -> error "All solver errors had only a single type in their group. This is a bug."
           _ ->
             --trace ("Final sub: " ++ List.intercalate "\n" (map show finalSub)) $
@@ -159,10 +160,19 @@ solveConstraintM config cm =
               map (unsolvedMsg (sourceMetas cstate) ) unsolved
           sms -> map (unsolvedMsg (sourceMetas cstate) ) sms
 
+errLoc err = case err of
+  Run.StringErr (_, l, _) -> l
+  Run.GraphErr edgeInfos -> UC.infoRegion $ UC.edgeEqnInfo $ snd $ head edgeInfos
+
+eqBy f x y = (f x) == (f y)
+
 --mkErrorPair :: Run.SolverErr -> (Region, String)
 mkErrorPair finalGraph (Run.StringErr (UC.ProbId ident, reg, msg)) = (reg, msg)
-mkErrorPair finalGraph (Run.GraphErr edgeInfos) =
-  (UC.infoRegion $ UC.edgeEqnInfo $ snd $ head edgeInfos,
+mkErrorPair finalGraph (Run.GraphErr rawInfos) =
+  --Only report one edge per source location
+  let 
+    edgeInfos = List.nubBy (eqBy (UC.infoRegion . UC.edgeEqnInfo . snd) ) rawInfos
+  in (UC.infoRegion $ UC.edgeEqnInfo $ snd $ head edgeInfos,
   "Cannot solve the following constraints:\n\n"
   ++ concatMap (edgeMessage finalGraph ) edgeInfos)
 
