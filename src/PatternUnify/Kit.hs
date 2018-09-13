@@ -30,7 +30,7 @@ module PatternUnify.Kit  (  bool
             ,  between
             ,  commaSep
             ,  module PP
-            ,  PatternUnify.Kit.elem
+            ,  PatternUnify.Kit.elem 
             ,  PatternUnify.Kit.notElem
             , bind2
             , bind3

@@ -10,7 +10,7 @@ import Data.Char
 import Data.List
 
 import Text.PrettyPrint.HughesPJ hiding (SourcePos, parens, sourceColumn,
-                                  sourceLine)
+                                  sourceLine, (<>))
 import qualified Text.PrettyPrint.HughesPJ as PP
 
 import qualified Text.Parsec as P

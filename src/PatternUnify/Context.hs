@@ -536,7 +536,7 @@ getUnsolvedAndSolved :: [Entry] -> ([(Nom, Region, Maybe VAL)], Subs)
 getUnsolvedAndSolved [] = return Map.empty
 getUnsolvedAndSolved (entry : rest) =
   let
-    (uns, solved) = getUnsolvedAndSolved rest
+    (uns, solved) = getUnsolvedAndSolved rest 
   in
     case entry of
       E y _ (DEFN valNotFlat) info  | isCF info == Factual ->
@@ -553,7 +553,7 @@ getUnsolvedAndSolved (entry : rest) =
 
 metaValue :: MonadState Context m => Nom -> m VAL
 metaValue x = look =<< getL
-  where
+  where 
     look :: Monad m => ContextL -> m Type
     look B0 = fail $ "metaValue: missing " ++ show x
     look (cx  :< E y _ (DEFN val) _ )  | x == y     = return val

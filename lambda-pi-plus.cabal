@@ -24,7 +24,7 @@ source-repository head
 executable lambda-pi-plus
   -- -prof -fprof-auto -fprof-auto -fprof-cafs
   ghc-options:
-        -O2  -Wall -prof -fprof-auto -fprof-auto -fprof-cafs -rtsopts
+        -O2  -Wall -fprof-auto -fprof-auto -fprof-cafs -rtsopts
   main-is:             Main.hs
   other-modules:
     ConstraintBased
@@ -40,11 +40,43 @@ executable lambda-pi-plus
     , Top.Implementation.TypeGraph.Basics
     , Top.Implementation.TypeGraph.Class
     , Top.Implementation.TypeGraph.Standard
+    , PatternUnify.Kit
+    , PatternUnify.SolverConfig
+    , Top.Constraint
+    , Top.Constraint.Information
+    , Top.Implementation.General
+    , Top.Implementation.TypeGraph.ApplyHeuristics
+    , Top.Implementation.TypeGraph.ClassMonadic
+    , Top.Implementation.TypeGraph.DefaultHeuristics
+    , Top.Implementation.TypeGraph.EquivalenceGroup
+    , Top.Implementation.TypeGraph.Heuristic
+    , Top.Implementation.TypeGraph.Path
+    , Top.Interface.Basic
+    , Top.Interface.Qualification
+    , Top.Interface.Substitution
+    , Top.Interface.TypeInference
+    , Top.Monad.Select
+    , Top.Monad.StateFix
+    , Top.Solver
+    , Top.Types
+    , Top.Types.Classes
+    , Top.Types.Kinds
+    , Top.Types.Primitive
+    , Top.Types.Qualification
+    , Top.Types.Quantification
+    , Top.Types.Schemes
+    , Top.Types.Substitution
+    , Top.Types.Synonym
+    , Top.Types.Unification
+    , Top.Util.Embedding
+    , Top.Util.Empty
+    , Top.Util.Option
+    , Utils
 
 
 
   -- other-extensions:
-  build-depends:       base
+  build-depends:       base >= 4.11.1.0
                        , mtl
                        , parsec
                        , pretty
