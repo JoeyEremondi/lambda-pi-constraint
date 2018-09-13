@@ -129,7 +129,7 @@ data ConstraintType =
   -- | ProbUpdate ProbId
   | DefineMeta Nom
   | DerivedEqn ProbId
-  | ChoiceEdge ChoiceEdge Nom (VAL, VAL)
+  | ChoiceEdge ChoiceEdge Nom (VAL, VAL) 
   deriving (Eq, Show, Generic)
 
 data EqnInfo =
@@ -140,7 +140,7 @@ data EqnInfo =
   , programContext   :: ProgramContext
   , typeOfString     :: String
   , initialCreatorId :: Maybe ProbId
-  , isImpliedEquality :: Bool
+  -- , isImpliedEquality :: Bool
   } deriving (Eq, Show, Generic)
 
 

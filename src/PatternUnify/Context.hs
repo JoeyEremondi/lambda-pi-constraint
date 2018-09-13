@@ -567,6 +567,7 @@ metaValue x = look =<< getL
 
 addEqn :: (Fresh m) => ConstraintInfo -> Equation -> TG.StandardTypeGraph -> m (TG.StandardTypeGraph)
 --Avoid polluting our graph with a bunch of reflexive equations
+--Also, don't add duplicate edges
 addEqn info eqn@(EQN _ v1 _ v2 _) stg | v1 == v2 = return stg
 addEqn info eqn@(EQN _ v1 _ v2 _) stg = --trace ("Adding equation to graph " ++ show eqn) $
     TG.addEqn info (v1, v2) stg
@@ -616,11 +617,11 @@ recordDefn alpha _T t info = do
 recordEntry :: Entry -> Contextual ()
 recordEntry (E alpha _T HOLE info) = return ()
 recordEntry (E alpha _T (DEFN t) info) = do
-  b <- defAlreadyRecorded alpha
-  unless (b || isImpliedEquality info) $ recordDefn alpha _T t info
+  b <- defAlreadyRecorded alpha 
+  unless (b) $ recordDefn alpha _T t info
 recordEntry (Prob pid prob _ _) = do
   b <- probAlreadyRecorded pid
-  let
+  let 
     edgeType =
       case creationInfo (probInfo prob) of
         Initial -> InitConstr pid

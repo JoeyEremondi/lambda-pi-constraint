@@ -280,7 +280,7 @@ maybePar (C _ []) = id
 maybePar (N _ []) = id
 maybePar tm = parens
 
-
+ 
 instance Pretty VAL where
   pretty (VBot s) = return $ text "⊥"
   pretty (VChoice cid _ _ s t) =
