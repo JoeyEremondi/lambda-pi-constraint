@@ -160,7 +160,7 @@ defineGlobal pid info x _T vinit m = --trace ("Defining global in problem " ++ s
             True -> VChoice cid cuid x vsingle freshVar
             False -> vsingle
      --TODO who created? Adjust info
-     when (useTypeGraph config && not (isImpliedEquality info)) $
+     when (useTypeGraph config ) $
       trace ("RECORDING DEFN" ++ show (x, vsingle)) $  Ctx.recordDefn x _T vsingle info
 
      when (useTypeGraph config && useCF config ) $

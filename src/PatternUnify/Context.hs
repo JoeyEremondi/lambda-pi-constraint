@@ -609,7 +609,8 @@ recordChoice  _T x vsingle freshVar info = --trace ("RECORDING choice " ++ show 
 
 recordDefn :: Nom -> Type -> VAL -> EqnInfo -> Contextual ()
 recordDefn alpha _T t info = do
-  recordEqn (DefineMeta alpha) (EQN _T (meta alpha) _T t info)
+  --Don't record duplicate equations for implied equalities
+  unless (isImpliedEquality info) $ recordEqn (DefineMeta alpha) (EQN _T (meta alpha) _T t info)
   recordUpdate info _T (alpha, t)
   markDefInGraph alpha
 
@@ -617,7 +618,7 @@ recordEntry :: Entry -> Contextual ()
 recordEntry (E alpha _T HOLE info) = return ()
 recordEntry (E alpha _T (DEFN t) info) = do
   b <- defAlreadyRecorded alpha
-  unless (b || isImpliedEquality info) $ recordDefn alpha _T t info
+  unless (b ) $ recordDefn alpha _T t info
 recordEntry (Prob pid prob _ _) = do
   b <- probAlreadyRecorded pid
   let
