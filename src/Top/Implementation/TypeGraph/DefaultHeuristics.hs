@@ -42,7 +42,11 @@ import qualified Control.Monad as Monad
 
 import Top.Types.Unification (firstOrderUnify)
 
+
+import Debug.Trace (trace)
+
 type Info = Info.ConstraintInfo
+
 
 
 
@@ -252,9 +256,9 @@ appHeuristic = Selector ("Function Application", f)
 
         argPermuts args = args : (permutations args)
         makeMatch  localFnType retTy permut  =  Ln.runFreshM $ matchArgs localFnType permut retTy
-        ourMatch localFnType retTy args = case Maybe.catMaybes $ map (makeMatch localFnType  retTy) (argPermuts args) of
+        ourMatch localFnType retTy args =  case filter (\l -> map fst l /= (map fst args) ) $ Maybe.catMaybes $ map (makeMatch localFnType  retTy) (argPermuts args) of
           [] -> Nothing
-          (h:_) -> Just h
+          l@(h:_) -> trace ("Got argPermuts " ++ show l ++ "  from  " ++ show args) $ Just h
 
       let numArgsProvided = length rawArgs
 
