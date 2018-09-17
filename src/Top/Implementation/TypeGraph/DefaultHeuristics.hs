@@ -197,10 +197,10 @@ appHeuristic = Selector ("Function Application", f)
         maxArgsHelper _T accum =  Just accum
 
     --Try to add arguments to fix any mismatches in our function
-    matchArgs :: (Ln.Fresh m) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(VAL, Maybe Type)])
+    matchArgs :: (HasTypeGraph m info) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(VAL, Maybe Type)])
     matchArgs fnTy argTys retTy = 
       -- trace ("MATCH ARGS fn " ++ Tm.prettyString fnTy ++ "  argsTy  " ++ show (map (fmap Tm.prettyString) argTys) ++ "   retTy  " ++ Tm.prettyString retTy) $
-      helper fnTy argTys retTy 1 []
+      Ln.runFreshMT $ helper fnTy argTys retTy 1 []
       where
         helper fnTy [] retTy i accum
           | Just ret <- firstOrderUnify fnTy retTy
@@ -259,10 +259,12 @@ appHeuristic = Selector ("Function Application", f)
 
 
         argPermuts args = args : (permutations args)
-        makeMatch  localFnType retTy permut  =  Ln.runFreshM $ matchArgs localFnType permut retTy
-        ourMatch localFnType retTy args =  case filter (\l -> map fst l /= (map fst args) ) $ Maybe.catMaybes $ map (makeMatch localFnType  retTy) (argPermuts args) of
-          [] -> Nothing
-          l@(h:_) -> trace ("Got argPermuts " ++ show l ++ "  from  " ++ show args) $ Just h
+        makeMatch  localFnType retTy permut  = freezeTypeGraphM $  matchArgs localFnType permut retTy
+        ourMatch localFnType retTy args = do 
+          mMatches <- forM (argPermuts args) (makeMatch localFnType  retTy) 
+          case filter (\l -> map fst l /= (map fst args) ) $ Maybe.catMaybes mMatches of
+            [] -> return Nothing
+            l@(h:_) -> trace ("Got argPermuts " ++ show l ++ "  from  " ++ show args) $ return $ Just h
 
       let numArgsProvided = length rawArgs
 
@@ -282,8 +284,9 @@ appHeuristic = Selector ("Function Application", f)
               , Just actualArgs <- maybeArgList
               --,  n >= length args
               -- , (AppFnType _ _ _ ) <- edgeContext
-               ->
-                case ourMatch fullFnTp retTy actualArgs of
+               -> do
+                mMatchList <- ourMatch fullFnTp retTy actualArgs
+                case mMatchList of
                   Just matchList -> do
                     let argStr t = "(" ++ Tm.prettyString t ++ ")"
                     let expectedArgsStr
