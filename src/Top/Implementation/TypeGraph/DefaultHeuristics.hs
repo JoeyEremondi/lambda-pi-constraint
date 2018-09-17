@@ -197,30 +197,35 @@ appHeuristic = Selector ("Function Application", f)
         maxArgsHelper _T accum =  Just accum
 
     --Try to add arguments to fix any mismatches in our function
-    matchArgs :: (HasTypeGraph m info) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(VAL, Maybe Type)])
+    -- matchArgs :: (HasTypeGraph m info) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(VAL, Maybe Type)])
     matchArgs fnTy argTys retTy = 
       -- trace ("MATCH ARGS fn " ++ Tm.prettyString fnTy ++ "  argsTy  " ++ show (map (fmap Tm.prettyString) argTys) ++ "   retTy  " ++ Tm.prettyString retTy) $
       Ln.runFreshMT $ helper fnTy argTys retTy 1 []
       where
-        helper fnTy [] retTy i accum
-          | Just ret <- firstOrderUnify fnTy retTy
-            --
-             = trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
+
+        addEdgeM (v1, v2) info = do
+          error ""
+
+        helper fnTy [] retTy i accum = do
+          let mRet = firstOrderUnify fnTy retTy
+          case (mRet, fnTy) of
+            (Just ret, _) -> trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
               return $ Just $ reverse accum
-          | (Tm.PI _S _T) <- fnTy =
-            do
+            (_, Tm.PI _S _T) -> do
               argVal <- Tm.var <$> Tm.freshNom
               _TVal <- _T Tm.$$ argVal
               helper _TVal [] retTy (i+1) $ (argVal, Just _S) : accum
-        helper (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum
-          | Just unifArgTy <- firstOrderUnify _S argTy =  do
-            _TVal <- _T Tm.$$ argVal
-            trace ("MATCH type " ++ Tm.prettyString _S ++ " to " ++ Tm.prettyString argTy ++ " TVal : " ++ Tm.prettyString _TVal) $
-              helper _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
-          | otherwise = do
-            argVal <- Tm.var <$> Tm.freshNom
-            _TVal <- _T Tm.$$ argVal
-            helper _TVal argsList retTy (i+1) $ (argVal, Just _S) : accum
+        helper (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum = do
+          let mUnifArgTy = firstOrderUnify _S argTy 
+          case mUnifArgTy of
+            Just unifArgTy -> do
+              _TVal <- _T Tm.$$ argVal
+              trace ("MATCH type " ++ Tm.prettyString _S ++ " to " ++ Tm.prettyString argTy ++ " TVal : " ++ Tm.prettyString _TVal) $
+                helper _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
+            _ -> do
+              argVal <- Tm.var <$> Tm.freshNom
+              _TVal <- _T Tm.$$ argVal
+              helper _TVal argsList retTy (i+1) $ (argVal, Just _S) : accum
         helper fnTy argTys retTy i accum = return Nothing
 
     f pair@(edge@(EdgeId vc _ _), info) | Just reg <- (applicationEdgeRegion $ programContext $ edgeEqnInfo info) = do
