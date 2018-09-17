@@ -31,6 +31,8 @@ import PatternUnify.ConstraintInfo as Info
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe
 
+import Debug.Trace (trace)
+
 
 type Info = Info.ConstraintInfo
 
@@ -164,7 +166,7 @@ instance TypeGraph (StandardTypeGraph) Info where
               --    --TODO representative vertex?
 
 
-               Tm.C ctor args -> do
+               Tm.C ctor args -> trace ("**Adding term graph ctor " ++ show newtp) $ do
                    fresh1 <- Ln.fresh unique
                    vinit <- VertexId <$> Ln.fresh unique
                    let
@@ -398,7 +400,7 @@ processUpdate info (alpha, alphaVal) stg = do
         (termVid, oldTerm) <- termList]
     foldFun :: (Ln.Fresh m) => (VertexId, Tm.VAL, Tm.VAL) -> StandardTypeGraph -> m StandardTypeGraph
     foldFun (vid, oldVal, newVal) g =
-      addUpdateEdge vid info oldVal newVal g
+      trace ("Processing update edge " ++ show vid ++ "," ++ show oldVal ++ "   ---   " ++ show newVal) $ addUpdateEdge vid info oldVal newVal g
   gRet <- foldrM foldFun stg vertsToUpdate
   --Mark the updates on these terms as performed
   let newDict = M.filterWithKey (\beta _ -> alpha /= beta) (termNodes gRet)

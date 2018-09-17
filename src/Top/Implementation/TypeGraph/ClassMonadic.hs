@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 -----------------------------------------------------------------------------
 -- | License      :  GPL
 --
@@ -43,6 +44,17 @@ changeTypeGraph f = withTypeGraph (\g -> ((), f g))
 
 changeTypeGraphM :: HasTG m info => (forall graph . TG.TypeGraph graph info => graph -> m graph ) -> m ()
 changeTypeGraphM f = withTypeGraphM (\g -> (\fg -> ((), fg)) <$> f g)
+
+--Perform some actions with a type graph, then return the
+--graph to its original state
+freezeTypeGraphM :: forall a m info. HasTG m info => m a -> m a
+freezeTypeGraphM f = 
+      let 
+            theFn :: (forall graph . TG.TypeGraph graph info => graph -> m (a, graph))
+            theFn g = do
+                  ret <- f
+                  return (ret, g)
+      in withTypeGraphM theFn
 
 -- construct a type graph
 

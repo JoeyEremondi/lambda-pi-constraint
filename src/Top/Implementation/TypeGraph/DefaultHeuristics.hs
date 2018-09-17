@@ -198,21 +198,25 @@ appHeuristic = Selector ("Function Application", f)
 
     --Try to add arguments to fix any mismatches in our function
     matchArgs :: (Ln.Fresh m) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(VAL, Maybe Type)])
-    matchArgs fnTy argTys retTy = --trace ("MATCH ARGS fn " ++ Tm.prettyString fnTy ++ "  argsTy  " ++ show (map (fmap Tm.prettyString) argTys) ++ "   retTy  " ++ Tm.prettyString retTy) $
+    matchArgs fnTy argTys retTy = 
+      -- trace ("MATCH ARGS fn " ++ Tm.prettyString fnTy ++ "  argsTy  " ++ show (map (fmap Tm.prettyString) argTys) ++ "   retTy  " ++ Tm.prettyString retTy) $
       helper fnTy argTys retTy 1 []
       where
         helper fnTy [] retTy i accum
-          | Just ret <- --trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy) $
-            firstOrderUnify fnTy retTy = return $ Just $ reverse accum
-          | (Tm.PI _S _T) <- fnTy = do
+          | Just ret <- firstOrderUnify fnTy retTy
+            --
+             = trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
+              return $ Just $ reverse accum
+          | (Tm.PI _S _T) <- fnTy =
             do
               argVal <- Tm.var <$> Tm.freshNom
               _TVal <- _T Tm.$$ argVal
               helper _TVal [] retTy (i+1) $ (argVal, Just _S) : accum
         helper (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum
-          | Just unifArgTy <- firstOrderUnify _S argTy = do
+          | Just unifArgTy <- firstOrderUnify _S argTy =  do
             _TVal <- _T Tm.$$ argVal
-            helper _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
+            trace ("MATCH type " ++ Tm.prettyString _S ++ " to " ++ Tm.prettyString argTy ++ " TVal : " ++ Tm.prettyString _TVal) $
+              helper _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
           | otherwise = do
             argVal <- Tm.var <$> Tm.freshNom
             _TVal <- _T Tm.$$ argVal
@@ -236,7 +240,7 @@ appHeuristic = Selector ("Function Application", f)
 
 
       (mFullFnTp, maybeArgList, mRetTy) <- doWithoutEdges appEdges $ do
-        limitedDot <- getDot
+        -- limitedDot <- getDot
         fullFn <- substituteTypeSafe $ rawFnTy
         argMaybeList <- forM rawArgs $ \(aval, aty) -> do
           retVal <- substituteTypeSafe $ aval
