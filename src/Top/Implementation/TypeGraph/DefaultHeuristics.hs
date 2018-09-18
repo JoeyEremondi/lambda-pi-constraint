@@ -40,7 +40,7 @@ import qualified Control.Monad as Monad
 
 --import Debug.Trace (trace)
 
-import Top.Types.Unification (firstOrderUnify)
+import Top.Types.Unification (unifyWithSubs, SubsMap, emptySubs)
 
 
 import Debug.Trace (trace)
@@ -200,37 +200,38 @@ appHeuristic = Selector ("Function Application", f)
     -- matchArgs :: (HasTypeGraph m info) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(VAL, Maybe Type)])
     matchArgs fnTy argTys retTy = 
       -- trace ("MATCH ARGS fn " ++ Tm.prettyString fnTy ++ "  argsTy  " ++ show (map (fmap Tm.prettyString) argTys) ++ "   retTy  " ++ Tm.prettyString retTy) $
-      Ln.runFreshMT $ helper fnTy argTys retTy 1 []
+      Ln.runFreshMT $ helper emptySubs fnTy argTys retTy 1 []
       where
         helper :: 
           (HasTypeGraph m Info)
-          => VAL
+          => SubsMap
+          -> VAL
           -> [(VAL, VAL)]
           -> VAL
           -> Integer
           -> [(VAL, Maybe VAL)]
           -> Ln.FreshMT m (Maybe [(VAL, Maybe VAL)])
-        helper fnTy [] retTy i accum = do
-          let mRet = firstOrderUnify fnTy retTy
+        helper subs fnTy [] retTy i accum = do
+          let mRet = unifyWithSubs subs fnTy retTy
           case (mRet, fnTy) of
-            (Just ret, _) -> trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
+            (Just (_, newSub), _) -> trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
               return $ Just $ reverse accum
             (_, Tm.PI _S _T) -> do
               argVal <- Tm.var <$> Tm.freshNom
               _TVal <- _T Tm.$$ argVal
-              helper _TVal [] retTy (i+1) $ (argVal, Just _S) : accum
-        helper (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum = do
-          let mUnifArgTy = firstOrderUnify _S argTy 
+              helper subs _TVal [] retTy (i+1) $ (argVal, Just _S) : accum
+        helper subs (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum = do
+          let mUnifArgTy = unifyWithSubs subs _S argTy 
           case mUnifArgTy of
-            Just unifArgTy -> do
+            Just (_, newSub) -> do
               _TVal <- _T Tm.$$ argVal
               trace ("MATCH type " ++ Tm.prettyString _S ++ " to " ++ Tm.prettyString argTy ++ " TVal : " ++ Tm.prettyString _TVal) $
-                helper _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
+                helper newSub _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
             _ -> do
               argVal <- Tm.var <$> Tm.freshNom
               _TVal <- _T Tm.$$ argVal
-              helper _TVal argsList retTy (i+1) $ (argVal, Just _S) : accum
-        helper fnTy argTys retTy i accum = return Nothing
+              helper subs _TVal argsList retTy (i+1) $ (argVal, Just _S) : accum
+        helper subs fnTy argTys retTy i accum = return Nothing
 
     f pair@(edge@(EdgeId vc _ _), info) | Just reg <- (applicationEdgeRegion $ programContext $ edgeEqnInfo info) = do
       --let (fnTyEdge:_) = [x | x <- edges]

@@ -176,15 +176,27 @@ unifyToList t1 t2 =
         False -> filter (not . isMetaNeutral) [t1, t2]
 
 
-type Subs = Map.Map Tm.Nom Tm.VAL
+type SubsMap = Map.Map Tm.Nom Tm.VAL
 
+applySubs :: SubsMap -> Tm.VAL -> Tm.VAL
+applySubs subs t = 
+  Ln.substs (Map.toList subs) t
 
-unifyWithSubs :: (Subs) -> Tm.VAL -> Tm.VAL -> Maybe (Tm.VAL, Subs)
+emptySubs :: SubsMap
+emptySubs = Map.empty
+
+unifyWithSubs :: (SubsMap) -> Tm.VAL -> Tm.VAL -> Maybe (Tm.VAL, SubsMap)
 unifyWithSubs subs t1 t2 =
     case (t1,t2) of
       --Variables unify with anything
-      ((Tm.N (Tm.Meta i) []), x) -> Just (x, subs)
-      ((x, Tm.N (Tm.Meta i) [])) -> Just (x, subs)
+      ((Tm.N (Tm.Meta i) []), x) -> 
+        case Map.lookup i subs of
+          Nothing -> Just (x, Map.insert i x subs)
+          Just tm -> unifyWithSubs subs (applySubs subs tm) x
+      ((x, Tm.N (Tm.Meta i) [])) -> 
+        case Map.lookup i subs of
+          Nothing -> Just (x, Map.insert i x subs)
+          Just tm -> unifyWithSubs subs (applySubs subs tm) x
       --TODO don't assume functions ignore arguments?
       (e1@(Tm.L _), e2@(Tm.L _)) -> do
         let
@@ -199,13 +211,13 @@ unifyWithSubs subs t1 t2 =
 
       ((Tm.C s ss),(Tm.C t tt))
           | s == t  -> do
-              let f :: (Tm.VAL, Tm.VAL) -> (Subs, [Tm.VAL]) -> Maybe (Subs, [Tm.VAL]) 
+              let f :: (Tm.VAL, Tm.VAL) -> (SubsMap, [Tm.VAL]) -> Maybe (SubsMap, [Tm.VAL]) 
                   f (t1, t2) (sub, soFar) = do
                     (newVal, newSub) <- unifyWithSubs sub t1 t2
                     return (newSub, newVal : soFar) 
               (retSub, xs) <- foldrM f (subs, []) (zip ss tt)
               return $ (Tm.C s xs, retSub)
 
-      _ -> case (t1 == t2) of
+      _ -> case (applySubs subs t1 == applySubs subs t2) of
         True -> return (t1, subs)
         False -> Nothing       
