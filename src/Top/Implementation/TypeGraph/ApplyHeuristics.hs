@@ -6,7 +6,7 @@
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
 -----------------------------------------------------------------------------
-module Top.Implementation.TypeGraph.ApplyHeuristics (applyHeuristics,  expandPath, ErrorInfo, allErrorPaths) where
+module Top.Implementation.TypeGraph.ApplyHeuristics (applyHeuristics,  expandPath, ErrorInfo) where
 
 import Data.Graph (buildG, scc)
 import Data.List
