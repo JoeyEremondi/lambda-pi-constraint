@@ -18,6 +18,10 @@ import Top.Types.Substitution
 import Top.Types.Synonym
 import Utils (internalError)
 
+import Data.Foldable (foldrM)
+
+import qualified Data.Map as Map
+
 import qualified PatternUnify.Tm as Tm
 
 import qualified Unbound.Generics.LocallyNameless as Ln
@@ -170,3 +174,38 @@ unifyToList t1 t2 =
       _ -> case (t1 == t2) of
         True -> return t1
         False -> filter (not . isMetaNeutral) [t1, t2]
+
+
+type Subs = Map.Map Tm.Nom Tm.VAL
+
+
+unifyWithSubs :: (Subs) -> Tm.VAL -> Tm.VAL -> Maybe (Tm.VAL, Subs)
+unifyWithSubs subs t1 t2 =
+    case (t1,t2) of
+      --Variables unify with anything
+      ((Tm.N (Tm.Meta i) []), x) -> Just (x, subs)
+      ((x, Tm.N (Tm.Meta i) [])) -> Just (x, subs)
+      --TODO don't assume functions ignore arguments?
+      (e1@(Tm.L _), e2@(Tm.L _)) -> do
+        let
+          (x, body1, body2) = Ln.runFreshM $ do
+            xm <- Ln.fresh $ Ln.s2n "foUnif__"
+            body1m <- e1 Tm.$$ Tm.var x
+            body2m <- e2 Tm.$$ Tm.var x
+            return (xm, body1m, body2m)
+        (bodyRet, newSubs) <- unifyWithSubs subs body1 body2
+        return (Tm.L $ Ln.bind x bodyRet, newSubs)
+
+
+      ((Tm.C s ss),(Tm.C t tt))
+          | s == t  -> do
+              let f :: (Tm.VAL, Tm.VAL) -> (Subs, [Tm.VAL]) -> Maybe (Subs, [Tm.VAL]) 
+                  f (t1, t2) (sub, soFar) = do
+                    (newVal, newSub) <- unifyWithSubs sub t1 t2
+                    return (newSub, newVal : soFar) 
+              (retSub, xs) <- foldrM f (subs, []) (zip ss tt)
+              return $ (Tm.C s xs, retSub)
+
+      _ -> case (t1 == t2) of
+        True -> return (t1, subs)
+        False -> Nothing       
