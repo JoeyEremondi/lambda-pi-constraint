@@ -211,7 +211,6 @@ appHeuristic = Selector ("Function Application", f)
           -> [(VAL, Maybe VAL)]
           -> Ln.FreshMT m (Maybe [(VAL, Maybe VAL)])
         helper fnTy [] retTy i accum = do
-          _ <- theUnifyTerms (error "TODO INFO") fnTy retTy
           let mRet = firstOrderUnify fnTy retTy
           case (mRet, fnTy) of
             (Just ret, _) -> trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
