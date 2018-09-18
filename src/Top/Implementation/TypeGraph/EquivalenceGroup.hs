@@ -203,12 +203,12 @@ equalPaths without start targets eqgroup =
 typeOfGroup :: Tm.Subs -> EquivalenceGroup info -> Maybe Tm.VAL
 typeOfGroup synonyms eqgroup
 
-   | length allConstants > 1                           =  trace ("TOG ALL CONSTS > 1") $ Nothing
-   | not (null allConstants) && not (null allApplies)  =  trace ("TOG CONST AND APP " ++ show allConstants ++ "   " ++ show allApplies) $ Nothing
+   | length allConstants > 1                           =   Nothing
+   | not (null allConstants) && not (null allApplies)  =  Nothing
 
    | not (null allOriginals)  =  Just (theBestType synonyms allOriginals)
    | not (null allConstants)  =  case allConstants of
-     [] -> trace ("TOG impossible case 1") $ Nothing
+     [] -> Nothing
      (Con c:_) -> Just (Tm.C c []) --TODO is this poorly typed?
      (ConElim c:_) -> error "conElim group type"--TODO is this poorly typed?
      (CApp : _ ) -> error "App group type"

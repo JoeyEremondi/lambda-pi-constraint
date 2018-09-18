@@ -56,6 +56,8 @@ import PatternUnify.Tm (Region (..))
 
 import Control.Monad(when)
 
+import Debug.Trace (trace)
+
 
 -- Allocate a fresh name so the counter starts from 1, to avoid clashing
 -- with s2n (which generates names with index 0):
@@ -75,7 +77,7 @@ solveEntries :: SolverConfig -> [Entry] -> Either ErrorResult ((), Context)
 solveEntries conf !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    (result, ctx) = --trace ("Initial context:\n" ++ initialContextString ) $
+    (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, [], Set.empty, conf) $ do
           initialise
           ambulando [] [] Map.empty

@@ -58,6 +58,7 @@ defaultHeuristics path =
    [ --avoidDerivedEdges
    listOfVotes
    , highParticipation 1.0 path
+  --  , inMinimalSet
    , firstComeFirstBlamed ]
 
 -----------------------------------------------------------------------------
@@ -88,10 +89,10 @@ highParticipation ratio path =
           activeCNrs = [ cnr | (EdgeId _ _ cnr, _) <- es ]
           maxInList  = maximum (M.elems participationList)
           limit     -- test if one edge can solve it completely
-             | maxInList == nrOfPaths = maxInList
+             | maxInList == nrOfPaths = trace "MaxList == numPaths" $ maxInList
              | otherwise              = round (fromIntegral maxInList * ratio) `max` 1
           goodCNrs   = M.keys (M.filter (>= limit) participationList)
-          bestEdges  = filter (\(EdgeId _ _ cnr,_) -> cnr `elem` goodCNrs) es
+          bestEdges  =  filter (\(EdgeId _ _ cnr,_) -> cnr `elem` goodCNrs) es
 
           -- prints a nice report
           mymsg  = unlines ("" : title : replicate 50 '-' : map f es)
@@ -102,7 +103,7 @@ highParticipation ratio path =
              take 8  (show (M.findWithDefault 0 cnr fm * 100 `div` nrOfPaths)++"%"++repeat ' ') ++
              "{"++show info++"}"
       in do logMsg mymsg
-            return bestEdges
+            trace ("Good CNrs:" ++ show bestEdges ++ "\n++Part map " ++ show participationList) $ return bestEdges
 
 -- |Select the "latest" constraint
 firstComeFirstBlamed :: Heuristic info
@@ -226,8 +227,8 @@ appHeuristic = Selector ("Function Application", f)
           case mUnifArgTy of
             Just (_, newSub) -> do
               _TVal <- _T Tm.$$ argVal
-              trace ("MATCH type " ++ Tm.prettyString _S ++ " to " ++ Tm.prettyString argTy ++ " TVal : " ++ Tm.prettyString _TVal) $
-                helper newSub _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
+              -- trace ("MATCH type " ++ Tm.prettyString _S ++ " to " ++ Tm.prettyString argTy ++ " TVal : " ++ Tm.prettyString _TVal) $
+              helper newSub _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
             _ -> do
               argVal <- Tm.var <$> Tm.freshNom
               _TVal <- _T Tm.$$ argVal

@@ -33,6 +33,7 @@ import Control.Monad.Trans.Maybe
 
 import Debug.Trace (trace)
 
+import qualified Common
 
 type Info = Info.ConstraintInfo
 
@@ -166,7 +167,7 @@ instance TypeGraph (StandardTypeGraph) Info where
               --    --TODO representative vertex?
 
 
-               Tm.C ctor args -> trace ("**Adding term graph ctor " ++ show newtp) $ do
+               Tm.C ctor args -> do -- trace ("**Adding term graph ctor " ++ show newtp) $ do
                    fresh1 <- Ln.fresh unique
                    vinit <- VertexId <$> Ln.fresh unique
                    let
@@ -376,11 +377,12 @@ toDotGen eqGroups g =
         [show v ++ " [label = \"" ++ show v ++ ": " ++ dotLabel v vinfo ++ "\" ];\n" | (v, vinfo) <- nodePairs ]
         --[show num ++ " [label = \"" ++ s ++ "\" ];\n" | s <- termNames ]
        creator info = creationInfo $ edgeEqnInfo info
+       region info = infoRegion $ edgeEqnInfo info
        edgeDecls =
           [show n1
           ++ " -> " ++ show n2
           ++ " [dir=none, label = \""
-          ++ edgeName edgeType ++ " " ++ show (creator info)
+          ++ edgeName edgeType ++ " " ++ show (creator info) ++ "at " ++ (Common.prettySource $ region info)
           ++ "\", color = " ++ edgeColor edgeType ++ "] ;\n" | (n1, n2, info) <- theEdges, edgeType <- [Info.edgeType info]  ]
 
 
@@ -400,7 +402,8 @@ processUpdate info (alpha, alphaVal) stg = do
         (termVid, oldTerm) <- termList]
     foldFun :: (Ln.Fresh m) => (VertexId, Tm.VAL, Tm.VAL) -> StandardTypeGraph -> m StandardTypeGraph
     foldFun (vid, oldVal, newVal) g =
-      trace ("Processing update edge " ++ show vid ++ "," ++ show oldVal ++ "   ---   " ++ show newVal) $ addUpdateEdge vid info oldVal newVal g
+      -- trace ("Processing update edge " ++ show vid ++ "," ++ show oldVal ++ "   ---   " ++ show newVal) $ 
+      addUpdateEdge vid info oldVal newVal g
   gRet <- foldrM foldFun stg vertsToUpdate
   --Mark the updates on these terms as performed
   let newDict = M.filterWithKey (\beta _ -> alpha /= beta) (termNodes gRet)
