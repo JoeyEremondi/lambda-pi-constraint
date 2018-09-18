@@ -199,7 +199,7 @@ appHeuristic = Selector ("Function Application", f)
     --Try to add arguments to fix any mismatches in our function
     -- matchArgs :: (HasTypeGraph m info) => Tm.Type -> [(Tm.VAL, Tm.Type)] -> Tm.Type -> m (Maybe [(VAL, Maybe Type)])
     matchArgs fnTy argTys retTy = 
-      -- trace ("MATCH ARGS fn " ++ Tm.prettyString fnTy ++ "  argsTy  " ++ show (map (fmap Tm.prettyString) argTys) ++ "   retTy  " ++ Tm.prettyString retTy) $
+      trace ("MATCH ARGS fn " ++ Tm.prettyString fnTy ++ "  argsTy  " ++ show (map (fmap Tm.prettyString) argTys) ++ "   retTy  " ++ Tm.prettyString retTy) $
       Ln.runFreshMT $ helper fnTy argTys retTy 1 []
       where
         helper :: 
@@ -212,9 +212,10 @@ appHeuristic = Selector ("Function Application", f)
           -> Ln.FreshMT m (Maybe [(VAL, Maybe VAL)])
         helper fnTy [] retTy i accum = do
           _ <- theUnifyTerms (error "TODO INFO") fnTy retTy
-          errPaths <- simplifyPath <$> allErrorPaths
+          let errPaths = Fail
+          -- errPaths <- simplifyPath <$> allErrorPaths
           -- let mRet = firstOrderUnify fnTy retTy
-          case (errPaths, fnTy) of
+          trace "Match 1" $ case (errPaths, fnTy) of
             (Fail, _) -> trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
               return $ Just $ reverse accum
             (_, Tm.PI _S _T) -> do
@@ -225,8 +226,9 @@ appHeuristic = Selector ("Function Application", f)
         helper (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum = do
           -- let mUnifArgTy = firstOrderUnify _S argTy 
           _ <- theUnifyTerms (error "TODO INFO 2") _S argTy
-          errPaths <- simplifyPath <$> allErrorPaths
-          case errPaths of
+          let errPaths = Fail
+          -- errPaths <- simplifyPath <$> allErrorPaths
+          trace ("Match 2 " ++ show i) $ case errPaths of
             Fail -> do
               _TVal <- _T Tm.$$ argVal
               trace ("MATCH type " ++ Tm.prettyString _S ++ " to " ++ Tm.prettyString argTy ++ " TVal : " ++ Tm.prettyString _TVal) $
