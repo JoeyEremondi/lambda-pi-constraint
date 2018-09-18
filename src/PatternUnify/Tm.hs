@@ -15,6 +15,7 @@
 -- (including evaluation and occurrence checking).
 module PatternUnify.Tm where
 
+
 import Data.Foldable (foldlM)
 import Data.Function (on)
 import Data.List (unionBy)
@@ -24,16 +25,18 @@ import Data.Typeable
 --import Debug.Trace (trace)
 import GHC.Generics
 import GHC.Stack (errorWithStackTrace)
-import PatternUnify.Kit
+import PatternUnify.Kit hiding ((<>))
 import Prelude hiding (elem, notElem)
 import Unbound.Generics.LocallyNameless
 import Unbound.Generics.LocallyNameless.Bind
 import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
 
+
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 
 import Control.Monad (forM, mapM, zipWithM)
+
 
 data Region =
   SourceRegion
@@ -282,7 +285,7 @@ maybePar tm = parens
 instance Pretty VAL where
   pretty (VBot s) = return $ text "⊥"
   pretty (VChoice cid _ _ s t) =
-    (\ ps pt -> text ("{{-" ++ show (choiceIdToName cid) ++ "-{") <> ps <> char ',' <+> pt <> text "}}}" )
+    (\ ps pt -> text ("{{-" ++ show (choiceIdToName cid) ++ "-{") <> ps <> char ',' <> pt <> text "}}}" )
       <$> pretty s <*> pretty t
   pretty (PI _S (L b)) =
     lunbind b $
@@ -381,14 +384,14 @@ prettyElims hdText elims =
       return hdText
     (A arg : rest) -> do
       arg' <- pretty arg --TODO parens?
-      prettyElims (hdText <+> arg' ) rest
+      prettyElims ( (parens hdText) <+> (parens arg') ) rest
     (EBot _ : rest) -> do
       prettyElims (hdText <+> text "⊥" ) rest
 
     (Elim can args : rest ) -> do
       can' <- pretty can
       args' <- mapM pretty args
-      prettyElims ((parens $ can' <+> hsep args') <+> hdText) rest
+      prettyElims ((parens $ can' <+> hsep (map parens args')) <+> hdText) rest
 --prettyElims hdText elims = error $ "Bad pretty elims " ++ show hdText ++ " " ++ show elims
 
 
