@@ -26,6 +26,8 @@ import Top.Interface.TypeInference
 import Top.Solver
 import qualified Unbound.Generics.LocallyNameless as Ln
 
+import Control.Monad.State.Lazy (runStateT, get, put)
+
 class (HasBasic m info, {-HasTI m info, HasQual m info,-} HasTG m info, MonadWriter LogEntries m, Show info) => HasTypeGraph m info | m -> info
 
 instance (HasBasic m info, {-HasTI m info, HasQual m info,-} HasTG m info, MonadWriter LogEntries m, Show info) => HasTypeGraph m info
@@ -34,6 +36,26 @@ class Monad m => HasTG m info | m -> info where
    withTypeGraph :: (forall graph . TG.TypeGraph graph info => graph -> (a, graph)) -> m a
    withTypeGraph f = withTypeGraphM (return . f)
    withTypeGraphM :: (forall graph . TG.TypeGraph graph info => graph -> m (a, graph)) -> m a
+
+currentCounter :: (Monad m) => Ln.FreshMT m Integer
+currentCounter = Ln.FreshMT get
+
+setCounter :: (Monad m) => Integer -> Ln.FreshMT m ()
+setCounter i = Ln.FreshMT $ put i
+
+instance HasTG m info => HasTG (Ln.FreshMT m) info where
+      withTypeGraphM f = do
+            i <- currentCounter
+            -- let f0 :: (forall graph . TG.TypeGraph graph info => graph -> m ((a, Integer), graph))
+            let f0 g = do
+                  ((a,g),ctr) <- (flip Ln.contFreshMT) i $ do
+                        ret <- f g
+                        ctr <- currentCounter
+                        return (ret, ctr)
+                  return ((a,ctr), g)
+            (a,ctr) <- lift $ withTypeGraphM f0
+            setCounter ctr
+            return a
 
 
 useTypeGraph :: HasTG m info => (forall graph . TG.TypeGraph graph info => graph -> a) -> m a
@@ -155,6 +177,7 @@ theUnifyTerms info t1 t2 =
    do v1  <- addTermGraph t1
       v2  <- addTermGraph t2
       addNewEdge (v1, v2) info
+
 
 makeFixpointSubst = error "TODO fixpointSubst"
 

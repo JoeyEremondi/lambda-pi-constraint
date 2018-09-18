@@ -202,11 +202,16 @@ appHeuristic = Selector ("Function Application", f)
       -- trace ("MATCH ARGS fn " ++ Tm.prettyString fnTy ++ "  argsTy  " ++ show (map (fmap Tm.prettyString) argTys) ++ "   retTy  " ++ Tm.prettyString retTy) $
       Ln.runFreshMT $ helper fnTy argTys retTy 1 []
       where
-
-        addEdgeM (v1, v2) info = do
-          error ""
-
+        helper :: 
+          (HasTypeGraph m Info)
+          => VAL
+          -> [(VAL, VAL)]
+          -> VAL
+          -> Integer
+          -> [(VAL, Maybe VAL)]
+          -> Ln.FreshMT m (Maybe [(VAL, Maybe VAL)])
         helper fnTy [] retTy i accum = do
+          _ <- theUnifyTerms (error "TODO INFO") fnTy retTy
           let mRet = firstOrderUnify fnTy retTy
           case (mRet, fnTy) of
             (Just ret, _) -> trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
