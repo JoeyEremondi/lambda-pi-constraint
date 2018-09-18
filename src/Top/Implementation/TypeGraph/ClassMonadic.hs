@@ -48,14 +48,17 @@ instance HasTG m info => HasTG (Ln.FreshMT m) info where
             i <- currentCounter
             -- let f0 :: (forall graph . TG.TypeGraph graph info => graph -> m ((a, Integer), graph))
             let f0 g = do
-                  ((a,g),ctr) <- (flip Ln.contFreshMT) i $ do
+                  ((a,g),ctr) <- (flip Ln.contFreshMT) (i + 1) $ do
                         ret <- f g
                         ctr <- currentCounter
                         return (ret, ctr)
                   return ((a,ctr), g)
             (a,ctr) <- lift $ withTypeGraphM f0
-            setCounter ctr
+            setCounter (ctr+1)
             return a
+
+instance HasBasic m info => HasBasic (Ln.FreshMT m) info where 
+
 
 
 useTypeGraph :: HasTG m info => (forall graph . TG.TypeGraph graph info => graph -> a) -> m a
@@ -84,8 +87,8 @@ addTermGraph :: (HasTypeGraph m info, Ln.Fresh m) => Tm.VAL -> m VertexId
 addTermGraph tp =
    do unique <- Ln.fresh $ Ln.s2n "addTermGraph"
       --synonyms <- getTypeSynonyms
-      (vid) <- withTypeGraph
-         $ \graph -> Ln.runFreshM $ TG.addTermGraph M.empty (Ln.s2n "addTerm") tp graph
+      (vid) <- withTypeGraphM
+         $ \graph -> TG.addTermGraph M.empty (Ln.s2n "addTerm") tp graph
 
       --setUnique newUnique
       return vid

@@ -14,7 +14,7 @@ module Top.Implementation.TypeGraph.DefaultHeuristics where
 
 import Data.List
 import qualified Data.Map as M
-import Top.Implementation.TypeGraph.ApplyHeuristics (expandPath)
+import Top.Implementation.TypeGraph.ApplyHeuristics (expandPath, allErrorPaths)
 import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
@@ -212,18 +212,22 @@ appHeuristic = Selector ("Function Application", f)
           -> Ln.FreshMT m (Maybe [(VAL, Maybe VAL)])
         helper fnTy [] retTy i accum = do
           _ <- theUnifyTerms (error "TODO INFO") fnTy retTy
-          let mRet = firstOrderUnify fnTy retTy
-          case (mRet, fnTy) of
-            (Just ret, _) -> trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
+          errPaths <- simplifyPath <$> allErrorPaths
+          -- let mRet = firstOrderUnify fnTy retTy
+          case (errPaths, fnTy) of
+            (Fail, _) -> trace ("MATCH RET " ++ Tm.prettyString fnTy ++ "   " ++ Tm.prettyString retTy ++ " ACCUM " ++ show (reverse accum) ) $ 
               return $ Just $ reverse accum
             (_, Tm.PI _S _T) -> do
               argVal <- Tm.var <$> Tm.freshNom
               _TVal <- _T Tm.$$ argVal
               helper _TVal [] retTy (i+1) $ (argVal, Just _S) : accum
+            _ -> return Nothing
         helper (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum = do
-          let mUnifArgTy = firstOrderUnify _S argTy 
-          case mUnifArgTy of
-            Just unifArgTy -> do
+          -- let mUnifArgTy = firstOrderUnify _S argTy 
+          _ <- theUnifyTerms (error "TODO INFO 2") _S argTy
+          errPaths <- simplifyPath <$> allErrorPaths
+          case errPaths of
+            Fail -> do
               _TVal <- _T Tm.$$ argVal
               trace ("MATCH type " ++ Tm.prettyString _S ++ " to " ++ Tm.prettyString argTy ++ " TVal : " ++ Tm.prettyString _TVal) $
                 helper _TVal argsRest retTy (i+1) $ (argVal, Nothing) : accum
