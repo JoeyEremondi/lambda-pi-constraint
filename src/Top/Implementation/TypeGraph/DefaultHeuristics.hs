@@ -220,6 +220,7 @@ appHeuristic = Selector ("Function Application", f)
               argVal <- Tm.var <$> Tm.freshNom
               _TVal <- _T Tm.$$ argVal
               helper subs _TVal [] retTy (i+1) $ (argVal, Just _S) : accum
+            _ -> return Nothing
         helper subs (Tm.PI _S _T) argsList@((argVal, argTy) : argsRest) retTy i accum = do
           let mUnifArgTy = unifyWithSubs subs _S argTy 
           case mUnifArgTy of
