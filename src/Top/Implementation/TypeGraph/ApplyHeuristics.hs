@@ -33,21 +33,21 @@ import Debug.Trace (trace)
 
 type ErrorInfo info = ([EdgeId], info)
 
-applyHeuristics :: HasTypeGraph m info => (Path (EdgeId, info) -> [Heuristic info]) -> m [ErrorInfo info]
+applyHeuristics :: HasTypeGraph m info => (TypeGraphPath info -> Path (EdgeId, info) -> [Heuristic info]) -> m [ErrorInfo info]
 applyHeuristics heuristics =
-   let rec thePath =
+   let rec constPath thePath =
           case simplifyPath thePath of
              Empty -> internalError "Top.TypeGraph.ApplyHeuristics" "applyHeuristics" "unexpected empty path"
              Fail  -> return []
              path  ->
-                do err <- evalHeuristics path (heuristics path)
+                do err <- evalHeuristics path (heuristics constPath path)
                    let restPath =
                          changeStep (\t@(a,_) -> if a `elem` fst err then Fail else Step t) path
-                   errs <- rec restPath
+                   errs <- rec constPath restPath
                    return (err : errs)
    in
-      do errorPath <- allErrorPaths
-         rec (removeSomeDuplicates info2ToEdgeNr errorPath)
+      do (constPath, errorPath) <- allErrorPaths
+         rec constPath (removeSomeDuplicates info2ToEdgeNr errorPath)
 
 -- These functions are used to describe for a change due to a heuristic how it affected the error path
 -- showing whether the set of constraints shrunk and if so, whether it has now become a singleton.
@@ -133,7 +133,7 @@ showSet as = "{" ++ f (map show as) ++ "}"
    where f [] = ""
          f xs = foldr1 (\x y -> x++","++y)  (map show xs)
 
-allErrorPaths :: HasTypeGraph m info => m (Path (EdgeId, info))
+allErrorPaths :: HasTypeGraph m info => m (TypeGraphPath info, Path (EdgeId, info))
 allErrorPaths =
    do is      <- getMarkedPossibleErrors
       cGraph  <- childrenGraph is
@@ -150,7 +150,7 @@ allErrorPaths =
       creatorPath <- useTypeGraph $ \stg -> mapPath (edgeTform stg) expanded
       let retVal = expanded --expanded :|: creatorPath
       -- return $ trace ("ALL ERR PATHS " ++ show expanded ++ "\n\nROOT ERR PATHS " ++ show creatorPath) $ retVal
-      trace ("PRE EXPANSION " ++ show errorPath ++ "\nPOST " ++ show (fst <$> expanded)) $ return retVal
+      trace ("PRE EXPANSION " ++ show errorPath ++ "\nPOST " ++ show (fst <$> expanded)) $ return (errorPath, retVal)
 ----------------------------
 
 -- not simplified: can also contain implied edges

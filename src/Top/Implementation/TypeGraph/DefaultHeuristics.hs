@@ -55,8 +55,8 @@ type Info = Info.ConstraintInfo
 
 -----------------------------------------------------------------------------
 
-defaultHeuristics :: Path (EdgeId, Info) -> [Heuristic Info]
-defaultHeuristics path =
+defaultHeuristics :: TypeGraphPath info -> Path (EdgeId, Info) -> [Heuristic Info]
+defaultHeuristics constPath path =
    [ --avoidDerivedEdges
    listOfVotes
    , highParticipation 1.0 path
