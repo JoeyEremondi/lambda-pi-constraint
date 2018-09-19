@@ -55,7 +55,7 @@ type Info = Info.ConstraintInfo
 
 -----------------------------------------------------------------------------
 
-defaultHeuristics :: Path (EdgeId, [Info]) -> Path (EdgeId, Info) -> [Heuristic Info]
+defaultHeuristics :: [(VertexId, [Info])] -> Path (EdgeId, Info) -> [Heuristic Info]
 defaultHeuristics fullPath path =
    [ --avoidDerivedEdges
    listOfVotes
@@ -80,7 +80,7 @@ inMininalSet path =
 -- Default ratio = 1.0  (100 percent)
 --   (the ratio determines which scores compared to the best are accepted)
 --Altered from the original to consider edges by their root creator edge
-highParticipation ::  Double -> Path (EdgeId, [Info]) -> Path (EdgeId, Info) -> Heuristic Info
+highParticipation ::  Double -> [(VertexId, [Info])] -> Path (EdgeId, Info) -> Heuristic Info
 highParticipation ratio fullPath path =
    Heuristic (Filter ("Participation ratio [ratio="++show ratio++"]") selectTheBest)
  where
@@ -95,8 +95,8 @@ highParticipation ratio fullPath path =
              | otherwise              = round (fromIntegral maxInList * ratio) `max` 1
           goodCNrs   = M.keys (M.filter (>= limit) participationList)
           bestEdges  =  filter (\(EdgeId _ _ cnr,_) -> cnr `elem` goodCNrs) es
-          hintStringMap = edgeConstraintHints path
-          updateHint (e,info) = (e, info {maybeHint = M.lookup e hintStringMap})
+          hintString = edgeConstraintHint fullPath
+          updateHint (e,info) = (e, info {maybeHint = hintString})
 
           -- prints a nice report
           mymsg  = unlines ("" : title : replicate 50 '-' : map f es)
@@ -116,35 +116,33 @@ firstComeFirstBlamed =
       let f (EdgeId _ _ cnr, _) = return cnr
       in maximalEdgeFilter "First come, first blamed" f)
 
-
-
-edgeConstraintHints ::  Path (EdgeId, Info) -> M.Map EdgeId String
-edgeConstraintHints p = trace ("Making hint for path " ++ show (fst <$> p)) $  
-  let
-    flatPath = flattenPath $ p
-    edges = M.fromList $ map (\x -> (fst x, fst x)) $ concat flatPath
-    pathsFor e = [path |  path <- flatPath, (e',_) <- path, e == e']
-    paths = M.map pathsFor edges
-    endpoints =  M.map (concatMap (\x -> [snd (head x), snd (last x)])) paths
-    regionFor inf = infoRegion $ edgeEqnInfo inf
-    containedValues inf = 
-      let r = regionFor inf
-          (x,y) = edgeEqn inf
-      in [(x,r),(y,r)]
-    locatedValues = M.map (\l -> List.nubBy (\ x y -> fst x == fst y) $ concatMap containedValues l)  endpoints
-    validValues = M.map (filter (\x -> fmvs (fst x) == [])) locatedValues
-    hintEntry (v,r) = "\n      " ++ Tm.prettyString v ++ " from " ++ prettySource r
-    hintEntryFor vs = "Conflicting values are:" ++ (concatMap hintEntry  vs)
-  in trace ("PathsFor map " ++ show (M.map (map (map fst)) paths)) $   
-    M.map hintEntryFor validValues
+edgeConstraintHint ::  [(VertexId, [Info])] -> Maybe String
+edgeConstraintHint p =  error "TODO"
+  -- trace ("Making hint for path " ++ show (fst <$> p)) $ do  
+  -- let
+  --   flatPath = flattenPath $ simplifyPath p
+  --   endpoints =   concatMap (\x -> [snd (head x), snd (last x)]) flatPath
+  --   regionFor inf = infoRegion $ edgeEqnInfo inf
+  --   containedValues infList = do
+  --     inf <- infList
+  --     let (x,y) = edgeEqn inf
+  --     let r = regionFor inf
+  --     z <- [x,y]
+  --     return (z,r)
+  --   locatedValues = trace ("ENDPOINTS: " ++ show endpoints) $ List.nubBy (\ x y -> fst x == fst y) $ concatMap containedValues endpoints
+  --   validValues = filter (null . fmvs . fst) locatedValues
+  --   hintEntry (v,r) = "\n      " ++ Tm.prettyString v ++ " from " ++ prettySource r
+  -- return $ "Conflicting values are:" ++ (concatMap hintEntry locatedValues)
     -- 
 
-fcfbHint :: Path (EdgeId, Info) -> Heuristic Info
+    -- 
+
+fcfbHint :: [(VertexId, [Info])] -> Heuristic Info
 fcfbHint path = Heuristic $ 
   let function (EdgeId _ _ cnr, _) = return cnr
       selector = maximum
       description = "First come, first blamed"
-      hintStringMap = edgeConstraintHints path
+      hintString = edgeConstraintHint path
   in Filter description $ \es ->
     do tupledList <- let f tuple =
                             do result <- function tuple
@@ -153,7 +151,7 @@ fcfbHint path = Heuristic $
        let maximumResult
              | null tupledList = error "Top.TypeGraph.Heuristics" "resultsEdgeFilter" "unexpected empty list"
              | otherwise       = selector (map fst tupledList)
-       let updateHint (e,info) = (e, info {maybeHint = M.lookup e hintStringMap})
+       let updateHint (e,info) = (e, info {maybeHint = hintString})
        return (map updateHint $ map snd (filter ((maximumResult ==) . fst) tupledList))
 
 -- |Select only specific constraint numbers
