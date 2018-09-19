@@ -55,11 +55,11 @@ type Info = Info.ConstraintInfo
 
 -----------------------------------------------------------------------------
 
-defaultHeuristics :: TypeGraphPath info -> Path (EdgeId, Info) -> [Heuristic Info]
-defaultHeuristics constPath path =
+defaultHeuristics :: Path (EdgeId, [Info]) -> Path (EdgeId, Info) -> [Heuristic Info]
+defaultHeuristics fullPath path =
    [ --avoidDerivedEdges
    listOfVotes
-   , highParticipation 1.0 path
+   , highParticipation 1.0 fullPath path
   --  , inMinimalSet
    , firstComeFirstBlamed ]
 
@@ -80,8 +80,8 @@ inMininalSet path =
 -- Default ratio = 1.0  (100 percent)
 --   (the ratio determines which scores compared to the best are accepted)
 --Altered from the original to consider edges by their root creator edge
-highParticipation ::  Double -> Path (EdgeId, Info) -> Heuristic Info
-highParticipation ratio path =
+highParticipation ::  Double -> Path (EdgeId, [Info]) -> Path (EdgeId, Info) -> Heuristic Info
+highParticipation ratio fullPath path =
    Heuristic (Filter ("Participation ratio [ratio="++show ratio++"]") selectTheBest)
  where
    selectTheBest es =
@@ -115,6 +115,8 @@ firstComeFirstBlamed =
    Heuristic (
       let f (EdgeId _ _ cnr, _) = return cnr
       in maximalEdgeFilter "First come, first blamed" f)
+
+
 
 edgeConstraintHints ::  Path (EdgeId, Info) -> M.Map EdgeId String
 edgeConstraintHints p = trace ("Making hint for path " ++ show (fst <$> p)) $  
