@@ -139,7 +139,7 @@ allErrorPaths =
       cGraph  <- childrenGraph is
       let toCheck = nub $ concat (is : [ [a,b] | ((a,b),_) <- cGraph ])
       paths1  <- constantClashPaths toCheck
-      paths2  <- trace ("CONST CLASH PATH\n" ++ show paths1 ++"\n\n\n") $  infiniteTypePaths cGraph
+      paths2  <- trace ("POSS ERRORS  " ++ show is ++ "\nTOCHECK " ++ show toCheck ++ "\nCONST CLASH PATH\n" ++ show paths1 ++"\n\n\n") $  infiniteTypePaths cGraph
       let errorPath = reduceNumberOfPaths (simplifyPath (altList (paths1 ++ paths2)))
       expanded <- expandPath errorPath
       let
@@ -150,7 +150,7 @@ allErrorPaths =
       creatorPath <- useTypeGraph $ \stg -> mapPath (edgeTform stg) expanded
       let retVal = expanded --expanded :|: creatorPath
       -- return $ trace ("ALL ERR PATHS " ++ show expanded ++ "\n\nROOT ERR PATHS " ++ show creatorPath) $ retVal
-      return retVal
+      trace ("PRE EXPANSION " ++ show errorPath ++ "\nPOST " ++ show (fst <$> expanded)) $ return retVal
 ----------------------------
 
 -- not simplified: can also contain implied edges
@@ -163,6 +163,7 @@ constantClashPaths (first:rest) =
       pathInGroup vertices <++> constantClashPaths rest'
 
  where
+
   pathInGroup :: HasTypeGraph m info => [(VertexId, VertexInfo)] -> m [TypeGraphPath info]
   pathInGroup = errorPath . groupTheConstants . getConstants
 
@@ -291,10 +292,10 @@ allSubPathsList childList vertex targets = rec S.empty vertex
 
 expandPath :: HasTypeGraph m info => TypeGraphPath info -> m (Path (EdgeId, info))
 expandPath Fail = return Fail
-expandPath p =
-   do expandTable <-
-         let impliedEdges = nub [ intPair (v1, v2) | (_, Implied _ (VertexId v1) (VertexId v2)) <- steps p ]
-         in impliedEdgeTable impliedEdges
+expandPath p = trace ("EXPANDING PATH" ++ show p ++ " with steps " ++ show (steps p)) $ 
+   do 
+      let impliedEdges = nub [ intPair (v1, v2) | (_, Implied _ (VertexId v1) (VertexId v2)) <- steps p ] 
+      expandTable <- impliedEdgeTable impliedEdges
 
       let convert history path =
              case path of
@@ -313,7 +314,7 @@ expandPath p =
                        where
                         pair = intPair (v1, v2)
       let ret = (convert S.empty p)
-      return ret
+      trace ("IMPLIED EDGES " ++ show impliedEdges ++    "\nPATH TABLE " ++ show expandTable) $ return ret
 
 impliedEdgeTable :: HasTypeGraph m info => [IntPair] -> m (PathMap info)
 impliedEdgeTable = insertPairs M.empty

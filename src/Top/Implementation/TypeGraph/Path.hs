@@ -6,6 +6,8 @@
 --   Portability  :  portable
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE DeriveFunctor #-}
+
 module Top.Implementation.TypeGraph.Path where
 
 import Data.Function
@@ -23,6 +25,7 @@ data Path a = Path a :|: Path a   -- alternative
             | Step a
             | Fail
             | Empty
+      deriving (Functor)
 
 seqList, seqList1 :: [Path a] -> Path a
 seqList  = foldr  (:+:) Empty
