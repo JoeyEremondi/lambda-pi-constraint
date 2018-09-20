@@ -96,7 +96,9 @@ highParticipation ratio fullPath path =
           goodCNrs   = M.keys (M.filter (>= limit) participationList)
           bestEdges  =  filter (\(EdgeId _ _ cnr,_) -> cnr `elem` goodCNrs) es
           hintString = edgeConstraintHint fullPath
-          updateHint (e,info) = (e, info {maybeHint = hintString})
+          updateHint (e,info) = (e, case (maybeHint info) of 
+            Nothing -> info {maybeHint = hintString}
+            _ -> info)
 
           -- prints a nice report
           mymsg  = unlines ("" : title : replicate 50 '-' : map f es)
@@ -157,7 +159,9 @@ fcfbHint path = Heuristic $
        let maximumResult
              | null tupledList = error "Top.TypeGraph.Heuristics" "resultsEdgeFilter" "unexpected empty list"
              | otherwise       = selector (map fst tupledList)
-       let updateHint (e,info) = (e, info {maybeHint = hintString})
+       let updateHint (e,info) = (e, case (maybeHint info) of 
+              Nothing -> info {maybeHint = hintString}
+              _ -> info)
        return (map updateHint $ map snd (filter ((maximumResult ==) . fst) tupledList))
 
 -- |Select only specific constraint numbers
