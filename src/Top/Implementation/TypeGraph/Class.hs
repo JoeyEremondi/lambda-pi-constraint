@@ -39,6 +39,7 @@ class TypeGraph graph info | graph -> info where
    constantsInGroupOf      :: VertexId -> graph -> [Constant]
    representativeInGroupOf :: VertexId -> graph -> VertexId
    edgesFrom               :: VertexId -> graph -> [(EdgeId, info)]
+   isChildOf               :: VertexId -> VertexId -> graph -> Bool
 
    -- query a path in an equivalence group
    allPaths            :: VertexId -> VertexId -> graph -> TypeGraphPath info

@@ -6,7 +6,7 @@
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
 -----------------------------------------------------------------------------
-module Top.Implementation.TypeGraph.ApplyHeuristics (applyHeuristics,  expandPath, ErrorInfo) where
+module Top.Implementation.TypeGraph.ApplyHeuristics (applyHeuristics,  expandPath, ErrorInfo, EndpointInfo) where
 
 import Data.Graph (buildG, scc)
 import Data.List
@@ -30,11 +30,15 @@ import qualified Data.List as List
 
 import Debug.Trace (trace)
 
+import Data.Maybe (listToMaybe)
+
 --import Debug.Trace (trace)
 
 type ErrorInfo info = ([EdgeId], info)
 
-applyHeuristics :: HasTypeGraph m info =>([(VertexId, [info])] -> Path (EdgeId, info) -> [Heuristic info]) -> m [ErrorInfo info]
+type EndpointInfo info = [(Tm.VAL, [info])]
+
+applyHeuristics :: HasTypeGraph m info =>(EndpointInfo info -> Path (EdgeId, info) -> [Heuristic info]) -> m [ErrorInfo info]
 applyHeuristics heuristics =
    let rec constPath thePath =
           case simplifyPath thePath of
@@ -134,7 +138,7 @@ showSet as = "{" ++ f (map show as) ++ "}"
    where f [] = ""
          f xs = foldr1 (\x y -> x++","++y)  (map show xs)
 
-allErrorPaths :: HasTypeGraph m info => m ([(VertexId, [info])], Path (EdgeId, info))
+allErrorPaths :: HasTypeGraph m info => m (EndpointInfo info, Path (EdgeId, info))
 allErrorPaths =
    do is      <- getMarkedPossibleErrors
       cGraph  <- childrenGraph is
@@ -143,7 +147,7 @@ allErrorPaths =
       paths2  <- trace ("POSS ERRORS  " ++ show is ++ "\nTOCHECK " ++ show toCheck ++ "\nCONST CLASH PATH\n" ++ show paths1 ++"\n\n\n") $  infiniteTypePaths cGraph
       let errorPath = reduceNumberOfPaths (simplifyPath (altList (paths1 ++ paths2)))
       expanded <- expandPath errorPath
-      endpointInfo <- error "TODO end" --expandPathInclusive errorPath
+      endpointInfo <- expandPathInclusive errorPath
       let
         edgeTform stg e =
           case Class.getEdgeCreator stg e of
@@ -318,50 +322,113 @@ expandPath p = trace ("EXPANDING PATH" ++ show p ++ " with steps " ++ show (step
       let ret = (convert S.empty p)
       trace ("IMPLIED EDGES " ++ show impliedEdges ++    "\nPATH TABLE " ++ show expandTable) $ return ret
 
-startVertex ((EdgeId a b _, info):(EdgeId a' b' _,_):_) = 
-  (if (a == a' || a == b') then b else a, info) 
+-- startVertex ((EdgeId a b _, info):(EdgeId a' b' _,_):_) = 
+--   (if (a == a' || a == b') then b else a, info) 
 
-endVertex p = startVertex (reverse p)
+-- endVertex p = startVertex (reverse p)
 
-expandPathInclusive :: forall m info . HasTypeGraph m info => TypeGraphPath info -> m [(VertexId, [info])]
+-- checkChild a b = useTypeGraph (Class.isChildOf a b)
+
+-- fixPair (start, end, vid1, vid2) = do
+--   startAnd1 <- checkChild vid1 start
+--   startAnd2 <- checkChild vid2 start
+--   endAnd1 <- checkChild vid1 end
+--   endAnd2 <- checkChild vid2 end
+--   return $
+--         if startAnd1 && endAnd2
+--           then (vid1, vid2)
+--         else if startAnd2 && endAnd1
+--           then (vid2, vid1)
+--         else 
+--           error $ "Child parent relation fail in Inclusive path\n"
+
+unVertexId (VertexId v) = v
+unVertexPair (x,y) = intPair (unVertexId x, unVertexId y)
+
+firstEdges :: Path a -> [a]
+firstEdges (p :+: q) = 
+  let pedges = firstEdges p
+  in if null pedges then firstEdges q else pedges
+firstEdges (Step a) = [a]
+firstEdges (p :|: q) = firstEdges p ++ firstEdges q
+firstEdges _ = [] 
+
+inflatePath :: [[a]] -> Path a
+inflatePath = simplifyPath . altList . (map (seqList . (map Step)))
+
+reversePath = inflatePath . (map reverse) . flattenPath
+
+fixPath :: (Show info) => Path (EdgeId, info) -> Path (EdgeId, info)
+fixPath = inflatePath . fixFlatPath . flattenPath
+
+fixTypeGraphPath :: (Class.TypeGraph g info ) =>  TypeGraphPath info -> g -> TypeGraphPath info
+fixTypeGraphPath p g = inflatePath $ (map (map fixImplied)) $ fixFlatPath $ flattenPath p
+  where
+    isChild a b = Class.isChildOf a b g
+    fixImplied e@(EdgeId v1 v2 cnr, Implied x  u1 u2 ) = 
+      if isChild u1 v1 && isChild u2 v2 then e 
+      else if isChild u2 v1 && isChild u1 v2 then (EdgeId v1 v2 cnr, Implied x u2 u1)
+      else (error $ "Bad Implied edge " ++ show e) 
+    fixImplied x = x
+
+fixFlatPath :: (Show info) => [[(EdgeId, info)]] -> [[(EdgeId, info)]]
+fixFlatPath = map (helper [])
+  where 
+    helper accum [] = reverse accum
+    helper accum [e] = helper (e:accum) []
+    helper accum l@(e@(EdgeId v1 v2 cnr, i) : e2@(EdgeId u1 u2 _, _): rest) = 
+      if (v1 `elem` [u1, u2])
+        then helper ((EdgeId v2 v1 cnr, i):accum) (e2: rest)
+      else if (v2 `elem` [u1, u2]) 
+        then helper (e:accum) (e2:rest)
+      else (error $ "fixPath, disconnected edge" ++ show accum ++ show l) 
+
+
+expandPathInclusive :: forall m info . HasTypeGraph m info => TypeGraphPath info -> m (EndpointInfo info)
 expandPathInclusive Fail = return []
-expandPathInclusive  p = --trace ("EXPANDING PATH" ++ show p ++ " with steps " ++ show (steps p)) $ 
-    do 
-      let impliedEdges = nub [ intPair (v1, v2) | (_, Implied _ (VertexId v1) (VertexId v2)) <- steps p ] 
+expandPathInclusive  badPath = --trace ("EXPANDING PATH" ++ show p ++ " with steps " ++ show (steps p)) $ 
+    do       
+      p <- useTypeGraph (fixTypeGraphPath badPath)
+      let impliedEdges = nub [ intPair (v1, v2) | (_, Implied _ (VertexId v1) (VertexId v2)) <- steps p ]
       expandTable <- impliedEdgeTable impliedEdges
-
-      let convert :: (S.Set IntPair) -> TypeGraphPath info -> (Path (EdgeId, [info]), [info], [info])
+      let convert :: (S.Set IntPair) -> TypeGraphPath info -> m (Path (EdgeId, [info]), [info], [info])
           convert history path =
               case path of
-                Empty -> (Empty, [], [])
-                Fail  -> (Fail, [], [])
-                p1 :+: p2 -> let 
-                    (p1', s, _) = convert history p1
-                    (p2', _, e) = convert history p2
-                  in (p1' :+: p2', s, e) 
-                p1 :|: p2 -> let 
-                    (p1', s1, e1) = convert history p1
-                    (p2', s2, e2) = convert history p2
-                  in (p1' :|: p2',  (s1 ++ s2), (e1 ++ e2)) 
+                Empty -> return (Empty, [], [])
+                Fail  -> return (Fail, [], [])
+                p1 :+: p2 -> do 
+                    (p1', s, _) <- convert history p1
+                    (p2', _, e) <- convert history p2
+                    return (p1' :+: p2', s, e) 
+                p1 :|: p2 -> do 
+                    (p1', s1, e1) <- convert history p1
+                    (p2', s2, e2) <- convert history p2
+                    return (p1' :|: p2',  (s1 ++ s2), (e1 ++ e2)) 
                 Step (edge@(EdgeId start end cnr ), edgeInfo) ->
                     case edgeInfo of
-                      Initial localInfo -> (Step (edge, [localInfo]), [localInfo], [localInfo])
-                      Child _ -> (Empty, [], [])
-                      Implied _ (VertexId v1) (VertexId v2)
-                          | pair `S.member` history -> (Empty, [], [])
-                          | otherwise ->
-                            let 
-                              (subPath, startInfo, endInfo) = convert (S.insert pair history) (lookupPair expandTable pair)
-                              e1 = Step (EdgeId start (VertexId v1) cnr, startInfo)
-                              e2 = Step (EdgeId (VertexId v2) end cnr, endInfo)
-                              regionFor x = error "TODO"
-                            in  (e1 :+: subPath :+: e2, startInfo, endInfo)
+                      Initial localInfo -> return (Step (edge, [localInfo]), [localInfo], [localInfo])
+                      Child _ -> return (Empty, [], [])
+                      Implied _ vid1@(VertexId v1) vid2@(VertexId v2) -> do
+                          -- asbe@(afterStart, beforeEnd) <- fixPair (start, end, vid1, vid2)
+                          let pair = intPair (v1, v2)
+                          case () of
+                            _
+                              | pair `S.member` history -> return (Empty, [], [])
+                              | otherwise -> do
+                                  let pairPath = (lookupPair expandTable pair)
+                                  (subPath, startInfo, endInfo) <- convert (S.insert pair history) pairPath
+                                   
+                                  let e1 = trace ("SUBPATH " ++ show (fst <$> subPath) ++ " from " ++ show edge ++ " PATH " ++ show pairPath) $ Step (EdgeId start vid1 cnr, startInfo)
+                                  let e2 = Step (EdgeId vid2 end cnr, endInfo)
+                                  trace ("CONVERT " ++ show edge ++ " joined by " ++ show (vid1, vid2) ++ " INTO " ++ show (fst <$> e1, fst <$> subPath, fst <$> e2)) $ return (e1 :+: subPath :+: e2, startInfo, endInfo)
                         where
-                        pair = intPair (v1, v2)
-      let (ret, _, _) = (convert S.empty p)
-          flattened = flattenPath ret
-          endPoints = [x | p <- flattened, start <- [startVertex p], end <- [endVertex p], x <- [start, end]]
-      return endPoints
+                          
+      (ret, _, _) <- (convert S.empty p)
+      let flattened = flattenPath $ fixPath ret
+          endPoints = [ x | p <- flattened, (EdgeId start _ _ , info1) <- [head p], (EdgeId _ end _, info2) <- [last p], x <- [(start, info1), (end, info2)]]
+      trace ("EXPANDED FULL" ++ show (fst <$> ret) ++ "\nEXPAND TABLE " ++ show (M.map (fmap fst) expandTable) ++ "\nENDPOINTS: " ++ show endPoints) $ forM endPoints $ \(p,info) -> do
+        v <- typeFromTermGraph p
+        return (v, info)
 
 
 impliedEdgeTable :: HasTypeGraph m info => [IntPair] -> m (PathMap info)
@@ -370,11 +437,20 @@ impliedEdgeTable = insertPairs M.empty
    insertPairs fm [] = return fm
    insertPairs fm (pair:rest)
       | pair `M.member` fm = insertPairs fm rest
-      | otherwise =
-           do path <- let (i1, i2) = tupleFromIntPair pair
-                      in allPaths (VertexId i1) (VertexId i2)
+      | otherwise = do
+              let (i1, i2) = tupleFromIntPair pair
+              badPath <- allPaths (VertexId i1) (VertexId i2)
+              fixedPath <- useTypeGraph $ fixTypeGraphPath badPath
+              let flat = flattenPath fixedPath
+              let headVerts = [v | Just (EdgeId v1 v2 _, _) <- (map listToMaybe flat), (VertexId v) <- [v1, v2]]
+              let 
+                revPath = 
+                  if i1 `elem` headVerts then trace ("NOT REVERSING, " ++ show i1 ++ " HEAD OF " ++ show flat) flat 
+                  else if i2 `elem` headVerts then  trace ("REVERSING " ++ show flat) (map reverse flat) 
+                  else error "Neither vertex is in our head vertices"
+              let path =  inflatePath revPath
               let new = nub [ intPair (v1, v2) | (_, Implied _ (VertexId v1) (VertexId v2)) <- steps path ]
-              insertPairs (M.insert pair path fm) (rest `union` new)
+              insertPairs (trace ("Inserting " ++ show pair ++ " into dict ") $ M.insert pair path fm) (rest `union` new)
 
 -------------------------------
 --
@@ -382,9 +458,9 @@ impliedEdgeTable = insertPairs M.empty
 newtype IntPair = HiddenIP { tupleFromIntPair :: (Tm.Nom, Tm.Nom) }
 
 intPair :: (Tm.Nom, Tm.Nom) -> IntPair
-intPair (x, y)
-   | x <= y    = HiddenIP (x, y)
-   | otherwise = HiddenIP (y, x)
+intPair (x, y) = HiddenIP (x,y)
+  --  | x <= y    = HiddenIP (x, y)
+  --  | otherwise = HiddenIP (y, x)
 
 instance Show IntPair where
    show (HiddenIP pair) = show pair

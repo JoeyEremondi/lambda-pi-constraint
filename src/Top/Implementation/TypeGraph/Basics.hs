@@ -79,8 +79,8 @@ instance Show (PathStep info) where
    show (Child i)        = "(" ++ show i ++ ")"
 
 instance Show EdgeId where
-   show (EdgeId a b _) = "("++show a'++"-"++show b'++")"
-      where (a',b') = if a <= b then (a,b) else (b,a)
+   show (EdgeId a b _) = "("++show a++"-"++show b++")"
+      -- where (a',b') = if a <= b then (a,b) else (b,a)
 
 instance Eq EdgeId where -- why not compare the edge numbers here?
    EdgeId a b _ == EdgeId c d _ = (a == c && b == d) || (a == d && b == c)

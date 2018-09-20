@@ -123,6 +123,13 @@ addTermVert vid t oldDict =
 
 instance TypeGraph (StandardTypeGraph) Info where
 
+   isChildOf x y g = 
+    let childList =  [v | (children1, children2) <- [childrenInGroupOf x g], ParentChild p v _ <- children1 ++ children2, p == x]
+    in 
+      y `elem` childList
+  
+  
+
    recordVar n _T g = g {varTypes = (n,_T) : varTypes g}
 
    getVarTypes = varTypes

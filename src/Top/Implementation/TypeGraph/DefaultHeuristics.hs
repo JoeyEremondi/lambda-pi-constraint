@@ -14,7 +14,7 @@ module Top.Implementation.TypeGraph.DefaultHeuristics where
 
 import Data.List
 import qualified Data.Map as M
--- import Top.Implementation.TypeGraph.ApplyHeuristics (expandPath)
+import Top.Implementation.TypeGraph.ApplyHeuristics (EndpointInfo) 
 import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
@@ -55,7 +55,7 @@ type Info = Info.ConstraintInfo
 
 -----------------------------------------------------------------------------
 
-defaultHeuristics :: [(VertexId, [Info])] -> Path (EdgeId, Info) -> [Heuristic Info]
+defaultHeuristics :: (EndpointInfo Info) -> Path (EdgeId, Info) -> [Heuristic Info]
 defaultHeuristics fullPath path =
    [ --avoidDerivedEdges
    listOfVotes
@@ -80,7 +80,7 @@ inMininalSet path =
 -- Default ratio = 1.0  (100 percent)
 --   (the ratio determines which scores compared to the best are accepted)
 --Altered from the original to consider edges by their root creator edge
-highParticipation ::  Double -> [(VertexId, [Info])] -> Path (EdgeId, Info) -> Heuristic Info
+highParticipation ::  Double -> (EndpointInfo Info) -> Path (EdgeId, Info) -> Heuristic Info
 highParticipation ratio fullPath path =
    Heuristic (Filter ("Participation ratio [ratio="++show ratio++"]") selectTheBest)
  where
@@ -116,8 +116,14 @@ firstComeFirstBlamed =
       let f (EdgeId _ _ cnr, _) = return cnr
       in maximalEdgeFilter "First come, first blamed" f)
 
-edgeConstraintHint ::  [(VertexId, [Info])] -> Maybe String
-edgeConstraintHint p =  error "TODO"
+edgeConstraintHint ::  (EndpointInfo Info) -> Maybe String
+edgeConstraintHint vertPairs =
+  let
+    regionFor inf = infoRegion $ edgeEqnInfo inf
+    valRegionPairs = List.nub $ [(v, List.nub (map regionFor infos)) | (v, infos) <- vertPairs]
+    hintEntry (v,r) = "\n      " ++ Tm.prettyString v ++ " from " ++ List.intercalate " " (map prettySource r)
+  in 
+    Just $ "Conflicting values are:" ++ (concatMap hintEntry valRegionPairs)
   -- trace ("Making hint for path " ++ show (fst <$> p)) $ do  
   -- let
   --   flatPath = flattenPath $ simplifyPath p
@@ -137,7 +143,7 @@ edgeConstraintHint p =  error "TODO"
 
     -- 
 
-fcfbHint :: [(VertexId, [Info])] -> Heuristic Info
+fcfbHint :: (EndpointInfo Info) -> Heuristic Info
 fcfbHint path = Heuristic $ 
   let function (EdgeId _ _ cnr, _) = return cnr
       selector = maximum
