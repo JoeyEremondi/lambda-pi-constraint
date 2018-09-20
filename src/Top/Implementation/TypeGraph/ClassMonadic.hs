@@ -125,6 +125,9 @@ edgesFrom vid = useTypeGraph (TG.edgesFrom vid)
 allEdges :: HasTypeGraph m info =>  m [(EdgeId, info)]
 allEdges = useTypeGraph TG.allEdges
 
+getEdgeCreator :: HasTypeGraph m info =>  (EdgeId, info) -> m (Maybe (EdgeId, info))
+getEdgeCreator e = useTypeGraph (TG.getEdgeCreator e)
+
 -- query a path in an equivalence group
 allPaths :: HasTypeGraph m info => VertexId -> VertexId -> m (TypeGraphPath info)
 allPaths v1 v2 = useTypeGraph (TG.allPaths v1 v2)

@@ -30,7 +30,7 @@ import qualified Data.List as List
 
 -- import Debug.Trace (trace)
 
-import Data.Maybe (listToMaybe)
+import Data.Maybe (listToMaybe, catMaybes)
 
 import Debug.Trace (trace)
 
@@ -44,7 +44,7 @@ data HeuristicInput info = HInput
 
 type EndpointInfo info = [(Tm.VAL, [info])]
 
-applyHeuristics :: HasTypeGraph m info =>(HeuristicInput info -> [Heuristic info]) -> m [ErrorInfo info]
+applyHeuristics :: forall m info . HasTypeGraph m info =>(HeuristicInput info -> [Heuristic info]) -> m [ErrorInfo info]
 applyHeuristics heuristics =
    let rec hInfo =
           case simplifyPath (hErrorPath hInfo) of
@@ -52,7 +52,19 @@ applyHeuristics heuristics =
              Fail  -> return []
              path  ->
                 do err <- evalHeuristics path $ heuristics (hInfo {hErrorPath = path})
-                   let deletedEdges = fst err
+                   let errList = [(e,snd err) | e <- fst err]
+                   mDeletedCreators <- forM errList getEdgeCreator
+                   let deletedCreators = map fst $ catMaybes mDeletedCreators 
+                   let allSteps = steps path 
+                   let creatorPair :: (EdgeId, info) -> m (EdgeId, EdgeId)
+                       creatorPair e = do
+                        c <- getEdgeCreator e
+                        return $ case (c :: Maybe (EdgeId, info)) of
+                         Nothing -> (fst e, fst e)
+                         Just (cIn,_) -> (fst e, cIn) 
+                   creatorPairs <- forM allSteps creatorPair 
+                   let deletedEdges :: [EdgeId]
+                       deletedEdges = map fst $ filter (\(e,c) -> c `elem` deletedCreators) creatorPairs
                    let restPath =
                          changeStep (\t@(a,_) -> if a `elem` deletedEdges then Fail else Step t) path
                    errs <- rec (hInfo {hErrorPath = restPath})
@@ -64,7 +76,7 @@ applyHeuristics heuristics =
 -- These functions are used to describe for a change due to a heuristic how it affected the error path
 -- showing whether the set of constraints shrunk and if so, whether it has now become a singleton.
 tag :: String -> String
-tag s = "~" ++ s ++ "~"
+tag s = "~" ++ s ++ "~" 
 
 shrunkAndFinalMsg :: [a] -> [a] -> String
 shrunkAndFinalMsg old new =
@@ -161,7 +173,7 @@ allErrorPaths =
           case Class.getEdgeCreator stg e of
             Nothing -> e
             Just x -> x
-      creatorPath <- useTypeGraph $ \stg -> mapPath (edgeTform stg) expanded
+      -- creatorPath <- useTypeGraph $ \stg -> mapPath (edgeTform stg) expanded
       edgeList <- allEdges 
       let retVal = expanded --expanded :|: creatorPath
       -- return $ trace ("ALL ERR PATHS " ++ show expanded ++ "\n\nROOT ERR PATHS " ++ show creatorPath) $ retVal

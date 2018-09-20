@@ -134,7 +134,7 @@ instance TypeGraph (StandardTypeGraph) Info where
 
    getVarTypes = varTypes
 
-   getEdgeCreator = initialCreator
+   getEdgeCreator = flip initialCreator
 
    addTermGraph synonyms unique tpNotFlat stg = do
          tp <-   Tm.flattenChoice tpNotFlat
