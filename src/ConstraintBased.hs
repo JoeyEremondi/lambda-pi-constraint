@@ -101,13 +101,15 @@ iType_ iiGlobal g lit@(L reg it) =
       _ <- declareWithNom reg g metaType ourNom
       return metaType
 
-    iType_' ii g (Ann_ e tyt )
+    iType_' ii g (Ann_ e@(L r a) tyt@(L rty _) )
       =
         do
+          --Hack to get better locations for annotated values
+          let eLoc = L rty a
           cType_  ii g tyt conStar
           ty <- evaluate ii tyt g
           --trace ("&&" ++ show ii ++ "Annotated " ++ show e ++ " as " ++ show ty)  $
-          cType_ ii g e ty
+          cType_ ii g eLoc ty
           return ty
     iType_' ii g Star_
        =  return conStar
