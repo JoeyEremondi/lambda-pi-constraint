@@ -14,7 +14,7 @@ module Top.Implementation.TypeGraph.DefaultHeuristics where
 
 import Data.List
 import qualified Data.Map as M
-import Top.Implementation.TypeGraph.ApplyHeuristics (EndpointInfo) 
+import Top.Implementation.TypeGraph.ApplyHeuristics (EndpointInfo, HeuristicInput(..)) 
 import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Path
@@ -51,15 +51,16 @@ type Info = Info.ConstraintInfo
 
 
 
-
+type EdgeMap = M.Map ProbId (EdgeId, Info)
 
 -----------------------------------------------------------------------------
 
-defaultHeuristics :: (EndpointInfo Info) -> Path (EdgeId, Info) -> [Heuristic Info]
-defaultHeuristics fullPath path =
+defaultHeuristics :: HeuristicInput Info -> [Heuristic Info]
+defaultHeuristics hInfo =
+  let theMap = edgeMap (hAllEdges hInfo) in 
    [ --avoidDerivedEdges
    listOfVotes
-   , highParticipation 1.0 fullPath path
+   , highParticipation 1.0 theMap hInfo
   --  , inMinimalSet
    , firstComeFirstBlamed ]
 
@@ -75,16 +76,36 @@ inMininalSet path =
           f e        = return (any (eqInfo2 e) candidates)
       in edgeFilter "In a smallest minimal set" f)
 
+toInitial :: EdgeMap -> (EdgeId, Info) -> (EdgeId, Info)
+toInitial edgeMap edge@(e, inf) = 
+  case (Info.creationInfo $ Info.edgeEqnInfo inf ) of
+    Info.Initial -> edge 
+    Info.CreatedBy pid -> case (M.lookup pid edgeMap, (flip M.lookup edgeMap) =<< initialCreatorId (Info.edgeEqnInfo inf) ) of
+      (_, Just creator) -> creator
+      (Just creator, Nothing) -> toInitial edgeMap creator
+      _ -> error ("Creator edge " ++ show pid ++ " of " ++ show edge ++ " not in graph edge list ")
+
+edgeMap :: [(EdgeId, Info)] -> EdgeMap 
+edgeMap inList = M.fromList $ Maybe.catMaybes $ map f inList
+  where 
+    f (e,i) = do
+      pid <- constraintPid i
+      return (pid, (e,i))
+
 -- |Although not as precise as the minimal set analysis, this calculates the participation of
 -- each edge in all error paths.
 -- Default ratio = 1.0  (100 percent)
 --   (the ratio determines which scores compared to the best are accepted)
 --Altered from the original to consider edges by their root creator edge
-highParticipation ::  Double -> (EndpointInfo Info) -> Path (EdgeId, Info) -> Heuristic Info
-highParticipation ratio fullPath path =
+highParticipation ::  Double -> EdgeMap -> HeuristicInput Info -> Heuristic Info
+highParticipation ratio theMap hInfo = trace ("PART RATIO WITH PATH:\n" ++ show path) $
    Heuristic (Filter ("Participation ratio [ratio="++show ratio++"]") selectTheBest)
  where
+   origPath = hErrorPath hInfo 
+   path = (toInitial theMap) <$> origPath
+   fullPath = hEndpointInfo hInfo
    selectTheBest es =
+      
       let (nrOfPaths, fm)   = participationMap (mapPath (\(EdgeId _ _ cnr,_) -> cnr) path)
           participationList = M.filterWithKey p fm
           p cnr _    = cnr `elem` activeCNrs

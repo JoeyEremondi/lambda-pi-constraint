@@ -6,7 +6,7 @@
 --   Stability    :  provisional
 --   Portability  :  non-portable (requires extensions)
 -----------------------------------------------------------------------------
-module Top.Implementation.TypeGraph.ApplyHeuristics (applyHeuristics,  expandPath, ErrorInfo, EndpointInfo) where
+module Top.Implementation.TypeGraph.ApplyHeuristics (applyHeuristics,  expandPath, ErrorInfo, EndpointInfo, HeuristicInput(..)) where
 
 import Data.Graph (buildG, scc)
 import Data.List
@@ -32,27 +32,34 @@ import qualified Data.List as List
 
 import Data.Maybe (listToMaybe)
 
---import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 type ErrorInfo info = ([EdgeId], info)
 
+data HeuristicInput info = HInput
+  { hEndpointInfo :: EndpointInfo info
+  , hErrorPath :: Path (EdgeId, info)
+  , hAllEdges :: [(EdgeId, info)]
+  }
+
 type EndpointInfo info = [(Tm.VAL, [info])]
 
-applyHeuristics :: HasTypeGraph m info =>(EndpointInfo info -> Path (EdgeId, info) -> [Heuristic info]) -> m [ErrorInfo info]
+applyHeuristics :: HasTypeGraph m info =>(HeuristicInput info -> [Heuristic info]) -> m [ErrorInfo info]
 applyHeuristics heuristics =
-   let rec constPath thePath =
-          case simplifyPath thePath of
+   let rec hInfo =
+          case simplifyPath (hErrorPath hInfo) of
              Empty -> internalError "Top.TypeGraph.ApplyHeuristics" "applyHeuristics" "unexpected empty path"
              Fail  -> return []
              path  ->
-                do err <- evalHeuristics path (heuristics constPath path)
+                do err <- evalHeuristics path $ heuristics (hInfo {hErrorPath = path})
+                   let deletedEdges = fst err
                    let restPath =
-                         changeStep (\t@(a,_) -> if a `elem` fst err then Fail else Step t) path
-                   errs <- rec constPath restPath
-                   return (err : errs) 
+                         changeStep (\t@(a,_) -> if a `elem` deletedEdges then Fail else Step t) path
+                   errs <- rec (hInfo {hErrorPath = restPath})
+                   trace ("HEURISTICS SELECTED " ++ show err) $ return (err : errs) 
    in
-      do (constPath, errorPath) <- allErrorPaths
-         rec constPath (removeSomeDuplicates info2ToEdgeNr errorPath)
+      do hInfo <- allErrorPaths
+         rec $ hInfo {hErrorPath = removeSomeDuplicates info2ToEdgeNr (hErrorPath hInfo)}
 
 -- These functions are used to describe for a change due to a heuristic how it affected the error path
 -- showing whether the set of constraints shrunk and if so, whether it has now become a singleton.
@@ -138,13 +145,13 @@ showSet as = "{" ++ f (map show as) ++ "}"
    where f [] = ""
          f xs = foldr1 (\x y -> x++","++y)  (map show xs)
 
-allErrorPaths :: HasTypeGraph m info => m (EndpointInfo info, Path (EdgeId, info))
+allErrorPaths :: HasTypeGraph m info => m (HeuristicInput info)
 allErrorPaths =
    do is      <- getMarkedPossibleErrors
       cGraph  <- childrenGraph is
       let toCheck = nub $ concat (is : [ [a,b] | ((a,b),_) <- cGraph ])
       paths1  <- constantClashPaths toCheck
-      paths2  <- -- trace ("POSS ERRORS  " ++ show is ++ "\nTOCHECK " ++ show toCheck ++ "\nCONST CLASH PATH\n" ++ show paths1 ++"\n\n\n") $    
+      paths2  <-  trace ("CONST CLASH PATH\n" ++ show (map flattenPath paths1) ++"\n\n\n") $    
         infiniteTypePaths cGraph
       let errorPath = reduceNumberOfPaths (simplifyPath (altList (paths1 ++ paths2)))
       expanded <- expandPath errorPath
@@ -155,10 +162,11 @@ allErrorPaths =
             Nothing -> e
             Just x -> x
       creatorPath <- useTypeGraph $ \stg -> mapPath (edgeTform stg) expanded
+      edgeList <- allEdges 
       let retVal = expanded --expanded :|: creatorPath
       -- return $ trace ("ALL ERR PATHS " ++ show expanded ++ "\n\nROOT ERR PATHS " ++ show creatorPath) $ retVal
       -- trace ("PRE EXPANSION " ++ show errorPath ++ "\nPOST " ++ show (fst <$> expanded)) $ 
-      return (endpointInfo, retVal)
+      return $ HInput endpointInfo retVal edgeList
 ----------------------------
 
 -- not simplified: can also contain implied edges
@@ -430,7 +438,7 @@ expandPathInclusive  badPath = --trace ("EXPANDING PATH" ++ show p ++ " with ste
       (ret, _, _) <- (convert S.empty p)
       let flattened = flattenPath $ fixPath ret
           endPoints = [ x | p <- flattened, (EdgeId start _ _ , info1) <- [head p], (EdgeId _ end _, info2) <- [last p], x <- [(start, info1), (end, info2)]]
-      -- trace ("EXPANDED FULL" ++ show (fst <$> ret) ++ "\nEXPAND TABLE " ++ show (M.map (fmap fst) expandTable) ++ "\nENDPOINTS: " ++ show endPoints) $ 
+      --trace ("EXPANDED FULL" ++ show (fst <$> ret) ++ "\nEXPAND TABLE " ++ show (M.map (fmap fst) expandTable) ++ "\nENDPOINTS: " ++ show endPoints) $ 
       forM endPoints $ \(p,info) -> do
         v <- typeFromTermGraph p
         return (v, info)

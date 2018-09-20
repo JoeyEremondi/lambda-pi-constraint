@@ -215,6 +215,7 @@ data CanElim =
   | CFinElim
   deriving (Eq, Show, Generic, Ord)
 
+
 -- data Elim
 --   = A VAL
 --   | Hd
@@ -291,7 +292,7 @@ instance Pretty VAL where
     lunbind b $
     \( x, _T ) ->
       wrapDoc PiSize $
-      if x `occursIn` _T --TODO put back?
+      if (x `occursIn` _T ) --TODO put back?
          then (\x' _S' _T' ->
                  text "forall" <+> parens (x' <+> doubleCol <+> _S') <+> text " . " <+> _T') <$>
               prettyHigh x <*>
@@ -299,6 +300,14 @@ instance Pretty VAL where
               prettyAt ArgSize _T
          else between (text "->") <$> prettyAt AppSize _S <*>
               prettyAt PiSize _T
+
+  pretty (PI _S _T@(N (Meta _) _)) = do
+      let x = text "_arg"
+      wrapDoc PiSize $
+        (\_S' _T' ->
+                  text "forall" <+> parens (x <+> doubleCol <+> _S') <+> text " . " <+> parens (_T' <+> x)) <$>
+              prettyHigh _S <*>
+              prettyAt ArgSize _T
   -- >
   pretty (SIG _S (L b)) =
     lunbind b $
