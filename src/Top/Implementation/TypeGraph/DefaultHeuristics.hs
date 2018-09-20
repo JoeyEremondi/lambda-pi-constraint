@@ -97,17 +97,17 @@ inMininalSet path =
 --   (the ratio determines which scores compared to the best are accepted)
 --Altered from the original to consider edges by their root creator edge
 highParticipation ::  Double -> HeuristicInput Info -> Heuristic Info
-highParticipation ratio hInfo = trace ("PART RATIO WITH PATH:\n" ++ (show $ flattenPath $ ( (getCreator ) <$> path)) ++ "\n FULL " ++ (show . flattenPath) (fst <$> path) ) $
+highParticipation ratio hInfo = trace ("PART RATIO WITH PATH:\n" ++ (show $ flattenPath $ ( (constraintPid . snd . getCreator) <$> path)) ++ "\n FULL " ++ (show . flattenPath) (fst <$> path) ) $
    Heuristic (Filter ("Participation ratio [ratio="++show ratio++"]") selectTheBest)
  where
   --  origPath = hErrorPath hInfo 
    path = hErrorPath hInfo --(toInitial theMap) <$> origPath
    fullPath = hEndpointInfo hInfo
-   getCnr (EdgeId _ _ cnr) = cnr
+   getCnr (EdgeId _ _ cnr, _) = cnr 
    getCreator e = 
       case (M.lookup (fst e) $ hCreatorMap hInfo ) of
         Just c -> c
-        _ -> fst e
+        _ -> e
    selectTheBest es =  
       let 
           (nrOfPaths, fm)   = participationMap (fmap (getCnr . getCreator) path)

@@ -40,7 +40,7 @@ data HeuristicInput info = HInput
   { hEndpointInfo :: EndpointInfo info
   , hErrorPath :: Path (EdgeId, info)
   , hAllEdges :: [(EdgeId, info)]
-  , hCreatorMap :: M.Map EdgeId EdgeId
+  , hCreatorMap :: M.Map EdgeId (EdgeId, info)
   }
 
 type EndpointInfo info = [(Tm.VAL, [info])]
@@ -59,7 +59,7 @@ applyHeuristics heuristics =
                    let allSteps = steps path 
                    let creatorMap = hCreatorMap hInfo
                    let deletedEdges :: [EdgeId]
-                       deletedEdges = fst err ++ [e | (e,_) <- allSteps, Just c <- [M.lookup e creatorMap], c `elem` deletedCreators ]
+                       deletedEdges = fst err ++ [e | (e,_) <- allSteps, Just (c,_) <- [M.lookup e creatorMap], c `elem` deletedCreators ]
                    let restPath = trace ("DELETED EDGES " ++ show deletedEdges) $
                          changeStep (\t@(a,_) -> if a `elem` deletedEdges then Fail else Step t) path
                    errs <- rec (hInfo {hErrorPath = restPath})
@@ -176,8 +176,8 @@ allErrorPaths =
       let creatorPair  e = do
                         c <- getEdgeCreator e
                         return $ case c of
-                         Nothing -> (fst e, fst e)
-                         Just (cIn,_) -> (fst e, cIn) 
+                         Nothing -> (fst e, e)
+                         Just cIn -> (fst e, cIn) 
       creatorPairs <- forM edgeList creatorPair  
       return $ HInput endpointInfo retVal edgeList (M.fromList creatorPairs)
 ----------------------------
