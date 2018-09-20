@@ -40,6 +40,7 @@ data HeuristicInput info = HInput
   { hEndpointInfo :: EndpointInfo info
   , hErrorPath :: Path (EdgeId, info)
   , hAllEdges :: [(EdgeId, info)]
+  , hCreatorMap :: M.Map EdgeId EdgeId
   }
 
 type EndpointInfo info = [(Tm.VAL, [info])]
@@ -52,20 +53,14 @@ applyHeuristics heuristics =
              Fail  -> return []
              path  ->
                 do err <- evalHeuristics path $ heuristics (hInfo {hErrorPath = path})
-                   let errList = [(e,snd err) | e <- fst err]
+                   let errList = trace ("HEURISTICS SELECTED 1 " ++ show err) $ [(e,snd err) | e <- fst err]
                    mDeletedCreators <- forM errList getEdgeCreator
                    let deletedCreators = map fst $ catMaybes mDeletedCreators 
                    let allSteps = steps path 
-                   let creatorPair :: (EdgeId, info) -> m (EdgeId, EdgeId)
-                       creatorPair e = do
-                        c <- getEdgeCreator e
-                        return $ case (c :: Maybe (EdgeId, info)) of
-                         Nothing -> (fst e, fst e)
-                         Just (cIn,_) -> (fst e, cIn) 
-                   creatorPairs <- forM allSteps creatorPair 
+                   let creatorMap = hCreatorMap hInfo
                    let deletedEdges :: [EdgeId]
-                       deletedEdges = map fst $ filter (\(e,c) -> c `elem` deletedCreators) creatorPairs
-                   let restPath =
+                       deletedEdges = fst err ++ [e | (e,_) <- allSteps, Just c <- [M.lookup e creatorMap], c `elem` deletedCreators ]
+                   let restPath = trace ("DELETED EDGES " ++ show deletedEdges) $
                          changeStep (\t@(a,_) -> if a `elem` deletedEdges then Fail else Step t) path
                    errs <- rec (hInfo {hErrorPath = restPath})
                    trace ("HEURISTICS SELECTED " ++ show err) $ return (err : errs) 
@@ -178,7 +173,13 @@ allErrorPaths =
       let retVal = expanded --expanded :|: creatorPath
       -- return $ trace ("ALL ERR PATHS " ++ show expanded ++ "\n\nROOT ERR PATHS " ++ show creatorPath) $ retVal
       -- trace ("PRE EXPANSION " ++ show errorPath ++ "\nPOST " ++ show (fst <$> expanded)) $ 
-      return $ HInput endpointInfo retVal edgeList
+      let creatorPair  e = do
+                        c <- getEdgeCreator e
+                        return $ case c of
+                         Nothing -> (fst e, fst e)
+                         Just (cIn,_) -> (fst e, cIn) 
+      creatorPairs <- forM edgeList creatorPair  
+      return $ HInput endpointInfo retVal edgeList (M.fromList creatorPairs)
 ----------------------------
 
 -- not simplified: can also contain implied edges

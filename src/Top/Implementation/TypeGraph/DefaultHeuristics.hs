@@ -57,10 +57,9 @@ type EdgeMap = M.Map ProbId (EdgeId, Info)
 
 defaultHeuristics :: HeuristicInput Info -> [Heuristic Info]
 defaultHeuristics hInfo =
-  let theMap = edgeMap (hAllEdges hInfo) in 
    [ --avoidDerivedEdges
    listOfVotes
-   , highParticipation 1.0 theMap hInfo
+   , highParticipation 1.0 hInfo
   --  , inMinimalSet
    , firstComeFirstBlamed ]
 
@@ -76,46 +75,51 @@ inMininalSet path =
           f e        = return (any (eqInfo2 e) candidates)
       in edgeFilter "In a smallest minimal set" f)
 
-toInitial :: EdgeMap -> (EdgeId, Info) -> (EdgeId, Info)
-toInitial edgeMap edge@(e, inf) = 
-  case (Info.creationInfo $ Info.edgeEqnInfo inf ) of
-    Info.Initial -> edge 
-    Info.CreatedBy pid -> case (M.lookup pid edgeMap, (flip M.lookup edgeMap) =<< initialCreatorId (Info.edgeEqnInfo inf) ) of
-      (_, Just creator) -> creator
-      (Just creator, Nothing) -> toInitial edgeMap creator
-      _ -> error ("Creator edge " ++ show pid ++ " of " ++ show edge ++ " not in graph edge list ")
+-- toInitial :: EdgeMap -> (EdgeId, Info) -> (EdgeId, Info)
+-- toInitial edgeMap edge@(e, inf) = 
+--   case (Info.creationInfo $ Info.edgeEqnInfo inf ) of
+--     Info.Initial -> edge 
+--     Info.CreatedBy pid -> case (M.lookup pid edgeMap, (flip M.lookup edgeMap) =<< initialCreatorId (Info.edgeEqnInfo inf) ) of
+--       (_, Just creator) -> creator
+--       (Just creator, Nothing) -> toInitial edgeMap creator
+--       _ -> error ("Creator edge " ++ show pid ++ " of " ++ show edge ++ " not in graph edge list ")
 
-edgeMap :: [(EdgeId, Info)] -> EdgeMap 
-edgeMap inList = M.fromList $ Maybe.catMaybes $ map f inList
-  where 
-    f (e,i) = do
-      pid <- constraintPid i
-      return (pid, (e,i))
+-- edgeMap :: [(EdgeId, Info)] -> EdgeMap 
+-- edgeMap inList = M.fromList $ Maybe.catMaybes $ map f inList
+--   where 
+--     f (e,i) = do
+--       pid <- constraintPid i
+--       return (pid, (e,i))
 
 -- |Although not as precise as the minimal set analysis, this calculates the participation of
 -- each edge in all error paths.
 -- Default ratio = 1.0  (100 percent)
 --   (the ratio determines which scores compared to the best are accepted)
 --Altered from the original to consider edges by their root creator edge
-highParticipation ::  Double -> EdgeMap -> HeuristicInput Info -> Heuristic Info
-highParticipation ratio theMap hInfo = trace ("PART RATIO WITH PATH:\n" ++ show path) $
+highParticipation ::  Double -> HeuristicInput Info -> Heuristic Info
+highParticipation ratio hInfo = trace ("PART RATIO WITH PATH:\n" ++ (show $ flattenPath $ ( (getCreator ) <$> path)) ++ "\n FULL " ++ (show . flattenPath) (fst <$> path) ) $
    Heuristic (Filter ("Participation ratio [ratio="++show ratio++"]") selectTheBest)
  where
-   origPath = hErrorPath hInfo 
-   path = (toInitial theMap) <$> origPath
+  --  origPath = hErrorPath hInfo 
+   path = hErrorPath hInfo --(toInitial theMap) <$> origPath
    fullPath = hEndpointInfo hInfo
-   selectTheBest es =
-      
-      let (nrOfPaths, fm)   = participationMap (mapPath (\(EdgeId _ _ cnr,_) -> cnr) path)
+   getCnr (EdgeId _ _ cnr) = cnr
+   getCreator e = 
+      case (M.lookup (fst e) $ hCreatorMap hInfo ) of
+        Just c -> c
+        _ -> fst e
+   selectTheBest es =  
+      let 
+          (nrOfPaths, fm)   = participationMap (fmap (getCnr . getCreator) path)
           participationList = M.filterWithKey p fm
           p cnr _    = cnr `elem` activeCNrs
-          activeCNrs = [ cnr | (EdgeId _ _ cnr, _) <- es ]
+          activeCNrs = map (getCnr . getCreator) es
           maxInList  = maximum (M.elems participationList)
           limit     -- test if one edge can solve it completely
              | maxInList == nrOfPaths = trace "MaxList == numPaths" $ maxInList
              | otherwise              = round (fromIntegral maxInList * ratio) `max` 1
           goodCNrs   = M.keys (M.filter (>= limit) participationList)
-          bestEdges  =  filter (\(EdgeId _ _ cnr,_) -> cnr `elem` goodCNrs) es
+          bestEdges  =  filter (\e -> (getCnr $ getCreator e) `elem` goodCNrs) es
           hintString = edgeConstraintHint fullPath
           updateHint (e,info) = (e, case (maybeHint info) of 
             Nothing -> info {maybeHint = hintString}
@@ -130,7 +134,7 @@ highParticipation ratio theMap hInfo = trace ("PART RATIO WITH PATH:\n" ++ show 
              take 8  (show (M.findWithDefault 0 cnr fm * 100 `div` nrOfPaths)++"%"++repeat ' ') ++
              "{"++show info++"}"
       in do logMsg mymsg
-            trace ("Good CNrs:" ++ show bestEdges ++ "\n++Part map " ++ show participationList) $ return $ map updateHint  bestEdges
+            trace ("PART Best Edges:" ++ show bestEdges ++ "\n++Part map " ++ show participationList) $ return $ map updateHint  bestEdges
 
 -- |Select the "latest" constraint
 firstComeFirstBlamed :: Heuristic info
