@@ -35,6 +35,10 @@ import qualified Unbound.Generics.LocallyNameless as Ln
 
 import PatternUnify.Tm (Region (..))
 
+import Text.Regex
+
+cleanPrettyVAL v = subRegex (mkRegex "\\[.*\\]") (concat $ lines v) "_"
+
 
 prettySource :: Region -> String
 prettySource pos@(SourceRegion _ _ _) =

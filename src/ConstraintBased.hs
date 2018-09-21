@@ -84,7 +84,7 @@ getConstraints env term =
     return (finalVar, finalValue)
 
 iType0_ :: WholeEnv -> ITerm_ -> ConstraintM ConType
-iType0_ = iType_ 0
+iType0_ = iType_ 0 
 
 iType_ :: Int -> WholeEnv -> ITerm_ -> ConstraintM ConType
 iType_ iiGlobal g lit@(L reg it) =
@@ -155,6 +155,9 @@ iType_ iiGlobal g lit@(L reg it) =
                 argVals <- mapM (\x -> evaluate ii x g) args
                 --let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
 
+                let funAppString f args = showIt f ++ " " ++ List.intercalate " " (map showCt args)
+                let appStringList = map (funAppString topFn) $ List.inits args
+
 
                 topFnTypeVal <- iType_ ii g topFn
                 --unifySets (AppFnType reg (showIt topFn) topFnTypeVal) (showIt topFn) (region topFn) topFnTypeVar topFnTypeVal g
@@ -163,9 +166,9 @@ iType_ iiGlobal g lit@(L reg it) =
                   freeVars = List.nub $ concatMap (Tm.fvs . snd) $ reverse $ valueEnv g
                   progContextFor argNum = Application reg argNum (showIt topFn) topFnTypeVal (zip argVals vars) retTypeVar freeVars
 
-                  doUnif (fnType, argNum) (argExp, piArg) = do
+                  doUnif (fnType, argNum) (argExp, piArg, appString) = do
                     piBodyFn <- fresh (region argExp) g (piArg Tm.--> Tm.SET)
-                    unifySets (progContextFor argNum) (showIt lit)  reg (fnType) (Tm.PI piArg piBodyFn) g
+                    unifySets (progContextFor argNum) (appString)  reg (fnType) (Tm.PI piArg piBodyFn) g
                     --Ensure that the argument has the proper type
                     cType_ ii g argExp piArg
                     --Get a type for the evaluation of the argument
@@ -177,7 +180,7 @@ iType_ iiGlobal g lit@(L reg it) =
                     return (retType, argNum + 1)
 
                 --Make a nice variable referring to our return type, easy to find in graph
-                (retType, _) <- foldlM doUnif (topFnTypeVal, 1) $ zip args vars
+                (retType, _) <- foldlM doUnif (topFnTypeVal,  1) $ zip3 args vars appStringList
                 unifySets (AppRetType reg retTypeVar) ("result of application " ++ showIt lit) reg retType retTypeVar g
                 return retTypeVar
 

@@ -45,7 +45,7 @@ import Top.Types.Unification (unifyWithSubs, SubsMap, emptySubs)
 
 import Debug.Trace (trace)
 
-import Common (prettySource)
+import Common (prettySource, compactRegion, cleanPrettyVAL)
 
 type Info = Info.ConstraintInfo
 
@@ -97,7 +97,7 @@ inMininalSet path =
 --   (the ratio determines which scores compared to the best are accepted)
 --Altered from the original to consider edges by their root creator edge
 highParticipation ::  Double -> HeuristicInput Info -> Heuristic Info
-highParticipation ratio hInfo = trace ("PART RATIO WITH PATH:\n" ++ (show $ flattenPath $ ( (constraintPid . snd . getCreator) <$> path)) ++ "\n FULL " ++ (show . flattenPath) (fst <$> path) ) $
+highParticipation ratio hInfo = --trace ("PART RATIO WITH PATH:\n" ++ (show $ flattenPath $ ( (constraintPid . snd . getCreator) <$> path)) ++ "\n FULL " ++ (show . flattenPath) (fst <$> path) ) $
    Heuristic (Filter ("Participation ratio [ratio="++show ratio++"]") selectTheBest)
  where
   --  origPath = hErrorPath hInfo 
@@ -116,7 +116,7 @@ highParticipation ratio hInfo = trace ("PART RATIO WITH PATH:\n" ++ (show $ flat
           activeCNrs = map (getCnr . getCreator) es
           maxInList  = maximum (M.elems participationList)
           limit     -- test if one edge can solve it completely
-             | maxInList == nrOfPaths = trace "MaxList == numPaths" $ maxInList
+             | maxInList == nrOfPaths = maxInList
              | otherwise              = round (fromIntegral maxInList * ratio) `max` 1
           goodCNrs   = M.keys (M.filter (>= limit) participationList)
           bestEdges  =  filter (\e -> (getCnr $ getCreator e) `elem` goodCNrs) es
@@ -134,7 +134,8 @@ highParticipation ratio hInfo = trace ("PART RATIO WITH PATH:\n" ++ (show $ flat
              take 8  (show (M.findWithDefault 0 cnr fm * 100 `div` nrOfPaths)++"%"++repeat ' ') ++
              "{"++show info++"}"
       in do logMsg mymsg
-            trace ("PART Best Edges:" ++ show bestEdges ++ "\n++Part map " ++ show participationList) $ return $ map updateHint  bestEdges
+            --trace ("PART Best Edges:" ++ show bestEdges ++ "\n++Part map " ++ show participationList) $ 
+            return $ map updateHint  bestEdges
 
 -- |Select the "latest" constraint
 firstComeFirstBlamed :: Heuristic info
@@ -146,11 +147,13 @@ firstComeFirstBlamed =
 edgeConstraintHint ::  (EndpointInfo Info) -> Maybe String
 edgeConstraintHint vertPairs =
   let
-    regionFor inf = infoRegion $ edgeEqnInfo inf
-    valRegionPairs = List.nub $ [(v, List.nub (map regionFor infos)) | (v, infos) <- vertPairs]
-    hintEntry (v,r) = "\n      " ++ Tm.prettyString v ++ " from " ++ List.intercalate " " (map prettySource r)
+    regionFor inf = (\x -> (Info.infoRegion x, Info.typeOfString x)) $ edgeEqnInfo inf
+    valRegionTriples = List.nub $ [(v, (bestRegion $ map regionFor infos)) | (v, infos) <- vertPairs]
+    prettyRegionString (r,str) = " from type of " ++ (cleanPrettyVAL str) ++ " at " ++ compactRegion r
+    bestRegion r = head $ sortBy (\(_,s) (_,t) -> compare s t ) r
+    hintEntry (v,r) = "\n      " ++ ( cleanPrettyVAL . Tm.prettyString) v ++ prettyRegionString r
   in 
-    Just $ "Conflicting values are:" ++ (concatMap hintEntry valRegionPairs)
+    Just $ "Conflicting types are:" ++ (concatMap hintEntry valRegionTriples)
   -- trace ("Making hint for path " ++ show (fst <$> p)) $ do  
   -- let
   --   flatPath = flattenPath $ simplifyPath p

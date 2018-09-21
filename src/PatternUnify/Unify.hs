@@ -275,7 +275,7 @@ unify n q  = do
                       (_T $$ xR)
                       (g $$ xR)
                       (return $ info {creationInfo = CreatedBy n})))
-       trace "S1" $ simplify n
+       simplify n
                 (Unify q)
                 [Unify (EQN SET _A SET _S info), allTwinsProb x _A _S eq1]
   unify' n q@(EQN (SIG _A _B) t (SIG _C _D) w info) =
@@ -290,7 +290,7 @@ unify n q  = do
                      (_D $$ c)
                      (return d)
                      (return $ info {creationInfo = CreatedBy n}))
-       trace "S2" $ simplify n
+       simplify n
                 (Unify q)
                 [Unify (EQN _A a _C c info), eq1]
     where
@@ -328,7 +328,7 @@ unify n q  = do
     do
       setProblem n
       eqns <- rigidRigid (info {creationInfo = CreatedBy n}) q
-      (trace ("S3 with eqns" ++ show eqns) $ simplify n (Unify q) . map Unify) eqns
+      (simplify n (Unify q) . map Unify) eqns
 
 
 isRigidRigid :: Equation -> Bool
@@ -364,7 +364,7 @@ sym (EQN _S s _T t pid) = EQN _T t _S s pid
 --Modified to keep expanding rigid rigid as far as we can
 --Until we hit a flex-rigid or flex-flex
 rigidRigid :: EqnInfo -> Equation -> Contextual [Equation]
-rigidRigid pid eqn = trace ("RIGID RIGID, equation: " ++ pp eqn) $
+rigidRigid pid eqn = 
   do
     retEqns <- rigidRigid' eqn
     --forM retEqns recordEqn --TODO only record in unify?
@@ -372,7 +372,7 @@ rigidRigid pid eqn = trace ("RIGID RIGID, equation: " ++ pp eqn) $
     --TODO need derived edges?
   where
     findSubRigids :: [Equation] -> Contextual [Equation]
-    findSubRigids inList = trace ("FINDSUBRIGID " ++ show (map pp inList)) $ do
+    findSubRigids inList = do
       conf <- Ctx.getConfig
       if (useTypeGraph conf) then (concat <$> mapM rigidRigid' inList) else (return inList)
 
@@ -383,7 +383,7 @@ rigidRigid pid eqn = trace ("RIGID RIGID, equation: " ++ pp eqn) $
     rigidRigid' eqn | not (isRigidRigid eqn) = return [eqn]
 
     -- >
-    rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T) _) = trace "RR' PI CASE" $ 
+    rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T) _) = 
       findSubRigids [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B

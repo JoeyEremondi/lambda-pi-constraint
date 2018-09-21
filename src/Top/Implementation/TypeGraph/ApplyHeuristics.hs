@@ -53,17 +53,17 @@ applyHeuristics heuristics =
              Fail  -> return []
              path  ->
                 do err <- evalHeuristics path $ heuristics (hInfo {hErrorPath = path})
-                   let errList = trace ("HEURISTICS SELECTED 1 " ++ show err) $ [(e,snd err) | e <- fst err]
+                   let errList = [(e,snd err) | e <- fst err]
                    mDeletedCreators <- forM errList getEdgeCreator
                    let deletedCreators = map fst $ catMaybes mDeletedCreators 
                    let allSteps = steps path 
                    let creatorMap = hCreatorMap hInfo
                    let deletedEdges :: [EdgeId]
                        deletedEdges = fst err ++ [e | (e,_) <- allSteps, Just (c,_) <- [M.lookup e creatorMap], c `elem` deletedCreators ]
-                   let restPath = trace ("DELETED EDGES " ++ show deletedEdges) $
+                   let restPath =
                          changeStep (\t@(a,_) -> if a `elem` deletedEdges then Fail else Step t) path
                    errs <- rec (hInfo {hErrorPath = restPath})
-                   trace ("HEURISTICS SELECTED " ++ show err) $ return (err : errs) 
+                   return (err : errs) 
    in
       do hInfo <- allErrorPaths
          rec $ hInfo {hErrorPath = removeSomeDuplicates info2ToEdgeNr (hErrorPath hInfo)}
@@ -451,10 +451,10 @@ expandPathInclusive  badPath = --trace ("EXPANDING PATH" ++ show p ++ " with ste
       (ret, _, _) <- (convert S.empty p)
       let flattened = flattenPath $ fixPath ret
           endPoints = [ x | p <- flattened, (EdgeId start _ _ , info1) <- [head p], (EdgeId _ end _, info2) <- [last p], x <- [(start, info1), (end, info2)]]
-      --trace ("EXPANDED FULL" ++ show (fst <$> ret) ++ "\nEXPAND TABLE " ++ show (M.map (fmap fst) expandTable) ++ "\nENDPOINTS: " ++ show endPoints) $ 
-      forM endPoints $ \(p,info) -> do
-        v <- typeFromTermGraph p
-        return (v, info)
+      trace ("EXPANDED FULL" ++ show (flattenPath ret)  ++ "\nENDPOINTS: " ++ show endPoints) $ 
+        forM endPoints $ \(p,info) -> do
+          v <- typeFromTermGraph p
+          return (v, info)
 
 
 impliedEdgeTable :: HasTypeGraph m info => [IntPair] -> m (PathMap info)

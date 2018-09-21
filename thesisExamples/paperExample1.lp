@@ -1,7 +1,7 @@
 
 assume foldr :: forall (a :: *) (b :: *) (n :: Nat) . (a -> b -> b) -> b -> Vec a n -> b
 
-let plus = (\ y x ->
+assume plus = (\ y x ->
   (natElim
     ( \ _ -> Nat -> Nat )           -- motive
     ( \ n -> n )                    -- case for Zero
