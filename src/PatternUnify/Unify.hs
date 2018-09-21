@@ -275,7 +275,7 @@ unify n q  = do
                       (_T $$ xR)
                       (g $$ xR)
                       (return $ info {creationInfo = CreatedBy n})))
-       simplify n
+       trace "S1" $ simplify n
                 (Unify q)
                 [Unify (EQN SET _A SET _S info), allTwinsProb x _A _S eq1]
   unify' n q@(EQN (SIG _A _B) t (SIG _C _D) w info) =
@@ -290,7 +290,7 @@ unify n q  = do
                      (_D $$ c)
                      (return d)
                      (return $ info {creationInfo = CreatedBy n}))
-       simplify n
+       trace "S2" $ simplify n
                 (Unify q)
                 [Unify (EQN _A a _C c info), eq1]
     where
@@ -328,7 +328,20 @@ unify n q  = do
     do
       setProblem n
       eqns <- rigidRigid (info {creationInfo = CreatedBy n}) q
-      (simplify n (Unify q) . map Unify) eqns
+      (trace ("S3 with eqns" ++ show eqns) $ simplify n (Unify q) . map Unify) eqns
+
+
+isRigidRigid :: Equation -> Bool
+isRigidRigid (EQN _T1 ch@(VChoice cid _ nchoice r s) _T2 t info) = False
+isRigidRigid (EQN _T1 t _T2 ch@(VChoice cid _ nchoice r s) info) = False
+isRigidRigid (EQN (PI _A _B) f (PI _S _T) g info) = False
+isRigidRigid (EQN (SIG _A _B) t (SIG _C _D) w info) = False
+isRigidRigid (EQN _T (N (Meta alpha) []) _ t info) = False
+isRigidRigid (EQN _ t _T (N (Meta alpha) []) info) = False
+isRigidRigid (EQN _ (N (Meta _) _) _ (N (Meta _) _) info) = False
+isRigidRigid (EQN _ (N (Meta _) _) _ _ info) = False
+isRigidRigid (EQN _ _ _ (N (Meta _) _) info) = False
+isRigidRigid (EQN _ _ _ _ info) = True
 
 
 
@@ -351,7 +364,7 @@ sym (EQN _S s _T t pid) = EQN _T t _S s pid
 --Modified to keep expanding rigid rigid as far as we can
 --Until we hit a flex-rigid or flex-flex
 rigidRigid :: EqnInfo -> Equation -> Contextual [Equation]
-rigidRigid pid eqn =
+rigidRigid pid eqn = trace ("RIGID RIGID, equation: " ++ pp eqn) $
   do
     retEqns <- rigidRigid' eqn
     --forM retEqns recordEqn --TODO only record in unify?
@@ -359,15 +372,18 @@ rigidRigid pid eqn =
     --TODO need derived edges?
   where
     findSubRigids :: [Equation] -> Contextual [Equation]
-    findSubRigids inList = do
+    findSubRigids inList = trace ("FINDSUBRIGID " ++ show (map pp inList)) $ do
       conf <- Ctx.getConfig
       if (useTypeGraph conf) then (concat <$> mapM rigidRigid' inList) else (return inList)
 
-
+    
     --If we hit a neutral application,
     rigidRigid' (EQN SET SET SET SET _) = return []
+    --If we hit a non-rigid equation, then we defer
+    rigidRigid' eqn | not (isRigidRigid eqn) = return [eqn]
+
     -- >
-    rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T) _) =
+    rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T) _) = trace "RR' PI CASE" $ 
       findSubRigids [EQN SET _A SET _S pid
              ,EQN (_A --> SET)
                   _B

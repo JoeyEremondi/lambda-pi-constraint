@@ -406,7 +406,7 @@ checkProb ident st p@(Unify q) = do
    if st == Solved
    then do
      eq <- isReflexive (EQN _SVal sVal _TVal tVal info)
-     unless eq $ throwError $ "checkProb: Solved Problem not reflexive " ++ pp p ++ "\n  actually checked " ++ pp (EQN _SVal sVal _TVal tVal info)
+     unless eq $ error {- throwError -} $ "checkProb: Solved Problem not reflexive " ++ pp p ++ "\n  actually checked " ++ pp (EQN _SVal sVal _TVal tVal info)
    else return ()
 checkProb ident st (All (P _T) b) = do
     setProblem ident
