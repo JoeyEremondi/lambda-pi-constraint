@@ -1,0 +1,180 @@
+α1 ? : * -> *
+α2 ? : *
+α3 ? : *
+α-5 ? : *
+α6 ? : *
+α5 ? : Nat -> *
+α2 ? : ?α2 -> *
+α-4 ? : ?α3 -> *
+α8 ? : ?α6 -> *
+α10 ? : * -> *
+α11 ? : Vec Bool 1 -> *
+α-6 ? : ?α-5 -> *
+α7 ? : (forall (arg :: Nat)  .  (Nat -> Vec Nat (arg) -> Vec Nat ((Succ (arg)))) : *) -> *
+
+
+
+
+??_13_13_26 ?? P1 : (forall (xx_ :: *)  .  (forall (yy_ :: Nat -> *)  .  (forall (zz_ :: Nat)  .  ((forall (local3_1 :: Nat)  .  (xx_ -> (yy_) (local3_1) -> (yy_) (Succ (local3_1)))) -> (yy_) (Zero) -> Vec (xx_) (zz_) -> (yy_) (zz_)))) : *) === (forall (_arg :: ?α1)  .  ((?α2) _arg) : *)
+    Type of "vecFoldr" is a function
+??_13_13_30 ?? P2 : ((?α2) (?β1) : *) === (forall (_arg :: ?α3)  .  ((?α-4) _arg) : *)
+    "Applying vecFoldr to B1 gives a function"
+??_13_13_34 ?? P3 : ((?α-4) (?β2) : *) === (forall (_arg :: ?α-5)  .  ((?α-6) _arg) : *)
+    "Applying vecFoldr B1 to B2 gives a function"
+??_13_13_38 ?? P4 : ((?α-6) (?β3) : *) === (forall (_arg :: (forall (arg :: Nat)  .  (Nat -> Vec Nat (arg) -> Vec Nat ((Succ (arg)))) : *))  .  ((?α7) _arg) : *)
+    "Applying vecFoldr B1 B2 to B3 gives a function"
+??_13_13_41 ?? P5 : ((?α7) doubleHead : *) === (forall (_arg :: Vec Nat Zero)  .  ((?α8) _arg) : *)
+    "Applying v ... B3 to doubleHead gives a function "
+??_13_13_51 ??  P6 : ((?α8) (Nil Nat) : *) === (forall (_arg :: (Vec Bool ((Succ Zero)) ))  .  ((?α10) _arg) : *)
+    "Applying v .. doubleHead to Nil Nat gives a function
+??_13_13_53 ?? P7 : ((?α10) (myList) : *) === (Vec Nat 1 : *)
+    "Applying v ... myList gives a Vec Nat 1"
+
+
+P1: Rigid Rigid: A1 === *
+\xx -> ... === A2
+Eta expand, forall yy ... === A2 xx 
+Inversion gives S2 = \xx -> forall yy ...
+
+P2 : substitute A2
+get (forall (yy_ :: Nat -> *)  .  (forall (zz_ :: Nat)  .  ((forall (local3_1 :: Nat)  .  (β1 -> (yy_) (local3_1) -> (yy_) (Succ (local3_1)))) -> (yy_) (Zero) -> Vec (β1) (zz_) -> (yy_) (zz_)))) === Pi A3 A4
+Repeat above process, A3 := Nat, A4 := \yy -> .. forall zz ... 
+
+P3 : sub A4, get (forall (zz_ :: Nat)  .  ((forall (local3_1 :: Nat)  .  (β1 -> β2 (local3_1) -> β2 (Succ (local3_1)))) -> β2 (Zero) -> Vec (β1) (zz_) -> (β2) (zz_))) === Pi A5 A6
+A5 := Nat
+A6 := \zz -> forall local_ ...
+
+P4 : sub, get (  (forall (local3_1 :: Nat)  .  (β1 -> β2 (local3_1) -> β2 (Succ (local3_1)))) -> β2 (Zero) -> Vec (β1) (β3) -> (β2) (β3)) ===
+  (forall (_arg :: (forall (arg :: Nat)  .  (Nat -> Vec Nat (arg) -> Vec Nat ((Succ (arg)))) : *))  .  ((?α7) _arg) )
+get (forall (local3_1 :: Nat)  .  (β1 -> β2 (local3_1) -> β2 (Succ (local3_1)))) === (forall (arg :: Nat)  .  (Nat -> Vec Nat (arg) -> Vec Nat ((Succ (arg)))) )
+and \j -> β2 (Zero) -> Vec (β1) (β3) -> (β2) (β3) === A7 
+
+Nat === Nat
+\i . (β1 -> β2 (i) -> β2 (Succ i))) === \i . (Nat -> Vec Nat i -> Vec Nat ((Succ i)))
+B1 := Nat
+B2 i === Vec Nat i, inversion gives B2 = \i -> Vec Nat i
+B2 (Succ i) === Vec Nat (Succ i) , subst Vec Nat (Succ i) === Vec Nat (Succ i)
+
+
+
+P5 : substitte, get 
+  Vec Nat (Zero) -> Vec Nat (β3) -> (β2) (β3) ===  (forall (_arg :: Vec Nat Zero)  .  ((?α8) _arg) )
+  Vec Nat Zero === Vec Nat Zero
+  \k -> Vec Nat (β3) -> (β2) (β3) === A8
+
+
+P6 : subst, get Vec Nat (β3) -> Vec Nat (β3) === (forall (_arg :: (Vec Bool ((Succ Zero)) ))  .  ((?α10) _arg) : *)
+get Vec Nat (β3) -> (β2) (β3) === Vec Bool ((Succ Zero))
+Rigid Rigid, Nat === Bool, B3 === Succ 0
+and \l -> Vec Nat B3 =: A0
+
+P7, sub, Vec Nat 1 === Vec Nat 1
+
+
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("Vec ",Just (ProbId {probIdToName = ??_13_59_4}))
+("Nat",Just (ProbId {probIdToName = ??_13_63_5}))
+("str for varDecl",Nothing)
+("Vec Nat",Just (ProbId {probIdToName = ??_13_59_7}))
+("1 :: Nat",Just (ProbId {probIdToName = ??_13_67_10}))
+("result of application Vec Nat (1 :: Nat)",Just (ProbId {probIdToName = ??_13_59_11}))
+("Vec Nat (1 :: Nat)",Just (ProbId {probIdToName = ??_13_59_12}))
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("vecFoldr ",Just (ProbId {probIdToName = ??_13_13_26}))
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("[Meta_ \"\\946_13_22\"]",Just (ProbId {probIdToName = ??_13_22_28}))
+("str for varDecl",Nothing)
+("vecFoldr [Meta_ \"\\946_13_22\"]",Just (ProbId {probIdToName = ??_13_13_30}))
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("[Meta_ \"\\946_13_24\"]",Just (ProbId {probIdToName = ??_13_24_32}))
+("str for varDecl",Nothing)
+("vecFoldr [Meta_ \"\\946_13_22\"] [Meta_ \"\\946_13_24\"]",Just (ProbId {probIdToName = ??_13_13_34}))
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("[Meta_ \"\\946_13_26\"]",Just (ProbId {probIdToName = ??_13_26_36}))
+("str for varDecl",Nothing)
+("vecFoldr [Meta_ \"\\946_13_22\"] [Meta_ \"\\946_13_24\"] [Meta_ \"\\946_13_26\"]",Just (ProbId {probIdToName = ??_13_13_38}))
+("doubleHead",Just (ProbId {probIdToName = ??_13_28_39}))
+("str for varDecl",Nothing)
+("vecFoldr [Meta_ \"\\946_13_22\"] [Meta_ \"\\946_13_24\"] [Meta_ \"\\946_13_26\"] doubleHead",Just (ProbId {probIdToName = ??_13_13_41}))
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("str for varDecl",Nothing)
+("Nil ",Just (ProbId {probIdToName = ??_13_40_45}))
+("Nat",Just (ProbId {probIdToName = ??_13_44_46}))
+("result of application Nil Nat",Just (ProbId {probIdToName = ??_13_40_47}))
+("Nil Nat",Just (ProbId {probIdToName = ??_13_39_48}))
+("str for varDecl",Nothing)
+("vecFoldr [Meta_ \"\\946_13_22\"] [Meta_ \"\\946_13_24\"] [Meta_ \"\\946_13_26\"] doubleHead Nil Nat",Just (ProbId {probIdToName = ??_13_13_51}))
+("myList",Just (ProbId {probIdToName = ??_13_49_52}))
+("result of application vecFoldr [Meta_ \"\\946_13_22\"] [Meta_ \"\\946_13_24\"]\n  [Meta_ \"\\946_13_26\"]\n  doubleHead\n  (Nil Nat)\n  myList",Just (ProbId {probIdToName = ??_13_13_53}))
+("vecFoldr [Meta_ \"\\946_13_22\"] [Meta_ \"\\946_13_24\"]\n  [Meta_ \"\\946_13_26\"]\n  doubleHead\n  (Nil Nat)\n  myList",Just (ProbId {probIdToName = ??_13_59_54}))
+("top level fn",Nothing)
+("vecFoldr [Meta_ \"\\946_13_22\"] [Meta_ \"\\946_13_24\"]\n  [Meta_ \"\\946_13_26\"]\n  doubleHead\n  (Nil Nat)\n  myList :: Vec Nat (1 :: Nat)",Just (ProbId {probIdToName = ??_0_0_66}))
+
+
+
+
+α_13_63__ ? : *
+α_13_67__1 ? : *
+α_13_59__2 ? : *
+α_13_63__3 ? : ?α_13_63__ -> *
+??_13_59_4 ?? : (* -> Nat -> * : *) === (forall (_arg :: ?α_13_63__)  .  ((?α_13_63__3) _arg) : *) <= ACTIVE
+??_13_63_5 ?? : (* : *) === (?α_13_63__ : *) <= ACTIVE
+α_13_67__6 ? : ?α_13_67__1 -> *
+??_13_59_7 ?? : ((?α_13_63__3) (Nat) : *) === (forall (_arg :: ?α_13_67__1)  .  ((?α_13_67__6) _arg) : *) <= ACTIVE
+??_13_67_10 ?? : (Nat : *) === (?α_13_67__1 : *) <= ACTIVE
+??_13_59_11 ?? : ((?α_13_67__6) (Succ Zero) : *) === (?α_13_59__2 : *) <= ACTIVE
+??_13_59_12 ?? : (?α_13_59__2 : *) === (* : *) <= ACTIVE
+α_13_22__17 ? : *
+α_13_24__18 ? : *
+α_13_26__19 ? : *
+α_13_28__20 ? : *
+α_13_39__21 ? : *
+α_13_49__22 ? : *
+α_13_13__24 ? : *
+α_13_22__25 ? : ?α_13_22__17 -> *
+??_13_13_26 ?? : (forall (xx_ :: *)  .  (forall (yy_ :: Nat -> *)  .  (forall (zz_ :: Nat)  .  ((forall (local3_1 :: Nat)  .  (xx_ -> (yy_) (local3_1) -> (yy_) (Succ (local3_1)))) -> (yy_) (Zero) -> Vec (xx_) (zz_) -> (yy_) (zz_)))) : *) === (forall (_arg :: ?α_13_22__17)  .  ((?α_13_22__25) _arg) : *) <= ACTIVE
+α_13_22__27 ? : *
+β_13_22 ? : ?α_13_22__27
+??_13_22_28 ?? : (?α_13_22__27 : *) === (?α_13_22__17 : *) <= ACTIVE
+α_13_24__29 ? : ?α_13_24__18 -> *
+??_13_13_30 ?? : ((?α_13_22__25) (?β_13_22) : *) === (forall (_arg :: ?α_13_24__18)  .  ((?α_13_24__29) _arg) : *) <= ACTIVE
+α_13_24__31 ? : *
+β_13_24 ? : ?α_13_24__31
+??_13_24_32 ?? : (?α_13_24__31 : *) === (?α_13_24__18 : *) <= ACTIVE
+α_13_26__33 ? : ?α_13_26__19 -> *
+??_13_13_34 ?? : ((?α_13_24__29) (?β_13_24) : *) === (forall (_arg :: ?α_13_26__19)  .  ((?α_13_26__33) _arg) : *) <= ACTIVE
+α_13_26__35 ? : *
+β_13_26 ? : ?α_13_26__35
+??_13_26_36 ?? : (?α_13_26__35 : *) === (?α_13_26__19 : *) <= ACTIVE
+α_13_28__37 ? : ?α_13_28__20 -> *
+??_13_13_38 ?? : ((?α_13_26__33) (?β_13_26) : *) === (forall (_arg :: ?α_13_28__20)  .  ((?α_13_28__37) _arg) : *) <= ACTIVE
+??_13_28_39 ?? : (forall (arg :: Nat)  .  (Nat -> Vec Nat (arg) -> Vec Nat ((Succ (arg)))) : *) === (?α_13_28__20 : *) <= ACTIVE
+α_13_39__40 ? : ?α_13_39__21 -> *
+??_13_13_41 ?? : ((?α_13_28__37) (λ xx_ yy_ zz_ . Cons Nat (xx_) ((((plus) ((yy_))) ((yy_)))) (zz_)) : *) === (forall (_arg :: ?α_13_39__21)  .  ((?α_13_39__40) _arg) : *) <= ACTIVE
+α_13_44__42 ? : *
+α_13_40__43 ? : *
+α_13_44__44 ? : ?α_13_44__42 -> *
+??_13_40_45 ?? : (forall (a :: *)  .  (Vec (a) Zero) : *) === (forall (_arg :: ?α_13_44__42)  .  ((?α_13_44__44) _arg) : *) <= ACTIVE
+??_13_44_46 ?? : (* : *) === (?α_13_44__42 : *) <= ACTIVE
+??_13_40_47 ?? : ((?α_13_44__44) (Nat) : *) === (?α_13_40__43 : *) <= ACTIVE
+??_13_39_48 ?? : (?α_13_40__43 : *) === (?α_13_39__21 : *) <= ACTIVE
+α_13_49__50 ? : ?α_13_49__22 -> *
+??_13_13_51 ?? : ((?α_13_39__40) (Nil Nat) : *) === (forall (_arg :: ?α_13_49__22)  .  ((?α_13_49__50) _arg) : *) <= ACTIVE
+??_13_49_52 ?? : (Vec Bool ((Succ Zero)) ) === (?α_13_49__22 : *) <= ACTIVE
+??_13_13_53 ?? : ((?α_13_49__50) (myList) : *) === (?α_13_13__24 : *) <= ACTIVE
+??_13_59_54 ?? : (?α_13_13__24 : *) === (Vec Nat ((Succ Zero)) : *) <= ACTIVE
+topLevel55 ? : *

@@ -77,7 +77,10 @@ solveEntries :: SolverConfig -> [Entry] -> Either ErrorResult ((), Context)
 solveEntries conf !es  =
   let --intercalate "\n" $ map show es
     !initialContextString = render (runPretty (prettyEntries es)) -- ++ "\nRAW:\n" ++ show es
-    (result, ctx) = trace ("Initial context:\n" ++ initialContextString ) $
+    entryPid (Prob p _ _ _ ) = Just p
+    entryPid _ = Nothing
+    infoString e = (typeOfString $ entryInfo e, entryPid e)  
+    (result, ctx) = trace ("Initial context:\n" ++ initialContextString ++ "\n" ++ List.intercalate "\n" (map (show . infoString) es) ) $
        (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, [], Set.empty, conf) $ do
           initialise
           ambulando [] [] Map.empty

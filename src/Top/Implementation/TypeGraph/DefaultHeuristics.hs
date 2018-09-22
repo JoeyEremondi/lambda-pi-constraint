@@ -148,8 +148,11 @@ edgeConstraintHint ::  (EndpointInfo Info) -> Maybe String
 edgeConstraintHint vertPairs =
   let
     regionFor inf = (\x -> (Info.infoRegion x, Info.typeOfString x)) $ edgeEqnInfo inf
-    valRegionTriples = List.nub $ [(v, (bestRegion $ map regionFor infos)) | (v, infos) <- vertPairs]
+    multiValRegionTriples = List.nub $ [(v, (bestRegion $ map regionFor infos)) | (v, infos) <- vertPairs]
+    valRegionTriples = 
+      map (head . (sortBy (\ x y -> compare (snd $ snd x) (snd $ snd y)))) $ List.groupBy (\x y -> fst (snd x) == fst (snd y)) multiValRegionTriples
     prettyRegionString (r,str) = " from type of " ++ (cleanPrettyVAL str) ++ " at " ++ compactRegion r
+     
     bestRegion r = head $ sortBy (\(_,s) (_,t) -> compare s t ) r
     hintEntry (v,r) = "\n      " ++ ( cleanPrettyVAL . Tm.prettyString) v ++ prettyRegionString r
   in 

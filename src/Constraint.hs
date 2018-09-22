@@ -476,7 +476,7 @@ declareWithNom reg env tp ourNom = do
         --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
           Tm.Meta ourNom
   let ourEntry = --trace ("Made fresh meta app " ++ Run.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
-        UC.E ourNom lambdaType UC.HOLE (UC.EqnInfo UC.Initial reg UC.Factual UC.VarDecl (error "str for varDecl") Nothing False)
+        UC.E ourNom lambdaType UC.HOLE (UC.EqnInfo UC.Initial reg UC.Factual UC.VarDecl ( "str for varDecl") Nothing False)
   addConstr $ Constraint Common.startRegion ourEntry
   return $ applyEnvToNom ourNom env
 

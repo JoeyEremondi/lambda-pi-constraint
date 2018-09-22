@@ -158,7 +158,7 @@ allErrorPaths =
       cGraph  <- childrenGraph is
       let toCheck = nub $ concat (is : [ [a,b] | ((a,b),_) <- cGraph ])
       paths1  <- constantClashPaths toCheck
-      paths2  <-  trace ("CONST CLASH PATH\n" ++ show (map flattenPath paths1) ++"\n\n\n") $    
+      paths2  <-  --trace ("CONST CLASH PATH\n" ++ show (map flattenPath paths1) ++"\n\n\n") $    
         infiniteTypePaths cGraph
       let errorPath = reduceNumberOfPaths (simplifyPath (altList (paths1 ++ paths2)))
       expanded <- expandPath errorPath
@@ -451,10 +451,10 @@ expandPathInclusive  badPath = --trace ("EXPANDING PATH" ++ show p ++ " with ste
       (ret, _, _) <- (convert S.empty p)
       let flattened = flattenPath $ fixPath ret
           endPoints = [ x | p <- flattened, (EdgeId start _ _ , info1) <- [head p], (EdgeId _ end _, info2) <- [last p], x <- [(start, info1), (end, info2)]]
-      trace ("EXPANDED FULL" ++ show (flattenPath ret)  ++ "\nENDPOINTS: " ++ show endPoints) $ 
-        forM endPoints $ \(p,info) -> do
-          v <- typeFromTermGraph p
-          return (v, info)
+      -- trace ("EXPANDED FULL" ++ show (flattenPath ret)  ++ "\nENDPOINTS: " ++ show endPoints) $ 
+      forM endPoints $ \(p,info) -> do
+        v <- typeFromTermGraph p
+        return (v, info)
 
 
 impliedEdgeTable :: HasTypeGraph m info => [IntPair] -> m (PathMap info)
