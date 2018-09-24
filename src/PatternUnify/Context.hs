@@ -266,11 +266,10 @@ data Context   = Context
   , contextBadEdges :: BadEdges
   , contextNomPids :: Set.Set (Either Nom ProbId)
   , contextSolverConfig :: SolverConfig
-  , solnPidMap :: Map.Map Nom ProbId
   }
 
 initContext :: Context
-initContext = Context B0 [] (error "initial problem ID") Empty.empty [] Set.empty (SolverConfig True True True) Map.empty
+initContext = Context B0 [] (error "initial problem ID") Empty.empty [] Set.empty (SolverConfig True True True)
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -297,7 +296,7 @@ instance Pretty Param where
 type Params  = [(Nom, Param)]
 
 instance Pretty Context where
-    pretty (Context cl cr _ _ _ _ _ _) =  pair <$>  (prettyEntries (trail cl)) <*>
+    pretty (Context cl cr _ _ _ _ _) =  pair <$>  (prettyEntries (trail cl)) <*>
                                ( vcat <$> (mapM f cr) )
       where
         pair cl' cr' = cl' $+$ text "*" $+$ cr'
