@@ -128,14 +128,14 @@ solveConstraintM config cm =
     (((nom, normalForm), rawConstraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
     --regionDict = getRegionDict constraints
     ret = do
-      (_, context@(UC.Context cl cr probId finalGraph finalStr _ _)) <-
+      (_, context@(UC.Context cl cr probId finalGraph finalStr _ _ _)) <-
         Run.solveEntries config $ filter (not . constrReflexive) $  map conEntry rawConstraints
       let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (cl)
       let finalType = Tm.unsafeFlatten $ evalState (UC.metaValue nom) context
       let sourceSubs = Map.map Tm.unsafeFlatten $ Map.filterWithKey (\k _ -> k `elem` sourceMetas cstate) metaSubs
       let finalSubs = UC.finalSub cl
       return (finalType, unsolved, sourceSubs)
-
+  
   in
     case ret of
       Left (Run.ErrorResult ctx []) -> error "Left empty with Constraint ret solveResult"
