@@ -56,8 +56,13 @@ type EdgeMap = M.Map ProbId (EdgeId, Info)
 -----------------------------------------------------------------------------
 
 defaultHeuristics :: HeuristicInput Info -> [Heuristic Info]
-defaultHeuristics hInfo =
-   [ --avoidDerivedEdges
+defaultHeuristics hInfo = 
+   let 
+      updateEdgePairs =
+        [(e1, e2) | e1@(EdgeId v1 v2 _,_) <- (hAllEdges hInfo), e2@(EdgeId u1 u2 _, info2) <- hAllEdges hInfo
+                  , MetaUpdate (_,_) <- [edgeType info2 ] , v <- [v1, v2], u <- [u1, u2], u == v  
+        ]
+   in [ --avoidDerivedEdges
    listOfVotes
    , highParticipation 1.0 hInfo
   --  , inMinimalSet

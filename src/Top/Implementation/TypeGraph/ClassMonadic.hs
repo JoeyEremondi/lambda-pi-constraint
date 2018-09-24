@@ -122,6 +122,9 @@ representativeInGroupOf vid = useTypeGraph (TG.representativeInGroupOf vid)
 edgesFrom :: HasTypeGraph m info => VertexId -> m [(EdgeId, info)]
 edgesFrom vid = useTypeGraph (TG.edgesFrom vid)
 
+incidentUpdates :: HasTypeGraph m info => EdgeId -> m [(EdgeId, info)]
+incidentUpdates e = useTypeGraph (TG.incidentUpdates e)
+
 allEdges :: HasTypeGraph m info =>  m [(EdgeId, info)]
 allEdges = useTypeGraph TG.allEdges
 

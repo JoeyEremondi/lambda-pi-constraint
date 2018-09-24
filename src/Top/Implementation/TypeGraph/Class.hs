@@ -39,6 +39,7 @@ class TypeGraph graph info | graph -> info where
    constantsInGroupOf      :: VertexId -> graph -> [Constant]
    representativeInGroupOf :: VertexId -> graph -> VertexId
    edgesFrom               :: VertexId -> graph -> [(EdgeId, info)]
+   incidentUpdates         :: EdgeId -> graph -> [(EdgeId, info)]
    isChildOf               :: VertexId -> VertexId -> graph -> Bool
 
    -- query a path in an equivalence group
@@ -54,6 +55,7 @@ class TypeGraph graph info | graph -> info where
    substituteTypeSafe :: Tm.Subs -> Tm.VAL  -> graph -> Maybe Tm.VAL
    makeSubstitution   :: Tm.Subs -> graph -> [(VertexId, Tm.VAL)]
    typeFromTermGraph  :: VertexId -> graph -> Tm.VAL
+  
 
    -- Extra administration
    markAsPossibleError     :: VertexId -> graph -> graph

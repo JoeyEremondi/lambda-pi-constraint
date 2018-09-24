@@ -289,6 +289,9 @@ instance TypeGraph (StandardTypeGraph) Info where
       let p (EdgeId v1 v2 _, _) = v1 == i || v2 == i
       in filter p . edges . getGroupOf i
 
+   incidentUpdates (EdgeId v1 v2 _) g =
+     [e2 | v <- [v1, v2], e2@(_,info) <- edgesFrom v g, MetaUpdate _ <- [edgeType info] ] 
+
    allPathsListWithout without v1 vs =
       equalPaths without v1 vs . getGroupOf v1
 
