@@ -476,12 +476,12 @@ declareWithNom reg env tp ourNom = do
         --trace ("Lambda type " ++ Run.prettyString lambdaType ++ " with env " ++ show currentQuants) $
           Tm.Meta ourNom
   let ourEntry = --trace ("Made fresh meta app " ++ Run.prettyString ourNeutral ++ "\nQnuant list " ++ show currentQuants) $
-        UC.E ourNom lambdaType UC.HOLE (UC.EqnInfo UC.Initial reg UC.Factual UC.VarDecl ( "str for varDecl") Nothing False)
+        UC.E ourNom lambdaType UC.HOLE (UC.EqnInfo UC.Initial reg UC.Factual UC.VarDecl ( "str for varDecl") Nothing False [] )
   addConstr $ Constraint Common.startRegion ourEntry
   return $ applyEnvToNom ourNom env
 
 applyEnvToNom ourNom env =
-  let
+  let 
     currentVals = reverse $ valueEnv env
     ourElims = map (\(_,freeVal) -> Tm.A freeVal) currentVals
     ourHead = Tm.Meta ourNom
@@ -492,7 +492,7 @@ freshTopLevel :: Tm.VAL -> ConstraintM Tm.Nom
 freshTopLevel tp = do
     ourNom <- freshNom "topLevel"
     let ourEntry =
-          UC.E ourNom tp UC.HOLE (UC.EqnInfo UC.Initial BuiltinRegion UC.Factual UC.TypeOfProgram "top level fn" Nothing False)
+          UC.E ourNom tp UC.HOLE (UC.EqnInfo UC.Initial BuiltinRegion UC.Factual UC.TypeOfProgram "top level fn" Nothing False [])
     addConstr $ Constraint Common.startRegion ourEntry
     return ourNom
 
@@ -501,7 +501,7 @@ unify progCtx typeOfStr reg v1 v2 tp env = do
     probId <- UC.ProbId <$> freshNom ("??_" ++ Common.regionName reg ++ "_")
     --TODO right to reverse?
     let currentQuants = reverse $ typeEnv env
-        prob = UC.Unify $ UC.EQN tp v1 tp v2 (UC.EqnInfo UC.Initial reg UC.Factual progCtx typeOfStr (Just probId) False)
+        prob = UC.Unify $ UC.EQN tp v1 tp v2 (UC.EqnInfo UC.Initial reg UC.Factual progCtx typeOfStr (Just probId) False [])
     let newCon = --trace ("**WRAP " ++ Tm.prettyString prob ++ " QUANTS " ++ show currentQuants ) $
           wrapProblemForalls currentQuants env prob
     let ourEntry = UC.Prob probId newCon UC.Active []

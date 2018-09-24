@@ -283,7 +283,7 @@ unify n q  = do
        a <- t %% Hd
        b <- t %% Tl
        c <- w %% Hd
-       d <- w %% Tl
+       d <- w %% Tl 
        eq1 <-
          munify (eqn (_B $$ a)
                      (return b)
@@ -364,7 +364,7 @@ sym (EQN _S s _T t pid) = EQN _T t _S s pid
 --Modified to keep expanding rigid rigid as far as we can
 --Until we hit a flex-rigid or flex-flex
 rigidRigid :: EqnInfo -> Equation -> Contextual [Equation]
-rigidRigid pid eqn = 
+rigidRigid pid eqn = trace ("RIGID RIGID " ++ prettyString eqn) $ 
   do
     retEqns <- rigidRigid' eqn
     --forM retEqns recordEqn --TODO only record in unify?
@@ -372,7 +372,7 @@ rigidRigid pid eqn =
     --TODO need derived edges?
   where
     findSubRigids :: [Equation] -> Contextual [Equation]
-    findSubRigids inList = do
+    findSubRigids inList = trace ("FINDING SUBRIGIDS " ++ show (map prettyString inList)) $ do
       conf <- Ctx.getConfig
       if (useTypeGraph conf) then (concat <$> mapM rigidRigid' inList) else (return inList)
 
@@ -380,7 +380,7 @@ rigidRigid pid eqn =
     --If we hit a neutral application,
     rigidRigid' (EQN SET SET SET SET _) = return []
     --If we hit a non-rigid equation, then we defer
-    rigidRigid' eqn | not (isRigidRigid eqn) = return [eqn]
+    -- rigidRigid' eqn | not (isRigidRigid eqn) = trace ("NON RIGID " ++ prettyString eqn) $  return [eqn]
 
     -- >
     rigidRigid' (EQN SET (PI _A _B) SET (PI _S _T) _) = 
@@ -477,6 +477,7 @@ rigidRigid pid eqn =
     rigidRigid' eq@(EQN t1 v1 t2 v2 _) = do
       conf <- Ctx.getConfig
       if (useTypeGraph conf) then
+        trace ("BAD RIGID RIGID " ++ prettyString eq) $ 
         return [] --badRigidRigid eq
       else
         badRigidRigid eq

@@ -141,6 +141,7 @@ data EqnInfo =
   , typeOfString     :: String
   , initialCreatorId :: Maybe ProbId
   , isImpliedEquality :: Bool
+  , extraDeps :: [ProbId]
   } deriving (Eq, Show, Generic)
 
 
