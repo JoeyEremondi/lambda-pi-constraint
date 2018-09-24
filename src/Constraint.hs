@@ -125,12 +125,10 @@ removeSingleTypeGroups _ e = e
 solveConstraintM :: SolverConfig -> ConstraintM (Tm.Nom, Tm.VAL) -> Either [(Region, String)] (Tm.Type, Tm.VAL, Tm.Subs, Map.Map Tm.Nom Region)
 solveConstraintM config cm =
   let
-    getCL (cl, _, _, _, _, _,_) = cl
-    getFinalGraph (_, _, _, fg, _, _,_) = fg
     (((nom, normalForm), rawConstraints), cstate) = runIdentity $ runStateT (runWriterT (LN.runFreshMT cm)) (ConstrainState [1..] [] Map.empty )
     --regionDict = getRegionDict constraints
     ret = do
-      (_, context@(cl, cr, probId, finalGraph,finalStr,_,_)) <-
+      (_, context@(UC.Context cl cr probId finalGraph finalStr _ _)) <-
         Run.solveEntries config $ filter (not . constrReflexive) $  map conEntry rawConstraints
       let (unsolved, metaSubs) = UC.getUnsolvedAndSolved (cl)
       let finalType = Tm.unsafeFlatten $ evalState (UC.metaValue nom) context
@@ -144,14 +142,14 @@ solveConstraintM config cm =
       Left (Run.ErrorResult ctx rawSolverErrs) ->
         let
           
-          solverErrs = List.nubBy (eqBy errLoc) $ map (removeSingleTypeGroups (getFinalGraph ctx)) rawSolverErrs
-          cl = getCL ctx
+          solverErrs = List.nubBy (eqBy errLoc) $ map (removeSingleTypeGroups (UC.contextGraph ctx)) rawSolverErrs
+          cl = UC.contextL ctx
           finalSub = UC.finalSub cl
         in trace ( "Solver errs   " ++ show (map errLoc solverErrs)) $ case solverErrs of
           [] -> error "All solver errors had only a single type in their group. This is a bug."
           _ ->
             --trace ("Final sub: " ++ List.intercalate "\n" (map show finalSub)) $
-            Left $ map (mkErrorPair (getFinalGraph ctx) ) solverErrs
+            Left $ map (mkErrorPair (UC.contextGraph ctx) ) solverErrs
         --Left $ map (\(UC.ProbId ident, msg) -> (regionDict Map.! ident, msg)) (mkErrorPairs solverErrs ((\(a,_,_,_,_) -> a) ctx) )
       Right (tp, [], subs) -> Right (tp, normalForm, subs, metaLocations cstate)
       Right (_, unsolved, _) -> --trace "solveConstraintM Right with unsolved" $

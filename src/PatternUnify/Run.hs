@@ -81,7 +81,7 @@ solveEntries conf !es  =
     entryPid _ = Nothing
     infoString e = (typeOfString $ entryInfo e, entryPid e)  
     (result, ctx) = trace ("Initial context:\n" ++ initialContextString ++ "\n" ++ List.intercalate "\n" (map (show . infoString) es) ) $
-       (runContextual (B0, map Right es, error "initial problem ID", Empty.empty, [], Set.empty, conf) $ do
+       (runContextual ( Context B0  (map Right es) (error "initial problem ID") Empty.empty [] Set.empty conf) $ do
           initialise
           ambulando [] [] Map.empty
           --validResult <- validate (const True)
@@ -92,9 +92,9 @@ solveEntries conf !es  =
           setMsg  badEdges
           return badEdges
           )  --Make sure we don't crash
-    (lcx,rcx,lastProb,_,finalBadEdges,_,_) = unsafePerformIO $ do
-        let g = (\(_,_,_,g,_,_,_) -> g) ctx
-        let ourEdges = (\(_,_,_,_,e,_,_) -> e) ctx
+    Context lcx rcx lastProb _ finalBadEdges _ _ = unsafePerformIO $ do
+        let g = contextGraph ctx
+        let ourEdges = contextBadEdges ctx
         when (useDot conf) $ writeFile "out.dot" (
           TC.toDot g
           -- List.intercalate "\n\n\n" $
@@ -183,7 +183,7 @@ initialsDependingOn (pendGraph, vertToInfo, infoToVert) initialIdents targetIden
 
 
 getContextErrors :: [Entry] -> Context -> Either [(ProbId, Region, Err)] ((), Context)
-getContextErrors startEntries cx@(lcx, rcx, _, _,_,_,_) = do
+getContextErrors startEntries cx@(Context lcx rcx _ _ _ _ _) = do
   let leftErrors = getErrorPairs (trail lcx)
       rightErrors = getErrorPairs (Either.rights rcx)
   case (leftErrors ++ rightErrors) of

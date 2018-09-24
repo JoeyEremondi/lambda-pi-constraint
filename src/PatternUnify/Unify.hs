@@ -1294,7 +1294,7 @@ ambulando ns fails theta = do
         applySubImmediate pid sub
         ambulando ns fails theta
       Just (Left (RSubs theta')) -> do
-        ambulando ns fails (compSubs theta theta')
+        ambulando ns fails (compSubs theta theta') 
       -- process entries
       Just (Right e) -> do
         updateVal <- update ns fails theta e

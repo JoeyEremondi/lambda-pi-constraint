@@ -258,10 +258,18 @@ instance Pretty RSubs where
 
 type ContextL  = Bwd Entry
 type ContextR  = [Either RSubs Entry]
-type Context   = (ContextL, ContextR, ProbId, TypeGraph, BadEdges, Set.Set (Either Nom ProbId), SolverConfig)
+data Context   = Context
+  { contextL :: ContextL
+  , contextR :: ContextR
+  , contextPid :: ProbId
+  , contextGraph :: TypeGraph
+  , contextBadEdges :: BadEdges
+  , contextNomPids :: Set.Set (Either Nom ProbId)
+  , contextSolverConfig :: SolverConfig
+  }
 
 initContext :: Context
-initContext = (B0, [], error "initial problem ID", Empty.empty, [], Set.empty, SolverConfig True True True)
+initContext = Context B0 [] (error "initial problem ID") Empty.empty [] Set.empty (SolverConfig True True True)
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -288,7 +296,7 @@ instance Pretty Param where
 type Params  = [(Nom, Param)]
 
 instance Pretty Context where
-    pretty (cl, cr, _, _, _, _, _) =  pair <$>  (prettyEntries (trail cl)) <*>
+    pretty (Context cl cr _ _ _ _ _) =  pair <$>  (prettyEntries (trail cl)) <*>
                                ( vcat <$> (mapM f cr) )
       where
         pair cl' cr' = cl' $+$ text "*" $+$ cr'
@@ -356,16 +364,16 @@ runContextual cx =
    runIdentity . flip runStateT cx . runFreshMT . runExceptT . flip runReaderT [] . unContextual
 
 modifyL :: (ContextL -> ContextL) -> Contextual ()
-modifyL f = modify (\ (x, y, pid, gr, s, set, conf) -> (f x, y, pid, gr, s, set, conf))
+modifyL f = modify (\ c -> c {contextL = f (contextL c)})
 
 modifyLM :: (ContextL -> Contextual ContextL) -> Contextual ()
 modifyLM f = do
-  (x, y, pid, gr, s, set, conf) <- get
-  fx <- f x
-  put (fx, y, pid, gr, s, set, conf)
+  c <- get
+  fx <- f (contextL c)
+  put (c {contextL = fx})
 
 modifyR :: (ContextR -> ContextR) -> Contextual ()
-modifyR f = modify (\ (x, y, pid, gr, s, set, conf) -> (x, f y, pid, gr, s, set, conf))
+modifyR f = modify (\c -> c {contextR = f (contextR c)})
 
 pushL :: Entry -> Contextual ()
 -- pushL e@((E alpha _ HOLE _)) | (show alpha) == "α_3_19__16" = trace ("pushL " ++ pp e) $ do
@@ -405,31 +413,31 @@ pushImmediate pid theta   = --trace ("Push subs " ++ show s) $
 
 
 markDefInGraph :: Nom -> Contextual ()
-markDefInGraph alpha = modify (\ (x, y, pid, z, s, set, conf) -> (x, y, pid, z, s, Set.insert (Left alpha) set, conf))
+markDefInGraph alpha = modify (\c -> let set = (contextNomPids c) in c {contextNomPids =  Set.insert (Left alpha) set})
 
 markProblemInGraph :: ProbId -> Contextual ()
 markProblemInGraph newPid = modify $
-  \ (x, y, pid, z, s, set, conf) ->
-    (x, y, pid, z, s, Set.insert (Right newPid) set, conf)
+  \ c -> let set = contextNomPids c in
+    c {contextNomPids = Set.insert (Right newPid) set}
 
 probAlreadyRecorded :: ProbId -> Contextual Bool
 probAlreadyRecorded newPid = do
-  (x, y, pid, z, s, set, _) <- get
-  return $ Right newPid `Set.member` set
+  c <- get
+  return $ Right newPid `Set.member` (contextNomPids c)
 
 defAlreadyRecorded :: Nom -> Contextual Bool
 defAlreadyRecorded alpha = do
-  (x, y, pid, z, s, set, _) <- get
-  return $ Left alpha `Set.member` set
+  c <- get
+  return $ Left alpha `Set.member` (contextNomPids c)
 
 setProblem :: ProbId -> Contextual ()
-setProblem pid = modify (\ (x, y, _, z, s, set, conf) -> (x, y, pid, z, s, set, conf) :: Context)
+setProblem pid = modify (\ c -> c {contextPid = pid} :: Context)
 
 setGraph :: TypeGraph -> Contextual ()
-setGraph g = modify (\ (x, y, z, _, s, set, conf) -> (x, y, z, g, s, set, conf))
+setGraph g = modify (\ c -> c {contextGraph = g})
 
 setMsg :: BadEdges -> Contextual ()
-setMsg s = modify (\(x,y,z,g,_,set, conf) -> (x,y,z,g,s,set, conf))
+setMsg s = modify (\c -> c {contextBadEdges = s})
 
 pushSubs :: Subs -> Contextual ()
 pushSubs n   =
@@ -465,16 +473,16 @@ popR = do
         []          -> return Nothing
 
 getConfig :: Contextual SolverConfig
-getConfig = gets (\(_,_,_,_,_,_,c) -> c)
+getConfig = gets contextSolverConfig
 
 getL :: MonadState Context m => m ContextL
-getL = gets (\(x,_,_,_,_,_,_) -> x)
+getL = gets contextL
 
 getR :: Contextual ContextR
-getR = gets (\(_,x,_,_,_,_,_) -> x)
+getR = gets contextR
 
 getGraph :: Contextual (TypeGraph)
-getGraph = gets (\(_,_,_,g,_,_,_) -> g)
+getGraph = gets contextGraph
 
 putL :: ContextL -> Contextual ()
 putL x = modifyL (const x)
