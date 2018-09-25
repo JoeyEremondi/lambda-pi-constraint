@@ -154,8 +154,8 @@ iType_ iiGlobal g lit@(L reg it) =
                 vars <- mapM  mkVars args
                 argVals <- mapM (\x -> evaluate ii x g) args
                 --let varNoms = map (\ (Tm.N (Tm.Meta alpha) _) -> alpha ) vars
-
-                let funAppString f args = showIt f ++ " " ++ List.intercalate " " (map showCt args)
+                let maybeParens s = if ' ' `elem` s then "(" ++ s ++ ")" else s
+                let funAppString f args = showIt f ++ " " ++ List.intercalate " " (map (maybeParens . showCt) args)
                 let appStringList = map (funAppString topFn) $ List.inits args
 
 
