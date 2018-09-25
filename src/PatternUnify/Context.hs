@@ -266,10 +266,20 @@ data Context   = Context
   , contextBadEdges :: BadEdges
   , contextNomPids :: Set.Set (Either Nom ProbId)
   , contextSolverConfig :: SolverConfig
+  , contextVarLabels :: Map.Map Nom [ChoiceLabel]
+  , contextQualificationsOf :: Map.Map Nom [Nom]
   }
 
+lookupLabel :: Nom -> Contextual [ChoiceLabel]
+lookupLabel n = do
+  m <- gets contextVarLabels
+  return $ Maybe.fromMaybe [] $ Map.lookup n m
+
+data ChoiceLabel = ChoiceL {labelCh :: ChoiceId} | ChoiceR {labelCh :: ChoiceId}
+  deriving (Eq, Ord, Show)
+
 initContext :: Context
-initContext = Context B0 [] (error "initial problem ID") Empty.empty [] Set.empty (SolverConfig True True True)
+initContext = Context B0 [] (error "initial problem ID") Empty.empty [] Set.empty (SolverConfig True True True) Map.empty Map.empty
 
 type VarEntry   = (Nom, Type)
 type HoleEntry  = (Nom, Type)
@@ -296,8 +306,8 @@ instance Pretty Param where
 type Params  = [(Nom, Param)]
 
 instance Pretty Context where
-    pretty (Context cl cr _ _ _ _ _) =  pair <$>  (prettyEntries (trail cl)) <*>
-                               ( vcat <$> (mapM f cr) )
+    pretty c =  pair <$>  (prettyEntries (trail $ contextL c)) <*>
+                               ( vcat <$> (mapM f $ contextR c) )
       where
         pair cl' cr' = cl' $+$ text "*" $+$ cr'
         f (Left (RSubs ns)) = prettySubs ns
@@ -685,6 +695,28 @@ flattenEquation :: (Fresh m) => Equation -> m Equation
 flattenEquation (EQN _T1 t1 _T2 t2 info) =
   EQN <$> flattenChoice _T1 <*> flattenChoice t1
     <*> flattenChoice _T2 <*> flattenChoice t2 <*> return info
+
+freshenChoice :: [ChoiceLabel] -> VAL -> Contextual VAL
+freshenChoice c (L t) = do
+  (var, body) <- unbind t
+  newBody <- freshenChoice c body
+  return $ L $ bind var newBody
+freshenChoice c (N (Meta n) elims) = do--TODO case for meta, check its path
+  labelMap <- gets contextVarLabels
+  let labels = Maybe.fromMaybe [] (Map.lookup n labelMap)
+  let missingLabels = c List.\\ labels 
+  N (Meta n) <$> mapM (freshenChoiceElim c) elims
+freshenChoice c (N v elims) = --TODO case for meta, check its path
+  N v <$> mapM (freshenChoiceElim c) elims
+freshenChoice c (C t1 t2) =
+  C t1 <$> (mapM $ freshenChoice c) t2
+freshenChoice c (VBot t) = return $ VBot t
+freshenChoice c (VChoice cid cuid n t1 t2) =
+      VChoice cid cuid n <$> freshenChoice (ChoiceL cid : c) t1 <*> freshenChoice ( ChoiceR cid : c) t2
+
+freshenChoiceElim :: [ChoiceLabel] -> Elim -> Contextual Elim
+freshenChoiceElim c (Elim e1 e2) = Elim e1 <$> mapM (freshenChoice c)  e2
+freshenChoiceElim c (EBot e) = return $ EBot e
 
 
 finalSub :: ContextL -> SubsList
