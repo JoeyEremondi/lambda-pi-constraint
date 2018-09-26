@@ -796,6 +796,17 @@ fixSplitVarsElim :: [ChoiceLabel] -> Elim -> Contextual Elim
 fixSplitVarsElim c (Elim e1 e2) = Elim e1 <$> mapM (fixSplitVars c)  e2
 fixSplitVarsElim c (EBot e) = return $ EBot e
 
+fixChoices v = do
+  v1 <- freshenChoice [] v
+  v2 <- fixSplitVars [] v1
+  return v2
+
+hoist :: ChoiceId -> VAL -> Contextual VAL
+hoist c v = do
+  (v1, v2) <- splitOnChoice c v
+  cuid <- freshCUID
+  fixChoices $ VChoice c cuid (error "TODO what is this nom?") v1 v2
+
 finalSub :: ContextL -> SubsList
 finalSub = Maybe.mapMaybe getDef
   where
