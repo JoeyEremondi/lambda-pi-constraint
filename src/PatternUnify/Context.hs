@@ -69,6 +69,8 @@ import PatternUnify.ConstraintInfo
 
 import qualified Top.Util.Empty as Empty
 
+import Data.Foldable (foldrM)
+
 type BadEdges = [Heur.ErrorInfo ConstraintInfo]
 
 type TypeGraph = TG.StandardTypeGraph
@@ -757,6 +759,42 @@ freshenChoiceElim :: [ChoiceLabel] -> Elim -> Contextual Elim
 freshenChoiceElim c (Elim e1 e2) = Elim e1 <$> mapM (freshenChoice c)  e2
 freshenChoiceElim c (EBot e) = return $ EBot e
 
+fixSplitVars :: [ChoiceLabel] -> VAL -> Contextual VAL
+fixSplitVars c (L t) = do
+  (var, body) <- unbind t
+  newBody <- fixSplitVars c body
+  return $ L $ bind var newBody
+fixSplitVars c (N (Meta n) elims) = do--case for meta, check its path
+    qualsMap <- gets contextQualificationsOf
+    let choiceList = map labelCh c
+    let quals = Maybe.fromMaybe [] $ Map.lookup n qualsMap 
+    qualVarsSets <-  (forM quals lookupLabel)
+    let qualVars =  Set.toList $ Set.unions $ map snd qualVarsSets
+    let notCovered  = [ch | (ch) <- qualVars, not (ch `List.elem` choiceList) ]
+    let foldFun :: ChoiceId -> VAL -> Contextual VAL 
+        foldFun ch soFar = do
+          nNew <- fresh n
+          newCUID <- freshCUID
+          return $ VChoice ch newCUID n soFar (meta nNew) 
+      
+    newVar <- foldrM foldFun (meta n) notCovered
+    newElims <- (mapM (fixSplitVarsElim c) elims)
+    newVar %%% newElims
+fixSplitVars c (N v elims) =
+  N v <$> mapM (fixSplitVarsElim c) elims
+fixSplitVars c (C t1 t2) =
+  C t1 <$> (mapM $ fixSplitVars c) t2
+fixSplitVars c (VBot t) = return $ VBot t
+fixSplitVars c (VChoice cid cuid n t1 t2) = --Eliminate nested choices
+  case [someChoice | someChoice <- c, labelCh someChoice == cid] of
+    [] ->
+      VChoice cid cuid n <$> fixSplitVars ( (ChoiceL cid) : c) t1 <*> fixSplitVars ( (ChoiceR cid) : c) t2
+    [ChoiceL cid] -> fixSplitVars c t1
+    [ChoiceR cid] -> fixSplitVars c t2
+
+fixSplitVarsElim :: [ChoiceLabel] -> Elim -> Contextual Elim
+fixSplitVarsElim c (Elim e1 e2) = Elim e1 <$> mapM (fixSplitVars c)  e2
+fixSplitVarsElim c (EBot e) = return $ EBot e
 
 finalSub :: ContextL -> SubsList
 finalSub = Maybe.mapMaybe getDef
