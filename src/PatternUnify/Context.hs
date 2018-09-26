@@ -266,17 +266,54 @@ data Context   = Context
   , contextBadEdges :: BadEdges
   , contextNomPids :: Set.Set (Either Nom ProbId)
   , contextSolverConfig :: SolverConfig
-  , contextVarLabels :: Map.Map Nom [ChoiceLabel]
+  , contextVarLabels :: Map.Map Nom (Nom, CFChoices)
   , contextQualificationsOf :: Map.Map Nom [Nom]
   }
 
-lookupLabel :: Nom -> Contextual [ChoiceLabel]
+lookupLabel :: Nom -> Contextual (Nom, CFChoices)
 lookupLabel n = do
   m <- gets contextVarLabels
-  return $ Maybe.fromMaybe [] $ Map.lookup n m
+  return $ Maybe.fromMaybe (n,Set.empty) $ Map.lookup n m
+
+qualsOf :: Nom -> Contextual [Nom]
+qualsOf n = do
+  m <- gets contextQualificationsOf
+  return $  Maybe.fromMaybe [] $ Map.lookup n m
+
+--To get the labelled meta for a path, first we find if it exists
+--If it does, we just return it
+--Otherwise, we generate a fresh variable on the right
+
+labelledMetaFor :: Nom -> CFChoices -> Contextual Nom
+labelledMetaFor n ch = do
+  (topN, quals) <- lookupLabel n
+  quals <- qualsOf topN
+  qualLabels <- (zip quals) <$> forM quals lookupLabel
+  let potentialQuals = filter (\(_,(nPotential,chPotential)) -> chPotential == ch && nPotential == topN) qualLabels
+  case potentialQuals of
+    [] -> do
+      retN <- fresh n
+      modify (\c -> 
+        let mp = contextVarLabels c 
+            quals = contextQualificationsOf c
+            --TODO record in constraint graph
+            topEntry = Maybe.fromMaybe [] $ Map.lookup topN quals 
+            newQuals = Map.insert topN (retN : topEntry) quals    
+        in  c {contextVarLabels = Map.insert retN (topN, ch) mp, contextQualificationsOf = newQuals })
+      return n
+    [(retN, _)] -> return retN 
+    _ -> error $ "Multiple quals of " ++ name2String topN ++ " matching label " ++ show ch ++ " LIST: " ++ show potentialQuals
 
 data ChoiceLabel = ChoiceL {labelCh :: ChoiceId} | ChoiceR {labelCh :: ChoiceId}
   deriving (Eq, Ord, Show)
+
+isRight (ChoiceR _) = True
+isRight _ = False
+
+cfChoices :: [ChoiceLabel] -> CFChoices
+cfChoices cls = Set.fromList $ map labelCh $ filter isRight cls
+
+type CFChoices = Set.Set ChoiceId
 
 initContext :: Context
 initContext = Context B0 [] (error "initial problem ID") Empty.empty [] Set.empty (SolverConfig True True True) Map.empty Map.empty
@@ -701,18 +738,20 @@ freshenChoice c (L t) = do
   (var, body) <- unbind t
   newBody <- freshenChoice c body
   return $ L $ bind var newBody
-freshenChoice c (N (Meta n) elims) = do--TODO case for meta, check its path
-  labelMap <- gets contextVarLabels
-  let labels = Maybe.fromMaybe [] (Map.lookup n labelMap)
-  let missingLabels = c List.\\ labels 
-  N (Meta n) <$> mapM (freshenChoiceElim c) elims
-freshenChoice c (N v elims) = --TODO case for meta, check its path
+freshenChoice c (N (Meta n) elims) = do--case for meta, check its path
+  labelledMeta <- labelledMetaFor n $ cfChoices c
+  N (Meta labelledMeta) <$> mapM (freshenChoiceElim c) elims
+freshenChoice c (N v elims) =
   N v <$> mapM (freshenChoiceElim c) elims
 freshenChoice c (C t1 t2) =
   C t1 <$> (mapM $ freshenChoice c) t2
 freshenChoice c (VBot t) = return $ VBot t
-freshenChoice c (VChoice cid cuid n t1 t2) =
-      VChoice cid cuid n <$> freshenChoice (ChoiceL cid : c) t1 <*> freshenChoice ( ChoiceR cid : c) t2
+freshenChoice c (VChoice cid cuid n t1 t2) = --Eliminate nested choices
+  case [someChoice | someChoice <- c, labelCh someChoice == cid] of
+    [] ->
+      VChoice cid cuid n <$> freshenChoice ( (ChoiceL cid) : c) t1 <*> freshenChoice ( (ChoiceR cid) : c) t2
+    [ChoiceL cid] -> freshenChoice c t1
+    [ChoiceR cid] -> freshenChoice c t2
 
 freshenChoiceElim :: [ChoiceLabel] -> Elim -> Contextual Elim
 freshenChoiceElim c (Elim e1 e2) = Elim e1 <$> mapM (freshenChoice c)  e2
